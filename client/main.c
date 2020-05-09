@@ -2956,6 +2956,25 @@ void send_to_mqtt(const char* topic, const char* address, const char* pub, const
 }
 
 
+static void start_discovery()
+{
+	dbus_bool_t enable = TRUE;
+	const char *method;
+
+//	if (check_default_ctrl() == FALSE)
+//		return bt_shell_noninteractive_quit(EXIT_FAILURE);
+
+	set_discovery_filter(false);
+
+	if (g_dbus_proxy_method_call(default_ctrl->proxy, "StartDiscovery",
+				NULL, start_discovery_reply,
+				GUINT_TO_POINTER(enable), NULL) == FALSE) {
+		bt_shell_printf("Failed to start discovery");
+		return bt_shell_noninteractive_quit(EXIT_FAILURE);
+	}
+}
+
+
 
 int main(int argc, char *argv[])
 {
@@ -2991,13 +3010,16 @@ int main(int argc, char *argv[])
 
 	g_dbus_client_set_ready_watch(client, client_ready, NULL);
 
-
         prepare_MQTT();
 
+        // does this need to be after shell run?  How??
+        //start_discovery();
 
         bt_shell_printf("bt_shell_run()\n ");
 
 	status = bt_shell_run();
+
+        // exit
 
 	g_dbus_client_unref(client);
 
