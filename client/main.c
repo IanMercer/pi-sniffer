@@ -775,8 +775,7 @@ static void property_changed(GDBusProxy *proxy, const char *name,
 	}
 }
 
-static void message_handler(DBusConnection *connection,
-					DBusMessage *message, void *user_data)
+static void message_handler(DBusConnection *connection, DBusMessage *message, void *user_data)
 {
 	bt_shell_printf("[SIGNAL] %s.%s\n", dbus_message_get_interface(message),
 					dbus_message_get_member(message));
