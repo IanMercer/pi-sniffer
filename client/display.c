@@ -47,7 +47,8 @@ void rl_printf(const char *fmt, ...)
 
 	save_input = !RL_ISSTATE(RL_STATE_DONE);
 
-	if (save_input) {
+	if (save_input)
+	{
 		saved_point = rl_point;
 		saved_line = rl_copy_text(0, rl_end);
 		rl_save_prompt();
@@ -59,7 +60,8 @@ void rl_printf(const char *fmt, ...)
 	vprintf(fmt, args);
 	va_end(args);
 
-	if (save_input) {
+	if (save_input)
+	{
 		rl_restore_prompt();
 		rl_replace_line(saved_line, 0);
 		rl_point = saved_point;
@@ -79,13 +81,15 @@ void rl_hexdump(const unsigned char *buf, size_t len)
 
 	str[0] = ' ';
 
-	for (i = 0; i < len; i++) {
+	for (i = 0; i < len; i++)
+	{
 		str[((i % 16) * 3) + 1] = ' ';
 		str[((i % 16) * 3) + 2] = hexdigits[buf[i] >> 4];
 		str[((i % 16) * 3) + 3] = hexdigits[buf[i] & 0xf];
 		str[(i % 16) + 51] = isprint(buf[i]) ? buf[i] : '.';
 
-		if ((i + 1) % 16 == 0) {
+		if ((i + 1) % 16 == 0)
+		{
 			str[49] = ' ';
 			str[50] = ' ';
 			str[67] = '\0';
@@ -94,9 +98,11 @@ void rl_hexdump(const unsigned char *buf, size_t len)
 		}
 	}
 
-	if (i % 16 > 0) {
+	if (i % 16 > 0)
+	{
 		size_t j;
-		for (j = (i % 16); j < 16; j++) {
+		for (j = (i % 16); j < 16; j++)
+		{
 			str[(j * 3) + 1] = ' ';
 			str[(j * 3) + 2] = ' ';
 			str[(j * 3) + 3] = ' ';
@@ -110,7 +116,7 @@ void rl_hexdump(const unsigned char *buf, size_t len)
 }
 
 void rl_prompt_input(const char *label, const char *msg,
-				rl_prompt_input_func func, void *user_data)
+					 rl_prompt_input_func func, void *user_data)
 {
 	char prompt[256];
 
@@ -129,7 +135,7 @@ void rl_prompt_input(const char *label, const char *msg,
 
 	memset(prompt, 0, sizeof(prompt));
 	snprintf(prompt, sizeof(prompt), COLOR_RED "[%s]" COLOR_OFF " %s ",
-								label, msg);
+			 label, msg);
 	rl_set_prompt(prompt);
 
 	rl_replace_line("", 0);

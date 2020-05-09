@@ -103,8 +103,7 @@ SOFTWARE.
  *       function you need).
  */
 
-
- /**
+/**
   * @brief An enumeration of the MQTT control packet types. 
   * @ingroup unpackers
   *
@@ -112,21 +111,22 @@ SOFTWARE.
   * MQTT v3.1.1: MQTT Control Packet Types
   * </a>
   */
-  enum MQTTControlPacketType {
-    MQTT_CONTROL_CONNECT=1u,
-    MQTT_CONTROL_CONNACK=2u,
-    MQTT_CONTROL_PUBLISH=3u,
-    MQTT_CONTROL_PUBACK=4u,
-    MQTT_CONTROL_PUBREC=5u,
-    MQTT_CONTROL_PUBREL=6u,
-    MQTT_CONTROL_PUBCOMP=7u,
-    MQTT_CONTROL_SUBSCRIBE=8u,
-    MQTT_CONTROL_SUBACK=9u,
-    MQTT_CONTROL_UNSUBSCRIBE=10u,
-    MQTT_CONTROL_UNSUBACK=11u,
-    MQTT_CONTROL_PINGREQ=12u,
-    MQTT_CONTROL_PINGRESP=13u,
-    MQTT_CONTROL_DISCONNECT=14u
+enum MQTTControlPacketType
+{
+    MQTT_CONTROL_CONNECT = 1u,
+    MQTT_CONTROL_CONNACK = 2u,
+    MQTT_CONTROL_PUBLISH = 3u,
+    MQTT_CONTROL_PUBACK = 4u,
+    MQTT_CONTROL_PUBREC = 5u,
+    MQTT_CONTROL_PUBREL = 6u,
+    MQTT_CONTROL_PUBCOMP = 7u,
+    MQTT_CONTROL_SUBSCRIBE = 8u,
+    MQTT_CONTROL_SUBACK = 9u,
+    MQTT_CONTROL_UNSUBSCRIBE = 10u,
+    MQTT_CONTROL_UNSUBACK = 11u,
+    MQTT_CONTROL_PINGREQ = 12u,
+    MQTT_CONTROL_PINGRESP = 13u,
+    MQTT_CONTROL_DISCONNECT = 14u
 };
 
 /**
@@ -137,12 +137,13 @@ SOFTWARE.
  * MQTT v3.1.1: Fixed Header
  * </a>
  */
-struct mqtt_fixed_header {
+struct mqtt_fixed_header
+{
     /** The type of packet. */
     enum MQTTControlPacketType control_type;
 
     /** The packets control flags.*/
-    uint32_t  control_flags: 4;
+    uint32_t control_flags : 4;
 
     /** The remaining size of the packet in bytes (i.e. the size of variable header and payload).*/
     uint32_t remaining_length;
@@ -177,7 +178,7 @@ struct mqtt_fixed_header {
     MQTT_ERROR(MQTT_ERROR_MALFORMED_RESPONSE)            \
     MQTT_ERROR(MQTT_ERROR_UNSUBSCRIBE_TOO_MANY_TOPICS)   \
     MQTT_ERROR(MQTT_ERROR_RESPONSE_INVALID_CONTROL_TYPE) \
-    MQTT_ERROR(MQTT_ERROR_CONNECT_NOT_CALLED)          \
+    MQTT_ERROR(MQTT_ERROR_CONNECT_NOT_CALLED)            \
     MQTT_ERROR(MQTT_ERROR_SEND_BUFFER_IS_FULL)           \
     MQTT_ERROR(MQTT_ERROR_SOCKET_ERROR)                  \
     MQTT_ERROR(MQTT_ERROR_MALFORMED_REQUEST)             \
@@ -207,17 +208,17 @@ struct mqtt_fixed_header {
 */
 #define GENERATE_STRING(STRING) #STRING,
 
-
 /** 
  * @brief An enumeration of error codes. Error messages can be retrieved by calling \ref mqtt_error_str.
  * @ingroup api
  * 
  * @see mqtt_error_str
  */
-enum MQTTErrors {
-    MQTT_ERROR_UNKNOWN=INT_MIN,
+enum MQTTErrors
+{
+    MQTT_ERROR_UNKNOWN = INT_MIN,
     __ALL_MQTT_ERRORS(GENERATE_ENUM)
-    MQTT_OK = 1
+        MQTT_OK = 1
 };
 
 /** 
@@ -228,7 +229,7 @@ enum MQTTErrors {
  * 
  * @returns The associated error message.
  */
-const char* mqtt_error_str(enum MQTTErrors error);
+const char *mqtt_error_str(enum MQTTErrors error);
 
 /**
  * @brief Pack a MQTT 16 bit integer, given a native 16 bit integer .
@@ -263,7 +264,7 @@ uint16_t __mqtt_unpack_uint16(const uint8_t *buf);
  * 
  * @returns strlen(str) + 2
 */
-ssize_t __mqtt_pack_str(uint8_t *buf, const char* str);
+ssize_t __mqtt_pack_str(uint8_t *buf, const char *str);
 
 /** @brief A macro to get the MQTT string length from a c-string. */
 #define __mqtt_packed_cstrlen(x) (2 + strlen(x))
@@ -278,7 +279,8 @@ ssize_t __mqtt_pack_str(uint8_t *buf, const char* str);
  * MQTT v3.1.1: CONNACK return codes.
  * </a> 
  */
-enum MQTTConnackReturnCode {
+enum MQTTConnackReturnCode
+{
     MQTT_CONNACK_ACCEPTED = 0u,
     MQTT_CONNACK_REFUSED_PROTOCOL_VERSION = 1u,
     MQTT_CONNACK_REFUSED_IDENTIFIER_REJECTED = 2u,
@@ -295,7 +297,8 @@ enum MQTTConnackReturnCode {
  * MQTT v3.1.1: CONNACK - Acknowledgement connection response.
  * </a>
  */
-struct mqtt_response_connack {
+struct mqtt_response_connack
+{
     /** 
      * @brief Allows client and broker to check if they have a consistent view about whether there is
      * already a stored session state.
@@ -310,7 +313,7 @@ struct mqtt_response_connack {
     enum MQTTConnackReturnCode return_code;
 };
 
- /**
+/**
   * @brief A publish packet received from the broker.
   * @ingroup unpackers
   * 
@@ -321,7 +324,8 @@ struct mqtt_response_connack {
   * MQTT v3.1.1: PUBLISH - Publish Message.
   * </a> 
   */
-struct mqtt_response_publish {
+struct mqtt_response_publish
+{
     /** 
      * @brief The DUP flag. DUP flag is 0 if its the first attempt to send this publish packet. A DUP flag
      * of 1 means that this might be a re-delivery of the packet.
@@ -348,13 +352,13 @@ struct mqtt_response_publish {
      * @note topic_name is not null terminated. Therefore topic_name_size must be used to get the 
      *       string length.
      */
-    const void* topic_name;
+    const void *topic_name;
 
     /** @brief The publish message's packet ID. */
     uint16_t packet_id;
 
     /** @brief The publish message's application message.*/
-    const void* application_message;
+    const void *application_message;
 
     /** @brief The size of the application message in bytes. */
     size_t application_message_size;
@@ -369,7 +373,8 @@ struct mqtt_response_publish {
  * </a> 
  *
  */
-struct mqtt_response_puback {
+struct mqtt_response_puback
+{
     /** @brief The published messages packet ID. */
     uint16_t packet_id;
 };
@@ -383,7 +388,8 @@ struct mqtt_response_puback {
  * </a> 
  *
  */
-struct mqtt_response_pubrec {
+struct mqtt_response_pubrec
+{
     /** @brief The published messages packet ID. */
     uint16_t packet_id;
 };
@@ -397,7 +403,8 @@ struct mqtt_response_pubrec {
  * </a> 
  *
  */
-struct mqtt_response_pubrel {
+struct mqtt_response_pubrel
+{
     /** @brief The published messages packet ID. */
     uint16_t packet_id;
 };
@@ -411,7 +418,8 @@ struct mqtt_response_pubrel {
  * </a> 
  *
  */
-struct mqtt_response_pubcomp {
+struct mqtt_response_pubcomp
+{
     /** T@brief he published messages packet ID. */
     uint16_t packet_id;
 };
@@ -424,11 +432,12 @@ struct mqtt_response_pubcomp {
  * MQTT v3.1.1: SUBACK Return Codes.
  * </a> 
  */
-enum MQTTSubackReturnCodes {
+enum MQTTSubackReturnCodes
+{
     MQTT_SUBACK_SUCCESS_MAX_QOS_0 = 0u,
     MQTT_SUBACK_SUCCESS_MAX_QOS_1 = 1u,
     MQTT_SUBACK_SUCCESS_MAX_QOS_2 = 2u,
-    MQTT_SUBACK_FAILURE           = 128u
+    MQTT_SUBACK_FAILURE = 128u
 };
 
 /**
@@ -439,7 +448,8 @@ enum MQTTSubackReturnCodes {
  * MQTT v3.1.1: SUBACK - Subscription Acknowledgement.
  * </a> 
  */
-struct mqtt_response_suback {
+struct mqtt_response_suback
+{
     /** @brief The published messages packet ID. */
     uint16_t packet_id;
 
@@ -462,7 +472,8 @@ struct mqtt_response_suback {
  * MQTT v3.1.1: UNSUBACK - Unsubscribe Acknowledgement.
  * </a> 
  */
-struct mqtt_response_unsuback {
+struct mqtt_response_unsuback
+{
     /** @brief The published messages packet ID. */
     uint16_t packet_id;
 };
@@ -477,15 +488,17 @@ struct mqtt_response_unsuback {
  * MQTT v3.1.1: PINGRESP - Ping Response.
  * </a> 
  */
-struct mqtt_response_pingresp {
-  int dummy;
+struct mqtt_response_pingresp
+{
+    int dummy;
 };
 
 /**
  * @brief A struct used to deserialize/interpret an incoming packet from the broker.
  * @ingroup unpackers
  */
-struct mqtt_response {
+struct mqtt_response
+{
     /** @brief The mqtt_fixed_header of the deserialized packet. */
     struct mqtt_fixed_header fixed_header;
 
@@ -498,13 +511,13 @@ struct mqtt_response {
      *       decoded#publish should be accessed.
      */
     union {
-        struct mqtt_response_connack  connack;
-        struct mqtt_response_publish  publish;
-        struct mqtt_response_puback   puback;
-        struct mqtt_response_pubrec   pubrec;
-        struct mqtt_response_pubrel   pubrel;
-        struct mqtt_response_pubcomp  pubcomp;
-        struct mqtt_response_suback   suback;
+        struct mqtt_response_connack connack;
+        struct mqtt_response_publish publish;
+        struct mqtt_response_puback puback;
+        struct mqtt_response_pubrec pubrec;
+        struct mqtt_response_pubrel pubrel;
+        struct mqtt_response_pubcomp pubcomp;
+        struct mqtt_response_suback suback;
         struct mqtt_response_unsuback unsuback;
         struct mqtt_response_pingresp pingresp;
     } decoded;
@@ -542,7 +555,7 @@ ssize_t mqtt_unpack_fixed_header(struct mqtt_response *response, const uint8_t *
  * @returns The number of bytes that were consumed, or 0 if the buffer does not contain enough 
  *          bytes to parse the packet, or a negative value if there was a protocol violation.
  */
-ssize_t mqtt_unpack_connack_response (struct mqtt_response *mqtt_response, const uint8_t *buf);
+ssize_t mqtt_unpack_connack_response(struct mqtt_response *mqtt_response, const uint8_t *buf);
 
 /**
  * @brief Deserialize a publish response from \p buf.
@@ -559,7 +572,7 @@ ssize_t mqtt_unpack_connack_response (struct mqtt_response *mqtt_response, const
  * @returns The number of bytes that were consumed, or 0 if the buffer does not contain enough 
  *          bytes to parse the packet, or a negative value if there was a protocol violation.
  */
-ssize_t mqtt_unpack_publish_response (struct mqtt_response *mqtt_response, const uint8_t *buf);
+ssize_t mqtt_unpack_publish_response(struct mqtt_response *mqtt_response, const uint8_t *buf);
 
 /**
  * @brief Deserialize a PUBACK/PUBREC/PUBREL/PUBCOMP packet from \p buf.
@@ -610,7 +623,7 @@ ssize_t mqtt_unpack_suback_response(struct mqtt_response *mqtt_response, const u
  * 
  * @returns The number of bytes that were consumed, or 0 if the buffer does not contain enough 
  *          bytes to parse the packet, or a negative value if there was a protocol violation.
- */  
+ */
 ssize_t mqtt_unpack_unsuback_response(struct mqtt_response *mqtt_response, const uint8_t *buf);
 
 /**
@@ -626,11 +639,11 @@ ssize_t mqtt_unpack_unsuback_response(struct mqtt_response *mqtt_response, const
  * @returns The number of bytes consumed on success, zero \p buf does not contain enough bytes
  *          to deserialize the packet, a negative value if a protocol violation was encountered.  
  */
-ssize_t mqtt_unpack_response(struct mqtt_response* response, const uint8_t *buf, size_t bufsz);
+ssize_t mqtt_unpack_response(struct mqtt_response *response, const uint8_t *buf, size_t bufsz);
 
 /* REQUESTS */
 
- /**
+/**
  * @brief Serialize an mqtt_fixed_header and write it to \p buf.
  * @ingroup packers
  * 
@@ -654,7 +667,8 @@ ssize_t mqtt_pack_fixed_header(uint8_t *buf, size_t bufsz, const struct mqtt_fix
  * MQTT v3.1.1: CONNECT Variable Header.
  * </a> 
  */
-enum MQTTConnectFlags {
+enum MQTTConnectFlags
+{
     MQTT_CONNECT_RESERVED = 1u,
     MQTT_CONNECT_CLEAN_SESSION = 2u,
     MQTT_CONNECT_WILL_FLAG = 4u,
@@ -704,13 +718,13 @@ enum MQTTConnectFlags {
  * @returns The number of bytes put into \p buf, 0 if \p buf is too small to fit the CONNECT 
  *          packet, a negative value if there was a protocol violation.
  */
-ssize_t mqtt_pack_connection_request(uint8_t* buf, size_t bufsz, 
-                                     const char* client_id,
-                                     const char* will_topic,
-                                     const void* will_message,
+ssize_t mqtt_pack_connection_request(uint8_t *buf, size_t bufsz,
+                                     const char *client_id,
+                                     const char *will_topic,
+                                     const void *will_message,
                                      size_t will_message_size,
-                                     const char* user_name,
-                                     const char* password,
+                                     const char *user_name,
+                                     const char *password,
                                      uint8_t connect_flags,
                                      uint16_t keep_alive);
 
@@ -722,7 +736,8 @@ ssize_t mqtt_pack_connection_request(uint8_t* buf, size_t bufsz,
  * MQTT v3.1.1: PUBLISH - Publish Message.
  * </a>
  */
-enum MQTTPublishFlags {
+enum MQTTPublishFlags
+{
     MQTT_PUBLISH_DUP = 8u,
     MQTT_PUBLISH_QOS_0 = ((0u << 1) & 0x06),
     MQTT_PUBLISH_QOS_1 = ((1u << 1) & 0x06),
@@ -755,9 +770,9 @@ enum MQTTPublishFlags {
  *          packet, a negative value if there was a protocol violation.
  */
 ssize_t mqtt_pack_publish_request(uint8_t *buf, size_t bufsz,
-                                  const char* topic_name,
+                                  const char *topic_name,
                                   uint16_t packet_id,
-                                  void* application_message,
+                                  void *application_message,
                                   size_t application_message_size,
                                   uint8_t publish_flags);
 
@@ -789,7 +804,7 @@ ssize_t mqtt_pack_publish_request(uint8_t *buf, size_t bufsz,
  * @returns The number of bytes put into \p buf, 0 if \p buf is too small to fit the PUBXXX 
  *          packet, a negative value if there was a protocol violation.
  */
-ssize_t mqtt_pack_pubxxx_request(uint8_t *buf, size_t bufsz, 
+ssize_t mqtt_pack_pubxxx_request(uint8_t *buf, size_t bufsz,
                                  enum MQTTControlPacketType control_type,
                                  uint16_t packet_id);
 
@@ -824,8 +839,8 @@ ssize_t mqtt_pack_pubxxx_request(uint8_t *buf, size_t bufsz,
  * @returns The number of bytes put into \p buf, 0 if \p buf is too small to fit the SUBSCRIBE 
  *          packet, a negative value if there was a protocol violation.
  */
-ssize_t mqtt_pack_subscribe_request(uint8_t *buf, size_t bufsz, 
-                                    unsigned int packet_id, 
+ssize_t mqtt_pack_subscribe_request(uint8_t *buf, size_t bufsz,
+                                    unsigned int packet_id,
                                     ...); /* null terminated */
 
 /** 
@@ -858,8 +873,8 @@ ssize_t mqtt_pack_subscribe_request(uint8_t *buf, size_t bufsz,
  * @returns The number of bytes put into \p buf, 0 if \p buf is too small to fit the UNSUBSCRIBE 
  *          packet, a negative value if there was a protocol violation.
  */
-ssize_t mqtt_pack_unsubscribe_request(uint8_t *buf, size_t bufsz, 
-                                      unsigned int packet_id, 
+ssize_t mqtt_pack_unsubscribe_request(uint8_t *buf, size_t bufsz,
+                                      unsigned int packet_id,
                                       ...); /* null terminated */
 
 /**
@@ -894,12 +909,12 @@ ssize_t mqtt_pack_ping_request(uint8_t *buf, size_t bufsz);
  */
 ssize_t mqtt_pack_disconnect(uint8_t *buf, size_t bufsz);
 
-
 /**
  * @brief An enumeration of queued message states. 
  * @ingroup details
  */
-enum MQTTQueuedMessageState {
+enum MQTTQueuedMessageState
+{
     MQTT_QUEUED_UNSENT,
     MQTT_QUEUED_AWAITING_ACK,
     MQTT_QUEUED_COMPLETE
@@ -909,13 +924,13 @@ enum MQTTQueuedMessageState {
  * @brief A message in a mqtt_message_queue.
  * @ingroup details
  */
-struct mqtt_queued_message {
+struct mqtt_queued_message
+{
     /** @brief A pointer to the start of the message. */
     uint8_t *start;
 
     /** @brief The number of bytes in the message. */
     size_t size;
-
 
     /** @brief The state of the message. */
     enum MQTTQueuedMessageState state;
@@ -949,7 +964,8 @@ struct mqtt_queued_message {
  * @note This struct is used internally to manage sending messages.
  * @note The only members the user should use are \c curr and \c curr_sz. 
  */
-struct mqtt_message_queue {
+struct mqtt_message_queue
+{
     /** 
      * @brief The start of the message queue's memory block. 
      * 
@@ -977,7 +993,7 @@ struct mqtt_message_queue {
      *       the message queue's memory whenever a new message is registered).  
      */
     size_t curr_sz;
-    
+
     /**
      * @brief The tail of the array of mqtt_queued_messages's.
      * 
@@ -1026,7 +1042,7 @@ void mqtt_mq_clean(struct mqtt_message_queue *mq);
  * 
  * @returns The newly added struct mqtt_queued_message.
  */
-struct mqtt_queued_message* mqtt_mq_register(struct mqtt_message_queue *mq, size_t nbytes);
+struct mqtt_queued_message *mqtt_mq_register(struct mqtt_message_queue *mq, size_t nbytes);
 
 /**
  * @brief Find a message in the message queue.
@@ -1040,7 +1056,7 @@ struct mqtt_queued_message* mqtt_mq_register(struct mqtt_message_queue *mq, size
  * @relates mqtt_message_queue
  * @returns The found message. \c NULL if the message was not found.
  */
-struct mqtt_queued_message* mqtt_mq_find(struct mqtt_message_queue *mq, enum MQTTControlPacketType control_type, uint16_t *packet_id);
+struct mqtt_queued_message *mqtt_mq_find(struct mqtt_message_queue *mq, enum MQTTControlPacketType control_type, uint16_t *packet_id);
 
 /**
  * @brief Returns the mqtt_queued_message at \p index.
@@ -1051,19 +1067,19 @@ struct mqtt_queued_message* mqtt_mq_find(struct mqtt_message_queue *mq, enum MQT
  *
  * @returns The mqtt_queued_message at \p index.
  */
-#define mqtt_mq_get(mq_ptr, index) (((struct mqtt_queued_message*) ((mq_ptr)->mem_end)) - 1 - index)
+#define mqtt_mq_get(mq_ptr, index) (((struct mqtt_queued_message *)((mq_ptr)->mem_end)) - 1 - index)
 
 /**
  * @brief Returns the number of messages in the message queue, \p mq_ptr.
  * @ingroup details
  */
-#define mqtt_mq_length(mq_ptr) (((struct mqtt_queued_message*) ((mq_ptr)->mem_end)) - (mq_ptr)->queue_tail)
+#define mqtt_mq_length(mq_ptr) (((struct mqtt_queued_message *)((mq_ptr)->mem_end)) - (mq_ptr)->queue_tail)
 
 /**
  * @brief Used internally to recalculate the \c curr_sz.
  * @ingroup details
  */
-#define mqtt_mq_currsz(mq_ptr) (mq_ptr->curr >= (uint8_t*) ((mq_ptr)->queue_tail - 1)) ? 0 : ((uint8_t*) ((mq_ptr)->queue_tail - 1)) - (mq_ptr)->curr
+#define mqtt_mq_currsz(mq_ptr) (mq_ptr->curr >= (uint8_t *)((mq_ptr)->queue_tail - 1)) ? 0 : ((uint8_t *)((mq_ptr)->queue_tail - 1)) - (mq_ptr)->curr
 
 /* CLIENT */
 
@@ -1073,7 +1089,8 @@ struct mqtt_queued_message* mqtt_mq_find(struct mqtt_message_queue *mq, enum MQT
  * 
  * @note All members can be manipulated via the related functions.
  */
-struct mqtt_client {
+struct mqtt_client
+{
     /** @brief The socket connecting to the MQTT broker. */
     mqtt_pal_socket_handle socketfd;
 
@@ -1147,7 +1164,7 @@ struct mqtt_client {
      *       Use publish_response_callback_state to keep track of any state information you 
      *       need.
      */
-    void (*publish_response_callback)(void** state, struct mqtt_response_publish *publish);
+    void (*publish_response_callback)(void **state, struct mqtt_response_publish *publish);
 
     /**
      * @brief A pointer to any publish_response_callback state information you need.
@@ -1155,7 +1172,7 @@ struct mqtt_client {
      * @note A pointer to this pointer will always be publish_response_callback upon 
      *       receiving a publish message from the broker.
      */
-    void* publish_response_callback_state;
+    void *publish_response_callback_state;
 
     /**
      * @brief A user-specified callback, triggered on each \ref mqtt_sync, allowing
@@ -1172,7 +1189,7 @@ struct mqtt_client {
      * This member is always initialized to NULL but it can be manually set at any 
      * time.
      */
-    enum MQTTErrors (*inspector_callback)(struct mqtt_client*);
+    enum MQTTErrors (*inspector_callback)(struct mqtt_client *);
 
     /**
      * @brief A callback that is called whenever the client is in an error state.
@@ -1181,18 +1198,19 @@ struct mqtt_client {
      * previous sockets, and reestabilishing the connection to the broker and 
      * session configurations (i.e. subscriptions).  
      */
-    void (*reconnect_callback)(struct mqtt_client*, void**);
+    void (*reconnect_callback)(struct mqtt_client *, void **);
 
     /**
      * @brief A pointer to some state. A pointer to this member is passed to 
      *        \ref mqtt_client.reconnect_callback.
      */
-    void* reconnect_state;
+    void *reconnect_state;
 
     /**
      * @brief The buffer where ingress data is temporarily stored.
      */
-    struct {
+    struct
+    {
         /** @brief The start of the receive buffer's memory. */
         uint8_t *mem_start;
 
@@ -1315,7 +1333,7 @@ enum MQTTErrors mqtt_init(struct mqtt_client *client,
                           mqtt_pal_socket_handle sockfd,
                           uint8_t *sendbuf, size_t sendbufsz,
                           uint8_t *recvbuf, size_t recvbufsz,
-                          void (*publish_response_callback)(void** state, struct mqtt_response_publish *publish));
+                          void (*publish_response_callback)(void **state, struct mqtt_response_publish *publish));
 
 /**
  * @brief Initializes an MQTT client and enables automatic reconnections.
@@ -1362,9 +1380,9 @@ enum MQTTErrors mqtt_init(struct mqtt_client *client,
  *
  */
 void mqtt_init_reconnect(struct mqtt_client *client,
-                         void (*reconnect_callback)(struct mqtt_client *client, void** state),
+                         void (*reconnect_callback)(struct mqtt_client *client, void **state),
                          void *reconnect_state,
-                         void (*publish_response_callback)(void** state, struct mqtt_response_publish *publish));
+                         void (*publish_response_callback)(void **state, struct mqtt_response_publish *publish));
 
 /**
  * @brief Safely assign/reassign a socket and buffers to an new/existing client.
@@ -1388,7 +1406,7 @@ void mqtt_init_reconnect(struct mqtt_client *client,
  * @attention This function should be used in conjunction with clients that have been 
  *            initialzed with \ref mqtt_init_reconnect.  
  */
-void mqtt_reinit(struct mqtt_client* client,
+void mqtt_reinit(struct mqtt_client *client,
                  mqtt_pal_socket_handle socketfd,
                  uint8_t *sendbuf, size_t sendbufsz,
                  uint8_t *recvbuf, size_t recvbufsz);
@@ -1420,12 +1438,12 @@ void mqtt_reinit(struct mqtt_client* client,
  * @returns \c MQTT_OK upon success, an \ref MQTTErrors otherwise.
  */
 enum MQTTErrors mqtt_connect(struct mqtt_client *client,
-                             const char* client_id,
-                             const char* will_topic,
-                             const void* will_message,
+                             const char *client_id,
+                             const char *will_topic,
+                             const void *will_message,
                              size_t will_message_size,
-                             const char* user_name,
-                             const char* password,
+                             const char *user_name,
+                             const char *password,
                              uint8_t connect_flags,
                              uint16_t keep_alive);
 
@@ -1452,8 +1470,8 @@ enum MQTTErrors mqtt_connect(struct mqtt_client *client,
  * @returns \c MQTT_OK upon success, an \ref MQTTErrors otherwise.
  */
 enum MQTTErrors mqtt_publish(struct mqtt_client *client,
-                             const char* topic_name,
-                             void* application_message,
+                             const char *topic_name,
+                             void *application_message,
                              size_t application_message_size,
                              uint8_t publish_flags);
 
@@ -1501,7 +1519,6 @@ ssize_t __mqtt_pubrel(struct mqtt_client *client, uint16_t packet_id);
  */
 ssize_t __mqtt_pubcomp(struct mqtt_client *client, uint16_t packet_id);
 
-
 /**
  * @brief Subscribe to a topic.
  * @ingroup api
@@ -1516,7 +1533,7 @@ ssize_t __mqtt_pubcomp(struct mqtt_client *client, uint16_t packet_id);
  * @returns \c MQTT_OK upon success, an \ref MQTTErrors otherwise. 
  */
 enum MQTTErrors mqtt_subscribe(struct mqtt_client *client,
-                               const char* topic_name,
+                               const char *topic_name,
                                int max_qos_level);
 
 /**
@@ -1531,7 +1548,7 @@ enum MQTTErrors mqtt_subscribe(struct mqtt_client *client,
  * @returns \c MQTT_OK upon success, an \ref MQTTErrors otherwise. 
  */
 enum MQTTErrors mqtt_unsubscribe(struct mqtt_client *client,
-                                 const char* topic_name);
+                                 const char *topic_name);
 
 /**
  * @brief Ping the broker. 

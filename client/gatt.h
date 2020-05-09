@@ -49,25 +49,25 @@ void gatt_add_manager(GDBusProxy *proxy);
 void gatt_remove_manager(GDBusProxy *proxy);
 
 void gatt_register_app(DBusConnection *conn, GDBusProxy *proxy,
-						int argc, char *argv[]);
+					   int argc, char *argv[]);
 void gatt_unregister_app(DBusConnection *conn, GDBusProxy *proxy);
 
 void gatt_register_service(DBusConnection *conn, GDBusProxy *proxy,
-						int argc, char *argv[]);
+						   int argc, char *argv[]);
 void gatt_unregister_service(DBusConnection *conn, GDBusProxy *proxy,
-						int argc, char *argv[]);
+							 int argc, char *argv[]);
 
 void gatt_register_chrc(DBusConnection *conn, GDBusProxy *proxy,
 						int argc, char *argv[]);
 void gatt_unregister_chrc(DBusConnection *conn, GDBusProxy *proxy,
-						int argc, char *argv[]);
+						  int argc, char *argv[]);
 
 void gatt_register_desc(DBusConnection *conn, GDBusProxy *proxy,
 						int argc, char *argv[]);
 void gatt_unregister_desc(DBusConnection *conn, GDBusProxy *proxy,
-						int argc, char *argv[]);
+						  int argc, char *argv[]);
 
 void gatt_register_include(DBusConnection *conn, GDBusProxy *proxy,
-					int argc, char *argv[]);
+						   int argc, char *argv[]);
 void gatt_unregister_include(DBusConnection *conn, GDBusProxy *proxy,
-						int argc, char *argv[]);
+							 int argc, char *argv[]);

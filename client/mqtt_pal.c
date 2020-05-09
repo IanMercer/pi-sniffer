@@ -31,15 +31,17 @@ SOFTWARE.
  * @cond Doxygen_Suppress
  */
 
-
 #ifdef MQTT_USE_MBEDTLS
 #include <mbedtls/ssl.h>
 
-ssize_t mqtt_pal_sendall(mqtt_pal_socket_handle fd, const void* buf, size_t len, int flags) {
+ssize_t mqtt_pal_sendall(mqtt_pal_socket_handle fd, const void *buf, size_t len, int flags)
+{
     size_t sent = 0;
-    while(sent < len) {
+    while (sent < len)
+    {
         int rv = mbedtls_ssl_write(fd, buf + sent, len - sent);
-        if (rv < 0) {
+        if (rv < 0)
+        {
             if (rv == MBEDTLS_ERR_SSL_WANT_READ ||
                 rv == MBEDTLS_ERR_SSL_WANT_WRITE
 #if defined(MBEDTLS_ERR_SSL_ASYNC_IN_PROGRESS)
@@ -48,23 +50,27 @@ ssize_t mqtt_pal_sendall(mqtt_pal_socket_handle fd, const void* buf, size_t len,
 #if defined(MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS)
                 || rv == MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS
 #endif
-                ) {
+            )
+            {
                 /* should call mbedtls_ssl_writer later again */
                 break;
             }
             return MQTT_ERROR_SOCKET_ERROR;
         }
-        sent += (size_t) rv;
+        sent += (size_t)rv;
     }
     return sent;
 }
 
-ssize_t mqtt_pal_recvall(mqtt_pal_socket_handle fd, void* buf, size_t bufsz, int flags) {
+ssize_t mqtt_pal_recvall(mqtt_pal_socket_handle fd, void *buf, size_t bufsz, int flags)
+{
     const void *const start = buf;
     int rv;
-    do {
+    do
+    {
         rv = mbedtls_ssl_read(fd, buf, bufsz);
-        if (rv < 0) {
+        if (rv < 0)
+        {
             if (rv == MBEDTLS_ERR_SSL_WANT_READ ||
                 rv == MBEDTLS_ERR_SSL_WANT_WRITE
 #if defined(MBEDTLS_ERR_SSL_ASYNC_IN_PROGRESS)
@@ -73,13 +79,14 @@ ssize_t mqtt_pal_recvall(mqtt_pal_socket_handle fd, void* buf, size_t bufsz, int
 #if defined(MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS)
                 || rv == MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS
 #endif
-                ) {
+            )
+            {
                 /* should call mbedtls_ssl_read later again */
                 break;
             }
             return MQTT_ERROR_SOCKET_ERROR;
         }
-        buf = (char*)buf + rv;
+        buf = (char *)buf + rv;
         bufsz -= rv;
     } while (rv > 0);
 
@@ -91,30 +98,40 @@ ssize_t mqtt_pal_recvall(mqtt_pal_socket_handle fd, void* buf, size_t bufsz, int
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
-ssize_t mqtt_pal_sendall(mqtt_pal_socket_handle fd, const void* buf, size_t len, int flags) {
+ssize_t mqtt_pal_sendall(mqtt_pal_socket_handle fd, const void *buf, size_t len, int flags)
+{
     size_t sent = 0;
-    while(sent < len) {
+    while (sent < len)
+    {
         int tmp = BIO_write(fd, buf + sent, len - sent);
-        if (tmp > 0) {
-            sent += (size_t) tmp;
-        } else if (tmp <= 0 && !BIO_should_retry(fd)) {
+        if (tmp > 0)
+        {
+            sent += (size_t)tmp;
+        }
+        else if (tmp <= 0 && !BIO_should_retry(fd))
+        {
             return MQTT_ERROR_SOCKET_ERROR;
         }
     }
-    
+
     return sent;
 }
 
-ssize_t mqtt_pal_recvall(mqtt_pal_socket_handle fd, void* buf, size_t bufsz, int flags) {
+ssize_t mqtt_pal_recvall(mqtt_pal_socket_handle fd, void *buf, size_t bufsz, int flags)
+{
     const void *const start = buf;
     int rv;
-    do {
+    do
+    {
         rv = BIO_read(fd, buf, bufsz);
-        if (rv > 0) {
+        if (rv > 0)
+        {
             /* successfully read bytes from the socket */
             buf += rv;
             bufsz -= rv;
-        } else if (!BIO_should_retry(fd)) {
+        }
+        else if (!BIO_should_retry(fd))
+        {
             /* an error occurred that wasn't "nothing to read". */
             return MQTT_ERROR_SOCKET_ERROR;
         }
@@ -127,28 +144,36 @@ ssize_t mqtt_pal_recvall(mqtt_pal_socket_handle fd, void* buf, size_t bufsz, int
 
 #include <errno.h>
 
-ssize_t mqtt_pal_sendall(mqtt_pal_socket_handle fd, const void* buf, size_t len, int flags) {
+ssize_t mqtt_pal_sendall(mqtt_pal_socket_handle fd, const void *buf, size_t len, int flags)
+{
     size_t sent = 0;
-    while(sent < len) {
+    while (sent < len)
+    {
         ssize_t tmp = send(fd, buf + sent, len - sent, flags);
-        if (tmp < 1) {
+        if (tmp < 1)
+        {
             return MQTT_ERROR_SOCKET_ERROR;
         }
-        sent += (size_t) tmp;
+        sent += (size_t)tmp;
     }
     return sent;
 }
 
-ssize_t mqtt_pal_recvall(mqtt_pal_socket_handle fd, void* buf, size_t bufsz, int flags) {
+ssize_t mqtt_pal_recvall(mqtt_pal_socket_handle fd, void *buf, size_t bufsz, int flags)
+{
     const void *const start = buf;
     ssize_t rv;
-    do {
+    do
+    {
         rv = recv(fd, buf, bufsz, flags);
-        if (rv > 0) {
+        if (rv > 0)
+        {
             /* successfully read bytes from the socket */
             buf += rv;
             bufsz -= rv;
-        } else if (rv < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+        }
+        else if (rv < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+        {
             /* an error occurred that wasn't "nothing to read". */
             return MQTT_ERROR_SOCKET_ERROR;
         }
@@ -161,37 +186,46 @@ ssize_t mqtt_pal_recvall(mqtt_pal_socket_handle fd, void* buf, size_t bufsz, int
 
 #include <errno.h>
 
-ssize_t mqtt_pal_sendall(mqtt_pal_socket_handle fd, const void* buf, size_t len, int flags) {
+ssize_t mqtt_pal_sendall(mqtt_pal_socket_handle fd, const void *buf, size_t len, int flags)
+{
     size_t sent = 0;
-    while(sent < len) {
-        ssize_t tmp = send(fd, (char*)buf + sent, len - sent, flags);
-        if (tmp < 1) {
+    while (sent < len)
+    {
+        ssize_t tmp = send(fd, (char *)buf + sent, len - sent, flags);
+        if (tmp < 1)
+        {
             return MQTT_ERROR_SOCKET_ERROR;
         }
-        sent += (size_t) tmp;
+        sent += (size_t)tmp;
     }
     return sent;
 }
 
-ssize_t mqtt_pal_recvall(mqtt_pal_socket_handle fd, void* buf, size_t bufsz, int flags) {
+ssize_t mqtt_pal_recvall(mqtt_pal_socket_handle fd, void *buf, size_t bufsz, int flags)
+{
     const char *const start = buf;
     ssize_t rv;
-    do {
+    do
+    {
         rv = recv(fd, buf, bufsz, flags);
-        if (rv > 0) {
+        if (rv > 0)
+        {
             /* successfully read bytes from the socket */
-            buf = (char*)buf + rv;
+            buf = (char *)buf + rv;
             bufsz -= rv;
-        } else if (rv < 0) {
+        }
+        else if (rv < 0)
+        {
             int err = WSAGetLastError();
-            if (err != WSAEWOULDBLOCK) {
+            if (err != WSAEWOULDBLOCK)
+            {
                 /* an error occurred that wasn't "nothing to read". */
                 return MQTT_ERROR_SOCKET_ERROR;
             }
         }
     } while (rv > 0);
 
-    return (ssize_t)((char*)buf - start);
+    return (ssize_t)((char *)buf - start);
 }
 
 #else

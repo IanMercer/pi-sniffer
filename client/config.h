@@ -107,6 +107,6 @@
    previous line.  Perhaps some future version of Sun C++ will work with
    restrict; if so, hopefully it defines __RESTRICT like Sun C does.  */
 #if defined __SUNPRO_CC && !defined __RESTRICT
-# define _Restrict
-# define __restrict__
+#define _Restrict
+#define __restrict__
 #endif

@@ -40,8 +40,8 @@ bool io_shutdown(struct io *io);
 typedef bool (*io_callback_func_t)(struct io *io, void *user_data);
 
 bool io_set_read_handler(struct io *io, io_callback_func_t callback,
-				void *user_data, io_destroy_func_t destroy);
+						 void *user_data, io_destroy_func_t destroy);
 bool io_set_write_handler(struct io *io, io_callback_func_t callback,
-				void *user_data, io_destroy_func_t destroy);
+						  void *user_data, io_destroy_func_t destroy);
 bool io_set_disconnect_handler(struct io *io, io_callback_func_t callback,
-				void *user_data, io_destroy_func_t destroy);
+							   void *user_data, io_destroy_func_t destroy);
