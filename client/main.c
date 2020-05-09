@@ -1314,13 +1314,12 @@ static void start_discovery_reply(DBusMessage *message, void *user_data)
 
 	if (dbus_set_error_from_message(&error, message) == TRUE)
 	{
-		bt_shell_printf("Failed to %s discovery: %s\n",
-						enable == TRUE ? "start" : "stop", error.name);
+		printf("Failed to %s discovery: %s\n", enable == TRUE ? "start" : "stop", error.name);
 		dbus_error_free(&error);
 		return bt_shell_noninteractive_quit(EXIT_FAILURE);
 	}
 
-	bt_shell_printf("Discovery %s\n", enable ? "started" : "stopped");
+	printf("Discovery %s\n", enable ? "started" : "stopped");
 
 	filter.active = enable;
 	/* Leave the discovery running even on noninteractive mode */
@@ -3127,6 +3126,27 @@ void send_to_mqtt(const char *topic, const char *address, const char *pub, const
 	}
 }
 
+
+static void start_scan()
+{
+	dbus_bool_t enable = TRUE;
+	const char *method;
+
+	set_discovery_filter(false);
+	method = "StartDiscovery";
+
+	if (g_dbus_proxy_method_call(default_ctrl->proxy, method,
+								 NULL, start_discovery_reply,
+								 GUINT_TO_POINTER(enable), NULL) == FALSE)
+	{
+		bt_shell_printf("Failed to %s discovery\n",
+						enable == TRUE ? "start" : "stop");
+		return bt_shell_noninteractive_quit(EXIT_FAILURE);
+	}
+}
+
+
+
 int main(int argc, char *argv[])
 {
 	GDBusClient *client;
@@ -3161,6 +3181,9 @@ int main(int argc, char *argv[])
 	g_dbus_client_set_ready_watch(client, client_ready, NULL);
 
 	prepare_MQTT();
+
+    // This was crashing
+    start_scan();
 
 	bt_shell_printf("bt_shell_run()\n ");
 
