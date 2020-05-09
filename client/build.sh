@@ -11,7 +11,7 @@ gcc -I. \
 echo "Linking bluetoothctl"
 
 gcc -g -O2 -o bluetoothctl main.o display.o agent.o advertising.o gatt.o mqtt.o mqtt_pal.o \
-  ../gdbus/.libs/libgdbus-internal.a ../src/.libs/libshared-glib.a -lglib-2.0 -lpthread -ldbus-1 -lreadline
+  libgdbus-internal.a libshared-glib.a -lglib-2.0 -lpthread -ldbus-1 -lreadline
 
 
 echo "Running"
