@@ -108,9 +108,33 @@ static void setup_standard_input(void)
 	bt_shell_attach(fileno(stdin));
 }
 
+
+static void start_scan()
+{
+	dbus_bool_t enable = TRUE;
+	const char *method;
+
+	set_discovery_filter(false);
+	method = "StartDiscovery";
+
+	if (g_dbus_proxy_method_call(default_ctrl->proxy, method,
+								 NULL, start_discovery_reply,
+								 GUINT_TO_POINTER(enable), NULL) == FALSE)
+	{
+		bt_shell_printf("Failed to %s discovery\n",
+						enable == TRUE ? "start" : "stop");
+		return bt_shell_noninteractive_quit(EXIT_FAILURE);
+	}
+}
+
+
 static void connect_handler(DBusConnection *connection, void *user_data)
 {
 	bt_shell_set_prompt(PROMPT_ON);
+
+    // This was crashing
+    start_scan();
+
 }
 
 static void disconnect_handler(DBusConnection *connection, void *user_data)
@@ -3127,23 +3151,13 @@ void send_to_mqtt(const char *topic, const char *address, const char *pub, const
 }
 
 
-static void start_scan()
-{
-	dbus_bool_t enable = TRUE;
-	const char *method;
+/*
 
-	set_discovery_filter(false);
-	method = "StartDiscovery";
 
-	if (g_dbus_proxy_method_call(default_ctrl->proxy, method,
-								 NULL, start_discovery_reply,
-								 GUINT_TO_POINTER(enable), NULL) == FALSE)
-	{
-		bt_shell_printf("Failed to %s discovery\n",
-						enable == TRUE ? "start" : "stop");
-		return bt_shell_noninteractive_quit(EXIT_FAILURE);
-	}
-}
+                      M   A   I   N
+
+
+*/
 
 
 
@@ -3181,9 +3195,6 @@ int main(int argc, char *argv[])
 	g_dbus_client_set_ready_watch(client, client_ready, NULL);
 
 	prepare_MQTT();
-
-    // This was crashing
-    start_scan();
 
 	bt_shell_printf("bt_shell_run()\n ");
 
