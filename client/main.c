@@ -109,10 +109,15 @@ static void setup_standard_input(void)
 }
 
 
+/*
+  start_scan method added by ICM
+*/
 static void start_scan()
 {
 	dbus_bool_t enable = TRUE;
 	const char *method;
+
+	bt_shell_printf("Start scan\n");
 
 	set_discovery_filter(false);
 	method = "StartDiscovery";
@@ -3195,6 +3200,9 @@ int main(int argc, char *argv[])
 	g_dbus_client_set_ready_watch(client, client_ready, NULL);
 
 	prepare_MQTT();
+
+    // start_scan now called inside connected 
+
 
 	bt_shell_printf("bt_shell_run()\n ");
 
