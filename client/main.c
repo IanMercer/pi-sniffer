@@ -108,29 +108,7 @@ static void setup_standard_input(void)
 	bt_shell_attach(fileno(stdin));
 }
 
-
-/*
-  start_scan method added by ICM
-*/
-static void start_scan()
-{
-	dbus_bool_t enable = TRUE;
-	const char *method;
-
-	bt_shell_printf("Start scan\n");
-
-	set_discovery_filter(false);
-	method = "StartDiscovery";
-
-	if (g_dbus_proxy_method_call(default_ctrl->proxy, method,
-								 NULL, start_discovery_reply,
-								 GUINT_TO_POINTER(enable), NULL) == FALSE)
-	{
-		bt_shell_printf("Failed to %s discovery\n",
-						enable == TRUE ? "start" : "stop");
-		return bt_shell_noninteractive_quit(EXIT_FAILURE);
-	}
-}
+static void start_scan();
 
 
 static void connect_handler(DBusConnection *connection, void *user_data)
@@ -3154,6 +3132,31 @@ void send_to_mqtt(const char *topic, const char *address, const char *pub, const
 		//exit_example(EXIT_FAILURE, sockfd, &client_daemon);
 	}
 }
+
+
+/*
+  start_scan method added by ICM
+*/
+static void start_scan()
+{
+	dbus_bool_t enable = TRUE;
+	const char *method;
+
+	bt_shell_printf("Start scan\n");
+
+	set_discovery_filter(false);
+	method = "StartDiscovery";
+
+	if (g_dbus_proxy_method_call(default_ctrl->proxy, method,
+								 NULL, start_discovery_reply,
+								 GUINT_TO_POINTER(enable), NULL) == FALSE)
+	{
+		bt_shell_printf("Failed to %s discovery\n",
+						enable == TRUE ? "start" : "stop");
+		return bt_shell_noninteractive_quit(EXIT_FAILURE);
+	}
+}
+
 
 
 /*
