@@ -3,8 +3,8 @@ Description=Pi Sniffer
 After=network.target
 
 [Service]
-ExecStart=./bluetoothctl
-WorkingDirectory=/home/ian/pi-sniffer/client
+ExecStart=./scan
+WorkingDirectory=/home/ian/pi-sniffer
 StandardOutput=inherit
 StandardError=inherit
 Restart=always
