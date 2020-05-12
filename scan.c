@@ -31,6 +31,25 @@ struct DeviceReport {
 
 static bool pending = FALSE;
 
+void get_address_from_path(char* address, int length, char* path){
+    int i;
+    char *tmp = g_strstr_len(path, -1, "dev_") + 4;
+
+    address[length-1] = '\0';  // safety
+
+    for(i = 0; *tmp != '\0'; i++, tmp++) {
+        if (i >= length-1) {
+          break;
+        }
+        if(*tmp == '_') {
+            address[i] = ':';
+        } else {
+            address[i] = *tmp;
+        }
+    }
+}
+
+
 
 static void send_to_mqtt(const char *topic, struct DeviceReport deviceReport);
 
@@ -186,8 +205,7 @@ static int bluez_adapter_call_method(const char *method, GVariant *param, method
     GError *error = NULL;
 
     g_dbus_connection_call(con,
-                 "org.bluez",
-            /* TODO Find the adapter path runtime */
+                 "org.bluez",        /* TODO Find the adapter path runtime */
                  "/org/bluez/hci0",
                  "org.bluez.Adapter1",
                  method,
@@ -295,6 +313,8 @@ static void bluez_device_appeared(GDBusConnection *sig,
 
     while(g_variant_iter_next(interfaces, "{&s@a{sv}}", &interface_name, &properties)) {
         if(g_strstr_len(g_ascii_strdown(interface_name, -1), -1, "device")) {
+
+            // Report device directly, no need to scan
             report_device_to_MQTT(properties);
         }
         g_variant_unref(properties);
@@ -327,26 +347,19 @@ static void bluez_device_disappeared(GDBusConnection *sig,
     GVariantIter *interfaces;
     const char *object;
     const gchar *interface_name;
-    char address[BT_ADDRESS_STRING_SIZE] = {'\0'};
 
     g_variant_get(parameters, "(&oas)", &object, &interfaces);
+
     while(g_variant_iter_next(interfaces, "s", &interface_name)) {
         if(g_strstr_len(g_ascii_strdown(interface_name, -1), -1, "device")) {
-            int i;
-            char *tmp = g_strstr_len(object, -1, "dev_") + 4;
-
-            for(i = 0; *tmp != '\0'; i++, tmp++) {
-                if(*tmp == '_') {
-                    address[i] = ':';
-                    continue;
-                }
-                address[i] = *tmp;
-            }
+            char address[BT_ADDRESS_STRING_SIZE] = {'\0'};
+            get_address_from_path (&address, BT_ADDRESS_STRING_SIZE, object);
             g_print("Device %s removed\n", address);
             pending = true;
         }
     }
 }
+
 
 /*
 
@@ -393,7 +406,11 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
         }
         else {
             pending = TRUE;
-            g_print("Adapter changes %s %s\n", path, key);
+
+            char address[BT_ADDRESS_STRING_SIZE] = {'\0'};
+            get_address_from_path (&address, BT_ADDRESS_STRING_SIZE, path);
+
+            g_print("Adapter changes %s %s\n", address, key);
 
             if (!g_strcmp0(key, "RSSI")) {
                //int16_t rssi = g_variant_get_int16(value);
