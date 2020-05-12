@@ -23,11 +23,13 @@
    Structure for reporting to MQTT
 */
 struct DeviceReport {
-    const char* address;
-    const char* name;
-    const char* addressType;
+    char* address;
+    char* name;
+    char* addressType;
     int16_t rssi;
 };
+
+static bool pending = FALSE;
 
 
 static void send_to_mqtt(const char *topic, struct DeviceReport deviceReport);
@@ -212,8 +214,9 @@ static void bluez_get_discovery_filter_cb(GObject *con,
         g_print("Unable to get result for GetDiscoveryFilter\n");
 
     if(result) {
-        result = g_variant_get_child_value(result, 0);
-        bluez_property_value("GetDiscoveryFilter", result);
+        GVariant *child = g_variant_get_child_value(result, 0);
+        bluez_property_value("GetDiscoveryFilter", child);
+        g_variant_unref(child);
     }
     g_variant_unref(result);
 }
@@ -235,32 +238,36 @@ static void report_device_to_MQTT(GVariant *properties) {
     const gchar *property_name;
     GVariantIter i;
     GVariant *prop_val;
-    g_variant_iter_init(&i, properties);
+    g_variant_iter_init(&i, properties);  // no need to free this
     while(g_variant_iter_next(&i, "{&sv}", &property_name, &prop_val)) {
 
         // DEBUG bluez_property_value(property_name, prop_val);
 
         if (strcmp(property_name, "Address") == 0) {
-            report.address = g_variant_get_string(prop_val, NULL);
+            report.address = g_variant_dup_string(prop_val, NULL);
         }
 
         if (strcmp(property_name, "Alias") == 0) {
-            report.name = g_variant_get_string(prop_val, NULL);
+            report.name = g_variant_dup_string(prop_val, NULL);
         }
 
         if (strcmp(property_name, "AddressType") == 0) {
-            report.addressType = g_variant_get_string(prop_val, NULL);
+            report.addressType = g_variant_dup_string(prop_val, NULL);
         }
 
         if (strcmp(property_name, "RSSI") == 0) {
             report.rssi = g_variant_get_int16(prop_val);
         }
 
-        g_variant_unref(prop_val);  // Moved inside loop by Ian
+        g_variant_unref(prop_val);
     }
 
     g_print("Device %s %24s %8s RSSI %d\n", report.address, report.name, report.addressType, report.rssi);
     send_to_mqtt ("BTLE", report);
+
+    g_free(report.address);
+    g_free(report.addressType);
+    g_free(report.name);
 }
 
 static void bluez_device_appeared(GDBusConnection *sig,
@@ -292,6 +299,7 @@ static void bluez_device_appeared(GDBusConnection *sig,
         }
         g_variant_unref(properties);
     }
+
 /*
     rc = bluez_adapter_call_method("RemoveDevice", g_variant_new("(o)", object));
     if(rc)
@@ -335,21 +343,15 @@ static void bluez_device_disappeared(GDBusConnection *sig,
                 address[i] = *tmp;
             }
             g_print("Device %s removed\n", address);
-            // why quit? g_main_loop_quit((GMainLoop *)user_data);
+            pending = true;
         }
     }
-    return;
 }
 
 /*
 
                           ADAPTER CHANGED
-
-      Notify scanner to run
-
 */
-
-static bool pending = FALSE;
 
 
 static void bluez_signal_adapter_changed(GDBusConnection *conn,
@@ -362,13 +364,13 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
 {
     (void)conn;
     (void)sender;
-    (void)path;
-    (void)interface;
+    (void)path;                         // "/org/bluez/hci0/dev_63_FE_94_98_91_D6"  Bluetooth device path
+    (void)interface;                    // "org.freedesktop.DBus.Properties" ... not useful
     (void)userdata;
 
     GVariantIter *properties = NULL;
     GVariantIter *unknown = NULL;
-    const char *iface;
+    const char *iface;                  // org.bluez.Device1
     const char *key;
     GVariant *value = NULL;
     const gchar *signature = g_variant_get_type_string(params);
@@ -381,27 +383,17 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
     }
 
     g_variant_get(params, "(&sa{sv}as)", &iface, &properties, &unknown);
+
     while(g_variant_iter_next(properties, "{&sv}", &key, &value)) {
         if(!g_strcmp0(key, "Powered")) {
-            if(!g_variant_is_of_type(value, G_VARIANT_TYPE_BOOLEAN)) {
-                g_print("Invalid argument type for %s: %s != %s", key,
-                        g_variant_get_type_string(value), "b");
-                goto done;
-            }
             g_print("Adapter is Powered \"%s\"\n", g_variant_get_boolean(value) ? "on" : "off");
         }
         else if(!g_strcmp0(key, "Discovering")) {
-            if(!g_variant_is_of_type(value, G_VARIANT_TYPE_BOOLEAN)) {
-                g_print("Invalid argument type for %s: %s != %s", key,
-                        g_variant_get_type_string(value), "b");
-                goto done;
-            }
             g_print("Adapter scan \"%s\"\n", g_variant_get_boolean(value) ? "on" : "off");
         }
         else {
-
             pending = TRUE;
-            g_print("Adapter changes %s\n", key);
+            g_print("Adapter changes %s %s\n", path, key);
 
             if (!g_strcmp0(key, "RSSI")) {
                //int16_t rssi = g_variant_get_int16(value);
@@ -411,12 +403,10 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
               //g_print("%s a %s", key, g_variant_get_type_string(value));
             }
         }
+        g_variant_unref(value);
     }
 done:
-    if(properties != NULL)
-        g_variant_iter_free(properties);
-    if(value != NULL)
-        g_variant_unref(value);
+    g_variant_iter_free(properties);
 }
 
 static int bluez_adapter_set_property(const char *prop, GVariant *value)
@@ -494,8 +484,8 @@ static void bluez_list_devices(GDBusConnection *con,
 
 	/* Parse the result */
 	if(result) {
-		result = g_variant_get_child_value(result, 0);
-		g_variant_iter_init(&i, result);
+		GVariant *child = g_variant_get_child_value(result, 0);
+		g_variant_iter_init(&i, child);
 
 		while(g_variant_iter_next(&i, "{&o@a{sa{sv}}}", &object_path, &ifaces_and_properties)) {
 			const gchar *interface_name;
@@ -510,6 +500,7 @@ static void bluez_list_devices(GDBusConnection *con,
 			}
 			g_variant_unref(ifaces_and_properties);
 		}
+		g_variant_unref(child);
 		g_variant_unref(result);
 	}
 	//g_main_loop_quit((GMainLoop *)data);
