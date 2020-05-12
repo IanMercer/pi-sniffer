@@ -1,0 +1,13 @@
+[Unit]
+Description=Pi Sniffer
+After=network.target
+
+[Service]
+ExecStart=./bluetoothctl
+WorkingDirectory=/home/ian/pi-sniffer/client
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

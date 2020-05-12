@@ -3139,6 +3139,8 @@ void send_to_mqtt(const char *topic, const char *address, const char *pub, const
 */
 static void start_scan()
 {
+        return;
+
 	dbus_bool_t enable = TRUE;
 	const char *method;
 
