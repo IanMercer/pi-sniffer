@@ -14,6 +14,7 @@
  */
 #include <glib.h>
 #include <gio/gio.h>
+// ?? #include <gdbus/gdbus.h>
 #include "mqtt.h"
 #include "mqtt_pal.h"
 #include "posix_sockets.h"
@@ -204,6 +205,14 @@ struct DeviceReport* device_report_clone(struct DeviceReport existing) {
   val->txpower = existing.txpower;
   val->deviceclass = existing.deviceclass;
   val->appearance = existing.appearance;
+  val->connected = existing.connected;
+  val->paired = existing.paired;
+  val->trusted = existing.trusted;
+  val->addressType = existing.addressType;
+  val->manufacturer = existing.manufacturer;
+  val->manufacturerData = existing.manufacturerData == NULL ? NULL : strdup(existing.manufacturerData);
+  val->deviceclass = existing.deviceclass;
+  val->appearance = existing.appearance;
 
   return val;
 }
@@ -216,73 +225,153 @@ void device_report_free(void* object) {
   g_free(val->address);
   g_free(val->name);
   g_free(val->alias);
+  g_free(val->manufacturerData);
   g_free(val);
 }
 
 
 void send_to_mqtt(struct DeviceReport report)
 {
-    if (hash == NULL) {
-       g_print("Starting a new hash table\n");
-       hash = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, device_report_free);
-    }
-    else {
-       // g_print("Send to MQTT %s\n", report.address);
-    }
+	if (hash == NULL) {
+		g_print("Starting a new hash table\n");
+		hash = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, device_report_free);
+	}
+	else {
+		// g_print("Send to MQTT %s\n", report.address);
+	}
 
-    if (!g_hash_table_contains(hash, report.address))
-    {
-        // TODO: Hash report and check against stored hash for changes
-        g_hash_table_insert(hash,strdup(report.address), device_report_clone(report));
+	struct DeviceReport* existing;
 
-        // For now, track only known devices or iBeacons, remove any others started inadvertently (RSSI)
-        if (strcmp(report.addressType, "public") != 0) {
-            g_print("Remove from MQTT not public %s\n", report.address);
-            // Remove private devices we may have already sent
- 	    send_to_mqtt_null(report.address, "rssi");
- 	    send_to_mqtt_null(report.address, "connected");
- 	    //send_to_mqtt_null(report.address, "type");
- 	    //send_to_mqtt_null(report.address, "name");
-            return;
-        }
+	if (!g_hash_table_contains(hash, report.address))
+	{
+		existing = g_malloc0(sizeof(struct DeviceReport));
+		g_hash_table_insert(hash,strdup(report.address), existing);
 
-        g_print("Device %s %24s %8s RSSI %d\n", report.address, report.name, report.addressType, report.rssi);
+	        // dummy struct filled with unmatched values
+	        existing->address = NULL;
+		existing->name = NULL;
+		existing->alias = NULL;
+                existing->addressType = NULL;
+		existing->rssi = -1;
+		existing->txpower = -1;
+		existing->connected = FALSE;
+		existing->trusted = FALSE;
+		existing->paired = FALSE;
+		existing->deviceclass = 0;
+	        existing->manufacturer = 0;
+                existing->appearance = 0;
 
-	send_to_mqtt_single_value(report.address, "connected", 1);
-	send_to_mqtt_single(report.address, "name", report.name);
- 	send_to_mqtt_single(report.address, "type", report.addressType);
- 	send_to_mqtt_single_value(report.address, "rssi", report.rssi);
-        if (report.txpower > 0) {
- 	  send_to_mqtt_single_value(report.address, "txpower", report.txpower);
-        }
-        if (report.deviceclass != 0) {
+		g_print("Device %s %24s %8s RSSI %d\n", report.address, report.name, report.addressType, report.rssi);
+	/*
+		send_to_mqtt_single_value(report.address, "connected", 1);
+		send_to_mqtt_single(report.address, "name", report.name);
+		send_to_mqtt_single(report.address, "type", report.addressType);
+		send_to_mqtt_single_value(report.address, "rssi", report.rssi);
+		if (report.txpower > 0) {
+		  send_to_mqtt_single_value(report.address, "txpower", report.txpower);
+		}
+		if (report.deviceclass != 0) {
+		  send_to_mqtt_single_value(report.address, "class", report.deviceclass);
+		}
+		if (report.appearance != 0) {
+		  send_to_mqtt_single_value(report.address, "appearance", report.appearance);
+		}
+		if (report.trusted) {
+		  send_to_mqtt_single_value(report.address, "trusted", 1);
+		}
+		if (report.paired) {
+		  send_to_mqtt_single_value(report.address, "paired", 1);
+		}
+		if (report.manufacturer > 0) {
+		    send_to_mqtt_single_value(report.address, "manufacturer", report.manufacturer);
+		}
+	*/
+	} else {
+		// get value from hashtable
+		existing = (struct DeviceReport*) g_hash_table_lookup(hash, report.address);
+		//g_print("Existing value %s\n", existing->address);
+	}
+
+	// Compare values and send
+	if (g_strcmp0(existing->addressType, report.addressType) != 0) {
+	  g_print("Type has changed '%s' -> '%s'  ", existing->addressType, report.addressType);
+	  send_to_mqtt_single(report.address, "type", report.addressType);
+	  //if (existing->addressType != NULL)
+	  //    g_free(existing->addressType);
+	  existing->addressType = strdup(report.addressType);
+	}
+
+	if (g_strcmp0(existing->name, report.name) != 0) {
+	  g_print("Name has changed '%s' -> '%s'  ", existing->name, report.name);
+	  send_to_mqtt_single(report.address, "name", report.name);
+	  g_free(existing->name);
+	  existing->name = strdup(report.name);
+	}
+
+	if (g_strcmp0(existing->alias, report.alias) != 0) {
+	  g_print("Alias has changed '%s' -> '%s'  ", existing->alias, report.alias);
+	  send_to_mqtt_single(report.address, "alias", report.alias);
+	  g_free(existing->alias);
+	  existing->alias = strdup(report.alias);
+	}
+
+	if (existing->rssi != report.rssi) {
+	  g_print("RSSI has changed          ");
+	  send_to_mqtt_single_value(report.address, "rssi", report.rssi);
+	  existing->rssi = report.rssi;
+	}
+
+	if (existing->txpower != report.txpower) {
+	  g_print("TXPower has changed       ");
+	  send_to_mqtt_single_value(report.address, "txpower", report.txpower);
+	  existing->txpower = report.txpower;
+	}
+
+	if (existing->deviceclass != report.deviceclass) {
+	  g_print("Class has changed         ");
 	  send_to_mqtt_single_value(report.address, "class", report.deviceclass);
-        }
-        if (report.appearance != 0) {
+	  existing->deviceclass = report.deviceclass;
+	}
+
+	if (existing->manufacturer != report.manufacturer) {
+	  g_print("Manufacturer has changed  ");
+	  send_to_mqtt_single_value(report.address, "manufacturer", report.manufacturer);
+	  existing->manufacturer = report.manufacturer;
+	}
+
+	if (existing->appearance != report.appearance) {
+	  g_print("Appearance has changed    ");
 	  send_to_mqtt_single_value(report.address, "appearance", report.appearance);
-        }
-        if (report.trusted) {
-	  send_to_mqtt_single_value(report.address, "trusted", 1);
-        }
-        if (report.paired) {
-	  send_to_mqtt_single_value(report.address, "paired", 1);
-        }
-        if (report.manufacturer > 0) {
-            send_to_mqtt_single_value(report.address, "manufacturer", report.manufacturer);
-        }
-    } else {
-	// get value from hashtable
-        struct DeviceReport* existing = (struct DeviceReport*) g_hash_table_lookup(hash, report.address);
-        g_print("Existing value %s\n", existing->address);
+	  existing->appearance = report.appearance;
+	}
 
-        // Compare values and send
+	if (existing->paired != report.paired) {
+	  g_print("Paired has changed        ");
+	  send_to_mqtt_single_value(report.address, "paired", report.paired ? 1 : 0);
+	  existing->paired = report.paired;
+	}
 
+	if (existing->connected != report.connected) {
+	  g_print("Connected has changed     ");
+	  send_to_mqtt_single_value(report.address, "connected", report.connected ? 1 : 0);
+	  existing->connected = report.connected;
+	}
+
+	if (existing->trusted != report.trusted) {
+	  g_print("Trusted has changed       ");
+	  send_to_mqtt_single_value(report.address, "trusted", report.trusted ? 1 : 0);
+	  existing->trusted = report.trusted;
+	}
+
+        // replace value in hash table with proper dispose on old object
+        //g_hash_table_replace(hash,strdup(report.address), device_report_clone(report));
         //g_print("Already in hash table");
-    }
 }
 
 
+
 GDBusConnection *con;
+
 static void bluez_property_value(const gchar *key, GVariant *value)
 {
     const gchar *type = g_variant_get_type_string(value);
@@ -592,8 +681,6 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
             g_print("Adapter scan \"%s\"\n", g_variant_get_boolean(value) ? "on" : "off");
         }
         else {
-            pending = TRUE;
-
             char address[BT_ADDRESS_STRING_SIZE];
             get_address_from_path (address, BT_ADDRESS_STRING_SIZE, path);
 
@@ -603,9 +690,59 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
 		int16_t rssi = g_variant_get_int16(value);
 	 	send_to_mqtt_single_value(address, "rssi", rssi);
             }
+            else if (!g_strcmp0(key, "TxPower")) {
+		int16_t p = g_variant_get_int16(value);
+	 	send_to_mqtt_single_value(address, "txpower", p);
+            }
+            else if (!g_strcmp0(key, "Name")) {
+                gchar* pretty = g_variant_print(value, FALSE);
+                g_print("Name %s\n", pretty);
+                g_free(pretty);
+                // Name changed, will pick up at next full fetch
+            }
+            else if (!g_strcmp0(key, "Alias")) {
+                gchar* pretty = g_variant_print(value, FALSE);
+                g_print("Alias %s\n", pretty);
+                g_free(pretty);
+                // Alias changed, will pick up at next full fetch
+            }
+            else if (!g_strcmp0(key, "Connected")) {
+                // Connected changed, will pick up at next full fetch   type=b
+            }
+            else if (!g_strcmp0(key, "UUIDs")) {
+                gchar* pretty = g_variant_print(value, FALSE);
+                g_print("UUIDs %s\n", pretty);
+                g_free(pretty);
+                // Will pick up at next full fetch   type=b
+            }
+            else if (!g_strcmp0(key, "ServicesResolved")) {
+                // b value
+                // Will pick up at next full fetch   type=b
+            }
+            else if (!g_strcmp0(key, "Appearance")) {
+                // Will pick up at next full fetch   type=b
+            }
+            else if (!g_strcmp0(key, "Icon")) {
+                gchar* pretty = g_variant_print(value, FALSE);
+                g_print("Icon %s\n", pretty);
+                g_free(pretty);
+                // Will pick up at next full fetch   type=b
+            }
+            else if (!g_strcmp0(key, "ManufacturerData")) {             //type= a{qv}
+                gchar* pretty = g_variant_print(value, FALSE);
+                g_print("Manufacturer data %s\n", pretty);
+                g_free(pretty);
+                // TODO: Handle ServiceData changes
+            }
+            else if (!g_strcmp0(key, "ServiceData")) {
+                gchar* pretty = g_variant_print(value, FALSE);
+                g_print("Service data %s\n", pretty);
+                g_free(pretty);
+                // TODO: Handle ServiceData changes
+            }
             else {
-	 	send_to_mqtt_single_value(address, "connected", 1);
-              //g_print("%s a %s", key, g_variant_get_type_string(value));
+	 	// PING ... send_to_mqtt_single_value(address, "connected", 1);
+                g_print("*** TODO: Handle '%s' a %s\n", key, g_variant_get_type_string(value));
             }
         }
         g_variant_unref(value);
@@ -737,6 +874,53 @@ int get_managed_objects(void * parameters)
 				loop);
     return TRUE;
 }
+
+
+/*
+static void connect_reply(DBusMessage *message, void *user_data)
+{
+	GDBusProxy *proxy = user_data;
+	DBusError error;
+
+	dbus_error_init(&error);
+
+	if (dbus_set_error_from_message(&error, message) == TRUE) {
+		bt_shell_printf("Failed to connect: %s\n", error.name);
+		dbus_error_free(&error);
+		return;
+	}
+
+	g_print("Connection successful\n");
+
+	set_default_device(proxy, NULL);
+        return;
+}
+
+static void cmd_connect(int argc, char *address)
+{
+	GDBusProxy *proxy;
+
+	if (check_default_ctrl() == FALSE) {
+            g_print("No default controller");
+            return;
+        }
+
+	proxy = find_proxy_by_address(default_ctrl->devices, address);
+	if (!proxy) {
+		g_print("Device %s not available\n", address);
+                return;
+	}
+
+	if (g_dbus_proxy_method_call(proxy, "Connect", NULL, connect_reply,
+							proxy, NULL) == FALSE) {
+		g_print("Failed to connect\n");
+                return;
+	}
+
+	g_print("Attempting to connect to %s\n", address);
+}
+
+*/
 
 
 
