@@ -34,6 +34,8 @@ struct DeviceReport {
     bool connected;
     bool trusted;
     char* manufacturerData;
+    uint32_t deviceclass;  // https://www.bluetooth.com/specifications/assigned-numbers/Baseband/
+    uint16_t appearance;
 };
 
 static bool pending = FALSE;
@@ -200,6 +202,8 @@ struct DeviceReport* device_report_clone(struct DeviceReport existing) {
   val->manufacturer = existing.manufacturer;
   val->rssi = existing.rssi;
   val->txpower = existing.txpower;
+  val->deviceclass = existing.deviceclass;
+  val->appearance = existing.appearance;
 
   return val;
 }
@@ -248,6 +252,15 @@ void send_to_mqtt(struct DeviceReport report)
 	send_to_mqtt_single(report.address, "name", report.name);
  	send_to_mqtt_single(report.address, "type", report.addressType);
  	send_to_mqtt_single_value(report.address, "rssi", report.rssi);
+        if (report.txpower > 0) {
+ 	  send_to_mqtt_single_value(report.address, "txpower", report.txpower);
+        }
+        if (report.deviceclass != 0) {
+	  send_to_mqtt_single_value(report.address, "class", report.deviceclass);
+        }
+        if (report.appearance != 0) {
+	  send_to_mqtt_single_value(report.address, "appearance", report.appearance);
+        }
         if (report.trusted) {
 	  send_to_mqtt_single_value(report.address, "trusted", 1);
         }
@@ -368,6 +381,8 @@ static void report_device_to_MQTT(GVariant *properties) {
     report.trusted = FALSE;
     report.manufacturerData = "";
     report.manufacturer = 0;
+    report.deviceclass = 0;
+    report.appearance = 0;
 
     // DEBUG g_print("[ %s ]\n", object);
     const gchar *property_name;
@@ -413,19 +428,16 @@ static void report_device_to_MQTT(GVariant *properties) {
         }
         else if (strcmp(property_name, "Modalias") == 0) {
         }
-        else if (strcmp(property_name, "Class") == 0) {
-           const char* type = g_variant_get_type_string (prop_val);
-           g_print("Unknown property: %s %s\n", property_name, type);
+        else if (strcmp(property_name, "Class") == 0) {        // type 'u' which is uint32
+            report.deviceclass = g_variant_get_uint32(prop_val);
         }
         else if (strcmp(property_name, "Icon") == 0) {
            // A string value
            //const char* type = g_variant_get_type_string (prop_val);
            //g_print("Unknown property: %s %s\n", property_name, type);
         }
-        else if (strcmp(property_name, "Appearance") == 0) {
-           // A q value
-           //const char* type = g_variant_get_type_string (prop_val);
-           //g_print("Unknown property: %s %s\n", property_name, type);
+        else if (strcmp(property_name, "Appearance") == 0) {    // type 'q' which is uint16
+            report.appearance = g_variant_get_uint16(prop_val);
         }
         else if (strcmp(property_name, "ServiceData") == 0) {
            // A a{sv} value
