@@ -25,13 +25,20 @@
 struct DeviceReport {
     char* address;
     char* name;
+    char* alias;
     char* addressType;
     int16_t rssi;
+    int16_t txpower;
+    int32_t manufacturer;
+    bool paired;
+    bool connected;
+    bool trusted;
+    char* manufacturerData;
 };
 
 static bool pending = FALSE;
 
-void get_address_from_path(char* address, int length, char* path){
+void get_address_from_path(char* address, int length, const char* path){
     int i;
     char *tmp = g_strstr_len(path, -1, "dev_") + 4;
 
@@ -51,7 +58,7 @@ void get_address_from_path(char* address, int length, char* path){
 
 
 
-static void send_to_mqtt(const char *topic, struct DeviceReport deviceReport);
+//static void send_to_mqtt(struct DeviceReport deviceReport);
 
 static void publish_callback(void **unused, struct mqtt_response_publish *published)
 {
@@ -71,7 +78,7 @@ static void *client_refresher(void *client)
 	while (1)
 	{
 		mqtt_sync((struct mqtt_client *)client);
-		usleep(100000U);
+		usleep(10000U);
 	}
 	return NULL;
 }
@@ -93,7 +100,7 @@ const char *topic = "BTLE";
 static pthread_t client_daemon;
 static int sockfd;
 struct mqtt_client mqtt;
-uint8_t sendbuf[2048]; /* sendbuf should be large enough to hold multiple whole mqtt messages */
+uint8_t sendbuf[8192]; /* sendbuf should be large enough to hold multiple whole mqtt messages */
 uint8_t recvbuf[1024]; /* recvbuf should be large enough any whole mqtt message expected to be received */
 
 /* Create an anonymous session */
@@ -139,24 +146,127 @@ static void prepare_mqtt()
 	}
 }
 
-void send_to_mqtt(const char *topic, struct DeviceReport deviceReport)
+void send_to_mqtt_null(char* mac_address, char* key)
 {
-	/* print a message */
-	char application_message[256];
-	snprintf(application_message, sizeof(application_message), "%s|%s|%s|%i", 
-           deviceReport.address, deviceReport.addressType, deviceReport.name, deviceReport.rssi);
+        /* Create topic including mac address */
+        char topic[256];
+        snprintf(topic, sizeof(topic), "%s/%s/%s", "BLE", mac_address, key);
 
-	mqtt_publish(&mqtt, topic, application_message, strlen(application_message) + 1, MQTT_PUBLISH_QOS_2);
+	printf("MQTT %s %s\n", topic, "NULL");
+
+	mqtt_publish(&mqtt, topic, "", 0, MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
 
 	/* check for errors */
 	if (mqtt.error != MQTT_OK)
 	{
-		fprintf(stderr, "error: %s\n", mqtt_error_str(mqtt.error));
-		//exit_example(EXIT_FAILURE, sockfd, &client_daemon);
+	    fprintf(stderr, "error: %s\n", mqtt_error_str(mqtt.error));
 	}
 }
 
+void send_to_mqtt_single(char* mac_address, char* key, char* value)
+{
+        /* Create topic including mac address */
+        char topic[256];
+        snprintf(topic, sizeof(topic), "%s/%s/%s", "BLE", mac_address, key);
 
+	printf("MQTT %s %s\n", topic, value);
+
+	mqtt_publish(&mqtt, topic, value, strlen(value) + 1, MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
+
+	/* check for errors */
+	if (mqtt.error != MQTT_OK)
+	{
+	    fprintf(stderr, "error: %s\n", mqtt_error_str(mqtt.error));
+	}
+}
+
+void send_to_mqtt_single_value(char* mac_address, char* key, int32_t value)
+{
+	char rssi[12];
+	snprintf(rssi, sizeof(rssi), "%i", value);
+	send_to_mqtt_single(mac_address, key, rssi);
+}
+
+GHashTable* hash = NULL;
+
+// Clone a device report to an allocated object
+
+struct DeviceReport* device_report_clone(struct DeviceReport existing) {
+  struct DeviceReport* val = g_malloc0(sizeof(struct DeviceReport));
+  /* Any per-struct initialization goes here */
+  val->address = existing.address == NULL ? NULL : strdup(existing.address);
+  val->name = existing.name == NULL ? NULL : strdup(existing.name);
+  val->alias = existing.alias == NULL ? NULL : strdup(existing.alias);
+  val->manufacturer = existing.manufacturer;
+  val->rssi = existing.rssi;
+  val->txpower = existing.txpower;
+
+  return val;
+}
+
+// Free an allocated device
+
+void device_report_free(void* object) {
+  struct DeviceReport* val = (struct DeviceReport*) object;
+  /* Free any members you need to */
+  g_free(val->address);
+  g_free(val->name);
+  g_free(val->alias);
+  g_free(val);
+}
+
+
+void send_to_mqtt(struct DeviceReport report)
+{
+    if (hash == NULL) {
+       g_print("Starting a new hash table\n");
+       hash = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, device_report_free);
+    }
+    else {
+       // g_print("Send to MQTT %s\n", report.address);
+    }
+
+    if (!g_hash_table_contains(hash, report.address))
+    {
+        // TODO: Hash report and check against stored hash for changes
+        g_hash_table_insert(hash,strdup(report.address), device_report_clone(report));
+
+        // For now, track only known devices or iBeacons, remove any others started inadvertently (RSSI)
+        if (strcmp(report.addressType, "public") != 0) {
+            g_print("Remove from MQTT not public %s\n", report.address);
+            // Remove private devices we may have already sent
+ 	    send_to_mqtt_null(report.address, "rssi");
+ 	    send_to_mqtt_null(report.address, "connected");
+ 	    //send_to_mqtt_null(report.address, "type");
+ 	    //send_to_mqtt_null(report.address, "name");
+            return;
+        }
+
+        g_print("Device %s %24s %8s RSSI %d\n", report.address, report.name, report.addressType, report.rssi);
+
+	send_to_mqtt_single_value(report.address, "connected", 1);
+	send_to_mqtt_single(report.address, "name", report.name);
+ 	send_to_mqtt_single(report.address, "type", report.addressType);
+ 	send_to_mqtt_single_value(report.address, "rssi", report.rssi);
+        if (report.trusted) {
+	  send_to_mqtt_single_value(report.address, "trusted", 1);
+        }
+        if (report.paired) {
+	  send_to_mqtt_single_value(report.address, "paired", 1);
+        }
+        if (report.manufacturer > 0) {
+            send_to_mqtt_single_value(report.address, "manufacturer", report.manufacturer);
+        }
+    } else {
+	// get value from hashtable
+        struct DeviceReport* existing = (struct DeviceReport*) g_hash_table_lookup(hash, report.address);
+        g_print("Existing value %s\n", existing->address);
+
+        // Compare values and send
+
+        //g_print("Already in hash table");
+    }
+}
 
 
 GDBusConnection *con;
@@ -248,9 +358,16 @@ static void bluez_get_discovery_filter_cb(GObject *con,
 static void report_device_to_MQTT(GVariant *properties) {
     struct DeviceReport report;
     report.address = "";
-    report.name = "";
-    report.addressType = "";
+    report.name = NULL;
+    report.alias = NULL;
+    report.addressType = NULL;
     report.rssi = 0;
+    report.txpower = 0;
+    report.paired = FALSE;
+    report.connected = FALSE;
+    report.trusted = FALSE;
+    report.manufacturerData = "";
+    report.manufacturer = 0;
 
     // DEBUG g_print("[ %s ]\n", object);
     const gchar *property_name;
@@ -264,28 +381,85 @@ static void report_device_to_MQTT(GVariant *properties) {
         if (strcmp(property_name, "Address") == 0) {
             report.address = g_variant_dup_string(prop_val, NULL);
         }
-
-        if (strcmp(property_name, "Alias") == 0) {
+        else if (strcmp(property_name, "Name") == 0) {
             report.name = g_variant_dup_string(prop_val, NULL);
         }
-
-        if (strcmp(property_name, "AddressType") == 0) {
+        else if (strcmp(property_name, "Alias") == 0) {
+            report.alias = g_variant_dup_string(prop_val, NULL);
+        }
+        else if (strcmp(property_name, "AddressType") == 0) {
             report.addressType = g_variant_dup_string(prop_val, NULL);
         }
-
-        if (strcmp(property_name, "RSSI") == 0) {
+        else if (strcmp(property_name, "RSSI") == 0) {
             report.rssi = g_variant_get_int16(prop_val);
+        }
+        else if (strcmp(property_name, "TxPower") == 0) {
+            report.txpower = g_variant_get_int16(prop_val);
+        }
+        else if (strcmp(property_name, "Paired") == 0) {
+            report.paired = g_variant_get_boolean(prop_val);
+        }
+        else if (strcmp(property_name, "Connected") == 0) {
+            report.connected = g_variant_get_boolean(prop_val);
+        }
+        else if (strcmp(property_name, "Trusted") == 0) {
+            report.trusted = g_variant_get_boolean(prop_val);
+        }
+        else if (strcmp(property_name, "LegacyPairing") == 0) {
+        }
+        else if (strcmp(property_name, "Blocked") == 0) {
+        }
+        else if (strcmp(property_name, "UUIDs") == 0) {
+        }
+        else if (strcmp(property_name, "Modalias") == 0) {
+        }
+        else if (strcmp(property_name, "Class") == 0) {
+           const char* type = g_variant_get_type_string (prop_val);
+           g_print("Unknown property: %s %s\n", property_name, type);
+        }
+        else if (strcmp(property_name, "Icon") == 0) {
+           // A string value
+           //const char* type = g_variant_get_type_string (prop_val);
+           //g_print("Unknown property: %s %s\n", property_name, type);
+        }
+        else if (strcmp(property_name, "Appearance") == 0) {
+           // A q value
+           //const char* type = g_variant_get_type_string (prop_val);
+           //g_print("Unknown property: %s %s\n", property_name, type);
+        }
+        else if (strcmp(property_name, "ServiceData") == 0) {
+           // A a{sv} value
+           //const char* type = g_variant_get_type_string (prop_val);
+           //g_print("Unknown property: %s %s\n", property_name, type);
+        }
+        else if (strcmp(property_name, "Adapter") == 0) {
+        }
+        else if (strcmp(property_name, "ServicesResolved") == 0) {
+        }
+        else if (strcmp(property_name, "ManufacturerData") == 0) {
+            //report.manufacturerData = g_variant_get_int16(prop_val);
+            // {a(sv)}
+        }
+        else if (strcmp(property_name, "ManufacturerData Key") == 0) {
+            report.manufacturer = g_variant_get_int32(prop_val);
+        }
+        else {
+           const char* type = g_variant_get_type_string (prop_val);
+           g_print("Unknown property: %s %s\n", property_name, type);
         }
 
         g_variant_unref(prop_val);
     }
 
-    g_print("Device %s %24s %8s RSSI %d\n", report.address, report.name, report.addressType, report.rssi);
-    send_to_mqtt ("BTLE", report);
+    send_to_mqtt (report);
 
     g_free(report.address);
-    g_free(report.addressType);
-    g_free(report.name);
+    if (report.addressType != NULL)
+        g_free(report.addressType);
+    if (report.name != NULL)
+        g_free(report.name);
+    if (report.alias != NULL)
+        g_free(report.alias);
 }
 
 static void bluez_device_appeared(GDBusConnection *sig,
@@ -352,10 +526,11 @@ static void bluez_device_disappeared(GDBusConnection *sig,
 
     while(g_variant_iter_next(interfaces, "s", &interface_name)) {
         if(g_strstr_len(g_ascii_strdown(interface_name, -1), -1, "device")) {
-            char address[BT_ADDRESS_STRING_SIZE] = {'\0'};
-            get_address_from_path (&address, BT_ADDRESS_STRING_SIZE, object);
+            char address[BT_ADDRESS_STRING_SIZE];
+            get_address_from_path (address, BT_ADDRESS_STRING_SIZE, object);
             g_print("Device %s removed\n", address);
-            pending = true;
+	    send_to_mqtt_null(address, "rssi");
+	    send_to_mqtt_null(address, "connected");
         }
     }
 }
@@ -407,16 +582,17 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
         else {
             pending = TRUE;
 
-            char address[BT_ADDRESS_STRING_SIZE] = {'\0'};
-            get_address_from_path (&address, BT_ADDRESS_STRING_SIZE, path);
+            char address[BT_ADDRESS_STRING_SIZE];
+            get_address_from_path (address, BT_ADDRESS_STRING_SIZE, path);
 
-            g_print("Adapter changes %s %s\n", address, key);
+            //g_print("Adapter changes %s %s\n", address, key);
 
             if (!g_strcmp0(key, "RSSI")) {
-               //int16_t rssi = g_variant_get_int16(value);
-               //g_print("RSSI %d", rssi);
+		int16_t rssi = g_variant_get_int16(value);
+	 	send_to_mqtt_single_value(address, "rssi", rssi);
             }
             else {
+	 	send_to_mqtt_single_value(address, "connected", 1);
               //g_print("%s a %s", key, g_variant_get_type_string(value));
             }
         }

@@ -8,6 +8,9 @@ WorkingDirectory=/home/ian/pi-sniffer
 StandardOutput=inherit
 StandardError=inherit
 Restart=always
+MemoryAccounting=true
+MemoryHigh=2048K
+MemoryMax=4096K
 
 [Install]
 WantedBy=multi-user.target
