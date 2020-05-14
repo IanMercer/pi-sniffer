@@ -572,8 +572,10 @@ static void report_device_to_MQTT(GVariant *properties) {
                         report.manufacturer = s_key;
                         report.manufacturerData = "TODO from s_value";
 
-                        g_print("            k=%d", s_key);
-	                pretty_print2("           qv", s_value, TRUE);
+                        g_print(" k=%d", s_key);
+	                pretty_print2(" qv", s_value, TRUE);
+
+                         
 
 			g_variant_unref(s_value);
 		}
