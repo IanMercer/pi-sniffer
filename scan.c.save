@@ -536,9 +536,6 @@ static void report_device_to_MQTT(GVariant *properties) {
         else if (strcmp(property_name, "ServicesResolved") == 0) {
         }
         else if (strcmp(property_name, "ManufacturerData") == 0) {
-	        gchar* pretty = g_variant_print(prop_val, FALSE);
-	        g_print("ManufacturerData %s\n", pretty);
-	        g_free(pretty);
             //report.manufacturerData = g_variant_get_int16(prop_val);
             // {a(sv)}
         }
@@ -732,6 +729,52 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
                 // Will pick up at next full fetch   type=b
             }
             else if (!g_strcmp0(key, "ManufacturerData")) {             //type= a{qv}
+
+
+		GVariantIter iter;
+  		GVariant *entry;
+  		GVariant *value;
+
+		g_variant_iter_init (&iter, dictionary);
+
+		while ((entry = g_variant_iter_next_value (&iter)))
+		{
+			GVariant *entry_key;
+
+			entry_key = g_variant_get_child_value (entry, 0);
+			char* keyv = g_variant_get_string (entry_key, NULL), key);
+			g_variant_unref (entry_key);
+
+// TODO
+
+		        value = g_variant_get_child_value (entry, 1);
+		        g_variant_unref (entry);
+		}
+
+		if (g_variant_is_of_type (value, G_VARIANT_TYPE_VARIANT))
+		{
+		GVariant *tmp;
+
+		tmp = g_variant_get_variant (value);
+		g_variant_unref (value);
+
+		if (expected_type && !g_variant_is_of_type (tmp, expected_type))
+		{
+		  g_variant_unref (tmp);
+		  tmp = NULL;
+		}
+
+		value = tmp;
+		}
+
+		g_return_val_if_fail (expected_type == NULL || value == NULL ||
+		                g_variant_is_of_type (value, expected_type), NULL);
+
+		return value;
+		}
+
+                
+
                 gchar* pretty = g_variant_print(value, FALSE);
                 g_print("Manufacturer data %s\n", pretty);
                 g_free(pretty);
@@ -992,8 +1035,8 @@ int main(int argc, char **argv)
     }
     g_print("Started discovery\n");
 
-    // Ever 30s but only if something has changed (pending)
-    g_timeout_add_seconds (30, get_managed_objects, loop);
+    // Ever 2s but only if something has changed (pending)
+    g_timeout_add_seconds (2, get_managed_objects, loop);
 
     prepare_mqtt();
 
