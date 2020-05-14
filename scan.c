@@ -34,7 +34,8 @@ struct DeviceReport {
     bool paired;
     bool connected;
     bool trusted;
-    char* manufacturerData;
+    int manufacturer_data_length;
+    unsigned char* manufacturer_data;
     uint32_t deviceclass;  // https://www.bluetooth.com/specifications/assigned-numbers/Baseband/
     uint16_t appearance;
 };
@@ -197,6 +198,24 @@ void send_to_mqtt_single(char* mac_address, char* key, char* value)
 	}
 }
 
+void send_to_mqtt_array(char* mac_address, char* key, unsigned char* value, int length)
+{
+        /* Create topic including mac address */
+        char topic[256];
+        snprintf(topic, sizeof(topic), "%s/%s/%s", "BLE", mac_address, key);
+
+	printf("MQTT %s bytes[%d]\n", topic, length);
+
+	mqtt_publish(&mqtt, topic, value, length, MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
+
+	/* check for errors */
+	if (mqtt.error != MQTT_OK)
+	{
+	    fprintf(stderr, "error: %s\n", mqtt_error_str(mqtt.error));
+	}
+}
+
+
 void send_to_mqtt_single_value(char* mac_address, char* key, int32_t value)
 {
 	char rssi[12];
@@ -206,30 +225,6 @@ void send_to_mqtt_single_value(char* mac_address, char* key, int32_t value)
 
 GHashTable* hash = NULL;
 
-// Clone a device report to an allocated object
-
-struct DeviceReport* device_report_clone(struct DeviceReport existing) {
-  struct DeviceReport* val = g_malloc0(sizeof(struct DeviceReport));
-  /* Any per-struct initialization goes here */
-  val->address = existing.address == NULL ? NULL : strdup(existing.address);
-  val->name = existing.name == NULL ? NULL : strdup(existing.name);
-  val->alias = existing.alias == NULL ? NULL : strdup(existing.alias);
-  val->rssi = existing.rssi;
-  val->txpower = existing.txpower;
-  val->deviceclass = existing.deviceclass;
-  val->appearance = existing.appearance;
-  val->connected = existing.connected;
-  val->paired = existing.paired;
-  val->trusted = existing.trusted;
-  val->addressType = existing.addressType;
-  val->manufacturer = existing.manufacturer;
-  val->manufacturerData = existing.manufacturerData == NULL ? NULL : strdup(existing.manufacturerData);
-  val->deviceclass = existing.deviceclass;
-  val->appearance = existing.appearance;
-
-  return val;
-}
-
 // Free an allocated device
 
 void device_report_free(void* object) {
@@ -238,7 +233,7 @@ void device_report_free(void* object) {
   g_free(val->address);
   g_free(val->name);
   g_free(val->alias);
-  g_free(val->manufacturerData);
+  g_free(val->manufacturer_data);
   g_free(val);
 }
 
@@ -272,34 +267,11 @@ void send_to_mqtt(struct DeviceReport report)
 		existing->paired = FALSE;
 		existing->deviceclass = 0;
 	        existing->manufacturer = 0;
-		existing->manufacturerData = NULL;
+                existing->manufacturer_data_length = 0;
+		existing->manufacturer_data = NULL;
                 existing->appearance = 0;
 
 		g_print("Device %s %24s %8s RSSI %d\n", report.address, report.name, report.addressType, report.rssi);
-	/*
-		send_to_mqtt_single_value(report.address, "connected", 1);
-		send_to_mqtt_single(report.address, "name", report.name);
-		send_to_mqtt_single(report.address, "type", report.addressType);
-		send_to_mqtt_single_value(report.address, "rssi", report.rssi);
-		if (report.txpower > 0) {
-		  send_to_mqtt_single_value(report.address, "txpower", report.txpower);
-		}
-		if (report.deviceclass != 0) {
-		  send_to_mqtt_single_value(report.address, "class", report.deviceclass);
-		}
-		if (report.appearance != 0) {
-		  send_to_mqtt_single_value(report.address, "appearance", report.appearance);
-		}
-		if (report.trusted) {
-		  send_to_mqtt_single_value(report.address, "trusted", 1);
-		}
-		if (report.paired) {
-		  send_to_mqtt_single_value(report.address, "paired", 1);
-		}
-		if (report.manufacturer > 0) {
-		    send_to_mqtt_single_value(report.address, "manufacturer", report.manufacturer);
-		}
-	*/
 	} else {
 		// get value from hashtable
 		existing = (struct DeviceReport*) g_hash_table_lookup(hash, report.address);
@@ -375,6 +347,12 @@ void send_to_mqtt(struct DeviceReport report)
 	  g_print("Trusted has changed       ");
 	  send_to_mqtt_single_value(report.address, "trusted", report.trusted ? 1 : 0);
 	  existing->trusted = report.trusted;
+	}
+
+	if (existing->manufacturer_data_length != report.manufacturer_data_length) {
+	  g_print("ManufData has changed       ");
+	  send_to_mqtt_array(report.address, "manufacturerdata", report.manufacturer_data, report.manufacturer_data_length);
+	  existing->manufacturer_data_length = report.manufacturer_data_length;
 	}
 
         // replace value in hash table with proper dispose on old object
@@ -482,7 +460,8 @@ static void report_device_to_MQTT(GVariant *properties) {
     report.paired = FALSE;
     report.connected = FALSE;
     report.trusted = FALSE;
-    report.manufacturerData = "";
+    report.manufacturer_data = NULL;
+    report.manufacturer_data_length = 0;
     report.manufacturer = 0;
     report.deviceclass = 0;
     report.appearance = 0;
@@ -547,8 +526,10 @@ static void report_device_to_MQTT(GVariant *properties) {
         }
         else if (strcmp(property_name, "ServiceData") == 0) {
            // A a{sv} value
-           //const char* type = g_variant_get_type_string (prop_val);
-           //g_print("Unknown property: %s %s\n", property_name, type);
+
+	   // {'000080e7-0000-1000-8000-00805f9b34fb': <[byte 0xb0, 0x23, 0x25, 0xcb, ...]>}
+	   pretty_print2("ServiceData (batch)", prop_val, TRUE);  // a{sv}
+
         }
         else if (strcmp(property_name, "Adapter") == 0) {
         }
@@ -557,7 +538,7 @@ static void report_device_to_MQTT(GVariant *properties) {
         else if (strcmp(property_name, "ManufacturerData") == 0) {
 	    // ManufacturerData {uint16 76: <[byte 0x10, 0x06, 0x10, 0x1a, 0x52, 0xe9, 0xc8, 0x08]>}
 	    // {a(sv)}
-	    pretty_print2("ManufacturerData (batch)", prop_val, TRUE);  // a{qv}
+	    //pretty_print2("ManufacturerData (batch)", prop_val, TRUE);  // a{qv}
 
 		//GVariantDict dict;
 		//g_variant_dict_init (&dict, prop_val);
@@ -570,15 +551,32 @@ static void report_device_to_MQTT(GVariant *properties) {
 		g_variant_iter_init(&i, prop_val);
 		while(g_variant_iter_next(&i, "{qv}", &s_key, &s_value)) {
                         report.manufacturer = s_key;
-                        report.manufacturerData = "TODO from s_value";
 
-                        g_print("            k=%d", s_key);
-	                pretty_print2("           qv", s_value, TRUE);
+                        //g_print("            k=%d", s_key);
+	                //pretty_print2("           qv", s_value, TRUE);
+
+			unsigned char byteArray[2048];
+			int actualLength = 0;
+
+			GVariantIter *iter_array;
+			guchar str;
+
+			g_variant_get (s_value, "ay", &iter_array);
+			while (g_variant_iter_loop (iter_array, "y", &str))
+			{
+			    byteArray[actualLength++] = str;
+			}
+			g_variant_iter_free (iter_array);
+
+			// TODO : malloc etc... report.manufacturerData = byteArray
+                        unsigned char* allocdata = g_malloc(actualLength);
+                        memcpy(allocdata, byteArray, actualLength);
+			report.manufacturer_data = allocdata;
+                        report.manufacturer_data_length = actualLength;
 
 			g_variant_unref(s_value);
 		}
 
-	    //report.manufacturerData = g_variant_get_int16(prop_val);
         }
         else {
            const char* type = g_variant_get_type_string (prop_val);
@@ -598,6 +596,9 @@ static void report_device_to_MQTT(GVariant *properties) {
         g_free(report.name);
     if (report.alias != NULL)
         g_free(report.alias);
+    if (report.manufacturer_data != NULL)
+        g_free(report.manufacturer_data);
+
 }
 
 static void bluez_device_appeared(GDBusConnection *sig,
@@ -765,7 +766,13 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
                 // TODO: Handle ManufacturerData changes
             }
             else if (!g_strcmp0(key, "ServiceData")) {
-                pretty_print2("ServiceData", value, TRUE);
+
+	        // {'000080e7-0000-1000-8000-00805f9b34fb': <[byte 0xb0, 0x23, 0x25, 0xcb, ...]>}
+                pretty_print2("ServiceData*", value, TRUE);
+
+
+
+
                 // TODO: Handle ServiceData changes
             }
             else {
