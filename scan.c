@@ -540,10 +540,6 @@ static void report_device_to_MQTT(GVariant *properties) {
 	    // {a(sv)}
 	    //pretty_print2("ManufacturerData (batch)", prop_val, TRUE);  // a{qv}
 
-		//GVariantDict dict;
-		//g_variant_dict_init (&dict, prop_val);
-                //g_variant_dict_clear(&dict);
-
 		GVariant *s_value;
 		GVariantIter i;
                 uint16_t s_key;
@@ -770,10 +766,40 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
 	        // {'000080e7-0000-1000-8000-00805f9b34fb': <[byte 0xb0, 0x23, 0x25, 0xcb, ...]>}
                 pretty_print2("ServiceData*", value, TRUE);
 
+		GVariant *s_value;
+		GVariantIter i;
+                gchar *s_key;
 
+		g_variant_iter_init(&i, value);
+		while(g_variant_iter_next(&i, "{sv}", &s_key, &s_value)) {
+                        // uuid = s_key;
 
+                        //g_print("            k=%d", s_key);
+	                //pretty_print2("           qv", s_value, TRUE);
 
-                // TODO: Handle ServiceData changes
+			unsigned char byteArray[2048];
+			int actualLength = 0;
+
+			GVariantIter *iter_array;
+			guchar str;
+
+			g_variant_get (s_value, "ay", &iter_array);
+			while (g_variant_iter_loop (iter_array, "y", &str))
+			{
+			    byteArray[actualLength++] = str;
+			}
+			g_variant_iter_free (iter_array);
+
+                        // using the guid instead of serviceData as the path for MQTT publish
+                        // allows receiver to look for specific GUIDs
+	                send_to_mqtt_array(address, s_key, byteArray, actualLength);
+
+//                        unsigned char* allocdata = g_malloc(actualLength);
+//                        memcpy(allocdata, byteArray, actualLength);
+
+			g_variant_unref(s_value);
+		}
+
             }
             else {
 	 	// PING ... send_to_mqtt_single_value(address, "connected", 1);
