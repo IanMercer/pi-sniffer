@@ -1,20 +1,12 @@
 /*
- * bluez_adapter_filter.c - Set discovery filter, Scan for bluetooth devices
- *  - Control three discovery filter parameter from command line,
- *      - auto/bredr/le
- *      - RSSI (0:very close range to -100:far away)
- *      - UUID (only one as of now)
- *  Example run: ./bin/bluez_adapter_filter bredr 100 00001105-0000-1000-8000-00805f9b34fb
- *  - This example scans for new devices after powering the adapter, if any devices
- *    appeared in /org/hciX/dev_XX_YY_ZZ_AA_BB_CC, it is monitered using "InterfaceAdded"
- *    signal and all the properties of the device is printed
- *  - Device will be removed immediately after it appears in InterfacesAdded signal, so
- *    InterfacesRemoved will be called which quits the main loop
+ * bluez sniffer
+ *  Sends bluetooth information to MQTT with a separate topic per device and parameter
+ *  BLE/<device mac>/parameter
+ *
  * gcc `pkg-config --cflags glib-2.0 gio-2.0` -Wall -Wextra -o ./bin/bluez_adapter_filter ./bluez_adapter_filter.c `pkg-config --libs glib-2.0 gio-2.0`
  */
 #include <glib.h>
 #include <gio/gio.h>
-// ?? #include <gdbus/gdbus.h>
 #include "mqtt.h"
 #include "mqtt_pal.h"
 #include "posix_sockets.h"
@@ -38,6 +30,8 @@ struct DeviceReport {
     unsigned char* manufacturer_data;
     uint32_t deviceclass;  // https://www.bluetooth.com/specifications/assigned-numbers/Baseband/
     uint16_t appearance;
+    char** uuids;
+    int uuids_length;
 };
 
 void get_address_from_path(char* address, int length, const char* path){
@@ -215,6 +209,30 @@ void send_to_mqtt_array(char* mac_address, char* key, unsigned char* value, int 
 	}
 }
 
+void send_to_mqtt_uuids(char* mac_address, char* key, char** uuids, int length)
+{
+        if (uuids == NULL) return;
+
+        /* Create topic including mac address */
+        char topic[256];
+
+        for (int i = 0; i < length; i++) {
+
+            snprintf(topic, sizeof(topic), "%s/%s/%s/%d", "BLE", mac_address, key, i);
+            char* uuid = uuids[i];
+
+	    printf("MQTT %s uuid[%d]\n", topic, strlen(uuid));
+
+	    mqtt_publish(&mqtt, topic, uuid, strlen(uuid) + 1, MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
+
+	    /* check for errors */
+	    if (mqtt.error != MQTT_OK)
+	    {
+	        fprintf(stderr, "error: %s\n", mqtt_error_str(mqtt.error));
+	    }
+	}
+}
+
 
 void send_to_mqtt_single_value(char* mac_address, char* key, int32_t value)
 {
@@ -270,6 +288,8 @@ void send_to_mqtt(struct DeviceReport report)
                 existing->manufacturer_data_length = 0;
 		existing->manufacturer_data = NULL;
                 existing->appearance = 0;
+                existing->uuids = NULL;
+                existing->uuids_length = 0;
 
 		g_print("Device %s %24s %8s RSSI %d\n", report.address, report.name, report.addressType, report.rssi);
 	} else {
@@ -354,6 +374,12 @@ void send_to_mqtt(struct DeviceReport report)
 	  send_to_mqtt_array(report.address, "manufacturerdata", report.manufacturer_data, report.manufacturer_data_length);
 	  existing->manufacturer_data_length = report.manufacturer_data_length;
 	}
+
+	if (existing->uuids_length != report.uuids_length) {
+	  g_print("UUIDs has changed       ");
+	  send_to_mqtt_uuids(report.address, "uuids", report.uuids, report.uuids_length);
+	  existing->uuids_length = report.uuids_length;
+        }
 
         // replace value in hash table with proper dispose on old object
         //g_hash_table_replace(hash,strdup(report.address), device_report_clone(report));
@@ -465,6 +491,8 @@ static void report_device_to_MQTT(GVariant *properties) {
     report.manufacturer = 0;
     report.deviceclass = 0;
     report.appearance = 0;
+    report.uuids_length = 0;
+    report.uuids = NULL;
 
     // DEBUG g_print("[ %s ]\n", object);
     const gchar *property_name;
@@ -509,6 +537,30 @@ static void report_device_to_MQTT(GVariant *properties) {
             // not used
         }
         else if (strcmp(property_name, "UUIDs") == 0) {
+	  pretty_print2("UUIDs", prop_val, TRUE);  // as
+          //char **array = (char**) malloc((N+1)*sizeof(char*));
+
+		char* uuidArray[2048];
+		int actualLength = 0;
+
+		GVariantIter *iter_array;
+		char* str;
+
+		g_variant_get (prop_val, "as", &iter_array);
+		while (g_variant_iter_loop (iter_array, "s", &str))
+		{
+		    uuidArray[actualLength++] = strdup(str);
+		}
+		g_variant_iter_free (iter_array);
+
+                char** allocdata = g_malloc(actualLength * sizeof(char*));
+                memcpy(allocdata, uuidArray, actualLength * sizeof(char*));
+		report.uuids = allocdata;
+                report.uuids_length = actualLength;
+
+		// ?? g_variant_unref(s_value);
+
+
         }
         else if (strcmp(property_name, "Modalias") == 0) {
             // not used
@@ -594,6 +646,11 @@ static void report_device_to_MQTT(GVariant *properties) {
         g_free(report.alias);
     if (report.manufacturer_data != NULL)
         g_free(report.manufacturer_data);
+    if (report.uuids_length > 0) {
+       for (int i = 0; i < report.uuids_length; i++){
+         g_free(report.uuids[i]);
+       }
+    }
 
 }
 
@@ -667,7 +724,9 @@ static void bluez_device_disappeared(GDBusConnection *sig,
 	    send_to_mqtt_null(address, "rssi");
 	    send_to_mqtt_null(address, "connected");
         }
+        // Nope ... g_variant_unref(interface_name);
     }
+    // Nope ... g_variant_unref(interfaces);
 }
 
 
@@ -741,7 +800,7 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
                 // Connected changed, will pick up at next full fetch   type=b
             }
             else if (!g_strcmp0(key, "UUIDs")) {
-		pretty_print("UUIDs", value);
+		pretty_print2("UUIDs (changed)", value, TRUE);
                 // TODO: Decode and save to report
                 // Will pick up at next full fetch   type=b
             }
