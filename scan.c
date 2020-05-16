@@ -1011,6 +1011,8 @@ static void connect_reply(DBusMessage *message, void *user_data)
         return;
 }
 
+*/
+
 static void cmd_connect(int argc, char *address)
 {
 	GDBusProxy *proxy;
@@ -1035,7 +1037,6 @@ static void cmd_connect(int argc, char *address)
 	g_print("Attempting to connect to %s\n", address);
 }
 
-*/
 
 
 
