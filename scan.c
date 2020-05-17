@@ -778,8 +778,7 @@ static void bluez_device_disappeared(GDBusConnection *sig,
             char address[BT_ADDRESS_STRING_SIZE];
             get_address_from_path (address, BT_ADDRESS_STRING_SIZE, object);
             g_print("Device %s removed\n", address);
-	    send_to_mqtt_null(address, "rssi");
-	    send_to_mqtt_null(address, "connected");
+	    send_to_mqtt_single_value(address, "rssi", 0);
         }
         // Nope ... g_variant_unref(interface_name);
     }
