@@ -232,10 +232,11 @@ void send_to_mqtt_with_time_and_mac(char * mac_address, char * key, int i, char*
 
         memset(packet, 0, 14);
 
+        time_t t = time(NULL); // 8 bytes
 //	int64_t t = (int64_t)time(NULL);  // 8 bytes
 
-//        memcpy(&packet, mac_address, 6);
-//        memcpy(&packet+6, &t, 8);
+        memcpy(&packet, &mac_address[0], 6);
+        memcpy(&packet[6], &t, 8);
         memcpy(&packet[6+8], value, value_length);
         int packet_length = value_length + 6 + 8;
 
@@ -251,13 +252,13 @@ void send_to_mqtt_with_time_and_mac(char * mac_address, char * key, int i, char*
 
 void send_to_mqtt_single(char* mac_address, char* key, char* value)
 {
-	printf("MQTT %s\%s %s\n", topicRoot, key, value);
+	printf("MQTT %s/%s %s\n", topicRoot, key, value);
         send_to_mqtt_with_time_and_mac(mac_address, key, -1, value, strlen(value) + 1);
 }
 
 void send_to_mqtt_array(char* mac_address, char* key, unsigned char* value, int length)
 {
-	printf("MQTT %s\%s bytes[%d]\n", topicRoot, key, length);
+	printf("MQTT %s/%s bytes[%d]\n", topicRoot, key, length);
         send_to_mqtt_with_time_and_mac(mac_address, key, -1, (char*)value, length);
 }
 
@@ -267,7 +268,7 @@ void send_to_mqtt_uuids(char* mac_address, char* key, char** uuids, int length)
 
 	for (int i = 0; i < length; i++) {
 	    char* uuid = uuids[i];
-	    printf("MQTT %s\%s\%d uuid[%d]\n", topicRoot, key, i, strlen(uuid));
+	    printf("MQTT %s/%s/%d uuid[%d]\n", topicRoot, key, i, strlen(uuid));
 	    send_to_mqtt_with_time_and_mac(mac_address, key, i, uuid, strlen(uuid) + 1);
 	}
 }
@@ -293,6 +294,10 @@ void device_report_free(void* object) {
   g_free(val);
 }
 
+
+/*
+      Send a device report to MQTT (may be stale data from BlueZ cache)
+*/
 
 void send_to_mqtt(struct DeviceReport report)
 {
@@ -359,18 +364,21 @@ void send_to_mqtt(struct DeviceReport report)
 	  existing->alias = strdup(report.alias);
 	}
 
-	if (existing->rssi != report.rssi) {
+/*
+        THESE ARE ONLY SENT WHEN THEY CHANGE, NOT FROM BLUEZ CACHED DATA
+
+	if (existing->rssi != report.rssi && changed) {
 	  g_print("RSSI has changed          ");
 	  send_to_mqtt_single_value(report.address, "rssi", report.rssi);
 	  existing->rssi = report.rssi;
 	}
 
-	if (existing->txpower != report.txpower) {
+	if (existing->txpower != report.txpower && changed) {
 	  g_print("TXPower has changed       ");
 	  send_to_mqtt_single_value(report.address, "txpower", report.txpower);
 	  existing->txpower = report.txpower;
 	}
-
+*/
 	if (existing->deviceclass != report.deviceclass) {
 	  g_print("Class has changed         ");
 	  send_to_mqtt_single_value(report.address, "class", report.deviceclass);
@@ -718,7 +726,7 @@ static void bluez_device_appeared(GDBusConnection *sig,
     while(g_variant_iter_next(interfaces, "{&s@a{sv}}", &interface_name, &properties)) {
         if(g_strstr_len(g_ascii_strdown(interface_name, -1), -1, "device")) {
 
-            // Report device directly, no need to scan
+            // Report device immediately
             report_device_to_MQTT(properties);
         }
         g_variant_unref(properties);
@@ -1028,6 +1036,15 @@ int get_managed_objects(void * parameters)
     return TRUE;
 }
 
+int clear_cache(void * parameters)
+{
+    g_print("Clearing cache\n");
+    //GMainLoop * loop = (GMainLoop*) parameters;
+    (void)parameters; // not used
+    hash = NULL;
+    return TRUE;
+}
+
 
 /*
 static void connect_reply(DBusMessage *message, void *user_data)
@@ -1150,8 +1167,11 @@ int main(int argc, char **argv)
     }
     g_print("Started discovery\n");
 
-    // Ever 30s but only if something has changed (pending)
+    // Every 30s send any changes to static information
     g_timeout_add_seconds (30, get_managed_objects, loop);
+
+    // Every hour, clear cache and start again
+    g_timeout_add_seconds (60*60, clear_cache, loop);
 
     prepare_mqtt();
 
