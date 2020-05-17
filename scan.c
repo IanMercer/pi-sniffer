@@ -212,7 +212,7 @@ static void get_mac_address()
 
 /* SEND TO MQTT WITH ACCESS POINT MAC ADDRESS AND TIME STAMP */
 
-void send_to_mqtt_with_time_and_mac(char * mac_address, char * key, int i, char*value, int value_length)
+void send_to_mqtt_with_time_and_mac(char * mac_address, char * key, int i, char*value, int value_length, int flags)
 {
         /* Create topic including mac address */
         char topic[256];
@@ -239,7 +239,7 @@ void send_to_mqtt_with_time_and_mac(char * mac_address, char * key, int i, char*
         memcpy(&packet[6+8], value, value_length);
         int packet_length = value_length + 6 + 8;
 
-	mqtt_publish(&mqtt, topic, packet, packet_length, MQTT_PUBLISH_QOS_0); // | MQTT_PUBLISH_RETAIN);
+	mqtt_publish(&mqtt, topic, packet, packet_length, flags);
 
 	/* check for errors */
 	if (mqtt.error != MQTT_OK)
@@ -264,13 +264,13 @@ void send_to_mqtt_with_time_and_mac(char * mac_address, char * key, int i, char*
 void send_to_mqtt_single(char* mac_address, char* key, char* value)
 {
 	printf("MQTT %s/%s %s\n", topicRoot, key, value);
-        send_to_mqtt_with_time_and_mac(mac_address, key, -1, value, strlen(value) + 1);
+        send_to_mqtt_with_time_and_mac(mac_address, key, -1, value, strlen(value) + 1, MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
 }
 
 void send_to_mqtt_array(char* mac_address, char* key, unsigned char* value, int length)
 {
 	printf("MQTT %s/%s bytes[%d]\n", topicRoot, key, length);
-        send_to_mqtt_with_time_and_mac(mac_address, key, -1, (char*)value, length);
+        send_to_mqtt_with_time_and_mac(mac_address, key, -1, (char*)value, length, MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
 }
 
 void send_to_mqtt_uuids(char* mac_address, char* key, char** uuids, int length)
@@ -280,15 +280,18 @@ void send_to_mqtt_uuids(char* mac_address, char* key, char** uuids, int length)
 	for (int i = 0; i < length; i++) {
 	    char* uuid = uuids[i];
 	    printf("MQTT %s/%s/%d uuid[%d]\n", topicRoot, key, i, strlen(uuid));
-	    send_to_mqtt_with_time_and_mac(mac_address, key, i, uuid, strlen(uuid) + 1);
+	    send_to_mqtt_with_time_and_mac(mac_address, key, i, uuid, strlen(uuid) + 1, MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
 	}
 }
+
+// int values not retained, all others retained
 
 void send_to_mqtt_single_value(char* mac_address, char* key, int32_t value)
 {
 	char rssi[12];
 	snprintf(rssi, sizeof(rssi), "%i", value);
-	send_to_mqtt_single(mac_address, key, rssi);
+	printf("MQTT %s/%s %s\n", topicRoot, key, rssi);
+        send_to_mqtt_with_time_and_mac(mac_address, key, -1, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_0);
 }
 
 GHashTable* hash = NULL;
@@ -310,7 +313,7 @@ void device_report_free(void* object) {
       Send a device report to MQTT (may be stale data from BlueZ cache)
 */
 
-void send_to_mqtt(struct DeviceReport report)
+void send_report_to_mqtt(struct DeviceReport report, bool appeared)
 {
 	if (hash == NULL) {
 		g_print("Starting a new hash table\n");
@@ -375,21 +378,20 @@ void send_to_mqtt(struct DeviceReport report)
 	  existing->alias = strdup(report.alias);
 	}
 
-/*
-        THESE ARE ONLY SENT WHEN THEY CHANGE, NOT FROM BLUEZ CACHED DATA
+        // THESE ARE ONLY SENT WHEN THEY CHANGE, NOT FROM BLUEZ CACHED DATA
 
-	if (existing->rssi != report.rssi && changed) {
+	if (existing->rssi != report.rssi && appeared) {
 	  g_print("RSSI has changed          ");
 	  send_to_mqtt_single_value(report.address, "rssi", report.rssi);
 	  existing->rssi = report.rssi;
 	}
 
-	if (existing->txpower != report.txpower && changed) {
+	if (existing->txpower != report.txpower && appeared) {
 	  g_print("TXPower has changed       ");
 	  send_to_mqtt_single_value(report.address, "txpower", report.txpower);
 	  existing->txpower = report.txpower;
 	}
-*/
+
 	if (existing->deviceclass != report.deviceclass) {
 	  g_print("Class has changed         ");
 	  send_to_mqtt_single_value(report.address, "class", report.deviceclass);
@@ -692,7 +694,7 @@ static void report_device_to_MQTT(GVariant *properties) {
         g_variant_unref(prop_val);
     }
 
-    send_to_mqtt (report);
+    send_report_to_mqtt (report, TRUE);
 
     g_free(report.address);
     if (report.addressType != NULL)
@@ -1180,8 +1182,8 @@ int main(int argc, char **argv)
     // Every 30s send any changes to static information
     g_timeout_add_seconds (30, get_managed_objects, loop);
 
-    // Every hour, clear cache and start again
-    g_timeout_add_seconds (60*60, clear_cache, loop);
+    // Every 5 min, clear cache and start again
+    g_timeout_add_seconds (5*60, clear_cache, loop);
 
     prepare_mqtt();
 
