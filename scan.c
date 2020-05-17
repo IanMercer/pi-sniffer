@@ -182,9 +182,9 @@ void send_to_mqtt_null(char* mac_address, char* key)
 
 // The mac address of the wlan0 interface
 
-char mac_address[6];
+static char access_point_address[6];
 
-void get_mac_address()
+static void get_mac_address()
 {
         int s;
 	struct ifreq buffer;
@@ -199,12 +199,11 @@ void get_mac_address()
 
 	close(s);
 
-	memcpy(&mac_address, &buffer.ifr_hwaddr.sa_data, 6);
+	memcpy(&access_point_address, &buffer.ifr_hwaddr.sa_data, 6);
 
 	for( s = 0; s < 6; s++ )
 	{
-	    // g_print("%.2X ", (unsigned char)buffer.ifr_hwaddr.sa_data[s]);
-	    g_print("%.2X ", (unsigned char)mac_address[s]);
+	    g_print("%.2X ", (unsigned char)access_point_address[s]);
 	}
 
 	g_print("\n");
@@ -230,13 +229,13 @@ void send_to_mqtt_with_time_and_mac(char * mac_address, char * key, int i, char*
         // Add time and access point mac address to packet
         char packet[2048];
 
-        memset(packet, 0, 14);
+        memset(packet, 0, 14+20);
 
-        time_t t = time(NULL); // 8 bytes
-//	int64_t t = (int64_t)time(NULL);  // 8 bytes
+        time_t now = time(0);
 
-        memcpy(&packet, &mac_address[0], 6);
-        memcpy(&packet[6], &t, 8);
+        memcpy(&packet, &access_point_address, 6);
+        memcpy(&packet[6], &now, 8);
+
         memcpy(&packet[6+8], value, value_length);
         int packet_length = value_length + 6 + 8;
 
@@ -247,6 +246,18 @@ void send_to_mqtt_with_time_and_mac(char * mac_address, char * key, int i, char*
 	{
 	    fprintf(stderr, "error: %s\n", mqtt_error_str(mqtt.error));
 	}
+
+/*
+	int s;
+        g_print(" ");
+
+	for(s = 0; s < packet_length; s++ )
+	{
+	    g_print("%.2X", (unsigned char)packet[s]);
+            if (s == 6 || s == 6+8) g_print(" ");
+	}
+        g_print("\n");
+*/
 }
 
 
