@@ -11,6 +11,12 @@
 #include "mqtt_pal.h"
 #include "posix_sockets.h"
 #include <stdbool.h>
+#include <stdio.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <net/if.h>
+#include <time.h>
 
 /*
    Structure for reporting to MQTT
@@ -70,7 +76,6 @@ static void pretty_print(const char* field_name, GVariant* value)
 }
 
 
-//static void send_to_mqtt(struct DeviceReport deviceReport);
 
 static void publish_callback(void **unused, struct mqtt_response_publish *published)
 {
@@ -107,7 +112,7 @@ static void exit_example(int status, int sockfd, pthread_t *client_daemon)
 
 const char *addr = "192.168.0.120";
 const char *port = "1883";
-const char *topic = "BTLE";
+const char *topicRoot = "BLF";
 
 static pthread_t client_daemon;
 static int sockfd;
@@ -162,11 +167,11 @@ void send_to_mqtt_null(char* mac_address, char* key)
 {
         /* Create topic including mac address */
         char topic[256];
-        snprintf(topic, sizeof(topic), "%s/%s/%s", "BLE", mac_address, key);
+        snprintf(topic, sizeof(topic), "%s/%s/%s", topicRoot, mac_address, key);
 
-	printf("MQTT %s %s\n", topic, "NULL");
+	printf("MQTT %s %s\n", topicRoot, "NULL");
 
-	mqtt_publish(&mqtt, topic, "", 0, MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
+	mqtt_publish(&mqtt, topic, "", 0, MQTT_PUBLISH_QOS_0);// | MQTT_PUBLISH_RETAIN);
 
 	/* check for errors */
 	if (mqtt.error != MQTT_OK)
@@ -175,64 +180,97 @@ void send_to_mqtt_null(char* mac_address, char* key)
 	}
 }
 
-void send_to_mqtt_single(char* mac_address, char* key, char* value)
+// The mac address of the wlan0 interface
+
+char mac_address[6];
+
+void get_mac_address()
+{
+        int s;
+	struct ifreq buffer;
+
+	s = socket(PF_INET, SOCK_DGRAM, 0);
+
+	memset(&buffer, 0x00, sizeof(buffer));
+
+	strcpy(buffer.ifr_name, "wlan0");
+
+	ioctl(s, SIOCGIFHWADDR, &buffer);
+
+	close(s);
+
+	memcpy(&mac_address, &buffer.ifr_hwaddr.sa_data, 6);
+
+	for( s = 0; s < 6; s++ )
+	{
+	    // g_print("%.2X ", (unsigned char)buffer.ifr_hwaddr.sa_data[s]);
+	    g_print("%.2X ", (unsigned char)mac_address[s]);
+	}
+
+	g_print("\n");
+}
+
+
+/* SEND TO MQTT WITH ACCESS POINT MAC ADDRESS AND TIME STAMP */
+
+void send_to_mqtt_with_time_and_mac(char * mac_address, char * key, int i, char*value, int value_length)
 {
         /* Create topic including mac address */
         char topic[256];
-        snprintf(topic, sizeof(topic), "%s/%s/%s", "BLE", mac_address, key);
 
-	printf("MQTT %s %s\n", topic, value);
+        if (i < 0)
+        {
+            snprintf(topic, sizeof(topic), "%s/%s/%s", topicRoot, mac_address, key);
+        }
+        else
+        {
+            snprintf(topic, sizeof(topic), "%s/%s/%s/%d", topicRoot, mac_address, key, i);
+        }
 
-	mqtt_publish(&mqtt, topic, value, strlen(value) + 1, MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
+        // Add time and access point mac address to packet
+        char packet[2048];
+
+        memset(packet, 0, 14);
+
+//	int64_t t = (int64_t)time(NULL);  // 8 bytes
+
+//        memcpy(&packet, mac_address, 6);
+//        memcpy(&packet+6, &t, 8);
+        memcpy(&packet[6+8], value, value_length);
+        int packet_length = value_length + 6 + 8;
+
+	mqtt_publish(&mqtt, topic, packet, packet_length, MQTT_PUBLISH_QOS_0); // | MQTT_PUBLISH_RETAIN);
 
 	/* check for errors */
 	if (mqtt.error != MQTT_OK)
 	{
 	    fprintf(stderr, "error: %s\n", mqtt_error_str(mqtt.error));
 	}
+}
+
+
+void send_to_mqtt_single(char* mac_address, char* key, char* value)
+{
+	printf("MQTT %s\%s %s\n", topicRoot, key, value);
+        send_to_mqtt_with_time_and_mac(mac_address, key, -1, value, strlen(value) + 1);
 }
 
 void send_to_mqtt_array(char* mac_address, char* key, unsigned char* value, int length)
 {
-        /* Create topic including mac address */
-        char topic[256];
-        snprintf(topic, sizeof(topic), "%s/%s/%s", "BLE", mac_address, key);
-
-	printf("MQTT %s bytes[%d]\n", topic, length);
-
-	mqtt_publish(&mqtt, topic, value, length, MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
-
-	/* check for errors */
-	if (mqtt.error != MQTT_OK)
-	{
-	    fprintf(stderr, "error: %s\n", mqtt_error_str(mqtt.error));
-	}
+	printf("MQTT %s\%s bytes[%d]\n", topicRoot, key, length);
+        send_to_mqtt_with_time_and_mac(mac_address, key, -1, (char*)value, length);
 }
 
 void send_to_mqtt_uuids(char* mac_address, char* key, char** uuids, int length)
 {
-        if (uuids == NULL) return;
+	if (uuids == NULL) return;
 
-        /* Create topic including mac address */
-        char topic[256];
-
-        for (int i = 0; i < length; i++) {
-
-            snprintf(topic, sizeof(topic), "%s/%s/%s/%d", "BLE", mac_address, key, i);
-            char* uuid = uuids[i];
-
-	    printf("MQTT %s uuid[%d]\n", topic, strlen(uuid));
-
-	    mqtt_publish(&mqtt, topic, uuid, strlen(uuid) + 1, MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
-
-	    /* check for errors */
-	    if (mqtt.error != MQTT_OK)
-	    {
-	        fprintf(stderr, "error: %s\n", mqtt_error_str(mqtt.error));
-	    }
+	for (int i = 0; i < length; i++) {
+	    char* uuid = uuids[i];
+	    printf("MQTT %s\%s\%d uuid[%d]\n", topicRoot, key, i, strlen(uuid));
+	    send_to_mqtt_with_time_and_mac(mac_address, key, i, uuid, strlen(uuid) + 1);
 	}
 }
-
 
 void send_to_mqtt_single_value(char* mac_address, char* key, int32_t value)
 {
@@ -1011,7 +1049,6 @@ static void connect_reply(DBusMessage *message, void *user_data)
         return;
 }
 
-*/
 
 static void cmd_connect(int argc, char *address)
 {
@@ -1037,6 +1074,7 @@ static void cmd_connect(int argc, char *address)
 	g_print("Attempting to connect to %s\n", address);
 }
 
+*/
 
 
 
@@ -1048,6 +1086,8 @@ int main(int argc, char **argv)
     guint iface_added;
     guint iface_removed;
     //guint getmanagedobjects;
+
+    get_mac_address();
 
     con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
     if(con == NULL) {
