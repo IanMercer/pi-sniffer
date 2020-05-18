@@ -1078,11 +1078,11 @@ int main(int argc, char **argv)
     }
     g_print("Started discovery\n");
 
-    // Every 30s send any changes to static information
-    g_timeout_add_seconds (30, get_managed_objects, loop);
+    // Every 15s send any changes to static information
+    g_timeout_add_seconds (15, get_managed_objects, loop);
 
-    // Every 5 min, clear cache and start again
-    g_timeout_add_seconds (5*60, clear_cache, loop);
+    // Every 1 min, clear cache and start again
+    g_timeout_add_seconds (60, clear_cache, loop);
 
     prepare_mqtt();
 
