@@ -382,8 +382,8 @@ char *trim(char *str)
     /* Move the front and back pointers to address the first non-whitespace
      * characters from each end.
      */
-    while( isspace((unsigned char) *frontp) ) { ++frontp; }
-    while( isspace((unsigned char) *(--endp)) && endp != frontp ) {}
+    while( *frontp == ' ' ) { ++frontp; }
+    while( *(--endp) == ' ' && endp != frontp ) {}
 
     if (endp <= frontp) {
         // All whitespace
