@@ -20,29 +20,39 @@
 
 /*
    Structure for reporting to MQTT
+
+   TODO: Add time_t to this struct, keep them around not clearing hash an report every five minutes
+   on all still connected devices incase MQTT isn't saving values.
 */
 struct DeviceReport {
-    char* address;
     char* name;
     char* alias;
     char* addressType;
-    int16_t rssi;
-    int16_t txpower;
     int32_t manufacturer;
     bool paired;
     bool connected;
     bool trusted;
-    int manufacturer_data_length;
-    unsigned char* manufacturer_data;
     uint32_t deviceclass;  // https://www.bluetooth.com/specifications/assigned-numbers/Baseband/
     uint16_t appearance;
-    char** uuids;
-    int uuids_length;
+    int manufacturer_data_length; // should use a Hash instead
+    int uuids_length;  // should use a Hash instead
 };
 
-void get_address_from_path(char* address, int length, const char* path){
+bool get_address_from_path(char* address, int length, const char* path){
+
+    if (path == NULL) {
+      address[0] = '\0';
+      return FALSE;
+    }
+
+    char* found = g_strstr_len(path, -1, "dev_");
+    if (found == NULL) {
+      address[0] = '\0';
+      return FALSE;
+    }
+
     int i;
-    char *tmp = g_strstr_len(path, -1, "dev_") + 4;
+    char *tmp = found + 4;
 
     address[length-1] = '\0';  // safety
 
@@ -56,6 +66,7 @@ void get_address_from_path(char* address, int length, const char* path){
             address[i] = *tmp;
         }
     }
+    return TRUE;
 }
 
 /*
@@ -214,6 +225,8 @@ static void get_mac_address()
 
 void send_to_mqtt_with_time_and_mac(char * mac_address, char * key, int i, char*value, int value_length, int flags)
 {
+//        g_print("send_to_mqtt_with_time_and_mac\n");
+
         /* Create topic including mac address */
         char topic[256];
 
@@ -263,13 +276,13 @@ void send_to_mqtt_with_time_and_mac(char * mac_address, char * key, int i, char*
 
 void send_to_mqtt_single(char* mac_address, char* key, char* value)
 {
-	printf("MQTT %s/%s %s\n", topicRoot, key, value);
+	printf("MQTT %s %s/%s %s\n", mac_address, topicRoot, key, value);
         send_to_mqtt_with_time_and_mac(mac_address, key, -1, value, strlen(value) + 1, MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
 }
 
 void send_to_mqtt_array(char* mac_address, char* key, unsigned char* value, int length)
 {
-	printf("MQTT %s/%s bytes[%d]\n", topicRoot, key, length);
+	printf("MQTT %s %s/%s bytes[%d]\n", mac_address, topicRoot, key, length);
         send_to_mqtt_with_time_and_mac(mac_address, key, -1, (char*)value, length, MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
 }
 
@@ -279,7 +292,7 @@ void send_to_mqtt_uuids(char* mac_address, char* key, char** uuids, int length)
 
 	for (int i = 0; i < length; i++) {
 	    char* uuid = uuids[i];
-	    printf("MQTT %s/%s/%d uuid[%d]\n", topicRoot, key, i, strlen(uuid));
+	    printf("MQTT %s %s/%s/%d uuid[%d]\n", mac_address, topicRoot, key, i, strlen(uuid));
 	    send_to_mqtt_with_time_and_mac(mac_address, key, i, uuid, strlen(uuid) + 1, MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
 	}
 }
@@ -290,7 +303,7 @@ void send_to_mqtt_single_value(char* mac_address, char* key, int32_t value)
 {
 	char rssi[12];
 	snprintf(rssi, sizeof(rssi), "%i", value);
-	printf("MQTT %s/%s %s\n", topicRoot, key, rssi);
+	printf("MQTT %s %s/%s %s\n", mac_address, topicRoot, key, rssi);
         send_to_mqtt_with_time_and_mac(mac_address, key, -1, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_0);
 }
 
@@ -301,196 +314,19 @@ GHashTable* hash = NULL;
 void device_report_free(void* object) {
   struct DeviceReport* val = (struct DeviceReport*) object;
   /* Free any members you need to */
-  g_free(val->address);
   g_free(val->name);
   g_free(val->alias);
-  g_free(val->manufacturer_data);
   g_free(val);
 }
 
 
-/*
-      Send a device report to MQTT (may be stale data from BlueZ cache)
-*/
-
-void send_report_to_mqtt(struct DeviceReport report, bool appeared)
-{
-	if (hash == NULL) {
-		g_print("Starting a new hash table\n");
-		hash = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, device_report_free);
-	}
-	else {
-		// g_print("Send to MQTT %s\n", report.address);
-	}
-
-	struct DeviceReport* existing;
-
-	if (!g_hash_table_contains(hash, report.address))
-	{
-		existing = g_malloc0(sizeof(struct DeviceReport));
-		g_hash_table_insert(hash,strdup(report.address), existing);
-
-	        // dummy struct filled with unmatched values
-	        existing->address = NULL;
-		existing->name = NULL;
-		existing->alias = NULL;
-                existing->addressType = NULL;
-		existing->rssi = -1;
-		existing->txpower = -1;
-		existing->connected = FALSE;
-		existing->trusted = FALSE;
-		existing->paired = FALSE;
-		existing->deviceclass = 0;
-	        existing->manufacturer = 0;
-                existing->manufacturer_data_length = 0;
-		existing->manufacturer_data = NULL;
-                existing->appearance = 0;
-                existing->uuids = NULL;
-                existing->uuids_length = 0;
-
-		g_print("Device %s %24s %8s RSSI %d\n", report.address, report.name, report.addressType, report.rssi);
-	} else {
-		// get value from hashtable
-		existing = (struct DeviceReport*) g_hash_table_lookup(hash, report.address);
-		//g_print("Existing value %s\n", existing->address);
-	}
-
-	// Compare values and send
-	if (g_strcmp0(existing->addressType, report.addressType) != 0) {
-	  g_print("Type has changed '%s' -> '%s'  ", existing->addressType, report.addressType);
-	  send_to_mqtt_single(report.address, "type", report.addressType);
-	  //if (existing->addressType != NULL)
-	  //    g_free(existing->addressType);
-	  existing->addressType = strdup(report.addressType);
-	}
-
-	if (g_strcmp0(existing->name, report.name) != 0) {
-	  g_print("Name has changed '%s' -> '%s'  ", existing->name, report.name);
-	  send_to_mqtt_single(report.address, "name", report.name);
-	  g_free(existing->name);
-	  existing->name = strdup(report.name);
-	}
-
-	if (g_strcmp0(existing->alias, report.alias) != 0) {
-	  g_print("Alias has changed '%s' -> '%s'  ", existing->alias, report.alias);
-	  send_to_mqtt_single(report.address, "alias", report.alias);
-	  g_free(existing->alias);
-	  existing->alias = strdup(report.alias);
-	}
-
-        // THESE ARE ONLY SENT WHEN THEY CHANGE, NOT FROM BLUEZ CACHED DATA
-
-	if (existing->rssi != report.rssi && appeared) {
-	  g_print("RSSI has changed          ");
-	  send_to_mqtt_single_value(report.address, "rssi", report.rssi);
-	  existing->rssi = report.rssi;
-	}
-
-	if (existing->txpower != report.txpower && appeared) {
-	  g_print("TXPower has changed       ");
-	  send_to_mqtt_single_value(report.address, "txpower", report.txpower);
-	  existing->txpower = report.txpower;
-	}
-
-	if (existing->deviceclass != report.deviceclass) {
-	  g_print("Class has changed         ");
-	  send_to_mqtt_single_value(report.address, "class", report.deviceclass);
-	  existing->deviceclass = report.deviceclass;
-	}
-
-	if (existing->manufacturer != report.manufacturer) {
-	  g_print("Manufacturer has changed  ");
-	  send_to_mqtt_single_value(report.address, "manufacturer", report.manufacturer);
-	  existing->manufacturer = report.manufacturer;
-	}
-
-	if (existing->appearance != report.appearance) {
-	  g_print("Appearance has changed    ");
-	  send_to_mqtt_single_value(report.address, "appearance", report.appearance);
-	  existing->appearance = report.appearance;
-	}
-
-	if (existing->paired != report.paired) {
-	  g_print("Paired has changed        ");
-	  send_to_mqtt_single_value(report.address, "paired", report.paired ? 1 : 0);
-	  existing->paired = report.paired;
-	}
-
-	if (existing->connected != report.connected) {
-	  g_print("Connected has changed     ");
-	  send_to_mqtt_single_value(report.address, "connected", report.connected ? 1 : 0);
-	  existing->connected = report.connected;
-	}
-
-	if (existing->trusted != report.trusted) {
-	  g_print("Trusted has changed       ");
-	  send_to_mqtt_single_value(report.address, "trusted", report.trusted ? 1 : 0);
-	  existing->trusted = report.trusted;
-	}
-
-	if (existing->manufacturer_data_length != report.manufacturer_data_length) {
-	  g_print("ManufData has changed       ");
-	  send_to_mqtt_array(report.address, "manufacturerdata", report.manufacturer_data, report.manufacturer_data_length);
-	  existing->manufacturer_data_length = report.manufacturer_data_length;
-	}
-
-	if (existing->uuids_length != report.uuids_length) {
-	  g_print("UUIDs has changed       ");
-	  send_to_mqtt_uuids(report.address, "uuids", report.uuids, report.uuids_length);
-	  existing->uuids_length = report.uuids_length;
-        }
-
-        // replace value in hash table with proper dispose on old object
-        //g_hash_table_replace(hash,strdup(report.address), device_report_clone(report));
-        //g_print("Already in hash table");
-}
-
-
-
 GDBusConnection *con;
-
-static void bluez_property_value(const gchar *key, GVariant *value)
-{
-    const gchar *type = g_variant_get_type_string(value);
-
-    g_print("\t%s (%s): ", key, type);
-    switch(*type) {
-        case 'o':
-        case 's':
-            g_print("%s\n", g_variant_get_string(value, NULL));
-            break;
-        case 'b':
-            g_print("%d\n", g_variant_get_boolean(value));
-            break;
-        case 'n':
-            g_print("%d\n", g_variant_get_int16(value));
-            break;
-        case 'u':
-            g_print("%d\n", g_variant_get_uint32(value));
-            break;
-        case 'a':
-        /* TODO Handling only 'as', but not array of dicts */
-            if(g_strcmp0(type, "as"))
-                break;
-            g_print("\n");
-            const gchar *s_value;
-            GVariantIter i;
-            g_variant_iter_init(&i, value);
-            while(g_variant_iter_next(&i, "s", &s_value)) {
-                g_print("\t\t%s\n", s_value);
-                //g_variant_unref(s_value); ?? how does this get free'd?
-	    }
-            break;
-        default:
-            g_print("Other (%s)\n", type);
-            break;
-    }
-}
 
 typedef void (*method_cb_t)(GObject *, GAsyncResult *, gpointer);
 
 static int bluez_adapter_call_method(const char *method, GVariant *param, method_cb_t method_cb)
 {
+//    g_print("bluez_adapter_call_method(%s)\n", method);
     GError *error = NULL;
 
     g_dbus_connection_call(con,
@@ -514,7 +350,9 @@ static void bluez_get_discovery_filter_cb(GObject *con,
                       GAsyncResult *res,
                       gpointer data)
 {
+    g_print("bluez_get_discovery_filter_cb(...)\n");
     (void)data;
+
     GVariant *result = NULL;
     result = g_dbus_connection_call_finish((GDBusConnection *)con, res, NULL);
     if(result == NULL)
@@ -522,72 +360,210 @@ static void bluez_get_discovery_filter_cb(GObject *con,
 
     if(result) {
         GVariant *child = g_variant_get_child_value(result, 0);
-        bluez_property_value("GetDiscoveryFilter", child);
+	pretty_print("GetDiscoveryFilter", child);
         g_variant_unref(child);
     }
     g_variant_unref(result);
 }
 
+// trim string (https://stackoverflow.com/a/122974/224370 but simplified)
+char *trim(char *str)
+{
+    size_t len = 0;
+    char *frontp = str;
+    char *endp = NULL;
+
+    if( str == NULL ) { return NULL; }
+    if( str[0] == '\0' ) { return str; }
+
+    len = strlen(str);
+    endp = str + len;
+
+    /* Move the front and back pointers to address the first non-whitespace
+     * characters from each end.
+     */
+    while( isspace((unsigned char) *frontp) ) { ++frontp; }
+    while( isspace((unsigned char) *(--endp)) && endp != frontp ) {}
+
+    if (endp <= frontp) {
+        // All whitespace
+        *str = '\0';
+        return str;
+    }
+
+    *(endp + 1) = '\0';  // may already be zero
+
+    /* Shift the string so that it starts at str so that if it's dynamically
+     * allocated, we can still free it on the returned pointer.
+     */
+    if( frontp != str )
+    {
+    	char* startp = str;
+        while( *frontp ) { *startp++ = *frontp++; }
+        *startp = '\0';
+    }
+
+    return str;
+}
+
+
 /*
 
            REPORT DEVICE TO MQTT
 
+           address if known, if not have to find it in the dictionary of passed properties
+           appeared = we know this is fresh data so send RSSI and TxPower with timestamp
+
 */
 
-static void report_device_to_MQTT(GVariant *properties) {
-    struct DeviceReport report;
-    report.address = "";
-    report.name = NULL;
-    report.alias = NULL;
-    report.addressType = NULL;
-    report.rssi = 0;
-    report.txpower = 0;
-    report.paired = FALSE;
-    report.connected = FALSE;
-    report.trusted = FALSE;
-    report.manufacturer_data = NULL;
-    report.manufacturer_data_length = 0;
-    report.manufacturer = 0;
-    report.deviceclass = 0;
-    report.appearance = 0;
-    report.uuids_length = 0;
-    report.uuids = NULL;
+static void report_device_to_MQTT(GVariant *properties, char* address, bool appeared) 
+{
 
-    // DEBUG g_print("[ %s ]\n", object);
+//       g_print("report_device_to_MQTT(%s)\n", address);
+
+	char* allocated_address = NULL;
+	//pretty_print("report_device", properties);
+
+	// Get address from dictionary if not already present
+	GVariant* address_from_dict = g_variant_lookup_value(properties, "Address", G_VARIANT_TYPE_STRING);
+	if (address_from_dict != NULL) {
+		if (address != NULL) {
+		    g_print("Hey, we got two addresses\n");
+		}
+		address = g_variant_dup_string(address_from_dict, NULL);
+		allocated_address = address;
+		g_variant_unref(address_from_dict);
+	}
+
+	if (address == NULL) {
+		g_print("ERROR address is null");
+		return;
+	}
+
+	// Get existing report
+
+	if (hash == NULL) {
+		g_print("Starting a new hash table\n");
+		hash = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, device_report_free);
+	}
+	else {
+		// g_print("Send to MQTT %s\n", address);
+	}
+
+	struct DeviceReport* existing;
+
+	if (!g_hash_table_contains(hash, address))
+	{
+		existing = g_malloc0(sizeof(struct DeviceReport));
+		g_hash_table_insert(hash,strdup(address), existing);
+
+	        // dummy struct filled with unmatched values
+		existing->name = NULL;
+		existing->alias = NULL;
+                existing->addressType = NULL;
+		existing->connected = FALSE;
+		existing->trusted = FALSE;
+		existing->paired = FALSE;
+		existing->deviceclass = 0;
+	        existing->manufacturer = 0;
+                existing->manufacturer_data_length = 0;
+                existing->appearance = 0;
+                existing->uuids_length = 0;
+
+		g_print("Added hash %s\n", address);
+	} else {
+		// get value from hashtable
+		existing = (struct DeviceReport*) g_hash_table_lookup(hash, address);
+		//g_print("Existing value %s\n", existing->address);
+	}
+
+
     const gchar *property_name;
     GVariantIter i;
     GVariant *prop_val;
     g_variant_iter_init(&i, properties);  // no need to free this
     while(g_variant_iter_next(&i, "{&sv}", &property_name, &prop_val)) {
 
-        // DEBUG bluez_property_value(property_name, prop_val);
-
         if (strcmp(property_name, "Address") == 0) {
-            report.address = g_variant_dup_string(prop_val, NULL);
+            // do nothing, already picked off
         }
         else if (strcmp(property_name, "Name") == 0) {
-            report.name = g_variant_dup_string(prop_val, NULL);
+            char* name = g_variant_dup_string(prop_val, NULL);
+
+            // Trim whitespace (Bad Tracker device keeps flipping name)
+            trim(name);
+
+	    if (g_strcmp0(existing->name, name) != 0) {
+	       g_print("Name has changed '%s' -> '%s'  ", existing->name, name);
+	       send_to_mqtt_single(address, "name", name);
+               if (existing->name != NULL)
+	       	  g_free(existing->name);
+	       existing->name = name; // was strdup(name);
+	    }
+
         }
         else if (strcmp(property_name, "Alias") == 0) {
-            report.alias = g_variant_dup_string(prop_val, NULL);
+            char* alias = g_variant_dup_string(prop_val, NULL);
+
+            trim(alias);
+
+		if (g_strcmp0(existing->alias, alias) != 0) {
+		  g_print("Alias has changed '%s' -> '%s'  ", existing->alias, alias);
+		  send_to_mqtt_single(address, "alias", alias);
+		  if (existing->alias != NULL)
+			g_free(existing->alias);
+		  existing->alias = alias; // wasstrdup(report.alias);
+		}
         }
         else if (strcmp(property_name, "AddressType") == 0) {
-            report.addressType = g_variant_dup_string(prop_val, NULL);
+            char* addressType = g_variant_dup_string(prop_val, NULL);
+
+		// Compare values and send
+		if (g_strcmp0(existing->addressType, addressType) != 0) {
+		  g_print("Type has changed '%s' -> '%s'  ", existing->addressType, addressType);
+		  send_to_mqtt_single(address, "type", addressType);
+		  if (existing->addressType != NULL)
+		      g_free(existing->addressType);
+		  existing->addressType = addressType; //strdup(report.addressType);
+		}
         }
         else if (strcmp(property_name, "RSSI") == 0) {
-            report.rssi = g_variant_get_int16(prop_val);
+	    if (appeared) {
+		int16_t rssi = g_variant_get_int16(prop_val);
+ 		send_to_mqtt_single_value(address, "rssi", rssi);
+            }
         }
         else if (strcmp(property_name, "TxPower") == 0) {
-            report.txpower = g_variant_get_int16(prop_val);
+            if (appeared) {
+		int16_t p = g_variant_get_int16(prop_val);
+	 	send_to_mqtt_single_value(address, "txpower", p);
+            }
         }
+
         else if (strcmp(property_name, "Paired") == 0) {
-            report.paired = g_variant_get_boolean(prop_val);
+		bool paired = g_variant_get_boolean(prop_val);
+		if (existing->paired != paired) {
+		  g_print("Paired has changed        ");
+		  send_to_mqtt_single_value(address, "paired", paired ? 1 : 0);
+		  existing->paired = paired;
+		}
+
         }
         else if (strcmp(property_name, "Connected") == 0) {
-            report.connected = g_variant_get_boolean(prop_val);
+		bool connected = g_variant_get_boolean(prop_val);
+		if (existing->connected != connected) {
+		  g_print("Connected has changed     ");
+		  send_to_mqtt_single_value(address, "connected", connected ? 1 : 0);
+		  existing->connected = connected;
+		}
         }
         else if (strcmp(property_name, "Trusted") == 0) {
-            report.trusted = g_variant_get_boolean(prop_val);
+ 	        bool trusted = g_variant_get_boolean(prop_val);
+		if (existing->trusted != trusted) {
+		  g_print("Trusted has changed       ");
+		  send_to_mqtt_single_value(address, "trusted", trusted ? 1 : 0);
+		  existing->trusted = trusted;
+		}
         }
         else if (strcmp(property_name, "LegacyPairing") == 0) {
             // not used
@@ -596,7 +572,7 @@ static void report_device_to_MQTT(GVariant *properties) {
             // not used
         }
         else if (strcmp(property_name, "UUIDs") == 0) {
-	  pretty_print2("UUIDs", prop_val, TRUE);  // as
+	  //pretty_print2("UUIDs", prop_val, TRUE);  // as
           //char **array = (char**) malloc((N+1)*sizeof(char*));
 
 		char* uuidArray[2048];
@@ -614,18 +590,31 @@ static void report_device_to_MQTT(GVariant *properties) {
 
                 char** allocdata = g_malloc(actualLength * sizeof(char*));
                 memcpy(allocdata, uuidArray, actualLength * sizeof(char*));
-		report.uuids = allocdata;
-                report.uuids_length = actualLength;
 
-		// ?? g_variant_unref(s_value);
+		if (existing->uuids_length != actualLength) {
+		  g_print("UUIDs has changed       ");
+		  send_to_mqtt_uuids(address, "uuids", allocdata, actualLength);
+		  existing->uuids_length = actualLength;
+	        }
 
+		// Free up the individual UUID strings after sending them
+		    if (actualLength > 0) {
+		       for (int i = 0; i < actualLength; i++){
+		         g_free(uuidArray[i]);
+		       }
+		    }
 
         }
         else if (strcmp(property_name, "Modalias") == 0) {
             // not used
         }
         else if (strcmp(property_name, "Class") == 0) {        // type 'u' which is uint32
-            report.deviceclass = g_variant_get_uint32(prop_val);
+            	uint32_t deviceclass = g_variant_get_uint32(prop_val);
+		if (existing->deviceclass != deviceclass) {
+		  g_print("Class has changed         ");
+		  send_to_mqtt_single_value(address, "class", deviceclass);
+		  existing->deviceclass = deviceclass;
+		}
         }
         else if (strcmp(property_name, "Icon") == 0) {
            // A string value
@@ -633,7 +622,12 @@ static void report_device_to_MQTT(GVariant *properties) {
            //g_print("Unknown property: %s %s\n", property_name, type);
         }
         else if (strcmp(property_name, "Appearance") == 0) {    // type 'q' which is uint16
-            report.appearance = g_variant_get_uint16(prop_val);
+		uint16_t appearance = g_variant_get_uint16(prop_val);
+		if (existing->appearance != appearance) {
+		  g_print("Appearance has changed    ");
+		  send_to_mqtt_single_value(address, "appearance", appearance);
+		  existing->appearance = appearance;
+		}
         }
         else if (strcmp(property_name, "ServiceData") == 0) {
            // A a{sv} value
@@ -643,6 +637,7 @@ static void report_device_to_MQTT(GVariant *properties) {
 
         }
         else if (strcmp(property_name, "Adapter") == 0) {
+
         }
         else if (strcmp(property_name, "ServicesResolved") == 0) {
         }
@@ -653,14 +648,16 @@ static void report_device_to_MQTT(GVariant *properties) {
 
 		GVariant *s_value;
 		GVariantIter i;
-                uint16_t s_key;
+                uint16_t manufacturer;
 
 		g_variant_iter_init(&i, prop_val);
-		while(g_variant_iter_next(&i, "{qv}", &s_key, &s_value)) {
-                        report.manufacturer = s_key;
+		while(g_variant_iter_next(&i, "{qv}", &manufacturer, &s_value)) {  // Just one
 
-                        //g_print("            k=%d", s_key);
-	                //pretty_print2("           qv", s_value, TRUE);
+			if (existing->manufacturer != manufacturer) {
+			  g_print("Manufacturer has changed  ");
+			  send_to_mqtt_single_value(address, "manufacturer", manufacturer);
+			  existing->manufacturer = manufacturer;
+			}
 
 			unsigned char byteArray[2048];
 			int actualLength = 0;
@@ -678,8 +675,12 @@ static void report_device_to_MQTT(GVariant *properties) {
 			// TODO : malloc etc... report.manufacturerData = byteArray
                         unsigned char* allocdata = g_malloc(actualLength);
                         memcpy(allocdata, byteArray, actualLength);
-			report.manufacturer_data = allocdata;
-                        report.manufacturer_data_length = actualLength;
+
+			if (existing->manufacturer_data_length != actualLength) {
+				g_print("ManufData has changed       ");
+			        send_to_mqtt_array(address, "manufacturerdata", allocdata, actualLength);
+			        existing->manufacturer_data_length = actualLength;
+			}
 
 			g_variant_unref(s_value);
 		}
@@ -691,26 +692,12 @@ static void report_device_to_MQTT(GVariant *properties) {
            g_print("Unknown property: %s %s\n", property_name, type);
         }
 
+        //g_print("un_ref prop_val\n");
         g_variant_unref(prop_val);
     }
 
-    send_report_to_mqtt (report, TRUE);
-
-    g_free(report.address);
-    if (report.addressType != NULL)
-        g_free(report.addressType);
-    if (report.name != NULL)
-        g_free(report.name);
-    if (report.alias != NULL)
-        g_free(report.alias);
-    if (report.manufacturer_data != NULL)
-        g_free(report.manufacturer_data);
-    if (report.uuids_length > 0) {
-       for (int i = 0; i < report.uuids_length; i++){
-         g_free(report.uuids[i]);
-       }
-    }
-
+    if (allocated_address != NULL)
+        g_free(allocated_address);
 }
 
 static void bluez_device_appeared(GDBusConnection *sig,
@@ -734,13 +721,14 @@ static void bluez_device_appeared(GDBusConnection *sig,
     GVariant *properties;
     //int rc;
 
+    //g_print("device appeared\n");
+
     g_variant_get(parameters, "(&oa{sa{sv}})", &object, &interfaces);
 
     while(g_variant_iter_next(interfaces, "{&s@a{sv}}", &interface_name, &properties)) {
         if(g_strstr_len(g_ascii_strdown(interface_name, -1), -1, "device")) {
-
             // Report device immediately
-            report_device_to_MQTT(properties);
+            report_device_to_MQTT(properties, NULL, TRUE);
         }
         g_variant_unref(properties);
     }
@@ -778,9 +766,10 @@ static void bluez_device_disappeared(GDBusConnection *sig,
     while(g_variant_iter_next(interfaces, "s", &interface_name)) {
         if(g_strstr_len(g_ascii_strdown(interface_name, -1), -1, "device")) {
             char address[BT_ADDRESS_STRING_SIZE];
-            get_address_from_path (address, BT_ADDRESS_STRING_SIZE, object);
-            g_print("Device %s removed\n", address);
-	    send_to_mqtt_single_value(address, "rssi", 0);
+            if (get_address_from_path (address, BT_ADDRESS_STRING_SIZE, object)) {
+                g_print("Device %s removed\n", address);
+	        send_to_mqtt_single_value(address, "rssi", 0);
+	    }
         }
         // Nope ... g_variant_unref(interface_name);
     }
@@ -809,124 +798,34 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
     (void)interface;                    // "org.freedesktop.DBus.Properties" ... not useful
     (void)userdata;
 
-    GVariantIter *properties = NULL;
+    GVariant *p = NULL;
     GVariantIter *unknown = NULL;
     const char *iface;                  // org.bluez.Device1
-    const char *key;
-    GVariant *value = NULL;
 
-    //g_print("Adapter changed %s\n", interface);
+    //pretty_print("adapter_changed params = ", params);
 
     const gchar *signature = g_variant_get_type_string(params);
     if(strcmp(signature, "(sa{sv}as)") != 0) {
         g_print("Invalid signature for %s: %s != %s", signal, signature, "(sa{sv}as)");
-        goto done;
+        return;
     }
 
-    g_variant_get(params, "(&sa{sv}as)", &iface, &properties, &unknown);
+    //g_variant_get(params, "(&sa{sv}as)", &iface, &properties, &unknown);
+    // Tuple with a string (interface name), a dictionary, and then an array of strings
+    g_variant_get(params, "(&s@a{sv}as)", &iface, &p, &unknown);
 
-    while(g_variant_iter_next(properties, "{&sv}", &key, &value)) {
-        if(!g_strcmp0(key, "Powered")) {
-            g_print("Adapter is Powered \"%s\"\n", g_variant_get_boolean(value) ? "on" : "off");
-        }
-        else if(!g_strcmp0(key, "Discovering")) {
-            g_print("Adapter scan \"%s\"\n", g_variant_get_boolean(value) ? "on" : "off");
-        }
-        else {
-            char address[BT_ADDRESS_STRING_SIZE];
-            get_address_from_path (address, BT_ADDRESS_STRING_SIZE, path);
+    //pretty_print("adapter_changed p = ", p);
+    //g_print("Interface %s\n", iface);
+    //g_print("Path %s\n", path);
 
-            //g_print("Adapter changes %s %s\n", address, key);
-
-            if (!g_strcmp0(key, "RSSI")) {
-		int16_t rssi = g_variant_get_int16(value);
-	 	send_to_mqtt_single_value(address, "rssi", rssi);
-            }
-            else if (!g_strcmp0(key, "TxPower")) {
-		int16_t p = g_variant_get_int16(value);
-	 	send_to_mqtt_single_value(address, "txpower", p);
-            }
-            else if (!g_strcmp0(key, "Name")) {
-                pretty_print("Name", value);
-                // Name changed, will pick up at next full fetch
-            }
-            else if (!g_strcmp0(key, "Alias")) {
-                pretty_print("Alias", value);
-                // Alias changed, will pick up at next full fetch
-            }
-            else if (!g_strcmp0(key, "Connected")) {
-                // Connected changed, will pick up at next full fetch   type=b
-            }
-            else if (!g_strcmp0(key, "UUIDs")) {
-		pretty_print2("UUIDs (changed)", value, TRUE);
-                // TODO: Decode and save to report
-                // Will pick up at next full fetch   type=b
-            }
-            else if (!g_strcmp0(key, "ServicesResolved")) {
-                // Do nothing   type=b
-            }
-            else if (!g_strcmp0(key, "Appearance")) {
-                // Will pick up at next full fetch
-            }
-            else if (!g_strcmp0(key, "Icon")) {
-                pretty_print("Icon", value);
-                // Will pick up at next full fetch
-            }
-            else if (!g_strcmp0(key, "ManufacturerData")) {             //type= a{qv}
-                // ManufacturerData {uint16 76: <[byte 0x10, 0x06, 0x10, 0x1a, 0x52, 0xe9, 0xc8, 0x08]>}
-                pretty_print2("ManufacturerData*", value, TRUE);
-
-                // TODO: Handle ManufacturerData changes
-            }
-            else if (!g_strcmp0(key, "ServiceData")) {
-
-	        // {'000080e7-0000-1000-8000-00805f9b34fb': <[byte 0xb0, 0x23, 0x25, 0xcb, ...]>}
-                pretty_print2("ServiceData*", value, TRUE);
-
-		GVariant *s_value;
-		GVariantIter i;
-                gchar *s_key;
-
-		g_variant_iter_init(&i, value);
-		while(g_variant_iter_next(&i, "{sv}", &s_key, &s_value)) {
-                        // uuid = s_key;
-
-                        //g_print("            k=%d", s_key);
-	                //pretty_print2("           qv", s_value, TRUE);
-
-			unsigned char byteArray[2048];
-			int actualLength = 0;
-
-			GVariantIter *iter_array;
-			guchar str;
-
-			g_variant_get (s_value, "ay", &iter_array);
-			while (g_variant_iter_loop (iter_array, "y", &str))
-			{
-			    byteArray[actualLength++] = str;
-			}
-			g_variant_iter_free (iter_array);
-
-                        // using the guid instead of serviceData as the path for MQTT publish
-                        // allows receiver to look for specific GUIDs
-	                send_to_mqtt_array(address, s_key, byteArray, actualLength);
-
-//                        unsigned char* allocdata = g_malloc(actualLength);
-//                        memcpy(allocdata, byteArray, actualLength);
-
-			g_variant_unref(s_value);
-		}
-
-            }
-            else {
-	 	// PING ... send_to_mqtt_single_value(address, "connected", 1);
-                g_print("*** TODO: Handle '%s' a %s\n", key, g_variant_get_type_string(value));
-            }
-        }
-        g_variant_unref(value);
+    char address[BT_ADDRESS_STRING_SIZE];
+    if (get_address_from_path (address, BT_ADDRESS_STRING_SIZE, path)) {
+        report_device_to_MQTT(p, address, TRUE);
     }
-done:
-    g_variant_iter_free(properties);
+
+    g_variant_unref(p);
+
+    return;
 }
 
 static int bluez_adapter_set_property(const char *prop, GVariant *value)
@@ -998,6 +897,8 @@ static void bluez_list_devices(GDBusConnection *con,
 	const gchar *object_path;
 	GVariant *ifaces_and_properties;
 
+//        g_print("List devices\n");
+
 	result = g_dbus_connection_call_finish(con, res, NULL);
 	if(result == NULL)
 		g_print("Unable to get result for GetManagedObjects\n");
@@ -1014,7 +915,7 @@ static void bluez_list_devices(GDBusConnection *con,
 			g_variant_iter_init(&ii, ifaces_and_properties);
 			while(g_variant_iter_next(&ii, "{&s@a{sv}}", &interface_name, &properties)) {
 				if(g_strstr_len(g_ascii_strdown(interface_name, -1), -1, "device")) {
-					report_device_to_MQTT(properties);
+					report_device_to_MQTT(properties, NULL, FALSE);
 				}
 				g_variant_unref(properties);
 			}
@@ -1023,9 +924,8 @@ static void bluez_list_devices(GDBusConnection *con,
 		g_variant_unref(child);
 		g_variant_unref(result);
 	}
-	//g_main_loop_quit((GMainLoop *)data);
-}
 
+}
 
 
 
@@ -1165,7 +1065,6 @@ int main(int argc, char **argv)
         goto fail;
     }
 
-
     rc = bluez_set_discovery_filter(argv);
     if(rc) {
         g_print("Not able to set discovery filter\n");
@@ -1187,6 +1086,7 @@ int main(int argc, char **argv)
 
     prepare_mqtt();
 
+    g_print("Start main loop\n");
 
     g_main_loop_run(loop);
 
