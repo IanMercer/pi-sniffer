@@ -17,6 +17,39 @@
 #include <sys/socket.h>
 #include <net/if.h>
 #include <time.h>
+#include <math.h>
+
+/*
+      Kalman filter
+*/
+
+struct Kalman {
+  float err_measure;
+  float err_estimate;
+  float q;
+  float current_estimate;
+  float last_estimate;
+  float kalman_gain;
+};
+
+struct Kalman kalman_initialize (struct Kalman k, float mea_e, float est_e, float q)
+{
+  k.err_measure=mea_e;
+  k.err_estimate=est_e;
+  k.q = q;
+  return k;
+}
+
+float kalman_update(struct Kalman k, float mea)
+{
+  k.kalman_gain = k.err_estimate/(k.err_estimate + k.err_measure);
+  k.current_estimate = k.last_estimate + k.kalman_gain * (mea - k.last_estimate);
+  k.err_estimate =  (1.0 - k.kalman_gain)*k.err_estimate + fabs(k.last_estimate-k.current_estimate)*k.q;
+  k.last_estimate=k.current_estimate;
+
+  return k.current_estimate;
+}
+
 
 /*
    Structure for reporting to MQTT
@@ -36,6 +69,7 @@ struct DeviceReport {
     uint16_t appearance;
     int manufacturer_data_length; // should use a Hash instead
     int uuids_length;  // should use a Hash instead
+    struct Kalman kalman;
 };
 
 bool get_address_from_path(char* address, int length, const char* path){
@@ -469,6 +503,7 @@ static void report_device_to_MQTT(GVariant *properties, char* address, bool appe
                 existing->manufacturer_data_length = 0;
                 existing->appearance = 0;
                 existing->uuids_length = 0;
+                kalman_initialize(existing->kalman, 20.0, 20.0, 1.0);
 
 		g_print("Added hash %s\n", address);
 	} else {
