@@ -30,8 +30,17 @@ This is an initial very rough commit and proof of concept. I have copied in the 
 * install dependencies:    `sudo apt-get install libglib2.0-dev`
 * edit your Mosquitto connection details into scan.c
 * build the code:   `sudo ./build/sh`
-* install it as a service (edit the service definition and copy it to the appropriate folder etc.)
-* sudo systemctrl start pi-sniffer.service
-* sudo systemctrl status pi-sniffer.service
+* edit the .service file to point to the scan executable location:
+    nano pi-sniffer.service
+
+* copy the service file to systemd:
+    sudo cp pi-sniffer.service /etc/systemd/system/pi-sniffer.service
+
+* start the service:
+    sudo systemctl start pi-sniffer.service
+
+* check it's running:
+    sudo systemctl status pi-sniffer.service
+
 
 
