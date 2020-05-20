@@ -331,7 +331,7 @@ void send_to_mqtt_uuids(char* mac_address, char* key, char** uuids, int length)
 	}
 }
 
-// int values not retained, all others retained
+// numeric values that change all the time not retained, all others retained by MQTT
 
 void send_to_mqtt_single_value(char* mac_address, char* key, int32_t value)
 {
@@ -358,6 +358,7 @@ void device_report_free(void* object) {
   /* Free any members you need to */
   g_free(val->name);
   g_free(val->alias);
+  g_free(val->addressType);
   g_free(val);
 }
 
@@ -458,9 +459,10 @@ char *trim(char *str)
 
 */
 
+static bool repeat = FALSE;   // repeats all values every few minutes
+
 static void report_device_to_MQTT(GVariant *properties, char* address, bool appeared) 
 {
-
 //       g_print("report_device_to_MQTT(%s)\n", address);
 
 	char* allocated_address = NULL;
@@ -538,7 +540,7 @@ static void report_device_to_MQTT(GVariant *properties, char* address, bool appe
             // Trim whitespace (Bad Tracker device keeps flipping name)
             trim(name);
 
-	    if (g_strcmp0(existing->name, name) != 0) {
+	    if (repeat || g_strcmp0(existing->name, name) != 0) {
 	       g_print("Name has changed '%s' -> '%s'  ", existing->name, name);
 	       send_to_mqtt_single(address, "name", name);
                if (existing->name != NULL)
@@ -548,29 +550,29 @@ static void report_device_to_MQTT(GVariant *properties, char* address, bool appe
 
         }
         else if (strcmp(property_name, "Alias") == 0) {
-            char* alias = g_variant_dup_string(prop_val, NULL);
+		char* alias = g_variant_dup_string(prop_val, NULL);
 
-            trim(alias);
+		trim(alias);
 
-		if (g_strcmp0(existing->alias, alias) != 0) {
+		if (repeat || g_strcmp0(existing->alias, alias) != 0) {
 		  g_print("Alias has changed '%s' -> '%s'  ", existing->alias, alias);
 		  send_to_mqtt_single(address, "alias", alias);
+		}
 		  if (existing->alias != NULL)
 			g_free(existing->alias);
-		  existing->alias = alias; // wasstrdup(report.alias);
-		}
+		  existing->alias = alias;
         }
-        else if (strcmp(property_name, "AddressType") == 0) {
+        else if (repeat || strcmp(property_name, "AddressType") == 0) {
             char* addressType = g_variant_dup_string(prop_val, NULL);
 
-		// Compare values and send
-		if (g_strcmp0(existing->addressType, addressType) != 0) {
-		  g_print("Type has changed '%s' -> '%s'  ", existing->addressType, addressType);
-		  send_to_mqtt_single(address, "type", addressType);
-		  if (existing->addressType != NULL)
-		      g_free(existing->addressType);
-		  existing->addressType = addressType; //strdup(report.addressType);
-		}
+	    // Compare values and send
+	    if (repeat || g_strcmp0(existing->addressType, addressType) != 0) {
+		g_print("Type has changed '%s' -> '%s'  ", existing->addressType, addressType);
+		send_to_mqtt_single(address, "type", addressType);
+	    }
+	    if (existing->addressType != NULL)
+               g_free(existing->addressType);
+	    existing->addressType = addressType;
         }
         else if (strcmp(property_name, "RSSI") == 0) {
 	    if (appeared) {
@@ -601,7 +603,7 @@ static void report_device_to_MQTT(GVariant *properties, char* address, bool appe
         }
         else if (strcmp(property_name, "Connected") == 0) {
 		bool connected = g_variant_get_boolean(prop_val);
-		if (existing->connected != connected) {
+		if (repeat || existing->connected != connected) {
 		  g_print("Connected has changed     ");
 		  send_to_mqtt_single_value(address, "connected", connected ? 1 : 0);
 		  existing->connected = connected;
@@ -609,7 +611,7 @@ static void report_device_to_MQTT(GVariant *properties, char* address, bool appe
         }
         else if (strcmp(property_name, "Trusted") == 0) {
  	        bool trusted = g_variant_get_boolean(prop_val);
-		if (existing->trusted != trusted) {
+		if (repeat || existing->trusted != trusted) {
 		  g_print("Trusted has changed       ");
 		  send_to_mqtt_single_value(address, "trusted", trusted ? 1 : 0);
 		  existing->trusted = trusted;
@@ -641,7 +643,7 @@ static void report_device_to_MQTT(GVariant *properties, char* address, bool appe
                 char** allocdata = g_malloc(actualLength * sizeof(char*));
                 memcpy(allocdata, uuidArray, actualLength * sizeof(char*));
 
-		if (existing->uuids_length != actualLength) {
+		if (repeat || existing->uuids_length != actualLength) {
 		  g_print("UUIDs has changed       ");
 		  send_to_mqtt_uuids(address, "uuids", allocdata, actualLength);
 		  existing->uuids_length = actualLength;
@@ -660,7 +662,7 @@ static void report_device_to_MQTT(GVariant *properties, char* address, bool appe
         }
         else if (strcmp(property_name, "Class") == 0) {        // type 'u' which is uint32
             	uint32_t deviceclass = g_variant_get_uint32(prop_val);
-		if (existing->deviceclass != deviceclass) {
+		if (repeat || existing->deviceclass != deviceclass) {
 		  g_print("Class has changed         ");
 		  send_to_mqtt_single_value(address, "class", deviceclass);
 		  existing->deviceclass = deviceclass;
@@ -673,7 +675,7 @@ static void report_device_to_MQTT(GVariant *properties, char* address, bool appe
         }
         else if (strcmp(property_name, "Appearance") == 0) {    // type 'q' which is uint16
 		uint16_t appearance = g_variant_get_uint16(prop_val);
-		if (existing->appearance != appearance) {
+		if (repeat || existing->appearance != appearance) {
 		  g_print("Appearance has changed    ");
 		  send_to_mqtt_single_value(address, "appearance", appearance);
 		  existing->appearance = appearance;
@@ -690,6 +692,7 @@ static void report_device_to_MQTT(GVariant *properties, char* address, bool appe
 
         }
         else if (strcmp(property_name, "ServicesResolved") == 0) {
+
         }
         else if (strcmp(property_name, "ManufacturerData") == 0) {
 	    // ManufacturerData {uint16 76: <[byte 0x10, 0x06, 0x10, 0x1a, 0x52, 0xe9, 0xc8, 0x08]>}
@@ -703,7 +706,7 @@ static void report_device_to_MQTT(GVariant *properties, char* address, bool appe
 		g_variant_iter_init(&i, prop_val);
 		while(g_variant_iter_next(&i, "{qv}", &manufacturer, &s_value)) {  // Just one
 
-			if (existing->manufacturer != manufacturer) {
+			if (repeat || existing->manufacturer != manufacturer) {
 			  g_print("Manufacturer has changed  ");
 			  send_to_mqtt_single_value(address, "manufacturer", manufacturer);
 			  existing->manufacturer = manufacturer;
@@ -726,7 +729,7 @@ static void report_device_to_MQTT(GVariant *properties, char* address, bool appe
                         unsigned char* allocdata = g_malloc(actualLength);
                         memcpy(allocdata, byteArray, actualLength);
 
-			if (existing->manufacturer_data_length != actualLength) {
+			if (repeat || existing->manufacturer_data_length != actualLength) {
 				g_print("ManufData has changed       ");
 			        send_to_mqtt_array(address, "manufacturerdata", allocdata, actualLength);
 			        existing->manufacturer_data_length = actualLength;
@@ -1003,7 +1006,7 @@ int clear_cache(void * parameters)
     g_print("Clearing cache\n");
     //GMainLoop * loop = (GMainLoop*) parameters;
     (void)parameters; // not used
-    hash = NULL;
+    repeat = TRUE;
     return TRUE;
 }
 
@@ -1138,7 +1141,7 @@ int main(int argc, char **argv)
     // Every 15s send any changes to static information
     g_timeout_add_seconds (15, get_managed_objects, loop);
 
-    // Every 1 min, clear cache and start again
+    // Every 1 min, repeat all the data (in case MQTT database is lost)
     g_timeout_add_seconds (60, clear_cache, loop);
 
     prepare_mqtt(mqtt_addr, mqtt_port);
