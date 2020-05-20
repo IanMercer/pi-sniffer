@@ -35,7 +35,7 @@ struct Kalman {
 void kalman_initialize (struct Kalman * k)
 {
   //                 kalman_initialize(&existing->kalman, 20.0, 20.0, 0.25);
-  k->last_estimate = -90;
+  k->last_estimate = -999;  // marker value
   k->err_measure = 20.0;
   k->err_estimate = 20.0;
   k->q = 0.10;
@@ -43,6 +43,12 @@ void kalman_initialize (struct Kalman * k)
 
 float kalman_update(struct Kalman * k, float mea)
 {
+  // First time through, use the measured value as the actual value
+  if (k->last_estimate == -999) {
+     // marker value
+     k->last_estimate = mea;
+     return mea;
+  }
   //g_print("%f %f %f %f\n", k->err_measure, k->err_estimate, k->q, mea);
   k->kalman_gain = k->err_estimate / (k->err_estimate + k->err_measure);
   k->current_estimate = k->last_estimate + k->kalman_gain * (mea - k->last_estimate);
@@ -514,6 +520,7 @@ static void report_device_to_MQTT(GVariant *properties, char* address, bool appe
                 existing->appearance = 0;
                 existing->uuids_length = 0;
 
+		// RSSI values are stored with kalman filtering
                 kalman_initialize(&existing->kalman);
 
 		g_print("Added hash %s\n", address);
@@ -1139,10 +1146,10 @@ int main(int argc, char **argv)
     g_print("Started discovery\n");
 
     // Every 15s send any changes to static information
-    g_timeout_add_seconds (15, get_managed_objects, loop);
+    g_timeout_add_seconds (60, get_managed_objects, loop);
 
-    // Every 1 min, repeat all the data (in case MQTT database is lost)
-    g_timeout_add_seconds (60, clear_cache, loop);
+    // Every 1 hour, repeat all the data (in case MQTT database is lost)
+    g_timeout_add_seconds (60*60, clear_cache, loop);
 
     prepare_mqtt(mqtt_addr, mqtt_port);
 
