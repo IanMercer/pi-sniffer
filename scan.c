@@ -44,10 +44,10 @@ void kalman_initialize (struct Kalman * k)
 float kalman_update(struct Kalman * k, float mea)
 {
   //g_print("%f %f %f %f\n", k->err_measure, k->err_estimate, k->q, mea);
-  k->kalman_gain = k->err_estimate/(k->err_estimate + k->err_measure);
+  k->kalman_gain = k->err_estimate / (k->err_estimate + k->err_measure);
   k->current_estimate = k->last_estimate + k->kalman_gain * (mea - k->last_estimate);
-  k->err_estimate =  (1.0 - k->kalman_gain) * k->err_estimate + fabs(k->last_estimate-k->current_estimate) * k->q;
-  k->last_estimate=k -> current_estimate;
+  k->err_estimate =  (1.0 - k->kalman_gain) * k->err_estimate + fabs(k->last_estimate - k->current_estimate) * k->q;
+  k->last_estimate = k->current_estimate;
 
   return k->current_estimate;
 }
@@ -157,8 +157,6 @@ static void exit_example(int status, int sockfd, pthread_t *client_daemon)
 	exit(status);
 }
 
-const char *addr = "192.168.0.120";
-const char *port = "1883";
 const char *topicRoot = "BLF";
 
 static pthread_t client_daemon;
@@ -172,12 +170,12 @@ const char *client_id = NULL;
 /* Ensure we have a clean session */
 uint8_t connect_flags = MQTT_CONNECT_CLEAN_SESSION;
 
-static void prepare_mqtt()
+static void prepare_mqtt(char* mqtt_addr, char* mqtt_port)
 {
-	printf("Starting MQTT\n");
+	printf("Starting MQTT %s:%s\n", mqtt_addr, mqtt_port);
 
 	/* open the non-blocking TCP socket (connecting to the broker) */
-	sockfd = open_nb_socket(addr, port);
+	sockfd = open_nb_socket(mqtt_addr, mqtt_port);
 	if (sockfd == -1)
 	{
 		perror("Failed to open socket: ");
@@ -1058,7 +1056,6 @@ static void cmd_connect(int argc, char *address)
 */
 
 
-
 int main(int argc, char **argv)
 {
     GMainLoop *loop;
@@ -1067,6 +1064,14 @@ int main(int argc, char **argv)
     guint iface_added;
     guint iface_removed;
     //guint getmanagedobjects;
+
+    if (argc < 2) {
+       g_print("scan <mqtt server> [port:1883]");
+       return -1;
+    }
+
+    char* mqtt_addr = argv[1];
+    char* mqtt_port = argc > 1 ? argv[2] : "1883";
 
     get_mac_address();
 
@@ -1136,7 +1141,7 @@ int main(int argc, char **argv)
     // Every 1 min, clear cache and start again
     g_timeout_add_seconds (60, clear_cache, loop);
 
-    prepare_mqtt();
+    prepare_mqtt(mqtt_addr, mqtt_port);
 
     g_print("Start main loop\n");
 
