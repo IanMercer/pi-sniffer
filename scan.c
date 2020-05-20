@@ -32,22 +32,23 @@ struct Kalman {
   float kalman_gain;
 };
 
-struct Kalman kalman_initialize (struct Kalman k, float mea_e, float est_e, float q)
+void kalman_initialize (struct Kalman * k, float mea_e, float est_e, float q)
 {
-  k.err_measure=mea_e;
-  k.err_estimate=est_e;
-  k.q = q;
-  return k;
+  k->last_estimate = -90;
+  k->err_measure = mea_e;
+  k->err_estimate = est_e;
+  k->q = q;
 }
 
-float kalman_update(struct Kalman k, float mea)
+float kalman_update(struct Kalman * k, float mea)
 {
-  k.kalman_gain = k.err_estimate/(k.err_estimate + k.err_measure);
-  k.current_estimate = k.last_estimate + k.kalman_gain * (mea - k.last_estimate);
-  k.err_estimate =  (1.0 - k.kalman_gain)*k.err_estimate + fabs(k.last_estimate-k.current_estimate)*k.q;
-  k.last_estimate=k.current_estimate;
+  //g_print("%f %f %f %f\n", k->err_measure, k->err_estimate, k->q, mea);
+  k->kalman_gain = k->err_estimate/(k->err_estimate + k->err_measure);
+  k->current_estimate = k->last_estimate + k->kalman_gain * (mea - k->last_estimate);
+  k->err_estimate =  (1.0 - k->kalman_gain)*k->err_estimate + fabs(k->last_estimate-k->current_estimate) * k->q;
+  k->last_estimate=k->current_estimate;
 
-  return k.current_estimate;
+  return k->current_estimate;
 }
 
 
@@ -341,6 +342,14 @@ void send_to_mqtt_single_value(char* mac_address, char* key, int32_t value)
         send_to_mqtt_with_time_and_mac(mac_address, key, -1, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_0);
 }
 
+void send_to_mqtt_single_float(char* mac_address, char* key, float value)
+{
+	char rssi[12];
+	snprintf(rssi, sizeof(rssi), "%.3f", value);
+	printf("MQTT %s %s/%s %s\n", mac_address, topicRoot, key, rssi);
+        send_to_mqtt_with_time_and_mac(mac_address, key, -1, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_0);
+}
+
 GHashTable* hash = NULL;
 
 // Free an allocated device
@@ -503,9 +512,11 @@ static void report_device_to_MQTT(GVariant *properties, char* address, bool appe
                 existing->manufacturer_data_length = 0;
                 existing->appearance = 0;
                 existing->uuids_length = 0;
-                kalman_initialize(existing->kalman, 20.0, 20.0, 1.0);
+
+                kalman_initialize(&existing->kalman, 20.0, 20.0, 0.25);
 
 		g_print("Added hash %s\n", address);
+
 	} else {
 		// get value from hashtable
 		existing = (struct DeviceReport*) g_hash_table_lookup(hash, address);
@@ -565,7 +576,10 @@ static void report_device_to_MQTT(GVariant *properties, char* address, bool appe
         else if (strcmp(property_name, "RSSI") == 0) {
 	    if (appeared) {
 		int16_t rssi = g_variant_get_int16(prop_val);
- 		send_to_mqtt_single_value(address, "rssi", rssi);
+ 		//send_to_mqtt_single_value(address, "rssi", rssi);
+
+                float averaged = kalman_update(&existing->kalman, (float)rssi);
+ 		send_to_mqtt_single_float(address, "rssi", averaged);
             }
         }
         else if (strcmp(property_name, "TxPower") == 0) {

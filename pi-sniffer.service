@@ -3,7 +3,7 @@ Description=Pi Sniffer
 After=network.target
 
 [Service]
-ExecStart=./scan
+ExecStart=/home/ian/pi-sniffer/scan
 WorkingDirectory=/home/ian/pi-sniffer
 StandardOutput=inherit
 StandardError=inherit

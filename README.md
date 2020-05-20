@@ -31,16 +31,16 @@ This is an initial very rough commit and proof of concept. I have copied in the 
 * edit your Mosquitto connection details into scan.c
 * build the code:   `sudo ./build/sh`
 * edit the .service file to point to the scan executable location:
-    nano pi-sniffer.service
+    `nano pi-sniffer.service`
 
 * copy the service file to systemd:
-    sudo cp pi-sniffer.service /etc/systemd/system/pi-sniffer.service
+    `sudo cp pi-sniffer.service /etc/systemd/system/pi-sniffer.service`
 
 * start the service:
-    sudo systemctl start pi-sniffer.service
+    `sudo systemctl start pi-sniffer.service`
 
 * check it's running:
-    sudo systemctl status pi-sniffer.service
+    `sudo systemctl status pi-sniffer.service`
 
 
 
