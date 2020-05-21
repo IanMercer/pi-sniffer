@@ -1,6 +1,7 @@
 # pi-sniffer
 This project is a simple sniffer for Bluetooth LE on Raspberry Pi and sender to MQTT. It uses the built-in BlueZ libraries and Bluetooth antenna on a Raspberry Pi (W or 3+) to scan for nearby BLE devices. 
-It reports all BLE devices found and their received signal strength (RSSI) to an MQTT endpoint.
+It reports all BLE devices found and their received signal strength (RSSI) to an MQTT endpoint. It applies a simple
+Kalman filter to smooth the RSSI values.
 
 # applications
 * Detect cell phones entering your home, garden, barn, ...
@@ -14,15 +15,14 @@ It reports all BLE devices found and their received signal strength (RSSI) to an
 * Simplicity: do one thing well, no frills
 
 # status
-This is an initial very rough commit and proof of concept. I have copied in the essential source and header files to make it compile and run without any external dependencies. There is a `build.sh` file that builds and runs the code. The MQTT topic and server address are currently hard-coded. None of the redundant code has been removed yet.
+This is an initial very rough commit and proof of concept. I have copied in the essential source and header files to make it compile and run without any external dependencies. There is a `build.sh` file that builds and runs the code. 
+The MQTT topic prefix is hard-coded but the MQTT server IP (or FQDN) and port are configurable.
 
 # plans
-* Make the MQTT endpoint configurable by command line parameter
-* Instructions for how to configure and install this as a service on a Raspberry Pi
-* Maintain a running average for the RSSI and smooth the output somewhat
-* Make the RSSI change threshold configurable
 * Look into pairing iPhones to eliminate random mac addresses
+* Decode advertised data for Sensoro beacons
 * Gather other advertised data and transmit to MQTT including temperature, battery, steps, heart rate, ...
+* Combine multiple Pi RSSI values to do trilateration and approximate location, simple ML model
 
 # getting started
 
@@ -30,6 +30,7 @@ This is an initial very rough commit and proof of concept. I have copied in the 
 * install dependencies:    `sudo apt-get install libglib2.0-dev`
 * edit your Mosquitto connection details into scan.c
 * build the code:   `sudo ./build/sh`
+* try the sniffer: ./scan <mqtt server ip> [<port>]
 * edit the .service file to point to the scan executable location:
     `nano pi-sniffer.service`
 
