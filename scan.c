@@ -624,9 +624,10 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
             // 100s with RSSI change of 1 triggers send
             // 10s with RSSI change of 10 triggers send
-            double score = fabs(existing->last_value - averaged) * delta_time;
+            double delta_v = fabs(existing->last_value - averaged);
+            double score =  delta_v * delta_time;
 
-            if (changed && score > 500.0)
+            if (changed && score > 800.0)
             {
                 // only send for updates, static values not interesting
                 if (fabs(averaged) > 10)
@@ -634,9 +635,10 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
                     send_to_mqtt_single_float(address, "rssi", averaged);
                     time(&existing->last_sent);
                 }
+                g_print("Send %s RSSI %d, delta v: %.1fs t: %.0fs score %.0f\n", address, rssi, delta_v, delta_time, score);
             }
             else {
-               g_print("Skip %s RSSI %d, delta time: %.0fs score %.0f\n", address, rssi, delta_time, score);
+               g_print("Skip %s RSSI %d, delta v: %.1fs t: %.0fs score %.0f\n", address, rssi, delta_v, delta_time, score);
             }
         }
         else if (strcmp(property_name, "TxPower") == 0)
