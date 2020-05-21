@@ -483,7 +483,7 @@ char *trim(char *str)
 
 static bool repeat = FALSE; // repeats all values every few minutes
 
-static void report_device_to_MQTT(GVariant *properties, char *address, bool appeared)
+static void report_device_to_MQTT(GVariant *properties, char *address, bool changed)
 {
     //       g_print("report_device_to_MQTT(%s)\n", address);
 
@@ -607,12 +607,14 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool appe
         }
         else if (strcmp(property_name, "RSSI") == 0)
         {
-            if (appeared)
-            {
-                int16_t rssi = g_variant_get_int16(prop_val);
-                //send_to_mqtt_single_value(address, "rssi", rssi);
+            int16_t rssi = g_variant_get_int16(prop_val);
+            //send_to_mqtt_single_value(address, "rssi", rssi);
 
-                float averaged = kalman_update(&existing->kalman, (float)rssi);
+            float averaged = kalman_update(&existing->kalman, (float)rssi);
+
+            if (changed)
+            {
+                // only send for updates, static values not interesting
                 if (fabs(averaged) > 10)
                 { // rssi 0 is wrong
                     send_to_mqtt_single_float(address, "rssi", averaged);
@@ -621,7 +623,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool appe
         }
         else if (strcmp(property_name, "TxPower") == 0)
         {
-            if (appeared)
+            if (changed)
             {
                 int16_t p = g_variant_get_int16(prop_val);
                 send_to_mqtt_single_value(address, "txpower", p);
@@ -838,7 +840,7 @@ static void bluez_device_appeared(GDBusConnection *sig,
         if (g_strstr_len(g_ascii_strdown(interface_name, -1), -1, "device"))
         {
             // Report device immediately
-            report_device_to_MQTT(properties, NULL, TRUE);
+            report_device_to_MQTT(properties, NULL, FALSE);
         }
         g_variant_unref(properties);
     }
@@ -1202,8 +1204,8 @@ int main(int argc, char **argv)
     }
     g_print("Started discovery\n");
 
-    // Every 15s send any changes to static information
-    g_timeout_add_seconds(60, get_managed_objects, loop);
+    // Every 5 min send any changes to static information
+    g_timeout_add_seconds(5*60, get_managed_objects, loop);
 
     // Every 1 hour, repeat all the data (in case MQTT database is lost)
     g_timeout_add_seconds(60 * 60, clear_cache, loop);
