@@ -4,6 +4,7 @@
  *  BLE/<device mac>/parameter
  *
  *  Applies a simple kalman filter to RSSI to smooth it out somewhat
+ *  Sends RSSI only when it changes enough but also regularly a keep-alive
  *
  *  gcc `pkg-config --cflags glib-2.0 gio-2.0` -Wall -Wextra -o ./bin/bluez_adapter_filter ./bluez_adapter_filter.c `pkg-config --libs glib-2.0 gio-2.0`
  */
@@ -20,6 +21,13 @@
 #include <net/if.h>
 #include <time.h>
 #include <math.h>
+
+// delta RSSI x delta time threshold for sending an update
+// e.g. 10 RSSI after 20 seconds or 20 RSSI after 10 seconds or 1 RSSI after 200s
+// prevents swamping MQTT with very small changes to RSSI but also guarantees an occasional update
+// to indicate still alive
+
+#define THRESHOLD 200.0
 
 /*
       Kalman filter
@@ -627,9 +635,9 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             double delta_v = fabs(existing->last_value - averaged);
             double score =  delta_v * delta_time;
 
-            if (changed && score > 500.0)
+            if (changed && (score > THRESHOLD))
             {
-                // ignore RSSI values that are too high
+                // ignore RSSI values that are impossibly good (<10 when normal range is -20 to -120)
                 if (fabs(averaged) > 10)
                 {
                     g_print("Send %s RSSI %.1f, delta v:%.1f t:%.0fs score %.0f ", address, averaged, delta_v, delta_time, score);
@@ -995,7 +1003,7 @@ static int bluez_set_discovery_filter()
     GVariantBuilder *b = g_variant_builder_new(G_VARIANT_TYPE_VARDICT);
     g_variant_builder_add(b, "{sv}", "Transport", g_variant_new_string("le")); // or "auto"
     //g_variant_builder_add(b, "{sv}", "RSSI", g_variant_new_int16(-150));
-    g_variant_builder_add(b, "{sv}", "DuplicateData", g_variant_new_boolean(FALSE));
+    g_variant_builder_add(b, "{sv}", "DuplicateData", g_variant_new_boolean(TRUE));
     g_variant_builder_add(b, "{sv}", "Discoverable", g_variant_new_boolean(TRUE));
     g_variant_builder_add(b, "{sv}", "Pairable", g_variant_new_boolean(TRUE));
     g_variant_builder_add(b, "{sv}", "DiscoveryTimeout", g_variant_new_uint32(0));
@@ -1213,7 +1221,7 @@ int main(int argc, char **argv)
         goto fail;
     }
 
-    rc = bluez_set_discovery_filter(argv);
+    rc = bluez_set_discovery_filter();
     if (rc)
     {
         g_print("Not able to set discovery filter\n");
