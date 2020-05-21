@@ -636,7 +636,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
                 }
             }
             else {
-               g_print("Skip RSSI %d, delta time: %.0fs score %.0f ", rssi, delta_time, score);
+               g_print("Skip RSSI %d, delta time: %.0fs score %.0f\n", rssi, delta_time, score);
             }
         }
         else if (strcmp(property_name, "TxPower") == 0)
