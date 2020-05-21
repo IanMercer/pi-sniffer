@@ -3,3 +3,4 @@
 *.o
 bluetoothctl
 .vscode/c_cpp_properties.json
+scan
