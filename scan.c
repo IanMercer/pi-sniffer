@@ -2,7 +2,7 @@
  * bluez sniffer
  *  Sends bluetooth information to MQTT with a separate topic per device and parameter
  *  BLE/<device mac>/parameter
- * 
+ *
  *  Applies a simple kalman filter to RSSI to smooth it out somewhat
  *
  *  gcc `pkg-config --cflags glib-2.0 gio-2.0` -Wall -Wextra -o ./bin/bluez_adapter_filter ./bluez_adapter_filter.c `pkg-config --libs glib-2.0 gio-2.0`
@@ -80,6 +80,8 @@ struct DeviceReport
     int manufacturer_data_length; // should use a Hash instead
     int uuids_length;             // should use a Hash instead
     struct Kalman kalman;
+    time_t last_sent;
+    float last_value;
 };
 
 bool get_address_from_path(char *address, int length, const char *path)
@@ -487,6 +489,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 {
     //       g_print("report_device_to_MQTT(%s)\n", address);
 
+
     char *allocated_address = NULL;
     //pretty_print("report_device", properties);
 
@@ -539,6 +542,8 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
         // RSSI values are stored with kalman filtering
         kalman_initialize(&existing->kalman);
+        time(&existing->last_sent);
+        existing->last_value = 0;
 
         g_print("Added hash %s\n", address);
     }
@@ -610,15 +615,28 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             int16_t rssi = g_variant_get_int16(prop_val);
             //send_to_mqtt_single_value(address, "rssi", rssi);
 
+            time_t now;
+            time(&now);
+
+            double delta_time = difftime(now, existing->last_sent);
+
             float averaged = kalman_update(&existing->kalman, (float)rssi);
 
-            if (changed)
+            // 100s with RSSI change of 1 triggers send
+            // 10s with RSSI change of 10 triggers send
+            double score = fabs(existing->last_value - averaged) * delta_time;
+
+            if (changed && score > 100.0)
             {
                 // only send for updates, static values not interesting
                 if (fabs(averaged) > 10)
                 { // rssi 0 is wrong
                     send_to_mqtt_single_float(address, "rssi", averaged);
+                    time(&existing->last_sent);
                 }
+            }
+            else {
+               g_print("Skip RSSI %d, delta time: %.0fs score %.0f ", rssi, delta_time, score);
             }
         }
         else if (strcmp(property_name, "TxPower") == 0)
