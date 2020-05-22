@@ -48,7 +48,7 @@ void kalman_initialize(struct Kalman *k)
     k->last_estimate = -999; // marker value
     k->err_measure = 20.0;
     k->err_estimate = 20.0;
-    k->q = 0.50;
+    k->q = 0.25;
 }
 
 float kalman_update(struct Kalman *k, float mea)
