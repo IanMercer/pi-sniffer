@@ -611,30 +611,19 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
                 g_free(existing->alias);
             existing->alias = alias;
         }
-        else if (repeat || strcmp(property_name, "AddressType") == 0)
+        else if (strcmp(property_name, "AddressType") == 0)
         {
-            if (isStringValue) {
+            char *addressType = g_variant_dup_string(prop_val, NULL);
 
-                char *addressType = g_variant_dup_string(prop_val, NULL);
-
-                if (addressType == NULL) {
-                   g_print("**** %s has a NULL address type, what does this mean?\n", address);
-                }
-                else {
-                // Compare values and send
-                   if (addressType != NULL && (repeat || g_strcmp0(existing->addressType, addressType) != 0))
-                    {
-                        g_print("Type has changed '%s' -> '%s'  ", existing->addressType, addressType);
-                        send_to_mqtt_single(address, "type", addressType);
-                    }
-                }
-                if (existing->addressType != NULL)
-                    g_free(existing->addressType);
-                existing->addressType = addressType;
+            // Compare values and send
+            if (repeat || g_strcmp0(existing->addressType, addressType) != 0)
+            {
+                g_print("Type has changed '%s' -> '%s'  ", existing->addressType, addressType);
+                send_to_mqtt_single(address, "type", addressType);
             }
-            else {
-                pretty_print2("ERROR: AddressType type was NULL", prop_val, TRUE);
-            }
+            if (existing->addressType != NULL)
+                g_free(existing->addressType);
+            existing->addressType = addressType;
         }
         else if (strcmp(property_name, "RSSI") == 0)
         {
