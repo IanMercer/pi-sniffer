@@ -574,6 +574,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
     g_variant_iter_init(&i, properties); // no need to free this
     while (g_variant_iter_next(&i, "{&sv}", &property_name, &prop_val))
     {
+        bool isStringValue = g_variant_type_equal(g_variant_get_type(prop_val), G_VARIANT_TYPE_STRING);
 
         if (strcmp(property_name, "Address") == 0)
         {
@@ -612,17 +613,28 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         }
         else if (repeat || strcmp(property_name, "AddressType") == 0)
         {
-            char *addressType = g_variant_dup_string(prop_val, NULL);
+            if (isStringValue) {
 
-            // Compare values and send
-            if (repeat || g_strcmp0(existing->addressType, addressType) != 0)
-            {
-                g_print("Type has changed '%s' -> '%s'  ", existing->addressType, addressType);
-                send_to_mqtt_single(address, "type", addressType);
+                char *addressType = g_variant_dup_string(prop_val, NULL);
+
+                if (addressType == NULL) {
+                   g_print("**** %s has a NULL address type, what does this mean?\n", address);
+                }
+                else {
+                // Compare values and send
+                   if (addressType != NULL && (repeat || g_strcmp0(existing->addressType, addressType) != 0))
+                    {
+                        g_print("Type has changed '%s' -> '%s'  ", existing->addressType, addressType);
+                        send_to_mqtt_single(address, "type", addressType);
+                    }
+                }
+                if (existing->addressType != NULL)
+                    g_free(existing->addressType);
+                existing->addressType = addressType;
             }
-            if (existing->addressType != NULL)
-                g_free(existing->addressType);
-            existing->addressType = addressType;
+            else {
+                pretty_print2("ERROR: AddressType type was NULL", prop_val, TRUE);
+            }
         }
         else if (strcmp(property_name, "RSSI") == 0)
         {
@@ -893,7 +905,7 @@ static void bluez_device_appeared(GDBusConnection *sig,
         if (g_strstr_len(g_ascii_strdown(interface_name, -1), -1, "device"))
         {
             // Report device immediately
-            report_device_to_MQTT(properties, NULL, FALSE);
+            report_device_to_MQTT(properties, NULL, TRUE);
         }
         g_variant_unref(properties);
     }
