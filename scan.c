@@ -45,7 +45,8 @@ struct Kalman
 
 void kalman_initialize(struct Kalman *k)
 {
-    k->last_estimate = -999; // marker value
+    k->current_estimate = -999; // marker value used by time interval check
+    k->last_estimate = -999; // marker value, so first real value overrides it
     k->err_measure = 20.0;
     k->err_estimate = 20.0;
     k->q = 0.25;
@@ -91,6 +92,7 @@ struct DeviceReport
     struct Kalman kalman;
     time_t last_sent;
     float last_value;
+    struct Kalman kalman_interval; // Tracks time between RSSI events in order to detect large gaps
 };
 
 bool get_address_from_path(char *address, int length, const char *path)
@@ -555,6 +557,8 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         existing->last_value = 0;
         time(&existing->last_rssi);
 
+        kalman_initialize(&existing->kalman_interval);
+
         g_print("Added hash %s\n", address);
     }
     else
@@ -634,6 +638,12 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
             double delta_time_sent = difftime(now, existing->last_sent);
 
+            // Smoothed delta time, interval between RSSI events
+            float current_time_estimate = (&existing->kalman_interval)->current_estimate;
+            bool tooLate = (current_time_estimate != -999) && (delta_time_received > 2.0 * current_time_estimate);
+
+            float average_delta_time = kalman_update(&existing->kalman_interval, (float)delta_time_sent);
+
             float averaged = kalman_update(&existing->kalman, (float)rssi);
 
             // 100s with RSSI change of 1 triggers send
@@ -641,10 +651,10 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             double delta_v = fabs(existing->last_value - averaged);
             double score =  delta_v * delta_time_sent;
 
-            if (delta_time_received > 60 * 30) {
-                // Over half an hour since last RSSI was received, this may be a 'dead letter' from controller
-                g_print("Ignoring dead letter RSSI %s %.0fs\n", address, delta_time_received);
-                send_to_mqtt_single_float(address, "rssi", -109.0);  // debug, dummy value
+            if (tooLate) {
+                // Significant gap since last RSSI, this may be the 'dead letter' from controller
+                g_print("Ignoring dead letter RSSI %s %.0fs > 2.0 * %.0fs\n", address, delta_time_received, average_delta_time);
+                //send_to_mqtt_single_float(address, "rssi", -109.0);  // debug, dummy value
             }
             else if (changed && (score > THRESHOLD))
             {
