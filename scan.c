@@ -249,6 +249,7 @@ void send_to_mqtt_null(char *mac_address, char *key)
     if (mqtt.error != MQTT_OK)
     {
         fprintf(stderr, "error: %s\n", mqtt_error_str(mqtt.error));
+        exit_mqtt(EXIT_FAILURE, sockfd, NULL);
     }
 }
 
@@ -310,7 +311,8 @@ void send_to_mqtt_with_time_and_mac(char *mac_address, char *key, int i, char *v
     /* check for errors */
     if (mqtt.error != MQTT_OK)
     {
-        fprintf(stderr, "error: %s\n", mqtt_error_str(mqtt.error));
+        fprintf(stderr, "send w time and mac: %s\n", mqtt_error_str(mqtt.error));
+        exit_mqtt(EXIT_FAILURE, sockfd, NULL);
     }
 
     /*
@@ -574,7 +576,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
     g_variant_iter_init(&i, properties); // no need to free this
     while (g_variant_iter_next(&i, "{&sv}", &property_name, &prop_val))
     {
-        bool isStringValue = g_variant_type_equal(g_variant_get_type(prop_val), G_VARIANT_TYPE_STRING);
+        //bool isStringValue = g_variant_type_equal(g_variant_get_type(prop_val), G_VARIANT_TYPE_STRING);
 
         if (strcmp(property_name, "Address") == 0)
         {
