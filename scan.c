@@ -263,7 +263,7 @@ static void get_mac_address()
 
     s = socket(PF_INET, SOCK_DGRAM, 0);
     memset(&buffer, 0x00, sizeof(buffer));
-    strcpy(buffer.ifr_name, "wlan0");
+    strcpy(buffer.ifr_name, "enp4s0");
     ioctl(s, SIOCGIFHWADDR, &buffer);
     close(s);
     memcpy(&access_point_address, &buffer.ifr_hwaddr.sa_data, 6);
@@ -346,7 +346,7 @@ void send_to_mqtt_uuids(char *mac_address, char *key, char **uuids, int length)
     for (int i = 0; i < length; i++)
     {
         char *uuid = uuids[i];
-        printf("MQTT %s %s/%s/%d uuid[%d]\n", mac_address, topicRoot, key, i, strlen(uuid));
+        printf("MQTT %s %s/%s/%d uuid[%d]\n", mac_address, topicRoot, key, i, (int)strlen(uuid));
         send_to_mqtt_with_time_and_mac(mac_address, key, i, uuid, strlen(uuid) + 1, MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
     }
 }
@@ -501,7 +501,6 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
     //       g_print("report_device_to_MQTT(%s)\n", address);
 
 
-    char *allocated_address = NULL;
     //pretty_print("report_device", properties);
 
     // Get address from dictionary if not already present
@@ -513,7 +512,6 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             g_print("ERROR found two addresses\n");
         }
         address = g_variant_dup_string(address_from_dict, NULL);
-        allocated_address = address;
         g_variant_unref(address_from_dict);
     }
 
@@ -574,7 +572,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
     g_variant_iter_init(&i, properties); // no need to free this
     while (g_variant_iter_next(&i, "{&sv}", &property_name, &prop_val))
     {
-        bool isStringValue = g_variant_type_equal(g_variant_get_type(prop_val), G_VARIANT_TYPE_STRING);
+        //bool isStringValue = g_variant_type_equal(g_variant_get_type(prop_val), G_VARIANT_TYPE_STRING);
 
         if (strcmp(property_name, "Address") == 0)
         {
@@ -860,8 +858,6 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         g_variant_unref(prop_val);
     }
 
-    if (allocated_address != NULL)
-        g_free(allocated_address);
 }
 
 static void bluez_device_appeared(GDBusConnection *sig,
@@ -898,6 +894,9 @@ static void bluez_device_appeared(GDBusConnection *sig,
         }
         g_variant_unref(properties);
     }
+
+    // Nope ... g_variant_unref(object);
+    // Nope ... g_variant_unref(interfaces);
 
     /*
     rc = bluez_adapter_call_method("RemoveDevice", g_variant_new("(o)", object));
@@ -959,16 +958,18 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
                                          void *userdata)
 {
     (void)conn;
-    (void)sender;
+    (void)sender;    // "1.4120"
     (void)path;      // "/org/bluez/hci0/dev_63_FE_94_98_91_D6"  Bluetooth device path
     (void)interface; // "org.freedesktop.DBus.Properties" ... not useful
     (void)userdata;
 
     GVariant *p = NULL;
     GVariantIter *unknown = NULL;
-    const char *iface; // org.bluez.Device1
+    const char *iface; // org.bluez.Device1  OR  org.bluez.Adapter1
 
-    //pretty_print("adapter_changed params = ", params);
+    // ('org.bluez.Adapter1', {'Discovering': <true>}, [])
+    // or a device ... handled by address
+    // pretty_print("adapter_changed params = ", params);
 
     const gchar *signature = g_variant_get_type_string(params);
     if (strcmp(signature, "(sa{sv}as)") != 0)
@@ -977,13 +978,8 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
         return;
     }
 
-    //g_variant_get(params, "(&sa{sv}as)", &iface, &properties, &unknown);
     // Tuple with a string (interface name), a dictionary, and then an array of strings
     g_variant_get(params, "(&s@a{sv}as)", &iface, &p, &unknown);
-
-    //pretty_print("adapter_changed p = ", p);
-    //g_print("Interface %s\n", iface);
-    //g_print("Path %s\n", path);
 
     char address[BT_ADDRESS_STRING_SIZE];
     if (get_address_from_path(address, BT_ADDRESS_STRING_SIZE, path))
@@ -1000,22 +996,27 @@ static int bluez_adapter_set_property(const char *prop, GVariant *value)
 {
     GVariant *result;
     GError *error = NULL;
+    GVariant *gvv = g_variant_new("(ssv)", "org.bluez.Adapter1", prop, value);
 
     result = g_dbus_connection_call_sync(con,
                                          "org.bluez",
                                          "/org/bluez/hci0",
                                          "org.freedesktop.DBus.Properties",
                                          "Set",
-                                         g_variant_new("(ssv)", "org.bluez.Adapter1", prop, value),
+                                         gvv,
                                          NULL,
                                          G_DBUS_CALL_FLAGS_NONE,
                                          -1,
                                          NULL,
                                          &error);
+    if (result != NULL)
+      g_variant_unref(result);
+
+    // not needed: g_variant_unref(gvv);
+
     if (error != NULL)
         return 1;
 
-    g_variant_unref(result);
     return 0;
 }
 
@@ -1039,6 +1040,9 @@ static int bluez_set_discovery_filter()
     g_variant_builder_unref(b);
 
     rc = bluez_adapter_call_method("SetDiscoveryFilter", g_variant_new_tuple(&device_dict, 1), NULL);
+
+    // no need to ... g_variant_unref(device_dict);
+
     if (rc)
     {
         g_print("Not able to set discovery filter\n");
