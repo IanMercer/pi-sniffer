@@ -249,6 +249,7 @@ void send_to_mqtt_null(char *mac_address, char *key)
     if (mqtt.error != MQTT_OK)
     {
         fprintf(stderr, "error: %s\n", mqtt_error_str(mqtt.error));
+        exit_mqtt(EXIT_FAILURE, sockfd, NULL);
     }
 }
 
@@ -310,7 +311,8 @@ void send_to_mqtt_with_time_and_mac(char *mac_address, char *key, int i, char *v
     /* check for errors */
     if (mqtt.error != MQTT_OK)
     {
-        fprintf(stderr, "error: %s\n", mqtt_error_str(mqtt.error));
+        fprintf(stderr, "send w time and mac: %s\n", mqtt_error_str(mqtt.error));
+        exit_mqtt(EXIT_FAILURE, sockfd, NULL);
     }
 
     /*
