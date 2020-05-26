@@ -21,6 +21,7 @@
 #include <net/if.h>
 #include <time.h>
 #include <math.h>
+#include <signal.h>
 
 // delta RSSI x delta time threshold for sending an update
 // e.g. 10 RSSI after 20 seconds or 20 RSSI after 10 seconds or 1 RSSI after 200s
@@ -28,6 +29,10 @@
 // to indicate still alive
 
 #define THRESHOLD 200.0
+
+
+// Handle Ctrl-c
+void     int_handler(int);
 
 /*
       Kalman filter
@@ -1180,14 +1185,18 @@ static void cmd_connect(int argc, char *address)
 
 */
 
+guint prop_changed;
+guint iface_added;
+guint iface_removed;
+
 int main(int argc, char **argv)
 {
     GMainLoop *loop;
     int rc;
-    guint prop_changed;
-    guint iface_added;
-    guint iface_removed;
     //guint getmanagedobjects;
+
+    signal(SIGINT, int_handler);
+    signal(SIGTERM, int_handler);
 
     if (argc < 2)
     {
@@ -1299,4 +1308,25 @@ fail:
     g_dbus_connection_signal_unsubscribe(con, iface_removed);
     g_object_unref(con);
     return 0;
+}
+
+void int_handler(int dummy) {
+    (void) dummy;
+
+    //keepRunning = 0;
+    g_dbus_connection_signal_unsubscribe(con, prop_changed);
+    g_dbus_connection_signal_unsubscribe(con, iface_added);
+    g_dbus_connection_signal_unsubscribe(con, iface_removed);
+    g_object_unref(con);
+
+    if (sockfd != -1)
+        close(sockfd);
+
+    pthread_cancel(client_daemon);
+
+    g_hash_table_destroy (hash);
+
+    g_print("Clean exit\n");
+
+    exit(0);
 }
