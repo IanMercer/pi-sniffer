@@ -261,24 +261,37 @@ void send_to_mqtt_null(char *mac_address, char *key)
 // The mac address of the wlan0 interface (every Pi has one so fairly safe to assume wlan0 exists)
 
 static char access_point_address[6];
+static bool try_get_mac_address(const char* ifname);
 
 static void get_mac_address()
+{
+    // Take first common interface name that returns a valid mac address
+    if (try_get_mac_address("wlan0")) return;
+    if (try_get_mac_address("eth0")) return;
+    if (try_get_mac_address("enp4s0")) return;
+    g_print("ERROR: Could not get local mac address\n");
+    exit(-23);
+}
+
+static bool try_get_mac_address(const char* ifname)
 {
     int s;
     struct ifreq buffer;
 
     s = socket(PF_INET, SOCK_DGRAM, 0);
     memset(&buffer, 0x00, sizeof(buffer));
-//    strcpy(buffer.ifr_name, "enp4s0");
-    strcpy(buffer.ifr_name, "wlan0");
+    strcpy(buffer.ifr_name, ifname);
     ioctl(s, SIOCGIFHWADDR, &buffer);
     close(s);
     memcpy(&access_point_address, &buffer.ifr_hwaddr.sa_data, 6);
+    if (access_point_address[0] == 0) return FALSE;
+    g_print("Local MAC addess for %s is: ", ifname);
     for (s = 0; s < 6; s++)
     {
-        g_print("%.2X ", (unsigned char)access_point_address[s]);
+        g_print("%.2X", (unsigned char)access_point_address[s]);
     }
     g_print("\n");
+    return TRUE;
 }
 
 /* SEND TO MQTT WITH ACCESS POINT MAC ADDRESS AND TIME STAMP */
