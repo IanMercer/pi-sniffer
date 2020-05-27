@@ -269,7 +269,8 @@ static void get_mac_address()
 
     s = socket(PF_INET, SOCK_DGRAM, 0);
     memset(&buffer, 0x00, sizeof(buffer));
-    strcpy(buffer.ifr_name, "enp4s0");
+//    strcpy(buffer.ifr_name, "enp4s0");
+    strcpy(buffer.ifr_name, "wlan0");
     ioctl(s, SIOCGIFHWADDR, &buffer);
     close(s);
     memcpy(&access_point_address, &buffer.ifr_hwaddr.sa_data, 6);
