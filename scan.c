@@ -28,7 +28,7 @@
 // prevents swamping MQTT with very small changes to RSSI but also guarantees an occasional update
 // to indicate still alive
 
-#define THRESHOLD 50.0
+#define THRESHOLD 100.0
 
 
 // Handle Ctrl-c
@@ -524,15 +524,16 @@ static void report_device_disconnected_to_MQTT(char* address)
     if (!g_hash_table_contains(hash, address))
         return;
 
-    struct DeviceReport * existing = (struct DeviceReport *)g_hash_table_lookup(hash, address);
+    //struct DeviceReport * existing = (struct DeviceReport *)g_hash_table_lookup(hash, address);
 
     // Reinitialize it so next value is swallowed??
-    kalman_initialize(&existing->kalman);
+    //kalman_initialize(&existing->kalman);
 
     // Send a marker value to say "GONE"
-    send_to_mqtt_single_value(address, "rssi", -45);
+    send_to_mqtt_single_value(address, "rssi", -44);
 
-    // TODO: Remove value from hash table
+    // Remove value from hash table
+    g_hash_table_remove(hash, address);
 }
 
 
@@ -1163,7 +1164,7 @@ int get_managed_objects(void *parameters)
                            loop);
 
     // PUT A MARKER DOWN ON THE GRAPH TO SHOW WHERE GET MANAGED OBJECTS IS RUNNING
-    send_to_mqtt_single_value(access_point_address, "rssi", -42);
+    send_to_mqtt_single_value(access_point_address, "rssi", -40.2);
 
     return TRUE;
 }
@@ -1312,8 +1313,8 @@ int main(int argc, char **argv)
     }
     g_print("Started discovery\n");
 
-    // Every 5 min send any changes to static information
-    g_timeout_add_seconds(5*60, get_managed_objects, loop);
+    // Every 15 min send any changes to static information
+    g_timeout_add_seconds(15 * 60, get_managed_objects, loop);
 
     // Every 1 hour, repeat all the data (in case MQTT database is lost)
     g_timeout_add_seconds(60 * 60, clear_cache, loop);
@@ -1363,7 +1364,8 @@ void int_handler(int dummy) {
 
     pthread_cancel(client_daemon);
 
-    g_hash_table_destroy (hash);
+    if (hash != NULL)
+        g_hash_table_destroy (hash);
 
     g_print("Clean exit\n");
 
