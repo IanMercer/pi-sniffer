@@ -503,6 +503,25 @@ char *trim(char *str)
 
 static bool repeat = FALSE; // repeats all values every few minutes
 
+static void report_device_disconnected_to_MQTT(char* address)
+{
+    if (hash == NULL) return;
+
+    if (!g_hash_table_contains(hash, address))
+        return;
+
+    struct DeviceReport * existing = (struct DeviceReport *)g_hash_table_lookup(hash, address);
+
+    // Reinitialize it so next value is swallowed??
+    kalman_initialize(&existing->kalman);
+
+    // Send a marker value to say "GONE"
+    send_to_mqtt_single_value(address, "rssi", -45);
+
+    // TODO: Remove value from hash table
+}
+
+
 static void report_device_to_MQTT(GVariant *properties, char *address, bool changed)
 {
     //       g_print("report_device_to_MQTT(%s)\n", address);
@@ -943,7 +962,7 @@ static void bluez_device_disappeared(GDBusConnection *sig,
             if (get_address_from_path(address, BT_ADDRESS_STRING_SIZE, object))
             {
                 g_print("Device %s removed\n", address);
-                send_to_mqtt_single_value(address, "rssi", 0);
+                report_device_disconnected_to_MQTT(address);
             }
         }
         // Nope ... g_variant_unref(interface_name);
