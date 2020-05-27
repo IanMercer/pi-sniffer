@@ -28,7 +28,7 @@
 // prevents swamping MQTT with very small changes to RSSI but also guarantees an occasional update
 // to indicate still alive
 
-#define THRESHOLD 200.0
+#define THRESHOLD 50.0
 
 
 // Handle Ctrl-c
@@ -659,16 +659,17 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             time(&now);
 
             // track gap between RSSI received events
-            double delta_time_received = difftime(now, existing->last_rssi);
+            //double delta_time_received = difftime(now, existing->last_rssi);
             time(&existing->last_rssi);
 
             double delta_time_sent = difftime(now, existing->last_sent);
 
             // Smoothed delta time, interval between RSSI events
-            float current_time_estimate = (&existing->kalman_interval)->current_estimate;
-            bool tooLate = (current_time_estimate != -999) && (delta_time_received > 2.0 * current_time_estimate);
+            //float current_time_estimate = (&existing->kalman_interval)->current_estimate;
 
-            float average_delta_time = kalman_update(&existing->kalman_interval, (float)delta_time_sent);
+            //bool tooLate = (current_time_estimate != -999) && (delta_time_received > 2.0 * current_time_estimate);
+
+            //float average_delta_time = kalman_update(&existing->kalman_interval, (float)delta_time_sent);
 
             float averaged = kalman_update(&existing->kalman, (float)rssi);
 
@@ -677,12 +678,13 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             double delta_v = fabs(existing->last_value - averaged);
             double score =  delta_v * delta_time_sent;
 
-            if (tooLate) {
-                // Significant gap since last RSSI, this may be the 'dead letter' from controller
-                g_print("Ignoring dead letter RSSI %s %.0fs > 2.0 * %.0fs\n", address, delta_time_received, average_delta_time);
-                //send_to_mqtt_single_float(address, "rssi", -109.0);  // debug, dummy value
-            }
-            else if (changed && (score > THRESHOLD))
+ //           if (tooLate) {
+ //               // Significant gap since last RSSI, this may be the 'dead letter' from controller
+ //               g_print("Ignoring dead letter RSSI %s %.0fs > 2.0 * %.0fs\n", address, delta_time_received, average_delta_time);
+ //               //send_to_mqtt_single_float(address, "rssi", -109.0);  // debug, dummy value
+ //           }
+ //           else 
+            if (changed && (score > THRESHOLD))
             {
                 // ignore RSSI values that are impossibly good (<10 when normal range is -20 to -120)
                 if (fabs(averaged) > 10)
@@ -1146,6 +1148,10 @@ int get_managed_objects(void *parameters)
                            NULL,
                            (GAsyncReadyCallback)bluez_list_devices,
                            loop);
+
+    // PUT A MARKER DOWN ON THE GRAPH TO SHOW WHERE GET MANAGED OBJECTS IS RUNNING
+    send_to_mqtt_single_value(access_point_address, "rssi", -42);
+
     return TRUE;
 }
 
