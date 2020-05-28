@@ -529,10 +529,13 @@ static void report_device_disconnected_to_MQTT(char* address)
     // Reinitialize it so next value is swallowed??
     //kalman_initialize(&existing->kalman);
 
-    // Send a marker value to say "GONE"
-    int fake_rssi = 40 + ((float)(address[5] & 0xF) / 10.0) + ((float)(access_point_address[5] & 0x3) / 2.0);
+    // TODO: A stable iBeacon gets disconnect events all the time - this is not useful data
 
-    send_to_mqtt_single_value(address, "rssi", -fake_rssi);
+
+    // Send a marker value to say "GONE"
+    //int fake_rssi = 40 + ((float)(address[5] & 0xF) / 10.0) + ((float)(access_point_address[5] & 0x3) / 2.0);
+
+    //send_to_mqtt_single_value(address, "rssi", -fake_rssi);
 
     // Remove value from hash table
     g_hash_table_remove(hash, address);
@@ -1166,7 +1169,7 @@ int get_managed_objects(void *parameters)
                            loop);
 
     // PUT A MARKER DOWN ON THE GRAPH TO SHOW WHERE GET MANAGED OBJECTS IS RUNNING
-    send_to_mqtt_single_value(access_point_address, "rssi", -40.2);
+    //send_to_mqtt_single_value(access_point_address, "rssi", -40.2);
 
     return TRUE;
 }
