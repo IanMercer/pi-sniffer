@@ -285,7 +285,7 @@ static bool try_get_mac_address(const char* ifname)
     close(s);
     memcpy(&access_point_address, &buffer.ifr_hwaddr.sa_data, 6);
     if (access_point_address[0] == 0) return FALSE;
-    g_print("Local MAC addess for %s is: ", ifname);
+    g_print("Local MAC address for %s is: ", ifname);
     for (s = 0; s < 6; s++)
     {
         g_print("%.2X", (unsigned char)access_point_address[s]);
@@ -530,7 +530,9 @@ static void report_device_disconnected_to_MQTT(char* address)
     //kalman_initialize(&existing->kalman);
 
     // Send a marker value to say "GONE"
-    send_to_mqtt_single_value(address, "rssi", -44);
+    int fake_rssi = 40 + ((float)(address[5] & 0xF) / 10.0) + ((float)(access_point_address[5] & 0x3) / 2.0);
+
+    send_to_mqtt_single_value(address, "rssi", -fake_rssi);
 
     // Remove value from hash table
     g_hash_table_remove(hash, address);
