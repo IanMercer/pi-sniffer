@@ -531,7 +531,6 @@ static void report_device_disconnected_to_MQTT(char* address)
 
     // TODO: A stable iBeacon gets disconnect events all the time - this is not useful data
 
-
     // Send a marker value to say "GONE"
     //int fake_rssi = 40 + ((float)(address[5] & 0xF) / 10.0) + ((float)(access_point_address[5] & 0x3) / 2.0);
 
@@ -938,7 +937,7 @@ static void bluez_device_appeared(GDBusConnection *sig,
         if (g_strstr_len(g_ascii_strdown(interface_name, -1), -1, "device"))
         {
             // Report device immediately
-            report_device_to_MQTT(properties, NULL, TRUE);
+            report_device_to_MQTT(properties, NULL, FALSE);
         }
         g_variant_unref(properties);
     }
