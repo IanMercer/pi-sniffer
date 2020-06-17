@@ -91,7 +91,7 @@ struct DeviceReport
     bool trusted;
     uint32_t deviceclass; // https://www.bluetooth.com/specifications/assigned-numbers/Baseband/
     uint16_t appearance;
-    int manufacturer_data_length; // should use a Hash instead
+    int manufacturer_data_hash;
     int uuids_length;             // should use a Hash instead
     time_t last_rssi;             // last time an RSSI was received. If gap > 0.5 hour, ignore initial point (dead letter post)
     struct Kalman kalman;
@@ -590,7 +590,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         existing->paired = FALSE;
         existing->deviceclass = 0;
         existing->manufacturer = 0;
-        existing->manufacturer_data_length = 0;
+        existing->manufacturer_data_hash = 0;
         existing->appearance = 0;
         existing->uuids_length = 0;
 
@@ -694,7 +694,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             // 100s with RSSI change of 1 triggers send
             // 10s with RSSI change of 10 triggers send
             double delta_v = fabs(existing->last_value - averaged);
-            double score =  delta_v * delta_time_sent;
+            double score =  delta_v * (delta_time_sent + 1.0);
 
  //           if (tooLate) {
  //               // Significant gap since last RSSI, this may be the 'dead letter' from controller
@@ -851,7 +851,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         {
             // ManufacturerData {uint16 76: <[byte 0x10, 0x06, 0x10, 0x1a, 0x52, 0xe9, 0xc8, 0x08]>}
             // {a(sv)}
-            //pretty_print2("ManufacturerData (batch)", prop_val, TRUE);  // a{qv}
+            pretty_print2("ManufacturerData", prop_val, TRUE);  // a{qv}
 
             GVariant *s_value;
             GVariantIter i;
@@ -863,7 +863,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
                 if (repeat || existing->manufacturer != manufacturer)
                 {
-                    g_print("Manufacturer has changed  ");
+                    g_print("  Manufacturer has changed    ");
                     send_to_mqtt_single_value(address, "manufacturer", manufacturer);
                     existing->manufacturer = manufacturer;
                 }
@@ -885,11 +885,62 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
                 unsigned char *allocdata = g_malloc(actualLength);
                 memcpy(allocdata, byteArray, actualLength);
 
-                if (repeat || existing->manufacturer_data_length != actualLength)
+                uint8_t hash = 0;
+                for (int i = 0; i < actualLength; i++) {
+                  hash += allocdata[i];
+                }
+
+                if (repeat || existing->manufacturer_data_hash != hash)
                 {
-                    g_print("ManufData has changed       ");
+                    g_print("  ManufData has changed       ");
                     send_to_mqtt_array(address, "manufacturerdata", allocdata, actualLength);
-                    existing->manufacturer_data_length = actualLength;
+                    existing->manufacturer_data_hash = hash;
+
+                    if (existing->last_value < 0) {
+                      // And repeat the RSSI value every time someone locks or unlocks their phone
+                      // Even if the change notification did not include an updated RSSI
+                      g_print("Resend %s RSSI %.1f ", address, existing->last_value);
+                      send_to_mqtt_single_float(address, "rssi", existing->last_value);
+                    }
+                }
+
+		if (manufacturer == 0x004c) {
+                  uint8_t apple_device_type = allocdata[00];
+                  if (apple_device_type == 0x02) g_print("  Beacon \n");
+                  else if (apple_device_type == 0x07) g_print("  Airpods \n");
+                  else if (apple_device_type == 0x0c) g_print("  Handoff \n");
+                  else if (apple_device_type == 0x10) {
+                    g_print("  Nearby ");
+                    uint8_t device_status = allocdata[02];
+                    if (device_status == 0x57) g_print(" Lock screen (57) ");
+                    else if (device_status == 0x47) g_print(" Lock screen (47) ");
+                    else if (device_status == 0x1b) g_print(" Home screen (1b) ");
+                    else if (device_status == 0x1c) g_print(" Home screen (1c) ");
+                    else if (device_status == 0x50) g_print(" Home screen (50) ");
+                    else if (device_status == 0x4e) g_print(" Outgoing call (4e) ");
+                    else if (device_status == 0x5e) g_print(" Incoming call (5e) ");
+                    else if (device_status == 0x01) g_print(" Off (01) ");
+                    else if (device_status == 0x03) g_print(" Off (03) ");
+                    else if (device_status == 0x09) g_print(" Off (09) ");
+                    else if (device_status == 0x0a) g_print(" Off (0a) ");
+                    else if (device_status == 0x13) g_print(" Off (13) ");
+                    else if (device_status == 0x18) g_print(" Off (18) ");
+                    else if (device_status == 0x1a) g_print(" Off (1a) ");
+                    else if (device_status < 0x20) g_print(" Off %.2x", device_status); else g_print(" On %.2x ", device_status);
+
+                    if (allocdata[03] == 0x18) g_print(" Macbook off "); else
+                    if (allocdata[03] == 0x1c) g_print(" Macbook on "); else
+                    if (allocdata[03] == 0x1e) g_print(" iPhone (iOS 13 On) "); else
+                    if (allocdata[03] == 0x1a) g_print(" iWatch (iOS 13 Off) "); else
+                    if (allocdata[03] == 0x00) g_print(" TBD "); else
+                      g_print (" device type %.2x", allocdata[03]);  // 1e = iPhone, 1a = iWatch
+
+                    g_print("\n");
+                  } else {
+                    g_print("Did not recognize manufacturer message type %.2x", apple_device_type);
+                  }
+                } else {
+                  g_print("  Did not recognize manufacturer %.4x\n", manufacturer);
                 }
 
                 g_variant_unref(s_value);
