@@ -536,8 +536,9 @@ static void report_device_disconnected_to_MQTT(char* address)
 
     //send_to_mqtt_single_value(address, "rssi", -fake_rssi);
 
+    // DON'T REMOVE VALUE FROM HASH TABLE - We get disconnected messages and then immediately reconnects
     // Remove value from hash table
-    g_hash_table_remove(hash, address);
+    // g_hash_table_remove(hash, address);
 }
 
 
@@ -596,8 +597,8 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
         // RSSI values are stored with kalman filtering
         kalman_initialize(&existing->kalman);
-        time(&existing->last_sent);
         existing->last_value = 0;
+        time(&existing->last_sent);
         time(&existing->last_rssi);
 
         kalman_initialize(&existing->kalman_interval);
@@ -610,6 +611,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         existing = (struct DeviceReport *)g_hash_table_lookup(hash, address);
         //g_print("Existing value %s\n", existing->address);
     }
+
 
     const gchar *property_name;
     GVariantIter i;
@@ -945,6 +947,9 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
                 g_variant_unref(s_value);
             }
+
+            time(&existing->last_sent);
+
         }
         else
         {
@@ -1224,12 +1229,36 @@ int get_managed_objects(void *parameters)
     return TRUE;
 }
 
+
+// Remove old items from cache
+gboolean remove_func (gpointer key, void *value, gpointer user_data) {
+  (void)user_data;
+  struct DeviceReport *existing = (struct DeviceReport *)value;
+
+  time_t now;
+  time(&now);
+
+  double delta_time_sent = difftime(now, existing->last_sent);
+
+  g_print("  Cache remove:? %s %f\n", (char*)key, delta_time_sent);
+
+  return delta_time_sent > 15 * 60;  // 15 min of no activity = remove from cache
+}
+
+
 int clear_cache(void *parameters)
 {
     g_print("Clearing cache\n");
     //GMainLoop * loop = (GMainLoop*) parameters;
     (void)parameters; // not used
-    repeat = TRUE;
+//    repeat = TRUE;
+
+    // Remove any item in cache that hasn't been seen for a long time
+    gpointer user_data = NULL;
+
+    g_hash_table_foreach_remove (hash, &remove_func, user_data);
+
+
     return TRUE;
 }
 
@@ -1372,7 +1401,8 @@ int main(int argc, char **argv)
     g_timeout_add_seconds(15 * 60, get_managed_objects, loop);
 
     // Every 1 hour, repeat all the data (in case MQTT database is lost)
-    g_timeout_add_seconds(60 * 60, clear_cache, loop);
+    // TESTING g_timeout_add_seconds(60 * 60, clear_cache, loop);
+    g_timeout_add_seconds(30, clear_cache, loop);
 
     prepare_mqtt(mqtt_addr, mqtt_port);
 
