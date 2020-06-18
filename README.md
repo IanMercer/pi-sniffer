@@ -28,7 +28,7 @@ The MQTT topic prefix is hard-coded but the MQTT server IP (or FQDN) and port ar
 
 * clone this repository
 * install dependencies:    `sudo apt-get install libglib2.0-dev`
-* edit your Mosquitto connection details into scan.c
+* edit your Mosquitto connection details into the last line of build.sh that launches the sniffer
 * build the code:   `sudo ./build/sh`
 * try the sniffer: ./scan <mqtt server ip> [<port>]
 * edit the .service file to point to the scan executable location:
