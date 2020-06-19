@@ -54,7 +54,7 @@ void kalman_initialize(struct Kalman *k)
     k->last_estimate = -999; // marker value, so first real value overrides it
     k->err_measure = 20.0;
     k->err_estimate = 20.0;
-    k->q = 0.25;
+    k->q = 0.10;   // was 0.25 which was too slow
 }
 
 float kalman_update(struct Kalman *k, float mea)
