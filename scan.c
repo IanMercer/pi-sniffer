@@ -59,6 +59,12 @@ void kalman_initialize(struct Kalman *k)
 
 float kalman_update(struct Kalman *k, float mea)
 {
+    // DISABLE KALMAN FOR NOW
+    k->last_estimate = mea;
+
+    return mea;
+
+
     // First time through, use the measured value as the actual value
     if (k->last_estimate == -999)
     {
