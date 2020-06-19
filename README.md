@@ -37,6 +37,9 @@ The MQTT topic prefix is hard-coded but the MQTT server IP (or FQDN) and port ar
 * copy the service file to systemd:
     `sudo cp pi-sniffer.service /etc/systemd/system/pi-sniffer.service`
 
+* enable the service to restart after a reboot:
+    `sudo systemctl enable pi-sniffer.service`
+
 * start the service:
     `sudo systemctl start pi-sniffer.service`
 
