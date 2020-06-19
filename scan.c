@@ -23,13 +23,12 @@
 #include <math.h>
 #include <signal.h>
 
-// delta RSSI x delta time threshold for sending an update
-// e.g. 10 RSSI after 20 seconds or 20 RSSI after 10 seconds or 1 RSSI after 200s
-// prevents swamping MQTT with very small changes to RSSI but also guarantees an occasional update
-// to indicate still alive
+// delta distance x delta time threshold for sending an update
+// e.g. 5m after 2s or 1m after 10s
+// prevents swamping MQTT with very small changes
+// but also guarantees an occasional update to indicate still alive
 
 #define THRESHOLD 10.0
-
 
 // Handle Ctrl-c
 void     int_handler(int);
@@ -40,12 +39,12 @@ void     int_handler(int);
 
 struct Kalman
 {
-    float err_measure;
-    float err_estimate;
-    float q;
-    float current_estimate;
-    float last_estimate;
-    float kalman_gain;
+    double err_measure;
+    double err_estimate;
+    double q;
+    double current_estimate;
+    double last_estimate;
+    double kalman_gain;
 };
 
 void kalman_initialize(struct Kalman *k)
@@ -57,7 +56,7 @@ void kalman_initialize(struct Kalman *k)
     k->q = 0.25;   // was 0.25 which was too slow
 }
 
-float kalman_update(struct Kalman *k, float mea)
+float kalman_update(struct Kalman *k, double mea)
 {
     // First time through, use the measured value as the actual value
     if (k->last_estimate == -999)
@@ -696,7 +695,18 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
             //float average_delta_time = kalman_update(&existing->kalman_interval, (float)delta_time_sent);
 
-            float averaged = kalman_update(&existing->kalman, (float)rssi);
+            double N = 3.0;   // 2.0 to 4.0 depending on environment
+            double OneMeterRSSI = -50.0; // Measured power
+
+            //  RSSI = -50   distance = 1.0m
+            //  RSSI = -100  distance = 46m      which seems about right for outdoor, maybe N is less indoor?
+
+            double exponent = ((OneMeterRSSI - (double)rssi) / (10.0 * N));
+
+            double distance = pow(10.0, exponent);
+
+            float averaged = kalman_update(&existing->kalman, distance);
+
 
             // 100s with RSSI change of 1 triggers send
             // 10s with RSSI change of 10 triggers send
@@ -714,17 +724,17 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
                 // ignore RSSI values that are impossibly good (<10 when normal range is -20 to -120)
                 if (fabs(averaged) > 10)
                 {
-                    g_print("Send %s RSSI %.1f, delta v:%.1f t:%.0fs score %.0f ", address, averaged, delta_v, delta_time_sent, score);
-                    send_to_mqtt_single_float(address, "rssi", averaged);
+                    g_print("Send %s distance %.1f, delta v:%.1f t:%.0fs score %.0f ", address, averaged, delta_v, delta_time_sent, score);
+                    send_to_mqtt_single_float(address, "distance", averaged);
                     time(&existing->last_sent);
                     existing->last_value = averaged;
                 }
             }
             else if (changed) {
-               g_print("Skip %s RSSI %.1f, delta v:%.1f t:%.0fs score %.0f\n", address, averaged, delta_v, delta_time_sent, score);
+               g_print("Skip %s distance %.1f, delta v:%.1f t:%.0fs score %.0f\n", address, averaged, delta_v, delta_time_sent, score);
             }
             else {
-               g_print("Ignore %s RSSI %.1f, delta v:%.1f t:%.0fs\n", address, averaged, delta_v, delta_time_sent);
+               g_print("Ignore %s distance %.1f, delta v:%.1f t:%.0fs\n", address, averaged, delta_v, delta_time_sent);
             }
         }
         else if (strcmp(property_name, "TxPower") == 0)
@@ -1245,7 +1255,7 @@ gboolean remove_func (gpointer key, void *value, gpointer user_data) {
 
   double delta_time_sent = difftime(now, existing->last_sent);
 
-  g_print("  Cache remove:? %s %f\n", (char*)key, delta_time_sent);
+  g_print("  Cache remove? %s %.1fs %.1fm\n", (char*)key, delta_time_sent, existing->kalman.current_estimate);
 
   return delta_time_sent > 15 * 60;  // 15 min of no activity = remove from cache
 }
