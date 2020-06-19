@@ -28,7 +28,7 @@
 // prevents swamping MQTT with very small changes to RSSI but also guarantees an occasional update
 // to indicate still alive
 
-#define THRESHOLD 100.0
+#define THRESHOLD 10.0
 
 
 // Handle Ctrl-c
