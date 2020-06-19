@@ -15,8 +15,12 @@ Kalman filter to smooth the RSSI values.
 * Simplicity: do one thing well, no frills
 
 # status
-This is an initial very rough commit and proof of concept. I have copied in the essential source and header files to make it compile and run without any external dependencies. There is a `build.sh` file that builds and runs the code. 
+This is an early proof of concept. 
+It includes the essential source and header files to make it compile and run without any external dependencies. 
+There is a `build.sh` file that builds and runs the code. 
 The MQTT topic prefix is hard-coded but the MQTT server IP (or FQDN) and port are configurable.
+It now sends an approximate distance topic instead of an RSSI topic. 
+The environment value (2.0-4.0) will be configurable later for indoor / outdoor scenarios.
 
 # plans
 * Look into pairing iPhones to eliminate random mac addresses
