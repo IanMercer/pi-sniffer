@@ -64,11 +64,6 @@ float kalman_update(struct Kalman *k, double mea)
         k->last_estimate = mea;
         return mea;
     }
-    if (fabs(k->last_estimate - mea) >  15.0) {
-       // sudden change
-       k->last_estimate = mea;
-       return mea;
-    }
     //g_print("%f %f %f %f\n", k->err_measure, k->err_estimate, k->q, mea);
     k->kalman_gain = k->err_estimate / (k->err_estimate + k->err_measure);
     k->current_estimate = k->last_estimate + k->kalman_gain * (mea - k->last_estimate);

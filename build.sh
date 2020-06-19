@@ -7,4 +7,11 @@ gcc `pkg-config --cflags glib-2.0 gio-2.0` -Wall -Wextra -o scan scan.c mqtt.c m
 
 chmod a+x ./scan
 
-sudo ./scan 192.168.0.120 1883
+# run immediately
+# sudo ./scan 192.168.0.120 1883
+
+# update running service
+sudo systemctl stop pi-sniffer.service
+sudo systemctl start pi-sniffer.service
+sudo systemctl status pi-sniffer.service
+
