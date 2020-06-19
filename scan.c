@@ -28,7 +28,7 @@
 // prevents swamping MQTT with very small changes to RSSI but also guarantees an occasional update
 // to indicate still alive
 
-#define THRESHOLD 100.0
+#define THRESHOLD 20.0
 
 
 // Handle Ctrl-c
@@ -52,19 +52,13 @@ void kalman_initialize(struct Kalman *k)
 {
     k->current_estimate = -999; // marker value used by time interval check
     k->last_estimate = -999; // marker value, so first real value overrides it
-    k->err_measure = 20.0;
-    k->err_estimate = 20.0;
-    k->q = 0.10;   // was 0.25 which was too slow
+    k->err_measure = 10.0;
+    k->err_estimate = 10.0;
+    k->q = 0.25;   // was 0.25 which was too slow
 }
 
 float kalman_update(struct Kalman *k, float mea)
 {
-    // DISABLE KALMAN FOR NOW
-    k->last_estimate = mea;
-
-    return mea;
-
-
     // First time through, use the measured value as the actual value
     if (k->last_estimate == -999)
     {
