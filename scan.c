@@ -690,10 +690,16 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
             //float average_delta_time = kalman_update(&existing->kalman_interval, (float)delta_time_sent);
 
-            double N = 3.0;   // 2.0 to 4.0 depending on environment
-            double OneMeterRSSI = -50.0; // Measured power
+            double N = 2.1;   // 2.0 to 4.0 depending on environment
 
-            //  RSSI = -50   distance = 1.0m
+            bool isBarn = access_point_address[5] == 0xa3;
+            if (isBarn) {
+              N = 3.2;        // no walls
+            }
+
+            double OneMeterRSSI = -20.0; // Measured power
+
+            //  RSSI = -20   distance = 1.0m
             //  RSSI = -100  distance = 46m      which seems about right for outdoor, maybe N is less indoor?
 
             double exponent = ((OneMeterRSSI - (double)rssi) / (10.0 * N));
