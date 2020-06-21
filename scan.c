@@ -674,6 +674,8 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             int16_t rssi = g_variant_get_int16(prop_val);
             //send_to_mqtt_single_value(address, "rssi", rssi);
 
+            g_print("%s RSSI has changed %i changed=%i\n", address, rssi, changed);
+
             time_t now;
             time(&now);
 
@@ -1258,24 +1260,26 @@ gboolean remove_func (gpointer key, void *value, gpointer user_data) {
 
   double delta_time_sent = difftime(now, existing->last_sent);
 
-  g_print("  Cache remove? %s %.1fs %.1fm\n", (char*)key, delta_time_sent, existing->kalman.current_estimate);
+  gboolean remove = delta_time_sent > 15 * 60;
 
-  return delta_time_sent > 15 * 60;  // 15 min of no activity = remove from cache
+  if (remove) {
+    g_print("  Cache remove? %s %.1fs %.1fm\n", (char*)key, delta_time_sent, existing->kalman.current_estimate);
+  }
+
+  return remove;  // 15 min of no activity = remove from cache
 }
 
 
 int clear_cache(void *parameters)
 {
-    g_print("Clearing cache\n");
+//    g_print("Clearing cache\n");
     //GMainLoop * loop = (GMainLoop*) parameters;
     (void)parameters; // not used
 //    repeat = TRUE;
 
     // Remove any item in cache that hasn't been seen for a long time
     gpointer user_data = NULL;
-
     g_hash_table_foreach_remove (hash, &remove_func, user_data);
-
 
     return TRUE;
 }
