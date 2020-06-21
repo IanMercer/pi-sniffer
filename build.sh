@@ -13,5 +13,5 @@ chmod a+x ./scan
 # update running service
 sudo systemctl stop pi-sniffer.service
 sudo systemctl start pi-sniffer.service
-sudo systemctl status pi-sniffer.service
 
+sudo journalctl -u pi-sniffer.service -f
