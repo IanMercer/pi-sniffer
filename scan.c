@@ -669,6 +669,11 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
                 g_free(existing->addressType);
             existing->addressType = addressType;
         }
+        else if (strcmp(property_name, "RSSI") == 0 && (changed == FALSE)) {
+            int16_t rssi = g_variant_get_int16(prop_val);
+            g_print("%s RSSI repeat %i changed=%i\n", address, rssi, changed);
+
+        }
         else if (strcmp(property_name, "RSSI") == 0)
         {
             int16_t rssi = g_variant_get_int16(prop_val);
@@ -870,7 +875,6 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         {
             // ManufacturerData {uint16 76: <[byte 0x10, 0x06, 0x10, 0x1a, 0x52, 0xe9, 0xc8, 0x08]>}
             // {a(sv)}
-            pretty_print2("ManufacturerData", prop_val, TRUE);  // a{qv}
 
             GVariant *s_value;
             GVariantIter i;
@@ -911,6 +915,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
                 if (repeat || existing->manufacturer_data_hash != hash)
                 {
+                    pretty_print2("ManufacturerData", prop_val, TRUE);  // a{qv}
                     g_print("  ManufData has changed       ");
                     send_to_mqtt_array(address, "manufacturerdata", allocdata, actualLength);
                     existing->manufacturer_data_hash = hash;
