@@ -225,7 +225,7 @@ static void prepare_mqtt(char *mqtt_addr, char *mqtt_port)
     /* check that we don't have any errors */
     if (mqtt.error != MQTT_OK)
     {
-        fprintf(stderr, "error: %s\n", mqtt_error_str(mqtt.error));
+        fprintf(stderr, "\n\nERROR: MQTT STARTUP CONNECT FAILED:%s\n", mqtt_error_str(mqtt.error));
         exit_mqtt(EXIT_FAILURE, sockfd, NULL);
     }
 
@@ -234,7 +234,7 @@ static void prepare_mqtt(char *mqtt_addr, char *mqtt_port)
     /* start a thread to refresh the client (handle egress and ingree client traffic) */
     if (pthread_create(&client_daemon, NULL, client_refresher, &mqtt))
     {
-        fprintf(stderr, "Failed to start client daemon.\n");
+        fprintf(stderr, "\n\nERROR: Failed to start client daemon.\n");
         exit_mqtt(EXIT_FAILURE, sockfd, NULL);
     }
 }
@@ -252,7 +252,7 @@ void send_to_mqtt_null(char *mac_address, char *key)
     /* check for errors */
     if (mqtt.error != MQTT_OK)
     {
-        fprintf(stderr, "error: %s\n", mqtt_error_str(mqtt.error));
+        fprintf(stderr, "\n\nERROR MQTT Send: %s\n", mqtt_error_str(mqtt.error));
         exit_mqtt(EXIT_FAILURE, sockfd, NULL);
     }
 }
@@ -295,6 +295,8 @@ static bool try_get_mac_address(const char* ifname)
 
 /* SEND TO MQTT WITH ACCESS POINT MAC ADDRESS AND TIME STAMP */
 
+static int send_errors = 0;
+
 void send_to_mqtt_with_time_and_mac(char *mac_address, char *key, int i, char *value, int value_length, int flags)
 {
     //        g_print("send_to_mqtt_with_time_and_mac\n");
@@ -329,8 +331,13 @@ void send_to_mqtt_with_time_and_mac(char *mac_address, char *key, int i, char *v
     /* check for errors */
     if (mqtt.error != MQTT_OK)
     {
-        fprintf(stderr, "send w time and mac: %s\n", mqtt_error_str(mqtt.error));
-        exit_mqtt(EXIT_FAILURE, sockfd, NULL);
+        fprintf(stderr, "\n\nERROR Send w time and mac: %s\n", mqtt_error_str(mqtt.error));
+
+        send_errors ++;
+        if (send_errors > 10) {
+          g_print("\n\nToo many send errors, restarting\n\n");
+          exit_mqtt(EXIT_FAILURE, sockfd, NULL);
+        }
     }
 
     /*
@@ -817,7 +824,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
             if (repeat || existing->uuids_length != actualLength)
             {
-                g_print("UUIDs has changed       ");
+                g_print("  %s UUIDs has changed       ", address);
                 send_to_mqtt_uuids(address, "uuids", allocdata, actualLength);
                 existing->uuids_length = actualLength;
             }
@@ -856,7 +863,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             uint16_t appearance = g_variant_get_uint16(prop_val);
             if (repeat || existing->appearance != appearance)
             {
-                g_print("Appearance has changed    ");
+                g_print("  %s Appearance has changed    ", address);
                 send_to_mqtt_single_value(address, "appearance", appearance);
                 existing->appearance = appearance;
             }
@@ -866,7 +873,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             // A a{sv} value
 
             // {'000080e7-0000-1000-8000-00805f9b34fb': <[byte 0xb0, 0x23, 0x25, 0xcb, ...]>}
-            pretty_print2("ServiceData (batch)", prop_val, TRUE); // a{sv}
+            pretty_print2("  ServiceData ", prop_val, TRUE); // a{sv}
         }
         else if (strcmp(property_name, "Adapter") == 0)
         {
