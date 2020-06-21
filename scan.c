@@ -701,7 +701,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
             bool isBarn = access_point_address[5] == 0xa3;
             if (isBarn) {
-              N = 2.5;        // no walls
+              N = 2.8;        // no walls (2.5 gave 15m distances for 5m real
             }
 
             double OneMeterRSSI = -50.0; // Measured power
