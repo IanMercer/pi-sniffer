@@ -514,7 +514,7 @@ char *trim(char *str)
 
 */
 
-static bool repeat = FALSE; // repeats all values every few minutes
+static bool repeat = FALSE; // runs the get managed objects call just once, 15s after startup
 
 static void report_device_disconnected_to_MQTT(char* address)
 {
@@ -600,6 +600,9 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         time(&existing->last_sent);
         time(&existing->last_rssi);
 
+        existing->last_sent = existing->last_sent - 10000; // bump back in time so first RSSI goes straight through
+        existing->last_rssi = existing->last_rssi - 10000; // bump back in time so first RSSI goes straight through
+
         kalman_initialize(&existing->kalman_interval);
 
         g_print("Added hash %s\n", address);
@@ -633,7 +636,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
             if (repeat || g_strcmp0(existing->name, name) != 0)
             {
-                g_print("Name has changed '%s' -> '%s'  ", existing->name, name);
+                g_print("  %s Name has changed '%s' -> '%s'  ", address, existing->name, name);
                 send_to_mqtt_single(address, "name", name);
                 if (existing->name != NULL)
                     g_free(existing->name);
@@ -648,7 +651,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
             if (repeat || g_strcmp0(existing->alias, alias) != 0)
             {
-                g_print("Alias has changed '%s' -> '%s'  ", existing->alias, alias);
+                g_print("  %s Alias has changed '%s' -> '%s'  ", address, existing->alias, alias);
                 send_to_mqtt_single(address, "alias", alias);
             }
             if (existing->alias != NULL)
@@ -662,7 +665,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             // Compare values and send
             if (repeat || g_strcmp0(existing->addressType, addressType) != 0)
             {
-                g_print("Type has changed '%s' -> '%s'  ", existing->addressType, addressType);
+                g_print("  %s Type has changed '%s' -> '%s'  ", address, existing->addressType, addressType);
                 send_to_mqtt_single(address, "type", addressType);
             }
             if (existing->addressType != NULL)
@@ -672,7 +675,6 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         else if (strcmp(property_name, "RSSI") == 0 && (changed == FALSE)) {
             int16_t rssi = g_variant_get_int16(prop_val);
             g_print("%s RSSI repeat %i changed=%i\n", address, rssi, changed);
-
         }
         else if (strcmp(property_name, "RSSI") == 0)
         {
@@ -748,6 +750,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         {
             if (changed)
             {
+                g_print("  %s TXPOWER has changed        ", address);
                 int16_t p = g_variant_get_int16(prop_val);
                 send_to_mqtt_single_value(address, "txpower", p);
             }
@@ -758,7 +761,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             bool paired = g_variant_get_boolean(prop_val);
             if (existing->paired != paired)
             {
-                g_print("Paired has changed        ");
+                g_print("  %s Paired has changed        ", address);
                 send_to_mqtt_single_value(address, "paired", paired ? 1 : 0);
                 existing->paired = paired;
             }
@@ -768,7 +771,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             bool connected = g_variant_get_boolean(prop_val);
             if (repeat || existing->connected != connected)
             {
-                g_print("Connected has changed     ");
+                g_print("  %s Connected has changed     ", address);
                 send_to_mqtt_single_value(address, "connected", connected ? 1 : 0);
                 existing->connected = connected;
             }
@@ -778,7 +781,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             bool trusted = g_variant_get_boolean(prop_val);
             if (repeat || existing->trusted != trusted)
             {
-                g_print("Trusted has changed       ");
+                g_print("  %s Trusted has changed       ", address);
                 send_to_mqtt_single_value(address, "trusted", trusted ? 1 : 0);
                 existing->trusted = trusted;
             }
@@ -886,7 +889,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
                 if (repeat || existing->manufacturer != manufacturer)
                 {
-                    g_print("  Manufacturer has changed    ");
+                    g_print("  %s Manufacturer has changed    ", address);
                     send_to_mqtt_single_value(address, "manufacturer", manufacturer);
                     existing->manufacturer = manufacturer;
                 }
@@ -915,16 +918,16 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
                 if (repeat || existing->manufacturer_data_hash != hash)
                 {
-                    pretty_print2("ManufacturerData", prop_val, TRUE);  // a{qv}
-                    g_print("  ManufData has changed       ");
+                    pretty_print2("  ManufacturerData", prop_val, TRUE);  // a{qv}
+                    g_print("  %s ManufData has changed       ", address);
                     send_to_mqtt_array(address, "manufacturerdata", allocdata, actualLength);
                     existing->manufacturer_data_hash = hash;
 
-                    if (existing->last_value < 0) {
+                    if (existing->last_value > 0) {
                       // And repeat the RSSI value every time someone locks or unlocks their phone
                       // Even if the change notification did not include an updated RSSI
-                      g_print("Resend %s RSSI %.1f ", address, existing->last_value);
-                      send_to_mqtt_single_float(address, "rssi", existing->last_value);
+                      g_print("  %s Resend distance %.1f ", address, existing->last_value);
+                      send_to_mqtt_single_float(address, "distance", existing->last_value);
                     }
                 }
 
@@ -1232,7 +1235,10 @@ int get_managed_objects(void *parameters)
 {
     GMainLoop *loop = (GMainLoop *)parameters;
 
-    g_dbus_connection_call(con,
+    if (!repeat) {
+      repeat = TRUE;
+
+      g_dbus_connection_call(con,
                            "org.bluez",
                            "/",
                            "org.freedesktop.DBus.ObjectManager",
@@ -1245,9 +1251,7 @@ int get_managed_objects(void *parameters)
                            (GAsyncReadyCallback)bluez_list_devices,
                            loop);
 
-    // PUT A MARKER DOWN ON THE GRAPH TO SHOW WHERE GET MANAGED OBJECTS IS RUNNING
-    //send_to_mqtt_single_value(access_point_address, "rssi", -40.2);
-
+    }
     return TRUE;
 }
 
@@ -1279,7 +1283,6 @@ int clear_cache(void *parameters)
 //    g_print("Clearing cache\n");
     //GMainLoop * loop = (GMainLoop*) parameters;
     (void)parameters; // not used
-//    repeat = TRUE;
 
     // Remove any item in cache that hasn't been seen for a long time
     gpointer user_data = NULL;
@@ -1423,11 +1426,10 @@ int main(int argc, char **argv)
     }
     g_print("Started discovery\n");
 
-    // Every 15 min send any changes to static information
-    g_timeout_add_seconds(15 * 60, get_managed_objects, loop);
+    // Once after startup send any changes to static information
+    g_timeout_add_seconds(15, get_managed_objects, loop);
 
-    // Every 1 hour, repeat all the data (in case MQTT database is lost)
-    // TESTING g_timeout_add_seconds(60 * 60, clear_cache, loop);
+    // Every 30s look see if any records have expired and should be removed
     g_timeout_add_seconds(30, clear_cache, loop);
 
     prepare_mqtt(mqtt_addr, mqtt_port);
