@@ -697,10 +697,12 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
               N = 2.5;        // no walls
             }
 
-            double OneMeterRSSI = -40.0; // Measured power
+            double OneMeterRSSI = -50.0; // Measured power
 
-            //  RSSI = -40   distance = 1.0m
-            //  RSSI = -100  distance = 100m      which seems about right for outdoor, maybe N is less indoor?
+            //   1m =>  rssi == -50.0
+            //  10m =>  30+50 == -rssi   -80dbM
+            //  RSSI = -50   distance = 1.0m
+            //  RSSI = -100  distance = 46m         which seems about right for outdoor, maybe N is less indoor?
 
             double exponent = ((OneMeterRSSI - (double)rssi) / (10.0 * N));
 
