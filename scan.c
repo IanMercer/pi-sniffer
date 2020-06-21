@@ -727,13 +727,10 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             if (changed && (score > THRESHOLD))
             {
                 // ignore RSSI values that are impossibly good (<10 when normal range is -20 to -120)
-                if (fabs(averaged) > 10)
-                {
-                    g_print("Send %s distance %.1f, delta v:%.1f t:%.0fs score %.0f ", address, averaged, delta_v, delta_time_sent, score);
-                    send_to_mqtt_single_float(address, "distance", averaged);
-                    time(&existing->last_sent);
-                    existing->last_value = averaged;
-                }
+	        g_print("%s Send distance %.1f, delta v:%.1f t:%.0fs score %.0f ", address, averaged, delta_v, delta_time_sent, score);
+	        send_to_mqtt_single_float(address, "distance", averaged);
+	        time(&existing->last_sent);
+                existing->last_value = averaged;
             }
             else if (changed) {
                g_print("Skip %s distance %.1f, delta v:%.1f t:%.0fs score %.0f\n", address, averaged, delta_v, delta_time_sent, score);
@@ -1012,8 +1009,8 @@ static void bluez_device_appeared(GDBusConnection *sig,
     {
         if (g_strstr_len(g_ascii_strdown(interface_name, -1), -1, "device"))
         {
-            // Report device immediately
-            report_device_to_MQTT(properties, NULL, FALSE);
+            // Report device immediately, including RSSI
+            report_device_to_MQTT(properties, NULL, TRUE);
         }
         g_variant_unref(properties);
     }
@@ -1272,6 +1269,8 @@ gboolean remove_func (gpointer key, void *value, gpointer user_data) {
 
 int clear_cache(void *parameters)
 {
+    if (hash == NULL) return TRUE;
+
 //    g_print("Clearing cache\n");
     //GMainLoop * loop = (GMainLoop*) parameters;
     (void)parameters; // not used
