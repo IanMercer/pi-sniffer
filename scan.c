@@ -7,6 +7,9 @@
  *  Sends RSSI only when it changes enough but also regularly a keep-alive
  *
  *  gcc `pkg-config --cflags glib-2.0 gio-2.0` -Wall -Wextra -o ./bin/bluez_adapter_filter ./bluez_adapter_filter.c `pkg-config --libs glib-2.0 gio-2.0`
+
+ * ISSUE: Still getting after-the-fact bogus values from BlueZ
+
  */
 #include <glib.h>
 #include <gio/gio.h>
@@ -627,15 +630,19 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
         kalman_initialize(&existing->kalman_interval);
 
-        g_print("Added hash %s\n", address);
+        g_print("Added device %s\n", address);
     }
     else
     {
         // get value from hashtable
         existing = (struct DeviceReport *)g_hash_table_lookup(hash, address);
         //g_print("Existing value %s\n", existing->address);
+        g_print("Existing device %s\n", address);
     }
 
+
+    // If after examining every key/value pair, distance has been set then we will send it
+    bool send_distance = FALSE;
 
     const gchar *property_name;
     GVariantIter i;
@@ -696,14 +703,14 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         }
         else if (strcmp(property_name, "RSSI") == 0 && (changed == FALSE)) {
             int16_t rssi = g_variant_get_int16(prop_val);
-            g_print("%s RSSI repeat %i changed=%i\n", address, rssi, changed);
+            g_print("  %s RSSI repeat %i changed=%i\n", address, rssi, changed);
         }
         else if (strcmp(property_name, "RSSI") == 0)
         {
             int16_t rssi = g_variant_get_int16(prop_val);
             //send_to_mqtt_single_value(address, "rssi", rssi);
 
-            g_print("%s RSSI has changed %i changed=%i\n", address, rssi, changed);
+            g_print("  %s RSSI has changed %i changed=%i\n", address, rssi, changed);
 
             time_t now;
             time(&now);
@@ -756,23 +763,22 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             if (changed && (score > THRESHOLD))
             {
                 // ignore RSSI values that are impossibly good (<10 when normal range is -20 to -120)
-	        g_print("%s Send distance %.1f, delta v:%.1f t:%.0fs score %.0f ", address, averaged, delta_v, delta_time_sent, score);
-	        send_to_mqtt_single_float(address, "distance", averaged);
-	        time(&existing->last_sent);
+	        g_print("  %s Will send d=%.1f, delta v=%.1f t=%.0fs score=%.0f\n", address, averaged, delta_v, delta_time_sent, score);
                 existing->last_value = averaged;
+                send_distance = TRUE;
             }
             else if (changed) {
-               g_print("Skip %s distance %.1f, delta v:%.1f t:%.0fs score %.0f\n", address, averaged, delta_v, delta_time_sent, score);
+               g_print("  %s Skip d=%.1f, delta v:%.1f t:%.0fs score %.0f\n", address, averaged, delta_v, delta_time_sent, score);
             }
             else {
-               g_print("Ignore %s distance %.1f, delta v:%.1f t:%.0fs\n", address, averaged, delta_v, delta_time_sent);
+               g_print("  %s Ignore d=%.1f, delta v:%.1f t:%.0fs\n", address, averaged, delta_v, delta_time_sent);
             }
         }
         else if (strcmp(property_name, "TxPower") == 0)
         {
             if (changed)
             {
-                g_print("  %s TXPOWER has changed        ", address);
+                g_print("  %s TXPOWER has changed ", address);
                 int16_t p = g_variant_get_int16(prop_val);
                 send_to_mqtt_single_value(address, "txpower", p);
             }
@@ -878,7 +884,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             uint16_t appearance = g_variant_get_uint16(prop_val);
             if (repeat || existing->appearance != appearance)
             {
-                g_print("  %s Appearance has changed    ", address);
+                g_print("  %s Appearance has changed ", address);
                 send_to_mqtt_single_value(address, "appearance", appearance);
                 existing->appearance = appearance;
             }
@@ -911,7 +917,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
                 if (existing->manufacturer != manufacturer)
                 {
-                    g_print("  %s Manufacturer has changed    ", address);
+                    g_print("  %s Manufacturer has changed ", address);
                     send_to_mqtt_single_value(address, "manufacturer", manufacturer);
                     existing->manufacturer = manufacturer;
                 }
@@ -948,8 +954,8 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
                     if (existing->last_value > 0) {
                       // And repeat the RSSI value every time someone locks or unlocks their phone
                       // Even if the change notification did not include an updated RSSI
-                      g_print("  %s Resend distance %.1f ", address, existing->last_value);
-                      send_to_mqtt_single_float(address, "distance", existing->last_value);
+                      g_print("  %s Will resend distance\n", address);
+                      send_distance = TRUE;
                     }
                 }
 
@@ -1003,9 +1009,6 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
                 g_variant_unref(s_value);
             }
-
-            time(&existing->last_sent);
-
         }
         else
         {
@@ -1017,6 +1020,11 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         g_variant_unref(prop_val);
     }
 
+    if (send_distance) {
+      g_print("  **** Send distance %6.3f                        ", existing->last_value);
+      send_to_mqtt_single_float(address, "distance", existing->last_value);
+      time(&existing->last_sent);
+    }
 }
 
 static void bluez_device_appeared(GDBusConnection *sig,
@@ -1458,7 +1466,8 @@ int main(int argc, char **argv)
     g_print("Started discovery\n");
 
     // Once after startup send any changes to static information
-    g_timeout_add_seconds(15, get_managed_objects, loop);
+    // Now disabled this because it causes an extra RSSI value to be received long after a device has gone
+    //g_timeout_add_seconds(15, get_managed_objects, loop);
 
     // Every 30s look see if any records have expired and should be removed
     g_timeout_add_seconds(30, clear_cache, loop);
