@@ -637,7 +637,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         // get value from hashtable
         existing = (struct DeviceReport *)g_hash_table_lookup(hash, address);
         //g_print("Existing value %s\n", existing->address);
-        g_print("Existing device %s %s\n", address, existing->name);
+        g_print("Existing device %s '%s'\n", address, existing->name);
     }
 
 
@@ -710,7 +710,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             int16_t rssi = g_variant_get_int16(prop_val);
             //send_to_mqtt_single_value(address, "rssi", rssi);
 
-            g_print("  %s RSSI has changed %i changed=%i\n", address, rssi, changed);
+            //g_print("  %s RSSI has changed %i changed=%i\n", address, rssi, changed);
 
             time_t now;
             time(&now);
@@ -763,15 +763,15 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             if (changed && (score > THRESHOLD))
             {
                 // ignore RSSI values that are impossibly good (<10 when normal range is -20 to -120)
-	        g_print("  %s Will send d=%.1f, delta v=%.1f t=%.0fs score=%.0f\n", address, averaged, delta_v, delta_time_sent, score);
+	        //g_print("  %s Will send rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
                 existing->last_value = averaged;
                 send_distance = TRUE;
             }
             else if (changed) {
-               g_print("  %s Skip d=%.1f, delta v:%.1f t:%.0fs score %.0f\n", address, averaged, delta_v, delta_time_sent, score);
+               g_print("  %s Skip rssi=%i dist=%.1fm, delta v:%.1fm t:%.0fs score %.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
             }
             else {
-               g_print("  %s Ignore d=%.1f, delta v:%.1f t:%.0fs\n", address, averaged, delta_v, delta_time_sent);
+               g_print("  %s Ignore rssi=%i dist=%.1fm, delta v:%.1fm t:%.0fs\n", address, rssi, averaged, delta_v, delta_time_sent);
             }
         }
         else if (strcmp(property_name, "TxPower") == 0)
@@ -954,26 +954,38 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
                     if (existing->last_value > 0) {
                       // And repeat the RSSI value every time someone locks or unlocks their phone
                       // Even if the change notification did not include an updated RSSI
-                      g_print("  %s Will resend distance\n", address);
+                      //g_print("  %s Will resend distance\n", address);
                       send_distance = TRUE;
                     }
                 }
 
 		if (manufacturer == 0x004c) {
                   uint8_t apple_device_type = allocdata[00];
-                  if (apple_device_type == 0x02) g_print("  Beacon \n");
+                  if (apple_device_type == 0x02) {
+                    g_print("  Beacon \n");
+                    if (existing->name == NULL) existing->name = strdup("Beacon");
+                  }
                   else if (apple_device_type == 0x03) g_print("  Airprint \n");
                   else if (apple_device_type == 0x05) g_print("  Airdrop \n");
-                  else if (apple_device_type == 0x07) g_print("  Airpods \n");
+                  else if (apple_device_type == 0x07) {
+                    g_print("  Airpods \n");
+                    if (existing->name == NULL) existing->name = strdup("Airpods");
+                  }
                   else if (apple_device_type == 0x08) g_print("  Siri \n");
                   else if (apple_device_type == 0x09) g_print("  Airplay \n");
-                  else if (apple_device_type == 0x0b) g_print("  Watch_c \n");
+                  else if (apple_device_type == 0x0b) {
+                     g_print("  Watch_c \n");
+                    if (existing->name == NULL) existing->name = strdup("Apple iWatch");
+                  }
                   else if (apple_device_type == 0x0c) g_print("  Handoff \n");
                   else if (apple_device_type == 0x0d) g_print("  WifiSet \n");
                   else if (apple_device_type == 0x0e) g_print("  Hotspot \n");
                   else if (apple_device_type == 0x0f) g_print("  WifiJoin \n");
                   else if (apple_device_type == 0x10) {
                     g_print("  Nearby ");
+
+                    if (existing->name == NULL) { existing->name = strdup("Apple iPhone"); g_print("*SET NAME*"); }
+
                     uint8_t device_status = allocdata[02];
                     if (device_status == 0x57) g_print(" Lock screen (57) ");
                     else if (device_status == 0x47) g_print(" Lock screen (47) ");
@@ -1005,6 +1017,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
                 } else {
                   // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
                   g_print("  Did not recognize manufacturer 0x%.4x\n", manufacturer);
+                  if (existing->name == NULL) existing->name = "Not an Apple!";
                 }
 
                 g_variant_unref(s_value);
