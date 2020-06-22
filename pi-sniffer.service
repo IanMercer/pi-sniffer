@@ -10,8 +10,8 @@ StandardError=inherit
 StartLimitIntervalSec=0
 Restart=always
 MemoryAccounting=true
-MemoryHigh=2048K
-MemoryMax=4096K
+MemoryHigh=4096K
+MemoryMax=8192K
 
 [Install]
 WantedBy=multi-user.target

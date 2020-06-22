@@ -193,7 +193,7 @@ const char *topicRoot = "BLF";
 static pthread_t client_daemon;
 static int sockfd;
 struct mqtt_client mqtt;
-uint8_t sendbuf[8192]; /* sendbuf should be large enough to hold multiple whole mqtt messages */
+uint8_t sendbuf[1 * 1024 * 1024]; /* 1MByte sendbuf should be large enough to hold multiple whole mqtt messages */
 uint8_t recvbuf[1024]; /* recvbuf should be large enough any whole mqtt message expected to be received */
 
 /* Create an anonymous session */
@@ -356,13 +356,13 @@ void send_to_mqtt_with_time_and_mac(char *mac_address, char *key, int i, char *v
 void send_to_mqtt_single(char *mac_address, char *key, char *value)
 {
     printf("MQTT %s %s/%s %s\n", mac_address, topicRoot, key, value);
-    send_to_mqtt_with_time_and_mac(mac_address, key, -1, value, strlen(value) + 1, MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
+    send_to_mqtt_with_time_and_mac(mac_address, key, -1, value, strlen(value) + 1, MQTT_PUBLISH_QOS_1 | MQTT_PUBLISH_RETAIN);
 }
 
 void send_to_mqtt_array(char *mac_address, char *key, unsigned char *value, int length)
 {
     printf("MQTT %s %s/%s bytes[%d]\n", mac_address, topicRoot, key, length);
-    send_to_mqtt_with_time_and_mac(mac_address, key, -1, (char *)value, length, MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
+    send_to_mqtt_with_time_and_mac(mac_address, key, -1, (char *)value, length, MQTT_PUBLISH_QOS_1 | MQTT_PUBLISH_RETAIN);
 }
 
 void send_to_mqtt_uuids(char *mac_address, char *key, char **uuids, int length)
@@ -374,7 +374,7 @@ void send_to_mqtt_uuids(char *mac_address, char *key, char **uuids, int length)
     {
         char *uuid = uuids[i];
         printf("MQTT %s %s/%s/%d uuid[%d]\n", mac_address, topicRoot, key, i, (int)strlen(uuid));
-        send_to_mqtt_with_time_and_mac(mac_address, key, i, uuid, strlen(uuid) + 1, MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
+        send_to_mqtt_with_time_and_mac(mac_address, key, i, uuid, strlen(uuid) + 1, MQTT_PUBLISH_QOS_1 | MQTT_PUBLISH_RETAIN);
     }
 }
 
@@ -385,7 +385,7 @@ void send_to_mqtt_single_value(char *mac_address, char *key, int32_t value)
     char rssi[12];
     snprintf(rssi, sizeof(rssi), "%i", value);
     printf("MQTT %s %s/%s %s\n", mac_address, topicRoot, key, rssi);
-    send_to_mqtt_with_time_and_mac(mac_address, key, -1, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_0);
+    send_to_mqtt_with_time_and_mac(mac_address, key, -1, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_1);
 }
 
 void send_to_mqtt_single_float(char *mac_address, char *key, float value)
@@ -393,7 +393,7 @@ void send_to_mqtt_single_float(char *mac_address, char *key, float value)
     char rssi[12];
     snprintf(rssi, sizeof(rssi), "%.3f", value);
     printf("MQTT %s %s/%s %s\n", mac_address, topicRoot, key, rssi);
-    send_to_mqtt_with_time_and_mac(mac_address, key, -1, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_0);
+    send_to_mqtt_with_time_and_mac(mac_address, key, -1, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_1);
 }
 
 GHashTable *hash = NULL;
