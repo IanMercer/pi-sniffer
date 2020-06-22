@@ -656,7 +656,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             // Trim whitespace (Bad Tracker device keeps flipping name)
             trim(name);
 
-            if (repeat || g_strcmp0(existing->name, name) != 0)
+            if (g_strcmp0(existing->name, name) != 0)
             {
                 g_print("  %s Name has changed '%s' -> '%s'  ", address, existing->name, name);
                 send_to_mqtt_single(address, "name", name);
@@ -671,7 +671,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
             trim(alias);
 
-            if (repeat || g_strcmp0(existing->alias, alias) != 0)
+            if (g_strcmp0(existing->alias, alias) != 0)
             {
                 g_print("  %s Alias has changed '%s' -> '%s'  ", address, existing->alias, alias);
                 send_to_mqtt_single(address, "alias", alias);
@@ -685,7 +685,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             char *addressType = g_variant_dup_string(prop_val, NULL);
 
             // Compare values and send
-            if (repeat || g_strcmp0(existing->addressType, addressType) != 0)
+            if (g_strcmp0(existing->addressType, addressType) != 0)
             {
                 g_print("  %s Type has changed '%s' -> '%s'  ", address, existing->addressType, addressType);
                 send_to_mqtt_single(address, "type", addressType);
@@ -752,7 +752,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
  //               g_print("Ignoring dead letter RSSI %s %.0fs > 2.0 * %.0fs\n", address, delta_time_received, average_delta_time);
  //               //send_to_mqtt_single_float(address, "rssi", -109.0);  // debug, dummy value
  //           }
- //           else 
+ //           else
             if (changed && (score > THRESHOLD))
             {
                 // ignore RSSI values that are impossibly good (<10 when normal range is -20 to -120)
@@ -909,7 +909,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             while (g_variant_iter_next(&i, "{qv}", &manufacturer, &s_value))
             { // Just one
 
-                if (repeat || existing->manufacturer != manufacturer)
+                if (existing->manufacturer != manufacturer)
                 {
                     g_print("  %s Manufacturer has changed    ", address);
                     send_to_mqtt_single_value(address, "manufacturer", manufacturer);
@@ -938,7 +938,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
                   hash += allocdata[i];
                 }
 
-                if (repeat || existing->manufacturer_data_hash != hash)
+                if (existing->manufacturer_data_hash != hash)
                 {
                     pretty_print2("  ManufacturerData", prop_val, TRUE);  // a{qv}
                     g_print("  %s ManufData has changed       ", address);
@@ -997,7 +997,8 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
                     g_print("Did not recognize apple device type %.2x", apple_device_type);
                   }
                 } else {
-                  g_print("  Did not recognize manufacturer %.4x\n", manufacturer);
+                  // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
+                  g_print("  Did not recognize manufacturer 0x%.4x\n", manufacturer);
                 }
 
                 g_variant_unref(s_value);
