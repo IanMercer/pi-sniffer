@@ -262,9 +262,15 @@ void send_to_mqtt_null(char *mac_address, char *key)
 static char access_point_address[6];
 static bool try_get_mac_address(const char* ifname);
 char controller_mac_address[13];
+char hostbuffer[256];
 
 static void get_mac_address()
 {
+    gethostname(hostbuffer, sizeof(hostbuffer));
+
+    g_print("Hostname %s\n", hostbuffer);
+    client_id = hostbuffer;
+
     // Take first common interface name that returns a valid mac address
     if (try_get_mac_address("wlan0")) return;
     if (try_get_mac_address("eth0")) return;
@@ -291,7 +297,7 @@ static bool try_get_mac_address(const char* ifname)
         access_point_address[2], access_point_address[3], access_point_address[4], access_point_address[5]);
     controller_mac_address[12] = '\0';
 
-    client_id = controller_mac_address;
+    // Use hostname instead ... client_id = controller_mac_address;
 
     g_print("Local MAC address for %s is: %s\n", ifname, controller_mac_address);
 //    for (s = 0; s < 6; s++)
