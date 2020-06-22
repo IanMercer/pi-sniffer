@@ -637,7 +637,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         // get value from hashtable
         existing = (struct DeviceReport *)g_hash_table_lookup(hash, address);
         //g_print("Existing value %s\n", existing->address);
-        g_print("Existing device %s\n", address);
+        g_print("Existing device %s %s\n", address, existing->name);
     }
 
 
