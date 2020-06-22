@@ -791,7 +791,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         else if (strcmp(property_name, "Connected") == 0)
         {
             bool connected = g_variant_get_boolean(prop_val);
-            if (repeat || existing->connected != connected)
+            if (existing->connected != connected)
             {
                 g_print("  %s Connected has changed     ", address);
                 send_to_mqtt_single_value(address, "connected", connected ? 1 : 0);
@@ -801,7 +801,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         else if (strcmp(property_name, "Trusted") == 0)
         {
             bool trusted = g_variant_get_boolean(prop_val);
-            if (repeat || existing->trusted != trusted)
+            if (existing->trusted != trusted)
             {
                 g_print("  %s Trusted has changed       ", address);
                 send_to_mqtt_single_value(address, "trusted", trusted ? 1 : 0);
