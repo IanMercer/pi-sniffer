@@ -203,7 +203,7 @@ uint8_t connect_flags = MQTT_CONNECT_CLEAN_SESSION;
 
 static void prepare_mqtt(char *mqtt_addr, char *mqtt_port)
 {
-    printf("Starting MQTT %s:%s\n", mqtt_addr, mqtt_port);
+    printf("Starting MQTT %s:%s client_id=%s\n", mqtt_addr, mqtt_port, client_id);
 
     /* open the non-blocking TCP socket (connecting to the broker) */
     sockfd = open_nb_socket(mqtt_addr, mqtt_port);
@@ -261,6 +261,7 @@ void send_to_mqtt_null(char *mac_address, char *key)
 
 static char access_point_address[6];
 static bool try_get_mac_address(const char* ifname);
+char controller_mac_address[13];
 
 static void get_mac_address()
 {
@@ -271,6 +272,7 @@ static void get_mac_address()
     g_print("ERROR: Could not get local mac address\n");
     exit(-23);
 }
+
 
 static bool try_get_mac_address(const char* ifname)
 {
@@ -284,12 +286,19 @@ static bool try_get_mac_address(const char* ifname)
     close(s);
     memcpy(&access_point_address, &buffer.ifr_hwaddr.sa_data, 6);
     if (access_point_address[0] == 0) return FALSE;
-    g_print("Local MAC address for %s is: ", ifname);
-    for (s = 0; s < 6; s++)
-    {
-        g_print("%.2X", (unsigned char)access_point_address[s]);
-    }
-    g_print("\n");
+
+    snprintf(controller_mac_address, sizeof(controller_mac_address), "%.2x%.2x%.2x%.2x%.2x%.2x", access_point_address[0], access_point_address[1],
+        access_point_address[2], access_point_address[3], access_point_address[4], access_point_address[5]);
+    controller_mac_address[12] = '\0';
+
+    client_id = controller_mac_address;
+
+    g_print("Local MAC address for %s is: %s\n", ifname, controller_mac_address);
+//    for (s = 0; s < 6; s++)
+//    {
+//        g_print("%.2X", (unsigned char)access_point_address[s]);
+//    }
+//    g_print("\n");
     return TRUE;
 }
 
