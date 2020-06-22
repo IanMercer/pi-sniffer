@@ -950,8 +950,16 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 		if (manufacturer == 0x004c) {
                   uint8_t apple_device_type = allocdata[00];
                   if (apple_device_type == 0x02) g_print("  Beacon \n");
+                  else if (apple_device_type == 0x03) g_print("  Airprint \n");
+                  else if (apple_device_type == 0x05) g_print("  Airdrop \n");
                   else if (apple_device_type == 0x07) g_print("  Airpods \n");
+                  else if (apple_device_type == 0x08) g_print("  Siri \n");
+                  else if (apple_device_type == 0x09) g_print("  Airplay \n");
+                  else if (apple_device_type == 0x0b) g_print("  Watch_c \n");
                   else if (apple_device_type == 0x0c) g_print("  Handoff \n");
+                  else if (apple_device_type == 0x0d) g_print("  WifiSet \n");
+                  else if (apple_device_type == 0x0e) g_print("  Hotspot \n");
+                  else if (apple_device_type == 0x0f) g_print("  WifiJoin \n");
                   else if (apple_device_type == 0x10) {
                     g_print("  Nearby ");
                     uint8_t device_status = allocdata[02];
@@ -980,7 +988,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
                     g_print("\n");
                   } else {
-                    g_print("Did not recognize manufacturer message type %.2x", apple_device_type);
+                    g_print("Did not recognize apple device type %.2x", apple_device_type);
                   }
                 } else {
                   g_print("  Did not recognize manufacturer %.4x\n", manufacturer);
