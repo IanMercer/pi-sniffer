@@ -256,7 +256,7 @@ void send_to_mqtt_null(char *mac_address, char *key)
     if (mqtt.error != MQTT_OK)
     {
         fprintf(stderr, "\n\nERROR MQTT Send: %s\n", mqtt_error_str(mqtt.error));
-        exit_mqtt(EXIT_FAILURE, sockfd, NULL);
+        exit_mqtt(EXIT_FAILURE, sockfd, &client_daemon);
     }
 }
 
@@ -314,6 +314,8 @@ static bool try_get_mac_address(const char* ifname)
 /* SEND TO MQTT WITH ACCESS POINT MAC ADDRESS AND TIME STAMP */
 
 static int send_errors = 0;
+static uint16_t sequence = 0;
+
 
 void send_to_mqtt_with_time_and_mac(char *mac_address, char *key, int i, char *value, int value_length, int flags)
 {
@@ -332,17 +334,23 @@ void send_to_mqtt_with_time_and_mac(char *mac_address, char *key, int i, char *v
     }
 
     // Add time and access point mac address to packet
+    //  00-05  access_point_address
+    //  06-13  time
+    //  14-..  data
     char packet[2048];
 
     memset(packet, 0, 14 + 20);
 
     time_t now = time(0);
 
-    memcpy(&packet, &access_point_address, 6);
-    memcpy(&packet[6], &now, 8);
+    memcpy(&packet[00], &access_point_address, 6);
+    memcpy(&packet[06], &now, 8);
 
-    memcpy(&packet[6 + 8], value, value_length);
-    int packet_length = value_length + 6 + 8;
+    sequence++;
+    //memcpy(&packet[14], &sequence, 2);
+
+    memcpy(&packet[14], value, value_length);
+    int packet_length = value_length + 14;
 
     mqtt_publish(&mqtt, topic, packet, packet_length, flags);
 
@@ -354,7 +362,7 @@ void send_to_mqtt_with_time_and_mac(char *mac_address, char *key, int i, char *v
         send_errors ++;
         if (send_errors > 10) {
           g_print("\n\nToo many send errors, restarting\n\n");
-          exit_mqtt(EXIT_FAILURE, sockfd, NULL);
+          exit_mqtt(EXIT_FAILURE, sockfd, &client_daemon);
         }
     }
 
@@ -1479,8 +1487,8 @@ int main(int argc, char **argv)
     g_print("Started discovery\n");
 
     // Once after startup send any changes to static information
-    // Now disabled this because it causes an extra RSSI value to be received long after a device has gone
-    //g_timeout_add_seconds(15, get_managed_objects, loop);
+    // Added back because I don't think this is the issue
+    g_timeout_add_seconds(15, get_managed_objects, loop);
 
     // Every 30s look see if any records have expired and should be removed
     g_timeout_add_seconds(30, clear_cache, loop);
