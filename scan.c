@@ -413,8 +413,6 @@ void device_report_free(void *object)
     g_free(val->name);
     g_print("FREE alias '%s'\n", val->alias);
     g_free(val->alias);
-    g_print("FREE addressType '%s'\n", val->addressType);
-    g_free(val->addressType);
     g_print("FREE value\n");
     g_free(val);
 }
@@ -687,10 +685,13 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             {
                 g_print("  %s Type has changed '%s' -> '%s'  ", address, existing->addressType, addressType);
                 send_to_mqtt_single(address, "type", addressType);
+                if (g_strcmp0("public", addressType) == 0) {
+                  existing->addressType = "public";
+                } else {
+                  existing->addressType = "random";
+                }
             }
-            if (existing->addressType != NULL)
-                g_free(existing->addressType);
-            existing->addressType = addressType;
+            g_free(addressType);
         }
         else if (strcmp(property_name, "RSSI") == 0 && (changed == FALSE)) {
             int16_t rssi = g_variant_get_int16(prop_val);
