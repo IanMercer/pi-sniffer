@@ -408,6 +408,8 @@ GHashTable *hash = NULL;
 void device_report_free(void *object)
 {
     struct DeviceReport *val = (struct DeviceReport *)object;
+    g_print("FREE '%s' '%s' '%s'", val->name, val->alias, val->addressType);
+
     /* Free any members you need to */
     g_free(val->name);
     g_free(val->alias);
@@ -1320,7 +1322,7 @@ gboolean remove_func (gpointer key, void *value, gpointer user_data) {
   gboolean remove = delta_time_sent > 15 * 60;
 
   if (remove) {
-    g_print("  Cache remove? %s %.1fs %.1fm\n", (char*)key, delta_time_sent, existing->kalman.current_estimate);
+    g_print("  Cache remove %s %.1fs %.1fm\n", (char*)key, delta_time_sent, existing->kalman.current_estimate);
   }
 
   return remove;  // 15 min of no activity = remove from cache
