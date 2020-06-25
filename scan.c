@@ -171,29 +171,16 @@ static void publish_callback(void **unused, struct mqtt_response_publish *publis
     free(topic_name);
 }
 
-static void *client_refresher(void *client)
-{
-    while (1)
-    {
-        mqtt_sync((struct mqtt_client *)client);
-        usleep(10000U);
-    }
-    return NULL;
-}
-
-static void exit_mqtt(int status, int sockfd, pthread_t *client_daemon)
+static void exit_mqtt(int status, int sockfd)
 {
     if (sockfd != -1)
         close(sockfd);
-    if (client_daemon != NULL)
-        pthread_cancel(*client_daemon);
     //return bt_shell_noninteractive_quit(EXIT_FAILURE);
     exit(status);
 }
 
 const char *topicRoot = "BLF";
 
-static pthread_t client_daemon;
 static int sockfd;
 struct mqtt_client mqtt;
 uint8_t sendbuf[1 * 1024 * 1024]; /* 1MByte sendbuf should be large enough to hold multiple whole mqtt messages */
@@ -213,7 +200,7 @@ static void prepare_mqtt(char *mqtt_addr, char *mqtt_port)
     if (sockfd == -1)
     {
         perror("Failed to open socket: ");
-        exit_mqtt(EXIT_FAILURE, sockfd, NULL);
+        exit_mqtt(EXIT_FAILURE, sockfd);
     }
 
     printf("Opened socket\n");
@@ -229,17 +216,9 @@ static void prepare_mqtt(char *mqtt_addr, char *mqtt_port)
     if (mqtt.error != MQTT_OK)
     {
         fprintf(stderr, "\n\nERROR: MQTT STARTUP CONNECT FAILED:%s\n", mqtt_error_str(mqtt.error));
-        exit_mqtt(EXIT_FAILURE, sockfd, NULL);
+        exit_mqtt(EXIT_FAILURE, sockfd);
     }
 
-    printf("Starting MQTT thread\n");
-
-    /* start a thread to refresh the client (handle egress and ingree client traffic) */
-    if (pthread_create(&client_daemon, NULL, client_refresher, &mqtt))
-    {
-        fprintf(stderr, "\n\nERROR: Failed to start client daemon.\n");
-        exit_mqtt(EXIT_FAILURE, sockfd, NULL);
-    }
 }
 
 void send_to_mqtt_null(char *mac_address, char *key)
@@ -256,7 +235,7 @@ void send_to_mqtt_null(char *mac_address, char *key)
     if (mqtt.error != MQTT_OK)
     {
         fprintf(stderr, "\n\nERROR MQTT Send: %s\n", mqtt_error_str(mqtt.error));
-        exit_mqtt(EXIT_FAILURE, sockfd, &client_daemon);
+        exit_mqtt(EXIT_FAILURE, sockfd);
     }
 }
 
@@ -362,7 +341,7 @@ void send_to_mqtt_with_time_and_mac(char *mac_address, char *key, int i, char *v
         send_errors ++;
         if (send_errors > 10) {
           g_print("\n\nToo many send errors, restarting\n\n");
-          exit_mqtt(EXIT_FAILURE, sockfd, &client_daemon);
+          exit_mqtt(EXIT_FAILURE, sockfd);
         }
     }
 
@@ -1291,6 +1270,18 @@ static void bluez_list_devices(GDBusConnection *con,
     }
 }
 
+
+// Every 10s we need to let MQTT send and receive messages
+int mqtt_refresh(void *parameters)
+{
+    (void)parameters;
+    //GMainLoop *loop = (GMainLoop *)parameters;
+    // Send any MQTT messages
+    mqtt_sync(&mqtt);
+    return TRUE;
+}
+
+
 int get_managed_objects(void *parameters)
 {
     GMainLoop *loop = (GMainLoop *)parameters;
@@ -1490,6 +1481,9 @@ int main(int argc, char **argv)
     // Added back because I don't think this is the issue
     g_timeout_add_seconds(15, get_managed_objects, loop);
 
+    // MQTT send
+    g_timeout_add_seconds(5, mqtt_refresh, loop);
+
     // Every 30s look see if any records have expired and should be removed
     g_timeout_add_seconds(30, clear_cache, loop);
 
@@ -1535,8 +1529,6 @@ void int_handler(int dummy) {
 
     if (sockfd != -1)
         close(sockfd);
-
-    pthread_cancel(client_daemon);
 
     if (hash != NULL)
         g_hash_table_destroy (hash);
