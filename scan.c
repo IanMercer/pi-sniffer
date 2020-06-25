@@ -408,7 +408,7 @@ GHashTable *hash = NULL;
 void device_report_free(void *object)
 {
     struct DeviceReport *val = (struct DeviceReport *)object;
-    g_print("FREE name '%s'\n");
+    g_print("FREE name '%s'\n", val->name);
     /* Free any members you need to */
     g_free(val->name);
     g_print("FREE alias '%s'\n", val->alias);
