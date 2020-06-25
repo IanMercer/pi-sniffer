@@ -1300,6 +1300,8 @@ int get_managed_objects(void *parameters)
     if (!repeat) {
       repeat = TRUE;
 
+      g_print("Get managed objects\n");
+
       g_dbus_connection_call(con,
                            "org.bluez",
                            "/",
@@ -1488,6 +1490,8 @@ int main(int argc, char **argv)
     }
     g_print("Started discovery\n");
 
+    prepare_mqtt(mqtt_addr, mqtt_port);
+
     // Once after startup send any changes to static information
     // Added back because I don't think this is the issue
     g_timeout_add_seconds(15, get_managed_objects, loop);
@@ -1498,7 +1502,6 @@ int main(int argc, char **argv)
     // Every 30s look see if any records have expired and should be removed
     g_timeout_add_seconds(30, clear_cache, loop);
 
-    prepare_mqtt(mqtt_addr, mqtt_port);
 
     g_print("Start main loop\n");
 
