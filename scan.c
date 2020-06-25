@@ -408,12 +408,14 @@ GHashTable *hash = NULL;
 void device_report_free(void *object)
 {
     struct DeviceReport *val = (struct DeviceReport *)object;
-    g_print("FREE '%s' '%s' '%s'", val->name, val->alias, val->addressType);
-
+    g_print("FREE name '%s'\n");
     /* Free any members you need to */
     g_free(val->name);
+    g_print("FREE alias '%s'\n", val->alias);
     g_free(val->alias);
+    g_print("FREE addressType '%s'\n", val->addressType);
     g_free(val->addressType);
+    g_print("FREE value\n");
     g_free(val);
 }
 
