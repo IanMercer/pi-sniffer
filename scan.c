@@ -331,7 +331,13 @@ void send_to_mqtt_with_time_and_mac(char *mac_address, char *key, int i, char *v
     memcpy(&packet[14], value, value_length);
     int packet_length = value_length + 14;
 
+    // MQTT PUBLISH APPEARS TO BE TAKING UP TO 4 MINUTES!!
     mqtt_publish(&mqtt, topic, packet, packet_length, flags);
+
+
+    time_t end_t = time(0);
+    int diff = (int)difftime(end_t, now);
+    if (diff > 0) g_print("MQTT execution time = %is\n", diff);
 
     /* check for errors */
     if (mqtt.error != MQTT_OK)
