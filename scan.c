@@ -687,11 +687,15 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
                   else if (apple_device_type == 0x03) g_print("  Airprint \n");
                   else if (apple_device_type == 0x05) g_print("  Airdrop \n");
                   else if (apple_device_type == 0x07) {
-                    g_print("  Airpods \n");
-                    if (existing->name == NULL) existing->name = strdup("Airpods");
+                     g_print("  Airpods \n");
+                     if (existing->name == NULL) existing->name = strdup("Airpods");
                   }
                   else if (apple_device_type == 0x08) g_print("  Siri \n");
                   else if (apple_device_type == 0x09) g_print("  Airplay \n");
+                  else if (apple_device_type == 0x0a) {
+                     g_print("  Apple 0a \n");
+                     if (existing->name == NULL) existing->name = strdup("Apple 0a");
+                  }
                   else if (apple_device_type == 0x0b) {
                      g_print("  Watch_c \n");
                     if (existing->name == NULL) existing->name = strdup("Apple iWatch");
