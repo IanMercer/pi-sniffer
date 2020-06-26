@@ -7,9 +7,9 @@
  *  Sends RSSI only when it changes enough but also regularly a keep-alive
  *
  *  gcc `pkg-config --cflags glib-2.0 gio-2.0` -Wall -Wextra -o ./bin/bluez_adapter_filter ./bluez_adapter_filter.c `pkg-config --libs glib-2.0 gio-2.0`
-
- * ISSUE: Still getting after-the-fact bogus values from BlueZ
-
+ *
+ *  See build.sh and READ.ME for further instructions
+ *
  */
 #include <glib.h>
 #include <gio/gio.h>
@@ -39,8 +39,6 @@ char* client_id = NULL;
 // Handle Ctrl-c
 void     int_handler(int);
 
-static int id_gen = 0;
-
 /*
    Structure for reporting to MQTT
 
@@ -49,7 +47,6 @@ static int id_gen = 0;
 */
 struct Device
 {
-    int id;
     char *name;
     char *alias;
     char *addressType;
@@ -60,97 +57,14 @@ struct Device
     uint32_t deviceclass; // https://www.bluetooth.com/specifications/assigned-numbers/Baseband/
     uint16_t appearance;
     int manufacturer_data_hash;
-    int uuids_length;              // should use a Hash instead
-    time_t last_rssi;              // last time an RSSI was received. If gap > 0.5 hour, ignore initial point (dead letter post)
+    int uuids_length;             // should use a Hash instead
+    time_t last_rssi;             // last time an RSSI was received. If gap > 0.5 hour, ignore initial point (dead letter post)
     struct Kalman kalman;
     time_t last_sent;
     float last_value;
     struct Kalman kalman_interval; // Tracks time between RSSI events in order to detect large gaps
-    time_t earliest;               // Earliest time seen, used to calculate overlap
-    time_t latest;                 // Latest time seen, used to calculate overlap
-    int column;                    // Allocated column in a non-overlapping range structure
+    GSList * transition_to;
 };
-
-
-/*
-  Do these two devices overlap in time? If so they cannot be the same device
-*/
-bool Overlaps (struct Device* a, struct Device* b) {
-  if (a->earliest > b->latest) return FALSE; // a is entirely after b
-  if (b->earliest > a->latest) return FALSE; // b is entirely after a
-  return TRUE; // must overlap if not entirely after or before
-}
-
-bool made_changes = FALSE;
-
-void examine_overlap_inner (gpointer key, gpointer value, gpointer user_data)
-{
-  (void)key;
-  struct Device* a = (struct Device*) value;
-  struct Device* b = (struct Device*) user_data;
-  if (a->id >= b->id) return;
-  bool overlaps = Overlaps(a, b);
-  int min = a->earliest;
-  if (b->earliest < min) min = b->earliest;
-
-  //g_print("(%i,%i = %i  (%li-%li), (%li-%li) ) ", a->id, b->id, overlaps, a->earliest - min, a->latest - min, b->earliest - min, b->latest - min );
-
-  if (overlaps && a->column == b->column) {
-    b->column++;
-    made_changes = TRUE;
-  }
-}
-
-void examine_overlap_outer (gpointer key, gpointer value, gpointer user_data)
-{
-  (void)key;
-  GHashTable* table = (GHashTable*)user_data;
-  made_changes = TRUE;
-  while(made_changes) {
-    made_changes = FALSE;
-    g_hash_table_foreach(table, examine_overlap_inner, value);
-  }
-}
-
-void set_column_to_zero (gpointer key, gpointer value, gpointer user_data)
-{
-  (void)key;
-  (void)user_data;
-  struct Device* a = (struct Device*) value;
-  a->column = 0;
-}
-
-int max_column = 0;
-
-void find_max_column (gpointer key, gpointer value, gpointer user_data)
-{
-  (void)key;
-  (void)user_data;
-  struct Device* a = (struct Device*) value;
-  if (a->column > max_column) max_column = a->column;
-}
-
-/*
-  Calculates the minimum number of devices present
-*/
-int MinDevicesPresent(GHashTable* table) {
-  // Find best packing of device time ranges into columns
-  // Set every device to column zero
-  // While there is any overlap, find the overlapping pair, move the second one to the next column
-  g_hash_table_foreach(table, set_column_to_zero, table);
-  g_hash_table_foreach(table, examine_overlap_outer, table);
-  max_column = 0;
-  g_hash_table_foreach(table, find_max_column, table);
-  //g_print("\nMax column = %i\n", max_column);
-  return max_column+1;
-}
-
-/*
-  Calculates the maximum number of devices present
-*/
-int MaxDevicesPresent(GHashTable* table) {
-  return g_hash_table_size(table);
-}
 
 
 // The mac address of the wlan0 interface (every Pi has one so fairly safe to assume wlan0 exists)
@@ -259,8 +173,6 @@ static void report_device_disconnected_to_MQTT(char* address)
     // g_hash_table_remove(hash, address);
 }
 
-static int min_devices_reported = 0;
-
 
 static void report_device_to_MQTT(GVariant *properties, char *address, bool changed)
 {
@@ -303,7 +215,6 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         g_hash_table_insert(hash, strdup(address), existing);
 
         // dummy struct filled with unmatched values
-        existing->id = id_gen++;   // unique ID for each
         existing->name = NULL;
         existing->alias = NULL;
         existing->addressType = NULL;
@@ -315,8 +226,6 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         existing->manufacturer_data_hash = 0;
         existing->appearance = 0;
         existing->uuids_length = 0;
-        time(&existing->earliest);
-        existing->column = 0;
 
         // RSSI values are stored with kalman filtering
         kalman_initialize(&existing->kalman);
@@ -329,18 +238,15 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
         kalman_initialize(&existing->kalman_interval);
 
-        g_print("Added device %i. %s\n", existing->id, address);
+        g_print("Added device %s\n", address);
     }
     else
     {
         // get value from hashtable
         existing = (struct Device *)g_hash_table_lookup(hash, address);
         //g_print("Existing value %s\n", existing->address);
-        g_print("Existing device %i. %s '%s'\n", existing->id, address, existing->name);
+        g_print("Existing device %s '%s'\n", address, existing->name);
     }
-
-    // Mark the most recent time for this device
-    time(&existing->latest);
 
 
     // If after examining every key/value pair, distance has been set then we will send it
@@ -415,7 +321,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             int16_t rssi = g_variant_get_int16(prop_val);
             //send_to_mqtt_single_value(address, "rssi", rssi);
 
-            g_print("  %s RSSI %i changed=%i\n", address, rssi, changed);
+            //g_print("  %s RSSI has changed %i changed=%i\n", address, rssi, changed);
 
             time_t now;
             time(&now);
@@ -743,16 +649,6 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
       send_to_mqtt_single_float(address, "distance", existing->last_value);
       time(&existing->last_sent);
     }
-
-    int min = MinDevicesPresent(hash);
-    int max = MaxDevicesPresent(hash);
-
-    if (min_devices_reported != min) {
-      g_print("Devices present %i - %i\n", min, max);
-      min_devices_reported = min;
-      send_to_mqtt_single_value("summary", "min_devices", min);
-    }
-
 }
 
 static void bluez_device_appeared(GDBusConnection *sig,
