@@ -68,6 +68,7 @@ struct Device
     struct Kalman kalman_interval; // Tracks time between RSSI events in order to detect large gaps
     time_t earliest;               // Earliest time seen, used to calculate overlap
     time_t latest;                 // Latest time seen, used to calculate overlap
+    int count;                     // Count how many times seen (ignore 1 offs)
     int column;                    // Allocated column in a non-overlapping range structure
 };
 
@@ -89,6 +90,9 @@ void examine_overlap_inner (gpointer key, gpointer value, gpointer user_data)
   struct Device* a = (struct Device*) value;
   struct Device* b = (struct Device*) user_data;
   if (a->id >= b->id) return;
+  if (a->count < 2) return;  // ignore devices with less than 2 points
+  if (b->count < 2) return;  // ignore devices with less than 2 points
+
   bool overlaps = Overlaps(a, b);
   int min = a->earliest;
   if (b->earliest < min) min = b->earliest;
@@ -317,6 +321,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         existing->uuids_length = 0;
         time(&existing->earliest);
         existing->column = 0;
+        existing->count = 0;
 
         // RSSI values are stored with kalman filtering
         kalman_initialize(&existing->kalman);
@@ -341,7 +346,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
     // Mark the most recent time for this device
     time(&existing->latest);
-
+    existing->count++;
 
     // If after examining every key/value pair, distance has been set then we will send it
     bool send_distance = FALSE;
@@ -369,10 +374,13 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             {
                 g_print("  %s Name has changed '%s' -> '%s'  ", address, existing->name, name);
                 send_to_mqtt_single(address, "name", name);
-                if (existing->name != NULL)
-                    g_free(existing->name);
-                existing->name = name; // was strdup(name);
             }
+            else {
+                g_print(  "Name unchanged '%s'\n", name);
+            }
+            if (existing->name != NULL)
+              g_free(existing->name);
+            existing->name = name;
         }
         else if (strcmp(property_name, "Alias") == 0)
         {
@@ -384,6 +392,9 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             {
                 g_print("  %s Alias has changed '%s' -> '%s'  ", address, existing->alias, alias);
                 send_to_mqtt_single(address, "alias", alias);
+            }
+            else {
+                g_print(  "Alias unchanged '%s'\n", alias);
             }
             if (existing->alias != NULL)
                 g_free(existing->alias);
@@ -403,6 +414,9 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
                 } else {
                   existing->addressType = "random";
                 }
+            }
+            else {
+                g_print(  "Address type unchanged\n");
             }
             g_free(addressType);
         }
