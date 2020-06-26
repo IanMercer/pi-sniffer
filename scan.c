@@ -156,6 +156,19 @@ int MaxDevicesPresent(GHashTable* table) {
   return g_hash_table_size(table);
 }
 
+static int min_devices_reported = 0;
+
+void report_devices_count(GHashTable* table) {
+    int min = MinDevicesPresent(table);
+    int max = MaxDevicesPresent(table);
+
+    if (min_devices_reported != min) {
+      g_print("Devices present %i - %i\n", min, max);
+      min_devices_reported = min;
+      send_to_mqtt_single_value("summary", "min_devices", min);
+    }
+}
+
 
 // The mac address of the wlan0 interface (every Pi has one so fairly safe to assume wlan0 exists)
 
@@ -263,7 +276,6 @@ static void report_device_disconnected_to_MQTT(char* address)
     // g_hash_table_remove(hash, address);
 }
 
-static int min_devices_reported = 0;
 
 
 static void report_device_to_MQTT(GVariant *properties, char *address, bool changed)
@@ -762,14 +774,8 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
       time(&existing->last_sent);
     }
 
-    int min = MinDevicesPresent(hash);
-    int max = MaxDevicesPresent(hash);
 
-    if (min_devices_reported != min) {
-      g_print("Devices present %i - %i\n", min, max);
-      min_devices_reported = min;
-      send_to_mqtt_single_value("summary", "min_devices", min);
-    }
+    report_devices_count(hash);
 
 }
 
@@ -1065,7 +1071,7 @@ gboolean remove_func (gpointer key, void *value, gpointer user_data) {
 
   double delta_time_sent = difftime(now, existing->last_sent);
 
-  gboolean remove = delta_time_sent > 15 * 60;
+  gboolean remove = delta_time_sent > 15 * 60;  // 15 min
 
   if (remove) {
     g_print("  Cache remove %s %.1fs %.1fm\n", (char*)key, delta_time_sent, existing->kalman.current_estimate);
@@ -1086,6 +1092,9 @@ int clear_cache(void *parameters)
     // Remove any item in cache that hasn't been seen for a long time
     gpointer user_data = NULL;
     g_hash_table_foreach_remove (hash, &remove_func, user_data);
+
+    // And report the updated count of devices present
+    report_devices_count(hash);
 
     return TRUE;
 }
