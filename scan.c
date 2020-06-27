@@ -84,6 +84,8 @@ bool Overlaps (struct Device* a, struct Device* b) {
 
 bool made_changes = FALSE;
 
+#define MIN_DISTANCE 40
+
 void examine_overlap_inner (gpointer key, gpointer value, gpointer user_data)
 {
   (void)key;
@@ -92,16 +94,16 @@ void examine_overlap_inner (gpointer key, gpointer value, gpointer user_data)
   if (a->id >= b->id) return;
   if (a->count < 2) return;  // ignore devices with less than 2 points
   if (b->count < 2) return;  // ignore devices with less than 2 points
-  if (a->last_value > 40) return; // ignore anything over 40m away
-  if (b->last_value > 40) return; // ignore anything over 40m away
+  if (a->last_value > MIN_DISTANCE) return; // ignore anything over 40m away
+  if (b->last_value > MIN_DISTANCE) return; // ignore anything over 40m away
+  if (a->column != b->column) return; // Already on separate columns
 
   bool overlaps = Overlaps(a, b);
   int min = a->earliest;
   if (b->earliest < min) min = b->earliest;
-
   g_print("(%i,%i = %i  (%li-%li), (%li-%li) ) ", a->id, b->id, overlaps, a->earliest - min, a->latest - min, b->earliest - min, b->latest - min );
 
-  if (overlaps && a->column == b->column) {
+  if (overlaps) {
     b->column++;
     made_changes = TRUE;
   }
@@ -126,13 +128,15 @@ void set_column_to_zero (gpointer key, gpointer value, gpointer user_data)
   a->column = 0;
 }
 
-int max_column = 0;
+int max_column = -1;
 
 void find_max_column (gpointer key, gpointer value, gpointer user_data)
 {
   (void)key;
   (void)user_data;
   struct Device* a = (struct Device*) value;
+  if (a->count < 2) return;  // ignore devices with less than 2 points
+  if (a->last_value > MIN_DISTANCE) return;    // ignore anything too far away
   if (a->column > max_column) max_column = a->column;
 }
 
@@ -145,7 +149,7 @@ int MinDevicesPresent(GHashTable* table) {
   // While there is any overlap, find the overlapping pair, move the second one to the next column
   g_hash_table_foreach(table, set_column_to_zero, table);
   g_hash_table_foreach(table, examine_overlap_outer, table);
-  max_column = 0;
+  max_column = -1;
   g_hash_table_foreach(table, find_max_column, table);
   g_print("\nMax column = %i\n", max_column);
   return max_column+1;
