@@ -92,8 +92,8 @@ void examine_overlap_inner (gpointer key, gpointer value, gpointer user_data)
   if (a->id >= b->id) return;
   if (a->count < 2) return;  // ignore devices with less than 2 points
   if (b->count < 2) return;  // ignore devices with less than 2 points
-  if (a->last_value < 40) return; // ignore anything over 40m away
-  if (b->last_value < 40) return; // ignore anything over 40m away
+  if (a->last_value > 40) return; // ignore anything over 40m away
+  if (b->last_value > 40) return; // ignore anything over 40m away
 
   bool overlaps = Overlaps(a, b);
   int min = a->earliest;
