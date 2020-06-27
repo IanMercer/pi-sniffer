@@ -99,7 +99,7 @@ void examine_overlap_inner (gpointer key, gpointer value, gpointer user_data)
   int min = a->earliest;
   if (b->earliest < min) min = b->earliest;
 
-  //g_print("(%i,%i = %i  (%li-%li), (%li-%li) ) ", a->id, b->id, overlaps, a->earliest - min, a->latest - min, b->earliest - min, b->latest - min );
+  g_print("(%i,%i = %i  (%li-%li), (%li-%li) ) ", a->id, b->id, overlaps, a->earliest - min, a->latest - min, b->earliest - min, b->latest - min );
 
   if (overlaps && a->column == b->column) {
     b->column++;
@@ -147,7 +147,7 @@ int MinDevicesPresent(GHashTable* table) {
   g_hash_table_foreach(table, examine_overlap_outer, table);
   max_column = 0;
   g_hash_table_foreach(table, find_max_column, table);
-  //g_print("\nMax column = %i\n", max_column);
+  g_print("\nMax column = %i\n", max_column);
   return max_column+1;
 }
 
