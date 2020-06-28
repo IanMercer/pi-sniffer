@@ -209,6 +209,14 @@ void send_to_mqtt_single_value(char *mac_address, char *key, int32_t value)
     send_to_mqtt_with_time_and_mac(mac_address, key, -1, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_1);
 }
 
+void send_to_mqtt_single_value_keep(char *mac_address, char *key, int32_t value)
+{
+    char rssi[12];
+    snprintf(rssi, sizeof(rssi), "%i", value);
+    printf("MQTT %s/%s/%s %s\n", topicRoot, mac_address, key, rssi);
+    send_to_mqtt_with_time_and_mac(mac_address, key, -1, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_1 | MQTT_PUBLISH_RETAIN);
+}
+
 void send_to_mqtt_single_float(char *mac_address, char *key, float value)
 {
     char rssi[12];
@@ -216,4 +224,3 @@ void send_to_mqtt_single_float(char *mac_address, char *key, float value)
     printf("MQTT %s/%s/%s %s\n", topicRoot, mac_address, key, rssi);
     send_to_mqtt_with_time_and_mac(mac_address, key, -1, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_1);
 }
-

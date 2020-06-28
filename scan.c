@@ -202,11 +202,11 @@ void report_devices_count(GHashTable* table) {
           reported_counts[i] = min;
           char srange[3];
           snprintf(srange, sizeof(srange), "%i", range);
-          send_to_mqtt_single_value("summary", srange, min);
+          send_to_mqtt_single_value_keep("summary", srange, min);
 
           // legacy
           if (range == 30) {
-            send_to_mqtt_single_value("summary", "min_devices", min);
+            send_to_mqtt_single_value_keep("summary", "min_devices", min);
           }
         }
     }
