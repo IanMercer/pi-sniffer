@@ -1,11 +1,14 @@
 # pi-sniffer
 This project is a simple sniffer for Bluetooth LE on Raspberry Pi and sender to MQTT. It uses the built-in BlueZ libraries and Bluetooth antenna on a Raspberry Pi (W or 3+) to scan for nearby BLE devices. 
-It reports all BLE devices found and their received signal strength (RSSI) to an MQTT endpoint. It applies a simple
-Kalman filter to smooth the RSSI values.
+It reports all BLE devices found (Mac address, name, type, UUIDs, ...) and their approximate distance to an MQTT endpoint. It applies a simple
+Kalman filter to smooth the distance values. It also handles iPhones and other Apple devices that randomize their mac addresses periodically and can give a reliable count of how many phones/watches/... are in-range.
+
+![image](https://user-images.githubusercontent.com/347540/85953280-1cb7f300-b924-11ea-96d5-07c217a57e24.png "Multiple Pis and many BLE devices in action")
+![image](https://user-images.githubusercontent.com/347540/85953412-dd3dd680-b924-11ea-8eeb-a3b328f91d19.png "A single stationary device")
 
 # applications
 * Detect cell phones entering your home, garden, barn, ...
-* Identify cell phones (provided they have been paired with the Raspberry Pi)
+* Put the heating or air conditioning on when there are two or more cellphones in the house and off otherwise
 * Locate cars, dogs, ... using iBeacons attached to moving objects (reverse of iBeacon normal usage) 
 * Gather other advertised data and transmit to MQTT (temperature, fitbit, cycleops, ...)
 
@@ -14,17 +17,27 @@ Kalman filter to smooth the RSSI values.
 * No external dependencies: no Python, no Node.js, no fragile package dependencies
 * Simplicity: do one thing well, no frills
 
+# iOS MAC address randomization
+Tracking iOS (and many Android) devices is complicated by the fact that they switch Mac addresses unpredictably: sometimes after a few seconds, sometimes after many minutes. You can see two MAC address swaps in this example:
+![image](https://user-images.githubusercontent.com/347540/85953525-cc419500-b925-11ea-9693-012aeaa61b60.png)
+
+There is no (easy) way to distinguish a MAC-flipping event from a new device arrival event. Until the old mac address pings again they could be the same device.
+The pi-sniffer code includes an algorithm to calculate the minimum possible number of devices present assuming that any overlap in time means two sequences are different devices, but otherwise packing them all together like events on a calendar to find the minimum possible number of devices present.
+
+Pi-sniffer transmits this min-count every time it changes so you can easily see how many devices are in range of any of your RPi devices.
+![image](https://user-images.githubusercontent.com/347540/85953581-54279f00-b926-11ea-8d02-fb155d409f61.png)
+
+
 # status
-This is an early proof of concept. 
+This is a work in progress and is still changing fairly rapidly.
 It includes the essential source and header files to make it compile and run without any external dependencies. 
 There is a `build.sh` file that builds and runs the code. 
 The MQTT topic prefix is hard-coded but the MQTT server IP (or FQDN) and port are configurable.
-It now sends an approximate distance topic instead of an RSSI topic. 
-The environment value (2.0-4.0) will be configurable later for indoor / outdoor scenarios.
+The environment value (2.0-4.0) used to calculate distance from RSSI will be configurable later for indoor / outdoor scenarios.
 
 # plans
 * Look into pairing iPhones to eliminate random mac addresses
-* Decode advertised data for Sensoro beacons
+* Decode advertised data for common iBeacons that also send environmental data (e.g. Sensoro)
 * Gather other advertised data and transmit to MQTT including temperature, battery, steps, heart rate, ...
 * Combine multiple Pi RSSI values to do trilateration and approximate location, simple ML model
 
@@ -49,6 +62,4 @@ The environment value (2.0-4.0) will be configurable later for indoor / outdoor 
 
 * check it's running:
     `sudo systemctl status pi-sniffer.service`
-
-
 
