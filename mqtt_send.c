@@ -176,13 +176,13 @@ void send_to_mqtt_with_time_and_mac(char *mac_address, char *key, int i, char *v
 
 void send_to_mqtt_single(char *mac_address, char *key, char *value)
 {
-    printf("MQTT %s %s/%s %s\n", mac_address, topicRoot, key, value);
+    printf("MQTT %s/%s/%s %s\n", topicRoot, mac_address, key, value);
     send_to_mqtt_with_time_and_mac(mac_address, key, -1, value, strlen(value) + 1, MQTT_PUBLISH_QOS_1 | MQTT_PUBLISH_RETAIN);
 }
 
 void send_to_mqtt_array(char *mac_address, char *key, unsigned char *value, int length)
 {
-    printf("MQTT %s %s/%s bytes[%d]\n", mac_address, topicRoot, key, length);
+    printf("MQTT %s/%s/%s bytes[%d]\n", topicRoot, mac_address, key, length);
     send_to_mqtt_with_time_and_mac(mac_address, key, -1, (char *)value, length, MQTT_PUBLISH_QOS_1 | MQTT_PUBLISH_RETAIN);
 }
 
@@ -194,7 +194,7 @@ void send_to_mqtt_uuids(char *mac_address, char *key, char **uuids, int length)
     for (int i = 0; i < length; i++)
     {
         char *uuid = uuids[i];
-        printf("MQTT %s %s/%s/%d uuid[%d]\n", mac_address, topicRoot, key, i, (int)strlen(uuid));
+        printf("MQTT %s/%s/%s/%d uuid[%d]\n", topicRoot, mac_address, key, i, (int)strlen(uuid));
         send_to_mqtt_with_time_and_mac(mac_address, key, i, uuid, strlen(uuid) + 1, MQTT_PUBLISH_QOS_1 | MQTT_PUBLISH_RETAIN);
     }
 }
@@ -205,7 +205,7 @@ void send_to_mqtt_single_value(char *mac_address, char *key, int32_t value)
 {
     char rssi[12];
     snprintf(rssi, sizeof(rssi), "%i", value);
-    printf("MQTT %s %s/%s %s\n", mac_address, topicRoot, key, rssi);
+    printf("MQTT %s/%s/%s %s\n", topicRoot, mac_address, key, rssi);
     send_to_mqtt_with_time_and_mac(mac_address, key, -1, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_1);
 }
 
@@ -213,7 +213,7 @@ void send_to_mqtt_single_float(char *mac_address, char *key, float value)
 {
     char rssi[12];
     snprintf(rssi, sizeof(rssi), "%.3f", value);
-    printf("MQTT %s %s/%s %s\n", mac_address, topicRoot, key, rssi);
+    printf("MQTT %s/%s/%s %s\n", topicRoot, mac_address, key, rssi);
     send_to_mqtt_with_time_and_mac(mac_address, key, -1, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_1);
 }
 

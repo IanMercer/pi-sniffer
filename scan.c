@@ -85,18 +85,19 @@ bool Overlaps (struct Device* a, struct Device* b) {
 
 bool made_changes = FALSE;
 
-#define MIN_DISTANCE 40
 #define MAX_TIME_AGO_MINUTES 5
 
 // Updated before any function that needs to calculate relative time
 time_t now;
+// Updated for each range being scanned
+int range_to_scan = 0;
 
 /*
     Ignore devices that are too far away, don't have enough points, haven't been seen in a while ...
 */
 bool ignore (struct Device* device) {
 
-  if (device->last_value > MIN_DISTANCE) return TRUE;
+  if (device->last_value > range_to_scan) return TRUE;
   if (device->count < 2) return TRUE;
 
   // ignore devices that we haven't seen from in a while (5 min)
@@ -161,38 +162,53 @@ void find_max_column (gpointer key, gpointer value, gpointer user_data)
 /*
   Calculates the minimum number of devices present
 */
-int MinDevicesPresent(GHashTable* table) {
-
-  time(&now);
-
-  // Find best packing of device time ranges into columns
-  // Set every device to column zero
-  // While there is any overlap, find the overlapping pair, move the second one to the next column
-  g_hash_table_foreach(table, set_column_to_zero, table);
+int min_devices_present(GHashTable* table, int range) {
+  range_to_scan = range;
   g_hash_table_foreach(table, examine_overlap_outer, table);
   max_column = -1;
   g_hash_table_foreach(table, find_max_column, table);
-  g_print("\nMax column = %i\n", max_column);
+  // g_print("\nMax column = %i\n", max_column);
   return max_column+1;
 }
 
-/*
-  Calculates the maximum number of devices present
-*/
-int MaxDevicesPresent(GHashTable* table) {
-  return g_hash_table_size(table);
-}
 
-static int min_devices_reported = 0;
+#define N_RANGES 10
+static int ranges[N_RANGES] = {1, 2, 5, 10, 15, 20, 25, 30, 35, 100};
+static int reported_counts[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+
+/*
+    Find best packing of device time ranges into columns
+    //Set every device to column zero
+    While there is any overlap, find the overlapping pair, move the second one to the next column
+*/
 
 void report_devices_count(GHashTable* table) {
-    int min = MinDevicesPresent(table);
-    int max = MaxDevicesPresent(table);
+    int max = g_hash_table_size(table);
 
-    if (min_devices_reported != min) {
-      g_print("Devices present %i - %i\n", min, max);
-      min_devices_reported = min;
-      send_to_mqtt_single_value("summary", "min_devices", min);
+    // Initialize time and columns
+    time(&now);
+    g_hash_table_foreach(table, set_column_to_zero, table);
+
+    // Calculate for each range how many devices are inside that range at the moment
+    // Ignoring any that are potential MAC address randomizations of others
+    for (int i = 0; i < N_RANGES; i++) {
+        int range = ranges[i];
+
+        // Do the packing of devices into columns for all devices under this range
+        int min = min_devices_present(table, range);
+
+        if (reported_counts[i] != min) {
+          g_print("Devices present at range %im %i-%i    ", range, min, max);
+          reported_counts[i] = min;
+          char srange[3];
+          snprintf(srange, sizeof(srange), "%i", range);
+          send_to_mqtt_single_value("summary", srange, min);
+
+          // legacy
+          if (range == 30) {
+            send_to_mqtt_single_value("summary", "min_devices", min);
+          }
+        }
     }
 }
 
