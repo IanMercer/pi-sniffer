@@ -18,7 +18,7 @@
 #include <time.h>
 #include <math.h>
 #include <signal.h>
-
+#include <stdlib.h>
 
 static void publish_callback(void **unused, struct mqtt_response_publish *published)
 {

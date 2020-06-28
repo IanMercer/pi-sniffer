@@ -22,6 +22,7 @@
 #include <time.h>
 #include <math.h>
 #include <signal.h>
+#include <stdlib.h>
 
 char* client_id = NULL;
 
