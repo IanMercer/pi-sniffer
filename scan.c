@@ -85,6 +85,25 @@ bool Overlaps (struct Device* a, struct Device* b) {
 bool made_changes = FALSE;
 
 #define MIN_DISTANCE 40
+#define MAX_TIME_AGO_MINUTES 5
+
+// Updated before any function that needs to calculate relative time
+time_t now;
+
+/*
+    Ignore devices that are too far away, don't have enough points, haven't been seen in a while ...
+*/
+bool ignore (struct Device* device) {
+
+  if (device->last_value > MIN_DISTANCE) return TRUE;
+  if (device->count < 2) return TRUE;
+
+  // ignore devices that we haven't seen from in a while (5 min)
+  double delta_time = difftime(now, device->latest);
+  if (delta_time > MAX_TIME_AGO_MINUTES * 60) return TRUE;
+
+  return FALSE;
+}
 
 void examine_overlap_inner (gpointer key, gpointer value, gpointer user_data)
 {
@@ -92,16 +111,16 @@ void examine_overlap_inner (gpointer key, gpointer value, gpointer user_data)
   struct Device* a = (struct Device*) value;
   struct Device* b = (struct Device*) user_data;
   if (a->id >= b->id) return;
-  if (a->count < 2) return;  // ignore devices with less than 2 points
-  if (b->count < 2) return;  // ignore devices with less than 2 points
-  if (a->last_value > MIN_DISTANCE) return; // ignore anything over 40m away
-  if (b->last_value > MIN_DISTANCE) return; // ignore anything over 40m away
   if (a->column != b->column) return; // Already on separate columns
+
+  if (ignore(a)) return;
+  if (ignore(b)) return;
 
   bool overlaps = Overlaps(a, b);
   int min = a->earliest;
   if (b->earliest < min) min = b->earliest;
-  g_print("(%i,%i = %i  (%li-%li), (%li-%li) ) ", a->id, b->id, overlaps, a->earliest - min, a->latest - min, b->earliest - min, b->latest - min );
+
+  //g_print("(%i,%i = %i  (%li-%li), (%li-%li) ) ", a->id, b->id, overlaps, a->earliest - min, a->latest - min, b->earliest - min, b->latest - min );
 
   if (overlaps) {
     b->column++;
@@ -135,8 +154,6 @@ void find_max_column (gpointer key, gpointer value, gpointer user_data)
   (void)key;
   (void)user_data;
   struct Device* a = (struct Device*) value;
-  if (a->count < 2) return;  // ignore devices with less than 2 points
-  if (a->last_value > MIN_DISTANCE) return;    // ignore anything too far away
   if (a->column > max_column) max_column = a->column;
 }
 
@@ -144,6 +161,9 @@ void find_max_column (gpointer key, gpointer value, gpointer user_data)
   Calculates the minimum number of devices present
 */
 int MinDevicesPresent(GHashTable* table) {
+
+  time(&now);
+
   // Find best packing of device time ranges into columns
   // Set every device to column zero
   // While there is any overlap, find the overlapping pair, move the second one to the next column
