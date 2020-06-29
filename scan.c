@@ -192,7 +192,7 @@ void report_devices_count(GHashTable* table) {
 
     // Calculate for each range how many devices are inside that range at the moment
     // Ignoring any that are potential MAC address randomizations of others
-    int cumulative = 0;
+    int previous = 0;
     bool made_changes = FALSE;
     for (int i = 0; i < N_RANGES; i++) {
         int range = ranges[i];
@@ -200,15 +200,16 @@ void report_devices_count(GHashTable* table) {
         // Do the packing of devices into columns for all devices under this range
         int min = min_devices_present(table, range);
 
-        int just_this_range = min - cumulative;
+        int just_this_range = min - previous;
         if (reported_ranges[i] != just_this_range) {
+          g_print("Devices present at range %im %i    ", range, just_this_range);
           reported_ranges[i] = just_this_range;
           made_changes = TRUE;
         }
-        cumulative+= min;
+        previous = min;
 
         if (reported_counts[i] != min) {
-          g_print("Devices present at range %im %i-%i    ", range, min, max);
+          //g_print("Devices present at range %im %i-%i    ", range, min, max);
           reported_counts[i] = min;
           char srange[3];
           snprintf(srange, sizeof(srange), "%i", range);
