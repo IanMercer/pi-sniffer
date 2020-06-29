@@ -173,8 +173,9 @@ int min_devices_present(GHashTable* table, int range) {
 
 
 #define N_RANGES 10
-static int ranges[N_RANGES] = {1, 2, 5, 10, 15, 20, 25, 30, 35, 100};
-static int reported_counts[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+static int32_t ranges[N_RANGES] = {1, 2, 5, 10, 15, 20, 25, 30, 35, 100};
+static int8_t reported_counts[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+static int8_t reported_ranges[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 
 /*
     Find best packing of device time ranges into columns
@@ -191,11 +192,20 @@ void report_devices_count(GHashTable* table) {
 
     // Calculate for each range how many devices are inside that range at the moment
     // Ignoring any that are potential MAC address randomizations of others
+    int cumulative = 0;
+    bool made_changes = FALSE;
     for (int i = 0; i < N_RANGES; i++) {
         int range = ranges[i];
 
         // Do the packing of devices into columns for all devices under this range
         int min = min_devices_present(table, range);
+
+        int just_this_range = min - cumulative;
+        if (reported_ranges[i] != just_this_range) {
+          reported_ranges[i] = just_this_range;
+          made_changes = TRUE;
+        }
+        cumulative+= min;
 
         if (reported_counts[i] != min) {
           g_print("Devices present at range %im %i-%i    ", range, min, max);
@@ -209,6 +219,10 @@ void report_devices_count(GHashTable* table) {
             send_to_mqtt_single_value_keep("summary", "min_devices", min);
           }
         }
+    }
+
+    if (made_changes) {
+      send_to_mqtt_array("summary", "dist_hist", (unsigned char*)reported_ranges, N_RANGES * sizeof(int8_t));
     }
 }
 
