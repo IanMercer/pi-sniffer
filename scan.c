@@ -184,7 +184,7 @@ static int8_t reported_ranges[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -
 */
 
 void report_devices_count(GHashTable* table) {
-    int max = g_hash_table_size(table);
+    //int max = g_hash_table_size(table);
 
     // Initialize time and columns
     time(&now);
