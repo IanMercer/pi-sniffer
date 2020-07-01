@@ -62,6 +62,7 @@ struct Device
     uint16_t appearance;
     int manufacturer_data_hash;
     int uuids_length;              // should use a Hash instead
+    int txpower;                   // TX Power
     time_t last_rssi;              // last time an RSSI was received. If gap > 0.5 hour, ignore initial point (dead letter post)
     struct Kalman kalman;
     time_t last_sent;
@@ -336,7 +337,7 @@ static void report_device_disconnected_to_MQTT(char* address)
 
 
 
-static void report_device_to_MQTT(GVariant *properties, char *address, bool changed)
+static void report_device_to_MQTT(GVariant *properties, char *address, bool isUpdate)
 {
     //       g_print("report_device_to_MQTT(%s)\n", address);
 
@@ -389,6 +390,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
         existing->manufacturer_data_hash = 0;
         existing->appearance = 0;
         existing->uuids_length = 0;
+        existing->txpower = 12;
         time(&existing->earliest);
         existing->column = 0;
         existing->count = 0;
@@ -490,16 +492,17 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             }
             g_free(addressType);
         }
-        else if (strcmp(property_name, "RSSI") == 0 && (changed == FALSE)) {
+        else if (strcmp(property_name, "RSSI") == 0 && (isUpdate == FALSE)) {
             int16_t rssi = g_variant_get_int16(prop_val);
-            g_print("  %s RSSI repeat %i changed=%i\n", address, rssi, changed);
+            g_print("  %s RSSI repeat %i\n", address, rssi);
+            // But don't update average etc. to ensure next update gets sent
         }
         else if (strcmp(property_name, "RSSI") == 0)
         {
             int16_t rssi = g_variant_get_int16(prop_val);
             //send_to_mqtt_single_value(address, "rssi", rssi);
 
-            g_print("  %s RSSI %i changed=%i\n", address, rssi, changed);
+            g_print("  %s RSSI %i\n", address, rssi);
 
             time_t now;
             time(&now);
@@ -508,7 +511,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
             //double delta_time_received = difftime(now, existing->last_rssi);
             time(&existing->last_rssi);
 
-            double delta_time_sent = difftime(now, existing->last_sent);
+            //double delta_time_sent = difftime(now, existing->last_sent);
 
             // Smoothed delta time, interval between RSSI events
             //float current_time_estimate = (&existing->kalman_interval)->current_estimate;
@@ -537,39 +540,24 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool chan
 
             float averaged = kalman_update(&existing->kalman, distance);
 
-
             // 100s with RSSI change of 1 triggers send
             // 10s with RSSI change of 10 triggers send
-            double delta_v = fabs(existing->last_value - averaged);
-            double score =  delta_v * (delta_time_sent + 1.0);
+            //double delta_v = fabs(existing->last_value - averaged);
+            //double score =  delta_v * (delta_time_sent + 1.0);
 
- //           if (tooLate) {
- //               // Significant gap since last RSSI, this may be the 'dead letter' from controller
- //               g_print("Ignoring dead letter RSSI %s %.0fs > 2.0 * %.0fs\n", address, delta_time_received, average_delta_time);
- //               //send_to_mqtt_single_float(address, "rssi", -109.0);  // debug, dummy value
- //           }
- //           else
-            if (changed && (score > THRESHOLD))
-            {
-                // ignore RSSI values that are impossibly good (<10 when normal range is -20 to -120)
-	        //g_print("  %s Will send rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
-                existing->last_value = averaged;
-                send_distance = TRUE;
-            }
-            else if (changed) {
-               g_print("  %s Skip rssi=%i dist=%.1fm, delta v:%.1fm t:%.0fs score %.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
-            }
-            else {
-               g_print("  %s Ignore rssi=%i dist=%.1fm, delta v:%.1fm t:%.0fs\n", address, rssi, averaged, delta_v, delta_time_sent);
-            }
+            // ignore RSSI values that are impossibly good (<10 when normal range is -20 to -120)
+	    //g_print("  %s Will send rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
+            existing->last_value = averaged;
+            send_distance = TRUE;
         }
         else if (strcmp(property_name, "TxPower") == 0)
         {
-            if (changed)
+            int16_t p = g_variant_get_int16(prop_val);
+            if (p != existing->txpower)
             {
                 g_print("  %s TXPOWER has changed ", address);
-                int16_t p = g_variant_get_int16(prop_val);
                 send_to_mqtt_single_value(address, "txpower", p);
+                existing->txpower = p;
             }
         }
 
