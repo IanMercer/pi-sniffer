@@ -189,13 +189,23 @@ void send_to_mqtt_array(char *mac_address, char *key, unsigned char *value, int 
 void send_to_mqtt_uuids(char *mac_address, char *key, char **uuids, int length)
 {
     if (uuids == NULL)
+    {
+        printf("MQTT null UUIDs to send\n");
         return;
+    }
+
+    if (length < 1)
+    {
+        printf("MQTT zero UUIDs to send\n");
+        return;
+    }
 
     for (int i = 0; i < length; i++)
     {
         char *uuid = uuids[i];
         printf("MQTT %s/%s/%s/%d uuid[%d]\n", topicRoot, mac_address, key, i, (int)strlen(uuid));
         send_to_mqtt_with_time_and_mac(mac_address, key, i, uuid, strlen(uuid) + 1, MQTT_PUBLISH_QOS_1 | MQTT_PUBLISH_RETAIN);
+        if (i < length-1) printf("    ");
     }
 }
 

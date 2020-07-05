@@ -30,53 +30,53 @@ SOFTWARE.
 /**
  * @file
  * @brief Declares all the MQTT-C functions and datastructures.
- * 
+ *
  * @note You should <code>\#include <mqtt.h></code>.
- * 
+ *
  * @example simple_publisher.c
- * A simple program to that publishes the current time whenever ENTER is pressed. 
- * 
+ * A simple program to that publishes the current time whenever ENTER is pressed.
+ *
  * Usage:
  * \code{.sh}
  * ./bin/simple_publisher [address [port [topic]]]
- * \endcode     
- * 
- * Where \c address is the address of the MQTT broker, \c port is the port number the 
+ * \endcode
+ *
+ * Where \c address is the address of the MQTT broker, \c port is the port number the
  * MQTT broker is running on, and \c topic is the name of the topic to publish with. Note
  * that all these arguments are optional and the defaults are \c address = \c "test.mosquitto.org",
  * \c port = \c "1883", and \c topic = "datetime".
- * 
+ *
  * @example simple_subscriber.c
  * A simple program that subscribes to a single topic and prints all updates that are received.
- * 
+ *
  * Usage:
  * \code{.sh}
  * ./bin/simple_subscriber [address [port [topic]]]
- * \endcode   
- * 
- * Where \c address is the address of the MQTT broker, \c port is the port number the 
+ * \endcode
+ *
+ * Where \c address is the address of the MQTT broker, \c port is the port number the
  * MQTT broker is running on, and \c topic is the name of the topic subscribe to. Note
  * that all these arguments are optional and the defaults are \c address = \c "test.mosquitto.org",
- * \c port = \c "1883", and \c topic = "datetime".  
- * 
+ * \c port = \c "1883", and \c topic = "datetime".
+ *
  * @example reconnect_subscriber.c
- * Same program as \ref simple_subscriber.c, but using the automatic reconnect functionality. 
- * 
+ * Same program as \ref simple_subscriber.c, but using the automatic reconnect functionality.
+ *
  * @example bio_publisher.c
  * Same program as \ref simple_publisher.c, but uses a unencrypted BIO socket.
  *
  * @example openssl_publisher.c
  * Same program as \ref simple_publisher.c, but over an encrypted connection using OpenSSL.
- * 
+ *
  * Usage:
  * \code{.sh}
  * ./bin/openssl_publisher ca_file [address [port [topic]]]
- * \endcode   
- * 
- * 
+ * \endcode
+ *
+ *
  * @defgroup api API
  * @brief Documentation of everything you need to know to use the MQTT-C client.
- * 
+ *
  * This module contains everything you need to know to use MQTT-C in your application.
  * For usage examples see:
  *     - @ref simple_publisher.c
@@ -84,7 +84,7 @@ SOFTWARE.
  *     - @ref reconnect_subscriber.c
  *     - @ref bio_publisher.c
  *     - @ref openssl_publisher.c
- * 
+ *
  * @note MQTT-C can be used in both single-threaded and multi-threaded applications. All 
  *       the functions in \ref api are thread-safe.
  * 
@@ -132,7 +132,7 @@ enum MQTTControlPacketType
 /**
  * @brief The fixed header of an MQTT control packet.
  * @ingroup unpackers
- * 
+ *
  * @see <a href="http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718020">
  * MQTT v3.1.1: Fixed Header
  * </a>
@@ -152,10 +152,10 @@ struct mqtt_fixed_header
 /**
  * @brief The protocol identifier for MQTT v3.1.1.
  * @ingroup packers
- * 
+ *
  * @see <a href="http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718030">
  * MQTT v3.1.1: CONNECT Variable Header.
- * </a>  
+ * </a>
  */
 #define MQTT_PROTOCOL_LEVEL 0x04
 
@@ -194,24 +194,24 @@ struct mqtt_fixed_header
 
 /* todo: add more connection refused errors */
 
-/** 
- * @brief A macro used to generate the enum MQTTErrors from 
+/**
+ * @brief A macro used to generate the enum MQTTErrors from
  *        \ref __ALL_MQTT_ERRORS
  * @see __ALL_MQTT_ERRORS
 */
 #define GENERATE_ENUM(ENUM) ENUM,
 
-/** 
- * @brief A macro used to generate the error messages associated with 
+/**
+ * @brief A macro used to generate the error messages associated with
  *        MQTTErrors from \ref __ALL_MQTT_ERRORS
  * @see __ALL_MQTT_ERRORS
 */
 #define GENERATE_STRING(STRING) #STRING,
 
-/** 
+/**
  * @brief An enumeration of error codes. Error messages can be retrieved by calling \ref mqtt_error_str.
  * @ingroup api
- * 
+ *
  * @see mqtt_error_str
  */
 enum MQTTErrors
@@ -382,10 +382,10 @@ struct mqtt_response_puback
 /**
  * @brief The response packet to a PUBLISH packet with QoS level 2.
  * @ingroup unpackers
- * 
+ *
  * @see <a href="http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718048">
  * MQTT v3.1.1: PUBREC - Publish Received.
- * </a> 
+ * </a>
  *
  */
 struct mqtt_response_pubrec
@@ -397,10 +397,10 @@ struct mqtt_response_pubrec
 /**
  * @brief The response to a PUBREC packet.
  * @ingroup unpackers
- * 
+ *
  * @see <a href="http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718053">
  * MQTT v3.1.1: PUBREL - Publish Release.
- * </a> 
+ * </a>
  *
  */
 struct mqtt_response_pubrel
@@ -1414,14 +1414,14 @@ void mqtt_reinit(struct mqtt_client *client,
 /**
  * @brief Establishes a session with the MQTT broker.
  * @ingroup api
- * 
+ *
  * @pre mqtt_init must have been called.
- * 
+ *
  * @param[in,out] client The MQTT client.
  * @param[in] client_id The unique name identifying the client. (or NULL)
- * @param[in] will_topic The topic name of client's \p will_message. If no will message is 
+ * @param[in] will_topic The topic name of client's \p will_message. If no will message is
  *            desired set to \c NULL.
- * @param[in] will_message The application message (data) to be published in the event the 
+ * @param[in] will_message The application message (data) to be published in the event the
  *            client ungracefully disconnects. Set to \c NULL if \p will_topic is \c NULL.
  * @param[in] will_message_size The size of \p will_message in bytes.
  * @param[in] user_name The username to use when establishing the session with the MQTT broker.
@@ -1429,7 +1429,7 @@ void mqtt_reinit(struct mqtt_client *client,
  * @param[in] password The password to use when establishing the session with the MQTT broker.
  *            Set to \c NULL if a password is not required.
  * @param[in] connect_flags Additional \ref MQTTConnectFlags to use when establishing the connection. 
- *            These flags are for forcing the session to start clean, 
+ *            These flags are for forcing the session to start clean,
  *            \c MQTT_CONNECT_CLEAN_SESSION, the QOS level to publish the \p will_message with 
  *            (provided \c will_message != \c NULL), MQTT_CONNECT_WILL_QOS_[0,1,2], and whether 
  *            or not the broker should retain the \c will_message, MQTT_CONNECT_WILL_RETAIN.

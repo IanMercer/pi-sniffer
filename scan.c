@@ -617,19 +617,25 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
             }
             g_variant_iter_free(iter_array);
 
-            char **allocdata = g_malloc(actualLength * sizeof(char *));
-            memcpy(allocdata, uuidArray, actualLength * sizeof(char *));
-
-            if (repeat || existing->uuids_length != actualLength)
+            if (existing->uuids_length != actualLength)
             {
-                g_print("  %s UUIDs has changed       ", address);
-                send_to_mqtt_uuids(address, "uuids", allocdata, actualLength);
+
+                if (actualLength > 0)
+                {
+                    char **allocdata = g_malloc(actualLength * sizeof(char *));
+                    memcpy(allocdata, uuidArray, actualLength * sizeof(char *));
+                    g_print("  %s UUIDs has changed      ", address);
+                    send_to_mqtt_uuids(address, "uuids", allocdata, actualLength);
+                }
+                else
+                {
+                    g_print("  %s UUIDs have gone        ", address);
+                    send_to_mqtt_uuids(address, "uuids", NULL, 0);
+                }
+
                 existing->uuids_length = actualLength;
-            }
 
-            // Free up the individual UUID strings after sending them
-            if (actualLength > 0)
-            {
+                // Free up the individual UUID strings after sending them
                 for (int i = 0; i < actualLength; i++)
                 {
                     g_free(uuidArray[i]);
@@ -724,7 +730,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                 if (existing->manufacturer_data_hash != hash)
                 {
                     pretty_print2("  ManufacturerData", prop_val, TRUE);  // a{qv}
-                    g_print("  %s ManufData has changed       ", address);
+                    g_print("  ManufData has changed ");
                     send_to_mqtt_array(address, "manufacturerdata", allocdata, actualLength);
                     existing->manufacturer_data_hash = hash;
 
@@ -756,7 +762,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                   }
                   else if (apple_device_type == 0x0b) {
                      g_print("  Watch_c \n");
-                    if (existing->name == NULL) existing->name = strdup("Apple iWatch");
+                    if (existing->name == NULL) existing->name = strdup("iWatch");
                   }
                   else if (apple_device_type == 0x0c) g_print("  Handoff \n");
                   else if (apple_device_type == 0x0d) g_print("  WifiSet \n");
@@ -765,7 +771,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                   else if (apple_device_type == 0x10) {
                     g_print("  Nearby ");
 
-                    if (existing->name == NULL) { existing->name = strdup("Apple iPhone"); g_print("*SET NAME*"); }
+                    if (existing->name == NULL) { existing->name = strdup("iPhone"); g_print("*SET NAME*"); }
 
                     uint8_t device_status = allocdata[02];
                     if (device_status == 0x57) g_print(" Lock screen (57) ");
@@ -800,7 +806,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                 } else {
                   // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
                   g_print("  Did not recognize manufacturer 0x%.4x\n", manufacturer);
-                  if (existing->name == NULL) existing->name = strdup("Not an Apple!");
+                  if (existing->name == NULL) existing->name = strdup("Not an Apple");
                 }
 
                 g_variant_unref(s_value);
@@ -1119,13 +1125,13 @@ gboolean remove_func (gpointer key, void *value, gpointer user_data) {
 
   double delta_time_sent = difftime(now, existing->last_sent);
 
-  gboolean remove = delta_time_sent > 15 * 60;  // 15 min
+  gboolean remove = delta_time_sent > 30 * 60;  // 30 min
 
   if (remove) {
     g_print("  Cache remove %s %.1fs %.1fm\n", (char*)key, delta_time_sent, existing->kalman.current_estimate);
   }
 
-  return remove;  // 15 min of no activity = remove from cache
+  return remove;  // 30 min of no activity = remove from cache
 }
 
 
