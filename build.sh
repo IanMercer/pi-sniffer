@@ -27,8 +27,9 @@ else
     sudo systemctl daemon-reload
     sudo systemctl enable pi-sniffer.service
     echo starting service
-    sudo systemctl start pi-sniffer.service
 fi
+
+sudo systemctl start pi-sniffer.service
 
 echo now tailing log, ctrl-c to stop but leave service running
 sudo journalctl -u pi-sniffer.service -f
