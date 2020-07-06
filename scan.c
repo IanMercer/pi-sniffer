@@ -802,6 +802,8 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                   } else {
                     g_print("Did not recognize apple device type %.2x", apple_device_type);
                   }
+                } else if (manufacturer == 0x0087) {
+                    if (existing->name == NULL) existing->name = strdup("Garmin");
                 } else if (manufacturer == 0x0310) {
                     if (existing->name == NULL) existing->name = strdup("SGL Italia S.r.l.");
                 } else {
