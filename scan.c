@@ -26,6 +26,12 @@
 
 char* client_id = NULL;
 
+// The mac address of the wlan0 interface (every Pi has one so fairly safe to assume wlan0 exists)
+// All defined in utility.c now
+//static unsigned char access_point_address[6];
+//char controller_mac_address[13];
+//char hostbuffer[256];
+
 #include "utility.c"
 #include "mqtt_send.c"
 #include "kalman.c"
@@ -229,11 +235,6 @@ void report_devices_count(GHashTable* table) {
 }
 
 
-// The mac address of the wlan0 interface (every Pi has one so fairly safe to assume wlan0 exists)
-
-static char access_point_address[6];
-char controller_mac_address[13];
-char hostbuffer[256];
 
 /* SEND TO MQTT WITH ACCESS POINT MAC ADDRESS AND TIME STAMP */
 
@@ -522,7 +523,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
 
             double N = 3.0;   // 2.0 to 4.0 depending on environment
 
-            bool isBarn = access_point_address[5] == 0xa3;
+            bool isBarn = (access_point_address[5] == (char)0xa3);
             if (isBarn) {
               N = 2.8;        // no walls (2.5 gave 15m distances for 5m real
             }

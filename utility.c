@@ -139,8 +139,8 @@ static void pretty_print(const char *field_name, GVariant *value)
 static char access_point_address[6];
 static bool try_get_mac_address(const char* ifname);
 
-char controller_mac_address[13];
-char hostbuffer[256];
+static char controller_mac_address[13];
+static char hostbuffer[256];
 
 static void get_mac_address()
 {
