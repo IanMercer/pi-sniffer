@@ -7,11 +7,10 @@ ExecStart=/home/ian/pi-sniffer/scan 192.168.0.120 1883
 WorkingDirectory=/home/ian/pi-sniffer
 StandardOutput=inherit
 StandardError=inherit
-StartLimitIntervalSec=0
 Restart=always
 MemoryAccounting=true
-MemoryHigh=4096K
-MemoryMax=8192K
+MemoryHigh=6096K
+MemoryMax=12192K
 
 [Install]
 WantedBy=multi-user.target
