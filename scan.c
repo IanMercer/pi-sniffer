@@ -458,13 +458,12 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
         else if (strcmp(property_name, "Alias") == 0)
         {
             char *alias = g_variant_dup_string(prop_val, NULL);
-
             trim(alias);
 
             if (g_strcmp0(existing->alias, alias) != 0)
             {
                 g_print("  %s Alias has changed '%s' -> '%s'  ", address, existing->alias, alias);
-                send_to_mqtt_single(address, "alias", alias);
+                // NOT CURRENTLY USED: send_to_mqtt_single(address, "alias", alias);
             }
             else {
                 g_print(  "Alias unchanged '%s'\n", alias);
@@ -521,6 +520,8 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
 
             //float average_delta_time = kalman_update(&existing->kalman_interval, (float)delta_time_sent);
 
+            // TODO: Generalize the RSSI to distance parameters and make them command line parameters
+
             double N = 3.0;   // 2.0 to 4.0 depending on environment
 
             bool isBarn = (access_point_address[5] == (char)0xa3);
@@ -557,7 +558,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
             if (p != existing->txpower)
             {
                 g_print("  %s TXPOWER has changed ", address);
-                send_to_mqtt_single_value(address, "txpower", p);
+                // NOT CURRENTLY USED ... send_to_mqtt_single_value(address, "txpower", p);
                 existing->txpower = p;
             }
         }
@@ -1091,6 +1092,21 @@ int mqtt_refresh(void *parameters)
 }
 
 
+/*
+    BLUEZ_SERVICE_NAME =           'org.bluez'
+    DBUS_OM_IFACE =                'org.freedesktop.DBus.ObjectManager'
+    LE_ADVERTISING_MANAGER_IFACE = 'org.bluez.LEAdvertisingManager1'
+    GATT_MANAGER_IFACE =           'org.bluez.GattManager1'
+    GATT_CHRC_IFACE =              'org.bluez.GattCharacteristic1'
+    UART_SERVICE_UUID =            '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
+    UART_RX_CHARACTERISTIC_UUID =  '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
+    UART_TX_CHARACTERISTIC_UUID =  '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
+    LOCAL_NAME =                   'rpi-gatt-server'
+
+*/
+
+
+
 int get_managed_objects(void *parameters)
 {
     GMainLoop *loop = (GMainLoop *)parameters;
@@ -1128,13 +1144,13 @@ gboolean remove_func (gpointer key, void *value, gpointer user_data) {
 
   double delta_time_sent = difftime(now, existing->last_sent);
 
-  gboolean remove = delta_time_sent > 30 * 60;  // 30 min
+  gboolean remove = delta_time_sent > 60 * 60;  // 60 min
 
   if (remove) {
     g_print("  Cache remove %s %.1fs %.1fm\n", (char*)key, delta_time_sent, existing->kalman.current_estimate);
   }
 
-  return remove;  // 30 min of no activity = remove from cache
+  return remove;  // 60 min of no activity = remove from cache
 }
 
 
