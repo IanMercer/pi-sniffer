@@ -557,7 +557,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
             int16_t p = g_variant_get_int16(prop_val);
             if (p != existing->txpower)
             {
-                g_print("  %s TXPOWER has changed ", address);
+                g_print("  %s TXPOWER has changed %i\n", address, p);
                 // NOT CURRENTLY USED ... send_to_mqtt_single_value(address, "txpower", p);
                 existing->txpower = p;
             }
@@ -776,28 +776,33 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                     if (existing->name == NULL) { existing->name = strdup("iPhone"); g_print("*SET NAME*"); }
 
                     uint8_t device_status = allocdata[02];
-                    if (device_status == 0x57) g_print(" Lock screen (57) ");
-                    else if (device_status == 0x47) g_print(" Lock screen (47) ");
-                    else if (device_status == 0x1b) g_print(" Home screen (1b) ");
-                    else if (device_status == 0x1c) g_print(" Home screen (1c) ");
-                    else if (device_status == 0x50) g_print(" Home screen (50) ");
-                    else if (device_status == 0x4e) g_print(" Outgoing call (4e) ");
-                    else if (device_status == 0x5e) g_print(" Incoming call (5e) ");
-                    else if (device_status == 0x01) g_print(" Off (01) ");
-                    else if (device_status == 0x03) g_print(" Off (03) ");
-                    else if (device_status == 0x09) g_print(" Off (09) ");
-                    else if (device_status == 0x0a) g_print(" Off (0a) ");
-                    else if (device_status == 0x13) g_print(" Off (13) ");
-                    else if (device_status == 0x18) g_print(" Off (18) ");
-                    else if (device_status == 0x1a) g_print(" Off (1a) ");
-                    else if (device_status < 0x20) g_print(" Off %.2x", device_status); else g_print(" On %.2x ", device_status);
+                    if (device_status & 0x80) g_print("0x80 "); else g_print("");
+                    if (device_status & 0x40) g_print(" ON +"); else g_print("OFF +");
 
-                    if (allocdata[03] == 0x18) g_print(" Macbook off "); else
-                    if (allocdata[03] == 0x1c) g_print(" Macbook on "); else
-                    if (allocdata[03] == 0x1e) g_print(" iPhone (iOS 13 On) "); else
-                    if (allocdata[03] == 0x1a) g_print(" iWatch (iOS 13 Off) "); else
+                    uint8_t lower_bits = device_status & 0x3f;
+
+                    if (lower_bits == 0x07) g_print(" Lock screen (0x07) ");
+                    else if (lower_bits == 0x17) g_print(" Lock screen   (0x17) ");
+                    else if (lower_bits == 0x1b) g_print(" Home screen   (0x1b) ");
+                    else if (lower_bits == 0x1c) g_print(" Home screen   (0x1c) ");
+                    else if (lower_bits == 0x10) g_print(" Home screen   (0x10) ");
+                    else if (lower_bits == 0x0e) g_print(" Outgoing call (0x0e) ");
+                    else if (lower_bits == 0x1e) g_print(" Incoming call (0x1e) ");
+                    else g_print(" Unknown (0x%.2x) ", lower_bits);
+
+                    if (allocdata[03] &0x10) g_print("1"); else g_print("0");
+                    if (allocdata[03] &0x08) g_print("1"); else g_print("0");
+                    if (allocdata[03] &0x04) g_print("1"); else g_print("0");
+                    if (allocdata[03] &0x02) g_print("1"); else g_print("0");
+                    if (allocdata[03] &0x01) g_print("1"); else g_print("0");
+
+                    // These do not seem to be quite right
+                    if (allocdata[03] == 0x18) g_print(" Macbook (0x18)"); else
+                    if (allocdata[03] == 0x1c) g_print(" Macbook (0x1c)"); else
+                    if (allocdata[03] == 0x1e) g_print(" iPhone  (0x1e)"); else
+                    if (allocdata[03] == 0x1a) g_print(" iWatch  (0x1a)"); else
                     if (allocdata[03] == 0x00) g_print(" TBD "); else
-                      g_print (" device type %.2x", allocdata[03]);  // 1e = iPhone, 1a = iWatch
+                      g_print (" Device type (%.2x)", allocdata[03]);
 
                     g_print("\n");
                   } else {
@@ -805,6 +810,8 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                   }
                 } else if (manufacturer == 0x0087) {
                     if (existing->name == NULL) existing->name = strdup("Garmin");
+                } else if (manufacturer == 0xb4c1) {
+                    if (existing->name == NULL) existing->name = strdup("Dycoo");   // not on official Bluetooth website
                 } else if (manufacturer == 0x0310) {
                     if (existing->name == NULL) existing->name = strdup("SGL Italia S.r.l.");
                 } else {
@@ -1242,6 +1249,8 @@ int main(int argc, char **argv)
     char *mqtt_port = argc > 1 ? argv[2] : "1883";
 
     get_mac_address();
+
+    g_print("\n\nStarting\n\n");
 
     con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
     if (con == NULL)
