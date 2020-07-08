@@ -449,7 +449,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                 send_to_mqtt_single(address, "name", name);
             }
             else {
-                g_print(  "Name unchanged '%s'\n", name);
+                g_print("  Name unchanged '%s'\n", name);
             }
             if (existing->name != NULL)
               g_free(existing->name);
@@ -462,11 +462,11 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
 
             if (g_strcmp0(existing->alias, alias) != 0)
             {
-                g_print("  %s Alias has changed '%s' -> '%s'  ", address, existing->alias, alias);
+                g_print("  %s Alias has changed '%s' -> '%s'  \n", address, existing->alias, alias);
                 // NOT CURRENTLY USED: send_to_mqtt_single(address, "alias", alias);
             }
             else {
-                g_print(  "Alias unchanged '%s'\n", alias);
+                g_print("  Alias unchanged '%s'\n", alias);
             }
             if (existing->alias != NULL)
                 g_free(existing->alias);
@@ -488,7 +488,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                 }
             }
             else {
-                g_print(  "Address type unchanged\n");
+                g_print("  Address type unchanged\n");
             }
             g_free(addressType);
         }
@@ -522,19 +522,18 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
 
             // TODO: Generalize the RSSI to distance parameters and make them command line parameters
 
-            double N = 3.0;   // 2.0 to 4.0 depending on environment
+            double N = 3.5;   // 2.0 to 4.0 depending on environment
 
             bool isBarn = (access_point_address[5] == (char)0xa3);
             if (isBarn) {
-              N = 2.8;        // no walls (2.5 gave 15m distances for 5m real
+              N = 3.0;        // no walls (2.5 gave 15m distances for 5m real
             }
 
-            double OneMeterRSSI = -50.0; // Measured power
+            double OneMeterRSSI = -64.0; // Measured power in office -64.0, was -50.0
 
-            //   1m =>  rssi == -50.0
-            //  10m =>  30+50 == -rssi   -80dbM
-            //  RSSI = -50   distance = 1.0m
-            //  RSSI = -100  distance = 46m         which seems about right for outdoor, maybe N is less indoor?
+            //   1m =>  rssi == -64.0
+            //   4m =>  rssi == -8.0 - 64.0    (measured in office)
+            //  10m =>  rssi == -64 - 3.5 * 10 = -99
 
             double exponent = ((OneMeterRSSI - (double)rssi) / (10.0 * N));
 
@@ -773,7 +772,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                   else if (apple_device_type == 0x10) {
                     g_print("  Nearby ");
 
-                    if (existing->name == NULL) { existing->name = strdup("iPhone"); g_print("*SET NAME*"); }
+                    if (existing->name == NULL) { existing->name = strdup("iPhone"); }
 
                     uint8_t device_status = allocdata[02];
                     if (device_status & 0x80) g_print("0x80 "); else g_print("");
