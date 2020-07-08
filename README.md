@@ -66,12 +66,15 @@ The environment value (2.0-4.0) used to calculate distance from RSSI will be con
 * [optional] edit the configuration according to the environment
     `sudo systemctl edit pi-sniffer.service`
 
-    For outside use a lower divisor, say 3.0, for inside use a higher divisor, say 3.5
+    For outside use a lower divisor, say 2.5, for inside use a higher divisor, say 3.5
     Keep this value in the range 2.0 - 4.0.
-    There is also a received power at 1.0m setting, tail the log and figure this out for your RPi.
+
+    There is also a received power at 1.0m setting, place a device at 1.0m, tail the log and figure this out for your RPi.
 
     Your configuration file should look like this:
 
-    `[Service]`
-    `Environment="RSSI_ONE_METER=-64"`
-    `Environment="RSSI_FACTOR=3.5"`
+````
+    [Service]
+    Environment="RSSI_FACTOR=3.5"
+    Environment="RSSI_ONE_METER=-64"
+````

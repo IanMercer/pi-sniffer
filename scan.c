@@ -51,8 +51,8 @@ static int id_gen = 0;
 
 /* ENVIRONMENT VARIABLES */
 
-int rssi_one_meter = -64;   // Put a device 1m away and measure the average RSSI
-float rssi_factor = 3.5;      // 2.0 to 4.0, higher for indoor or cluttered environments
+int rssi_one_meter = -64;     // Put a device 1m away and measure the average RSSI
+float rssi_factor = 3.5;      // 2.0 to 4.0, lower for indoor or cluttered environments
 
 /*
    Structure for reporting to MQTT
@@ -1252,7 +1252,7 @@ int main(int argc, char **argv)
     if (s_rssi_factor != NULL) rssi_factor = atof(s_rssi_factor);
 
     g_print("Using RSSI Power at 1m : %i\n", rssi_one_meter);
-    g_print("Using RSSI to distance factor : %.1f (typically 2.0 to 4.0, higher for indoors, lower for outdoor)\n", rssi_factor);
+    g_print("Using RSSI to distance factor : %.1f (typically 2.0 (indoor, cluttered) to 4.0 (outdoor, no obstacles)\n", rssi_factor);
 
     g_print("\n\nStarting\n\n");
 
