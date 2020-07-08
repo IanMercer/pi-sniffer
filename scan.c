@@ -49,6 +49,11 @@ void     int_handler(int);
 
 static int id_gen = 0;
 
+/* ENVIRONMENT VARIABLES */
+
+int rssi_one_meter = -64;   // Put a device 1m away and measure the average RSSI
+float rssi_factor = 3.5;      // 2.0 to 4.0, higher for indoor or cluttered environments
+
 /*
    Structure for reporting to MQTT
 
@@ -525,22 +530,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
 
             //float average_delta_time = kalman_update(&existing->kalman_interval, (float)delta_time_sent);
 
-            // TODO: Generalize the RSSI to distance parameters and make them command line parameters
-
-            double N = 3.5;   // 2.0 to 4.0 depending on environment
-
-            bool isBarn = (access_point_address[5] == (char)0xa3);
-            if (isBarn) {
-              N = 3.0;        // no walls (2.5 gave 15m distances for 5m real
-            }
-
-            double OneMeterRSSI = -64.0; // Measured power in office -64.0, was -50.0
-
-            //   1m =>  rssi == -64.0
-            //   4m =>  rssi == -8.0 - 64.0    (measured in office)
-            //  10m =>  rssi == -64 - 3.5 * 10 = -99
-
-            double exponent = ((OneMeterRSSI - (double)rssi) / (10.0 * N));
+            double exponent = ((rssi_one_meter - (double)rssi) / (10.0 * rssi_factor));
 
             double distance = pow(10.0, exponent);
 
@@ -1254,6 +1244,15 @@ int main(int argc, char **argv)
     char *mqtt_port = argc > 1 ? argv[2] : "1883";
 
     get_mac_address();
+
+    const char* s_rssi_one_meter = getenv("RSSI_ONE_METER");
+    const char* s_rssi_factor = getenv("RSSI_FACTOR");
+
+    if (s_rssi_one_meter != NULL) rssi_one_meter = atoi(s_rssi_one_meter);
+    if (s_rssi_factor != NULL) rssi_factor = atof(s_rssi_factor);
+
+    g_print("Using RSSI Power at 1m : %i\n", rssi_one_meter);
+    g_print("Using RSSI to distance factor : %.1f (typically 2.0 to 4.0, higher for indoors, lower for outdoor)\n", rssi_factor);
 
     g_print("\n\nStarting\n\n");
 
