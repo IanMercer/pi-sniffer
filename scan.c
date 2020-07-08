@@ -24,7 +24,8 @@
 #include <signal.h>
 #include <stdlib.h>
 
-char* client_id = NULL;
+static char* client_id = NULL;
+static bool starting = TRUE;
 
 // The mac address of the wlan0 interface (every Pi has one so fairly safe to assume wlan0 exists)
 // All defined in utility.c now
@@ -163,6 +164,7 @@ void find_max_column (gpointer key, gpointer value, gpointer user_data)
   (void)key;
   (void)user_data;
   struct Device* a = (struct Device*) value;
+  if (ignore(a)) return;
   if (a->column > max_column) max_column = a->column;
 }
 
@@ -191,6 +193,9 @@ static int8_t reported_ranges[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -
 */
 
 void report_devices_count(GHashTable* table) {
+
+    if (starting) return;   // not during first 30s startup time
+
     //int max = g_hash_table_size(table);
 
     // Initialize time and columns
@@ -775,7 +780,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                     if (existing->name == NULL) { existing->name = strdup("iPhone"); }
 
                     uint8_t device_status = allocdata[02];
-                    if (device_status & 0x80) g_print("0x80 "); else g_print("");
+                    if (device_status & 0x80) g_print("0x80 "); else g_print(" ");
                     if (device_status & 0x40) g_print(" ON +"); else g_print("OFF +");
 
                     uint8_t lower_bits = device_status & 0x3f;
@@ -1163,6 +1168,7 @@ gboolean remove_func (gpointer key, void *value, gpointer user_data) {
 int clear_cache(void *parameters)
 {
     if (hash == NULL) return TRUE;
+    starting = FALSE;
 
 //    g_print("Clearing cache\n");
     //GMainLoop * loop = (GMainLoop*) parameters;
@@ -1325,6 +1331,7 @@ int main(int argc, char **argv)
     g_timeout_add_seconds(5, mqtt_refresh, loop);
 
     // Every 30s look see if any records have expired and should be removed
+    // Also clear starting flag
     g_timeout_add_seconds(30, clear_cache, loop);
 
 
