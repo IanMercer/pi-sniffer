@@ -521,7 +521,6 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
             //double delta_time_received = difftime(now, existing->last_rssi);
             time(&existing->last_rssi);
 
-            //double delta_time_sent = difftime(now, existing->last_sent);
 
             // Smoothed delta time, interval between RSSI events
             //float current_time_estimate = (&existing->kalman_interval)->current_estimate;
@@ -538,13 +537,19 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
 
             // 100s with RSSI change of 1 triggers send
             // 10s with RSSI change of 10 triggers send
-            //double delta_v = fabs(existing->last_value - averaged);
-            //double score =  delta_v * (delta_time_sent + 1.0);
 
-            // ignore RSSI values that are impossibly good (<10 when normal range is -20 to -120)
-	    //g_print("  %s Will send rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
-            existing->last_value = averaged;
-            send_distance = TRUE;
+            double delta_time_sent = difftime(now, existing->last_sent);
+            double delta_v = fabs(existing->last_value - averaged);
+            double score =  delta_v * (delta_time_sent + 1.0);
+
+            if (score > 10.0 || delta_time_sent > 60) {
+	      //g_print("  %s Will send rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
+              existing->last_value = averaged;
+              send_distance = TRUE;
+            }
+            else {
+	      g_print("  %s Skip sending rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
+            }
         }
         else if (strcmp(property_name, "TxPower") == 0)
         {
