@@ -41,16 +41,28 @@ The mqqt packet contains bytes as follows:
 
 For a specific BLE device the following topics containing that device's mac address are sent:
 
-   `BLF/56:DA:8D:18:25:8D/distance`   -- the distance in meters as a string (rough, calculated from RSSI)
-   `BLF/56:DA:8D:18:25:8D/name    `   -- the name (or for unknown devices a best effort like 'iPhone' or 'Beacon')
-   `BLF/56:DA:8D:18:25:8D/alias   `   -- the BLUEZ alias (currently disabled)
-   `BLF/56:DA:8D:18:25:8D/power   `   -- the power level (currently disabled)
-   `BLF/56:DA:8D:18:25:8D/type    `   -- the mac address type: `public` or `random`
+    BLF/56:DA:8D:18:25:8D/distance   -- the distance in meters as a string (rough, calculated from RSSI)
+    BLF/56:DA:8D:18:25:8D/name       -- the name (or for unknown devices a best effort like 'iPhone' or 'Beacon')
+    BLF/56:DA:8D:18:25:8D/alias      -- the BLUEZ alias (currently disabled)
+    BLF/56:DA:8D:18:25:8D/power      -- the power level (currently disabled)
+    BLF/56:DA:8D:18:25:8D/type       -- the mac address type: `public` or `random`
    
 For a summary of all devices seen by the access point the following topics are sent:
 
-   `BLF/summary/min_devices`          -- a count of nearby devices as a string
-   `BLF/summary/dist_hist`            -- an array of bytes containing the count of devices at each range    
+    BLF/summary/min_devices           -- a count of nearby devices as a string
+    BLF/summary/dist_hist             -- an array of bytes containing the count of devices at each range 
+   
+The following legacy topics are also sent but will be discontinued in favor of the array topic above.
+
+    BLF/summary/1                     -- a count of nearby devices under 1m away
+    BLF/summary/2                     -- a count of nearby devices 1m-2m away
+    BLF/summary/5                     -- a count of nearby devices 2m-5m away
+    BLF/summary/10                    -- a count of nearby devices 5m-10m away
+    BLF/summary/15                    -- a count of nearby devices 10m-15m away
+    BLF/summary/20                    -- a count of nearby devices 15-20m away
+    BLF/summary/25                    -- a count of nearby devices 20-25m away
+    BLF/summary/30                    -- a count of nearby devices 25m-30m away
+    BLF/summary/35                    -- a count of nearby devices 35m+ away
 
 # Time
 
