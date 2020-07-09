@@ -307,11 +307,11 @@ static int bluez_device_call_method(const char *method, char* address, GVariant 
                            "org.bluez.Device1",
                            method,
                            param,
-                           NULL,
+                           NULL,                       // the expected type of the reply (which will be a tuple), or null
                            G_DBUS_CALL_FLAGS_NONE,
-                           -1,
-                           NULL,
-                           method_cb,
+                           20000,                      // timeout in millseconds or -1
+                           NULL,                       // cancellable or null
+                           method_cb,                  // callback or null
                            &error);
     if (error != NULL)
         return 1;
@@ -414,7 +414,8 @@ static int bluez_adapter_connect_device(char *address)
 
 	rc = bluez_device_call_method("Connect", address, NULL,
 					//g_variant_new_tuple(&device_dict, 1),
-					bluez_result_async_cb);
+					NULL);
+                                        //bluez_result_async_cb);
 	if(rc) {
 		g_print("Not able to call Connect\n");
 		return 1;
