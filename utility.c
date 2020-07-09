@@ -75,6 +75,15 @@ char *trim(char *str)
 }
 
 
+void get_path_from_address(char* address, char* path, int pathLength) {
+   snprintf(path, pathLength, "/org/bluez/hci0/dev_%s", address);
+   path[22] = '_';
+   path[25] = '_';
+   path[28] = '_';
+   path[31] = '_';
+   path[34] = '_';
+}
+
 // Get the MAC address from a BLUEZ path
 
 bool get_address_from_path(char *address, int length, const char *path)

@@ -291,6 +291,33 @@ static int bluez_adapter_call_method(const char *method, GVariant *param, method
     return 0;
 }
 
+static int bluez_device_call_method(const char *method, char* address, GVariant *param, method_cb_t method_cb)
+{
+    //    g_print("bluez_adapter_call_method(%s)\n", method);
+    GError *error = NULL;
+    char path[100];
+
+    // e.g. /org/bluez/hci0/dev_C1_B4_70_76_57_EE
+    get_path_from_address(address, path, sizeof(path));
+    g_print("Path %s\n", path);
+
+    g_dbus_connection_call(con,
+                           "org.bluez",
+                           path,
+                           "org.bluez.Device1",
+                           method,
+                           param,
+                           NULL,
+                           G_DBUS_CALL_FLAGS_NONE,
+                           -1,
+                           NULL,
+                           method_cb,
+                           &error);
+    if (error != NULL)
+        return 1;
+    return 0;
+}
+
 static void bluez_get_discovery_filter_cb(GObject *con,
                                           GAsyncResult *res,
                                           gpointer data)
@@ -344,6 +371,55 @@ static void report_device_disconnected_to_MQTT(char* address)
     // DON'T REMOVE VALUE FROM HASH TABLE - We get disconnected messages and then immediately reconnects
     // Remove value from hash table
     // g_hash_table_remove(hash, address);
+}
+
+
+static void bluez_result_async_cb(GObject *con,
+				  GAsyncResult *res,
+				  gpointer data)
+{
+        (void)data;
+	//const gchar *key = (gchar *)data;
+	GVariant *result = NULL;
+	GError *error = NULL;
+
+	result = g_dbus_connection_call_finish((GDBusConnection *)con, res, &error);
+	if(error != NULL) {
+		g_print("Unable to get result: %s\n", error->message);
+		return;
+	}
+
+	if(result) {
+		result = g_variant_get_child_value(result, 0);
+                g_print("Async callback\n");
+                //pretty_print2("Async callback", result, TRUE);
+		//bluez_property_value(key, result);
+	}
+        else {
+          g_print("No result");
+        }
+        if (result) {
+	        g_variant_unref(result);
+        }
+}
+
+
+static int bluez_adapter_connect_device(char *address)
+{
+	int rc;
+	//GVariantBuilder *b = g_variant_builder_new(G_VARIANT_TYPE_VARDICT);
+	//g_variant_builder_add(b, "{sv}", "Address", g_variant_new_string(address));
+	//GVariant *device_dict = g_variant_builder_end(b);
+	//g_variant_builder_unref(b);
+
+	rc = bluez_device_call_method("Connect", address, NULL,
+					//g_variant_new_tuple(&device_dict, 1),
+					bluez_result_async_cb);
+	if(rc) {
+		g_print("Not able to call Connect\n");
+		return 1;
+	}
+	return 0;
 }
 
 
@@ -430,6 +506,12 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
     // Mark the most recent time for this device
     time(&existing->latest);
     existing->count++;
+
+    // After a few messages, try forcing a connect to get a full dump from the device
+    if (existing->count == 3) {
+        g_print("------------- Force connect to %s\n", address);
+        bluez_adapter_connect_device(address);
+    }
 
     // If after examining every key/value pair, distance has been set then we will send it
     bool send_distance = FALSE;
@@ -763,7 +845,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                   }
                   else if (apple_device_type == 0x0b) {
                      g_print("  Watch_c \n");
-                    if (existing->name == NULL) existing->name = strdup("iWatch");
+                    if (existing->name == NULL) existing->name = strdup("iWatch?");
                   }
                   else if (apple_device_type == 0x0c) g_print("  Handoff \n");
                   else if (apple_device_type == 0x0d) g_print("  WifiSet \n");
@@ -772,7 +854,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                   else if (apple_device_type == 0x10) {
                     g_print("  Nearby ");
 
-                    if (existing->name == NULL) { existing->name = strdup("iPhone"); }
+                    if (existing->name == NULL) { existing->name = strdup("iPhone?"); }
 
                     uint8_t device_status = allocdata[02];
                     if (device_status & 0x80) g_print("0x80 "); else g_print(" ");
@@ -796,10 +878,10 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                     if (allocdata[03] &0x01) g_print("1"); else g_print("0");
 
                     // These do not seem to be quite right
-                    if (allocdata[03] == 0x18) g_print(" Macbook (0x18)"); else
-                    if (allocdata[03] == 0x1c) g_print(" Macbook (0x1c)"); else
-                    if (allocdata[03] == 0x1e) g_print(" iPhone  (0x1e)"); else
-                    if (allocdata[03] == 0x1a) g_print(" iWatch  (0x1a)"); else
+                    if (allocdata[03] == 0x18) g_print(" Apple? (0x18)"); else
+                    if (allocdata[03] == 0x1c) g_print(" Apple? (0x1c)"); else
+                    if (allocdata[03] == 0x1e) g_print(" iPhone?  (0x1e)"); else
+                    if (allocdata[03] == 0x1a) g_print(" iWatch?  (0x1a)"); else
                     if (allocdata[03] == 0x00) g_print(" TBD "); else
                       g_print (" Device type (%.2x)", allocdata[03]);
 
@@ -872,6 +954,7 @@ static void bluez_device_appeared(GDBusConnection *sig,
     {
         if (g_strstr_len(g_ascii_strdown(interface_name, -1), -1, "device"))
         {
+            // interface_name is something like /org/bluez/hci0/dev_40_F8_A3_77_C5_2B
             // Report device immediately, including RSSI
             report_device_to_MQTT(properties, NULL, TRUE);
         }
@@ -967,6 +1050,8 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
     char address[BT_ADDRESS_STRING_SIZE];
     if (get_address_from_path(address, BT_ADDRESS_STRING_SIZE, path))
     {
+        // interface_name is something like /org/bluez/hci0/dev_40_F8_A3_77_C5_2B
+        // g_print("INTERFACE NAME: %s\n", path);
         report_device_to_MQTT(p, address, TRUE);
     }
 
@@ -1042,6 +1127,9 @@ static int bluez_set_discovery_filter()
     }
     return 0;
 }
+
+
+
 
 static void bluez_list_devices(GDBusConnection *con,
                                GAsyncResult *res,
@@ -1225,6 +1313,7 @@ static void cmd_connect(int argc, char *address)
 }
 
 */
+
 
 guint prop_changed;
 guint iface_added;
