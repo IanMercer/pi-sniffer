@@ -25,15 +25,44 @@ There is no (easy) way to distinguish a MAC-flipping event from a new device arr
 The pi-sniffer code includes an algorithm to calculate the minimum possible number of devices present assuming that any overlap in time means two sequences are different devices, but otherwise packing them all together like events on a calendar to find the minimum possible number of devices present.
 
 Pi-sniffer transmits this min-count every time it changes so you can easily see how many devices are in range of any of your RPi devices.
+
 ![image](https://user-images.githubusercontent.com/347540/85953581-54279f00-b926-11ea-8d02-fb155d409f61.png)
 
+It actually transmits a count for each range (1, 2, 5, ...)
+![image](https://user-images.githubusercontent.com/347540/86996091-8ffd0880-c15f-11ea-991b-8a613041e4a0.png)
+
+# MQTT topics
+
+The mqqt packet contains bytes as follows:
+
+    00-05  access_point_address
+    06-13  local time stamp (long seconds)
+    14-..  data
+
+For a specific BLE device the following topics containing that device's mac address are sent:
+
+   `BLF/56:DA:8D:18:25:8D/distance`   -- the distance in meters as a string (rough, calculated from RSSI)
+   `BLF/56:DA:8D:18:25:8D/name    `   -- the name (or for unknown devices a best effort like 'iPhone' or 'Beacon')
+   `BLF/56:DA:8D:18:25:8D/alias   `   -- the BLUEZ alias (currently disabled)
+   `BLF/56:DA:8D:18:25:8D/power   `   -- the power level (currently disabled)
+   `BLF/56:DA:8D:18:25:8D/type    `   -- the mac address type: `public` or `random`
+   
+For a summary of all devices seen by the access point the following topics are sent:
+
+   `BLF/summary/min_devices`          -- a count of nearby devices as a string
+   `BLF/summary/dist_hist`            -- an array of bytes containing the count of devices at each range    
+
+# Time
+
+Given delays in MQTT transmit, receive and re-transmit to the receiving application it's a good idea to use the timestamp passed in the packet. Make
+sure all your Pis are synchronized to the same time.
 
 # status
 This is a work in progress and is still changing fairly rapidly.
 It includes the essential source and header files to make it compile and run without any external dependencies. 
 There is a `build.sh` file that builds and runs the code. 
 The MQTT topic prefix is hard-coded but the MQTT server IP (or FQDN) and port are configurable.
-The environment value (2.0-4.0) used to calculate distance from RSSI will be configurable later for indoor / outdoor scenarios.
+Environment variables are used to configure the RSSI to distance conversion parameters for indoor/outdoor settings.
 
 # plans
 * Look into pairing iPhones to eliminate random mac addresses
