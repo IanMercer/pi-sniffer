@@ -188,7 +188,6 @@ int min_devices_present(GHashTable* table, int range) {
 
 #define N_RANGES 10
 static int32_t ranges[N_RANGES] = {1, 2, 5, 10, 15, 20, 25, 30, 35, 100};
-static int8_t reported_counts[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 static int8_t reported_ranges[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 
 /*
@@ -219,24 +218,11 @@ void report_devices_count(GHashTable* table) {
 
         int just_this_range = min - previous;
         if (reported_ranges[i] != just_this_range) {
-          g_print("Devices present at range %im %i    ", range, just_this_range);
+          g_print("Devices present at range %im %i    \n", range, just_this_range);
           reported_ranges[i] = just_this_range;
           made_changes = TRUE;
         }
         previous = min;
-
-        if (reported_counts[i] != min) {
-          //g_print("Devices present at range %im %i-%i    ", range, min, max);
-          reported_counts[i] = min;
-          char srange[3];
-          snprintf(srange, sizeof(srange), "%i", range);
-          send_to_mqtt_single_value_keep("summary", srange, min);
-
-          // legacy
-          if (range == 30) {
-            send_to_mqtt_single_value_keep("summary", "min_devices", min);
-          }
-        }
     }
 
     if (made_changes) {
