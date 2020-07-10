@@ -373,10 +373,8 @@ static void report_device_disconnected_to_MQTT(char* address)
     // g_hash_table_remove(hash, address);
 }
 
-
-static void bluez_result_async_cb(GObject *con,
-				  GAsyncResult *res,
-				  gpointer data)
+/*
+static void bluez_result_async_cb(GObject *con, GAsyncResult *res, gpointer data)
 {
         (void)data;
 	//const gchar *key = (gchar *)data;
@@ -402,20 +400,11 @@ static void bluez_result_async_cb(GObject *con,
 	        g_variant_unref(result);
         }
 }
-
+*/
 
 static int bluez_adapter_connect_device(char *address)
 {
-	int rc;
-	//GVariantBuilder *b = g_variant_builder_new(G_VARIANT_TYPE_VARDICT);
-	//g_variant_builder_add(b, "{sv}", "Address", g_variant_new_string(address));
-	//GVariant *device_dict = g_variant_builder_end(b);
-	//g_variant_builder_unref(b);
-
-	rc = bluez_device_call_method("Connect", address, NULL,
-					//g_variant_new_tuple(&device_dict, 1),
-					NULL);
-                                        //bluez_result_async_cb);
+	int rc = bluez_device_call_method("Connect", address, NULL, NULL);
 	if(rc) {
 		g_print("Not able to call Connect\n");
 		return 1;
@@ -423,6 +412,15 @@ static int bluez_adapter_connect_device(char *address)
 	return 0;
 }
 
+static int bluez_adapter_disconnect_device(char *address)
+{
+	int rc = bluez_device_call_method("Disconnect", address, NULL, NULL);
+	if(rc) {
+		g_print("Not able to call Disconnect\n");
+		return 1;
+	}
+	return 0;
+}
 
 
 static void report_device_to_MQTT(GVariant *properties, char *address, bool isUpdate)
@@ -509,10 +507,16 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
     existing->count++;
 
     // After a few messages, try forcing a connect to get a full dump from the device
-    if (existing->count == 3 && existing->name == NULL) {
-        g_print("------------- Force connect to %s\n", address);
+    if (existing->count == ((existing->id * 37 % 7) + 3) && existing->name == NULL) {
+        g_print("------------- Connect to %s\n", address);
         bluez_adapter_connect_device(address);
     }
+
+    if (existing->count == ((existing->id * 37 % 7) + 10) && existing->connected) {
+        g_print("------------- Disconnect to %s\n", address);
+        bluez_adapter_disconnect_device(address);
+    }
+
 
     // If after examining every key/value pair, distance has been set then we will send it
     bool send_distance = FALSE;
