@@ -501,7 +501,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
         // get value from hashtable
         existing = (struct Device *)g_hash_table_lookup(hash, address);
         //g_print("Existing value %s\n", existing->address);
-        g_print("Existing device %i. %s '%s'\n", existing->id, address, existing->name);
+        g_print("Existing device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
     }
 
     // Mark the most recent time for this device
@@ -509,7 +509,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
     existing->count++;
 
     // After a few messages, try forcing a connect to get a full dump from the device
-    if (existing->count == 3) {
+    if (existing->count == 3 && existing->name == NULL) {
         g_print("------------- Force connect to %s\n", address);
         bluez_adapter_connect_device(address);
     }
@@ -830,23 +830,23 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                   uint8_t apple_device_type = allocdata[00];
                   if (apple_device_type == 0x02) {
                     g_print("  Beacon \n");
-                    if (existing->name == NULL) existing->name = strdup("Beacon");
+                    if (existing->name == NULL) existing->alias = strdup("Beacon");
                   }
                   else if (apple_device_type == 0x03) g_print("  Airprint \n");
                   else if (apple_device_type == 0x05) g_print("  Airdrop \n");
                   else if (apple_device_type == 0x07) {
                      g_print("  Airpods \n");
-                     if (existing->name == NULL) existing->name = strdup("Airpods");
+                     if (existing->name == NULL) existing->alias = strdup("Airpods");
                   }
                   else if (apple_device_type == 0x08) g_print("  Siri \n");
                   else if (apple_device_type == 0x09) g_print("  Airplay \n");
                   else if (apple_device_type == 0x0a) {
                      g_print("  Apple 0a \n");
-                     if (existing->name == NULL) existing->name = strdup("Apple 0a");
+                     if (existing->name == NULL) existing->alias = strdup("Apple 0a");
                   }
                   else if (apple_device_type == 0x0b) {
                      g_print("  Watch_c \n");
-                    if (existing->name == NULL) existing->name = strdup("iWatch?");
+                    if (existing->name == NULL) existing->alias = strdup("iWatch?");
                   }
                   else if (apple_device_type == 0x0c) g_print("  Handoff \n");
                   else if (apple_device_type == 0x0d) g_print("  WifiSet \n");
@@ -855,7 +855,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                   else if (apple_device_type == 0x10) {
                     g_print("  Nearby ");
 
-                    if (existing->name == NULL) { existing->name = strdup("iPhone?"); }
+                    if (existing->name == NULL) { existing->alias = strdup("iPhone?"); }
 
                     uint8_t device_status = allocdata[02];
                     if (device_status & 0x80) g_print("0x80 "); else g_print(" ");
@@ -891,15 +891,15 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                     g_print("Did not recognize apple device type %.2x", apple_device_type);
                   }
                 } else if (manufacturer == 0x0087) {
-                    if (existing->name == NULL) existing->name = strdup("Garmin");
+                    if (existing->name == NULL) existing->alias = strdup("Garmin");
                 } else if (manufacturer == 0xb4c1) {
-                    if (existing->name == NULL) existing->name = strdup("Dycoo");   // not on official Bluetooth website
+                    if (existing->name == NULL) existing->alias = strdup("Dycoo");   // not on official Bluetooth website
                 } else if (manufacturer == 0x0310) {
-                    if (existing->name == NULL) existing->name = strdup("SGL Italia S.r.l.");
+                    if (existing->name == NULL) existing->alias = strdup("SGL Italia S.r.l.");
                 } else {
                   // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
                   g_print("  Did not recognize manufacturer 0x%.4x\n", manufacturer);
-                  if (existing->name == NULL) existing->name = strdup("Not an Apple");
+                  if (existing->name == NULL) existing->alias = strdup("Not an Apple");
                 }
 
                 g_variant_unref(s_value);
@@ -1002,7 +1002,7 @@ static void bluez_device_disappeared(GDBusConnection *sig,
             char address[BT_ADDRESS_STRING_SIZE];
             if (get_address_from_path(address, BT_ADDRESS_STRING_SIZE, object))
             {
-                g_print("Device %s removed\n", address);
+                g_print("Device %s removed (by bluez) ignoring this\n", address);
                 report_device_disconnected_to_MQTT(address);
             }
         }
