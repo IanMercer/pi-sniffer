@@ -1288,11 +1288,12 @@ int dump_all_devices_tick(void *parameters)
     if (hash == NULL) return TRUE;
     if (!logTable) return TRUE; // no changes since last time
     logTable = FALSE;
-    g_print("------------------------------------------------------\n");
-    g_print("Address          Count Type   Distance Earliest Latest\n");
-    g_print("------------------------------------------------------\n");
+    g_print("-----------------------------------------------------------------------------------------------\n");
+    g_print("Address          Count Type   Distance Earliest Latest                 Name               Alias\n");
+    g_print("-----------------------------------------------------------------------------------------------\n");
     time(&now);
     g_hash_table_foreach(hash, dump_device, hash);
+    g_print("-----------------------------------------------------------------------------------------------\n\n");
     return TRUE;
 }
 
