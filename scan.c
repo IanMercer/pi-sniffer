@@ -912,12 +912,17 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
         g_variant_unref(prop_val);
     }
 
-    if (send_distance) {
-      g_print("  **** Send distance %6.3f                        ", existing->distance);
-      send_to_mqtt_single_float(address, "distance", existing->distance);
-      time(&existing->last_sent);
+    if (starting && send_distance) {
+      g_print("Skip sending, starting\n");
     }
-
+    else
+    {
+        if (send_distance) {
+          g_print("  **** Send distance %6.3f                        ", existing->distance);
+          send_to_mqtt_single_float(address, "distance", existing->distance);
+          time(&existing->last_sent);
+        }
+    }
 
     report_devices_count(hash);
 
