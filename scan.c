@@ -1236,10 +1236,10 @@ gboolean remove_func (gpointer key, void *value, gpointer user_data) {
 
   double delta_time = difftime(now, existing->latest);
 
-  gboolean remove = (existing->count == 1 && delta_time > 60) || delta_time_sent > 60 * 60;  // 1 min for single hit, 60 min for regular ping
+  gboolean remove = (existing->count == 1 && delta_time > 60) || delta_time > 60 * 60;  // 1 min for single hit, 60 min for regular ping
 
   if (remove) {
-    g_print("  Cache remove %s %s %.1fs %.1fm\n", (char*)key, existing->name, delta_time_sent, existing->distance);
+    g_print("  Cache remove %s %s %.1fs %.1fm\n", (char*)key, existing->name, delta_time, existing->distance);
   }
 
   return remove;  // 60 min of no activity = remove from cache
