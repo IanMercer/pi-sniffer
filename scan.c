@@ -1279,6 +1279,10 @@ void dump_device (gpointer key, gpointer value, gpointer user_data)
 {
   (void)user_data;
   struct Device* a = (struct Device*) value;
+
+  // Ignore any that have not been seen for over five minutes
+  double delta_time = difftime(now, a->latest);
+  if (delta_time > MAX_TIME_AGO_MINUTES * 60) return;
   g_print("%s %4i %6s  %6.2fm %4i %5li - %5li %20s %20s\n", (char*)key, a->count, a->addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias);
 }
 
