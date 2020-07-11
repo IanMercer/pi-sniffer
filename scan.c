@@ -128,7 +128,7 @@ void examine_overlap_inner (gpointer key, gpointer value, gpointer user_data)
   (void)key;
   struct Device* a = (struct Device*) value;
   struct Device* b = (struct Device*) user_data;
-  if (a->id >= b->id) return;
+  if (a->id == b->id) return;
   if (a->column != b->column) return; // Already on separate columns
 
   if (ignore(a)) return;
