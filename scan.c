@@ -1273,7 +1273,7 @@ void dump_device (gpointer key, gpointer value, gpointer user_data)
 {
   (void)user_data;
   struct Device* a = (struct Device*) value;
-  g_print("%s %4i %6s %.2fm %5li - %5li\n", (char*)key, a->count, a->addressType, a->distance, (a->earliest - started), (a->latest - started));
+  g_print("%s %4i %6s %.2fm %5li - %5li %20s %20s\n", (char*)key, a->count, a->addressType, a->distance, (a->earliest - started), (a->latest - started), a->name, a->alias);
 }
 
 
