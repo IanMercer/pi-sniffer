@@ -60,16 +60,20 @@ char *trim(char *str)
 
     /* Shift the string so that it starts at str so that if it's dynamically
      * allocated, we can still free it on the returned pointer.
+     * Also remove any control characters
      */
-    if (frontp != str)
+    char *startp = str;
+    while (*frontp)
     {
-        char *startp = str;
-        while (*frontp)
-        {
-            *startp++ = *frontp++;
+        if (*frontp < ' ' || *frontp > 'z'){
+          frontp++;
+          // remove the character instead, some trackers have bad characters in the name *startp++ = '_';
         }
-        *startp = '\0';
+        else {
+          *startp++ = *frontp++;
+        }
     }
+    *startp = '\0';
 
     return str;
 }

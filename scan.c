@@ -480,8 +480,8 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
         time(&existing->last_sent);
         time(&existing->last_rssi);
 
-        existing->last_sent = existing->last_sent - 10000; // bump back in time so first RSSI goes straight through
-        existing->last_rssi = existing->last_rssi - 10000; // bump back in time so first RSSI goes straight through
+        existing->last_sent = existing->last_sent - 1000;  //1s back so first RSSI goes through
+        existing->last_rssi = existing->last_rssi - 1000;
 
         kalman_initialize(&existing->kalman_interval);
 
@@ -1234,12 +1234,12 @@ gboolean remove_func (gpointer key, void *value, gpointer user_data) {
   time_t now;
   time(&now);
 
-  double delta_time_sent = difftime(now, existing->last_sent);
+  double delta_time_sent = difftime(now, existing->latest);
 
   gboolean remove = delta_time_sent > 60 * 60;  // 60 min
 
   if (remove) {
-    g_print("  Cache remove %s %.1fs %.1fm\n", (char*)key, delta_time_sent, existing->kalman.current_estimate);
+    g_print("  Cache remove %s %s %.1fs %.1fm\n", (char*)key, existing->name, delta_time_sent, existing->distance);
   }
 
   return remove;  // 60 min of no activity = remove from cache
@@ -1273,7 +1273,7 @@ void dump_device (gpointer key, gpointer value, gpointer user_data)
 {
   (void)user_data;
   struct Device* a = (struct Device*) value;
-  g_print("%s %4i %6s %.2fm %5li - %5li %20s %20s\n", (char*)key, a->count, a->addressType, a->distance, (a->earliest - started), (a->latest - started), a->name, a->alias);
+  g_print("%s %4i %6s %6.2fm %5li - %5li %20s %20s\n", (char*)key, a->count, a->addressType, a->distance, (a->earliest - started), (a->latest - started), a->name, a->alias);
 }
 
 
@@ -1288,12 +1288,12 @@ int dump_all_devices_tick(void *parameters)
     if (hash == NULL) return TRUE;
     if (!logTable) return TRUE; // no changes since last time
     logTable = FALSE;
-    g_print("-----------------------------------------------------------------------------------------------\n");
-    g_print("Address          Count Type   Distance Earliest Latest                 Name               Alias\n");
-    g_print("-----------------------------------------------------------------------------------------------\n");
+    g_print("--------------------------------------------------------------------------------------------\n");
+    g_print("Address          Count Type   Distance Earliest Latest              Name               Alias\n");
+    g_print("--------------------------------------------------------------------------------------------\n");
     time(&now);
     g_hash_table_foreach(hash, dump_device, hash);
-    g_print("-----------------------------------------------------------------------------------------------\n\n");
+    g_print("--------------------------------------------------------------------------------------------\n\n");
     return TRUE;
 }
 
