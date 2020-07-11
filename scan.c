@@ -153,11 +153,7 @@ void examine_overlap_outer (gpointer key, gpointer value, gpointer user_data)
 {
   (void)key;
   GHashTable* table = (GHashTable*)user_data;
-  made_changes = TRUE;
-  while(made_changes) {
-    made_changes = FALSE;
-    g_hash_table_foreach(table, examine_overlap_inner, value);
-  }
+  g_hash_table_foreach(table, examine_overlap_inner, value);
 }
 
 void set_column_to_zero (gpointer key, gpointer value, gpointer user_data)
@@ -186,7 +182,12 @@ int min_devices_present(GHashTable* table, int range) {
   range_to_scan = range;
   g_hash_table_foreach(table, examine_overlap_outer, table);
   max_column = -1;
-  g_hash_table_foreach(table, find_max_column, table);
+
+  made_changes = TRUE;
+  while(made_changes) {
+    made_changes = FALSE;
+    g_hash_table_foreach(table, find_max_column, table);
+  }
   // g_print("\nMax column = %i\n", max_column);
   return max_column+1;
 }
