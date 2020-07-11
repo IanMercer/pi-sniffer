@@ -48,6 +48,7 @@ static bool starting = TRUE;
 void     int_handler(int);
 
 static int id_gen = 0;
+bool logTable = FALSE;  // set to true each time something changes
 
 /* ENVIRONMENT VARIABLES */
 
@@ -78,13 +79,14 @@ struct Device
     time_t last_rssi;              // last time an RSSI was received. If gap > 0.5 hour, ignore initial point (dead letter post)
     struct Kalman kalman;
     time_t last_sent;
-    float last_value;
+    float distance;
     struct Kalman kalman_interval; // Tracks time between RSSI events in order to detect large gaps
     time_t earliest;               // Earliest time seen, used to calculate overlap
     time_t latest;                 // Latest time seen, used to calculate overlap
     int count;                     // Count how many times seen (ignore 1 offs)
     int column;                    // Allocated column in a non-overlapping range structure
 };
+
 
 
 /*
@@ -105,12 +107,13 @@ time_t now;
 // Updated for each range being scanned
 int range_to_scan = 0;
 
+
 /*
     Ignore devices that are too far away, don't have enough points, haven't been seen in a while ...
 */
 bool ignore (struct Device* device) {
 
-  if (device->last_value > range_to_scan) return TRUE;
+  if (device->distance > range_to_scan) return TRUE;
   if (device->count < 2) return TRUE;
 
   // ignore devices that we haven't seen from in a while (5 min)
@@ -135,9 +138,12 @@ void examine_overlap_inner (gpointer key, gpointer value, gpointer user_data)
   int min = a->earliest;
   if (b->earliest < min) min = b->earliest;
 
+  // cannot be the same device if they are different address types
+  bool haveDifferentAddressTypes = a->addressType && b->addressType && (a->addressType != b->addressType);
+
   //g_print("(%i,%i = %i  (%li-%li), (%li-%li) ) ", a->id, b->id, overlaps, a->earliest - min, a->latest - min, b->earliest - min, b->latest - min );
 
-  if (overlaps) {
+  if (overlaps || haveDifferentAddressTypes) {
     b->column++;
     made_changes = TRUE;
   }
@@ -242,12 +248,12 @@ GHashTable *hash = NULL;
 void device_report_free(void *object)
 {
     struct Device *val = (struct Device *)object;
-    g_print("FREE name '%s'\n", val->name);
+    //g_print("FREE name '%s'\n", val->name);
     /* Free any members you need to */
     g_free(val->name);
-    g_print("FREE alias '%s'\n", val->alias);
+    //g_print("FREE alias '%s'\n", val->alias);
     g_free(val->alias);
-    g_print("FREE value\n");
+    //g_print("FREE value\n");
     g_free(val);
 }
 
@@ -411,6 +417,7 @@ static int bluez_adapter_disconnect_device(char *address)
 
 static void report_device_to_MQTT(GVariant *properties, char *address, bool isUpdate)
 {
+    logTable = TRUE;
     //       g_print("report_device_to_MQTT(%s)\n", address);
 
 
@@ -469,7 +476,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
 
         // RSSI values are stored with kalman filtering
         kalman_initialize(&existing->kalman);
-        existing->last_value = 0;
+        existing->distance = 0;
         time(&existing->last_sent);
         time(&existing->last_rssi);
 
@@ -612,12 +619,12 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
             // 10s with RSSI change of 10 triggers send
 
             double delta_time_sent = difftime(now, existing->last_sent);
-            double delta_v = fabs(existing->last_value - averaged);
+            double delta_v = fabs(existing->distance - averaged);
             double score =  delta_v * (delta_time_sent + 1.0);
 
             if (score > 10.0 || delta_time_sent > 60) {
 	      //g_print("  %s Will send rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
-              existing->last_value = averaged;
+              existing->distance = averaged;
               send_distance = TRUE;
             }
             else {
@@ -808,7 +815,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                     send_to_mqtt_array(address, "manufacturerdata", allocdata, actualLength);
                     existing->manufacturer_data_hash = hash;
 
-                    if (existing->last_value > 0) {
+                    if (existing->distance > 0) {
                       // And repeat the RSSI value every time someone locks or unlocks their phone
                       // Even if the change notification did not include an updated RSSI
                       //g_print("  %s Will resend distance\n", address);
@@ -906,8 +913,8 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
     }
 
     if (send_distance) {
-      g_print("  **** Send distance %6.3f                        ", existing->last_value);
-      send_to_mqtt_single_float(address, "distance", existing->last_value);
+      g_print("  **** Send distance %6.3f                        ", existing->distance);
+      send_to_mqtt_single_float(address, "distance", existing->distance);
       time(&existing->last_sent);
     }
 
@@ -1258,6 +1265,37 @@ int clear_cache(void *parameters)
     return TRUE;
 }
 
+
+// Time when service started running (used to print a delta time)
+static time_t started;
+
+void dump_device (gpointer key, gpointer value, gpointer user_data)
+{
+  (void)user_data;
+  struct Device* a = (struct Device*) value;
+  g_print("%s %4i %6s %.2fm %5li - %5li\n", (char*)key, a->count, a->addressType, a->distance, (a->earliest - started), (a->latest - started));
+}
+
+
+/*
+    Dump all devices present
+*/
+
+int dump_all_devices_tick(void *parameters)
+{
+    (void)parameters; // not used
+    if (starting) return TRUE;   // not during first 30s startup time
+    if (hash == NULL) return TRUE;
+    if (!logTable) return TRUE; // no changes since last time
+    logTable = FALSE;
+    g_print("------------------------------------------------------\n");
+    g_print("Address          Count Type   Distance Earliest Latest\n");
+    g_print("------------------------------------------------------\n");
+    time(&now);
+    g_hash_table_foreach(hash, dump_device, hash);
+    return TRUE;
+}
+
 /*
 static void connect_reply(DBusMessage *message, void *user_data)
 {
@@ -1348,6 +1386,9 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    // Grab zero time = time when started
+    time(&started);
+
     loop = g_main_loop_new(NULL, FALSE);
 
     prop_changed = g_dbus_connection_signal_subscribe(con,
@@ -1418,6 +1459,8 @@ int main(int argc, char **argv)
     // Also clear starting flag
     g_timeout_add_seconds(30, clear_cache, loop);
 
+    // Every 45s dump all devices
+    g_timeout_add_seconds(15, dump_all_devices_tick, loop);
 
     g_print("Start main loop\n");
 
