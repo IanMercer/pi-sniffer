@@ -45,8 +45,8 @@ const char *topicRoot = "BLF";
 
 static int sockfd;
 struct mqtt_client mqtt;
-uint8_t sendbuf[1 * 1024 * 1024]; /* 1MByte sendbuf should be large enough to hold multiple whole mqtt messages */
-uint8_t recvbuf[1024]; /* recvbuf should be large enough any whole mqtt message expected to be received */
+uint8_t sendbuf[4 * 1024 * 1024]; /* 4MByte sendbuf should be large enough to hold multiple whole mqtt messages */
+uint8_t recvbuf[2048];            /* recvbuf should be large enough any whole mqtt message expected to be received */
 
 /* Ensure we have a clean session */
 uint8_t connect_flags = MQTT_CONNECT_CLEAN_SESSION;
