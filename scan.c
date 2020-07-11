@@ -1278,7 +1278,7 @@ void dump_device (gpointer key, gpointer value, gpointer user_data)
 {
   (void)user_data;
   struct Device* a = (struct Device*) value;
-  g_print("%s %4i %6s %6.2fm %5li - %5li %20s %20s\n", (char*)key, a->count, a->addressType, a->distance, (a->earliest - started), (a->latest - started), a->name, a->alias);
+  g_print("%s %4i %6s  %6.2fm %4i %5li - %5li %20s %20s\n", (char*)key, a->count, a->addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias);
 }
 
 
@@ -1293,12 +1293,12 @@ int dump_all_devices_tick(void *parameters)
     if (hash == NULL) return TRUE;
     if (!logTable) return TRUE; // no changes since last time
     logTable = FALSE;
-    g_print("--------------------------------------------------------------------------------------------\n");
-    g_print("Address          Count Type   Distance Earliest Latest              Name               Alias\n");
-    g_print("--------------------------------------------------------------------------------------------\n");
+    g_print("---------------------------------------------------------------------------------------------------\n");
+    g_print("Address          Count Type   Distance   Col Earliest Latest              Name                Alias\n");
+    g_print("---------------------------------------------------------------------------------------------------\n");
     time(&now);
     g_hash_table_foreach(hash, dump_device, hash);
-    g_print("--------------------------------------------------------------------------------------------\n\n");
+    g_print("---------------------------------------------------------------------------------------------------\n\n");
     return TRUE;
 }
 
