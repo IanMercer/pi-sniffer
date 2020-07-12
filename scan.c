@@ -877,23 +877,23 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                   uint8_t apple_device_type = allocdata[00];
                   if (apple_device_type == 0x02) {
                     g_print("  Beacon \n");
-                    if (existing->name == NULL) existing->alias = strdup("Beacon");
+                    if (existing->alias == NULL) existing->alias = strdup("Beacon");
                   }
                   else if (apple_device_type == 0x03) g_print("  Airprint \n");
                   else if (apple_device_type == 0x05) g_print("  Airdrop \n");
                   else if (apple_device_type == 0x07) {
                      g_print("  Airpods \n");
-                     if (existing->name == NULL) existing->alias = strdup("Airpods");
+                     if (existing->alias == NULL) existing->alias = strdup("Airpods");
                   }
                   else if (apple_device_type == 0x08) g_print("  Siri \n");
                   else if (apple_device_type == 0x09) g_print("  Airplay \n");
                   else if (apple_device_type == 0x0a) {
                      g_print("  Apple 0a \n");
-                     if (existing->name == NULL) existing->alias = strdup("Apple 0a");
+                     if (existing->alias == NULL) existing->alias = strdup("Apple 0a");
                   }
                   else if (apple_device_type == 0x0b) {
                      g_print("  Watch_c \n");
-                    if (existing->name == NULL) existing->alias = strdup("iWatch?");
+                    if (existing->alias == NULL) existing->alias = strdup("iWatch?");
                   }
                   else if (apple_device_type == 0x0c) g_print("  Handoff \n");
                   else if (apple_device_type == 0x0d) g_print("  WifiSet \n");
@@ -902,7 +902,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                   else if (apple_device_type == 0x10) {
                     g_print("  Nearby ");
 
-                    if (existing->name == NULL) { existing->alias = strdup("iPhone?"); }
+                    if (existing->alias == NULL) { existing->alias = strdup("iPhone?"); }
 
                     uint8_t device_status = allocdata[02];
                     if (device_status & 0x80) g_print("0x80 "); else g_print(" ");
@@ -938,15 +938,15 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                     g_print("Did not recognize apple device type %.2x", apple_device_type);
                   }
                 } else if (manufacturer == 0x0087) {
-                    if (existing->name == NULL) existing->alias = strdup("Garmin");
+                    if (existing->alias == NULL) existing->alias = strdup("Garmin");
                 } else if (manufacturer == 0xb4c1) {
-                    if (existing->name == NULL) existing->alias = strdup("Dycoo");   // not on official Bluetooth website
+                    if (existing->alias == NULL) existing->alias = strdup("Dycoo");   // not on official Bluetooth website
                 } else if (manufacturer == 0x0310) {
-                    if (existing->name == NULL) existing->alias = strdup("SGL Italia S.r.l.");
+                    if (existing->alias == NULL) existing->alias = strdup("SGL Italia S.r.l.");
                 } else {
                   // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
                   g_print("  Did not recognize manufacturer 0x%.4x\n", manufacturer);
-                  if (existing->name == NULL) existing->alias = strdup("Not an Apple");
+                  if (existing->alias == NULL) existing->alias = strdup("Not an Apple");
                 }
 
                 g_variant_unref(s_value);
