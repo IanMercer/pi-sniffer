@@ -85,6 +85,7 @@ struct Device
     time_t latest;                 // Latest time seen, used to calculate overlap
     int count;                     // Count how many times seen (ignore 1 offs)
     int column;                    // Allocated column in a non-overlapping range structure
+    int try_connect_state;         // Zero = never tried, 1 = Try in progress, 2 = Done
 };
 
 
@@ -318,7 +319,7 @@ static int bluez_device_call_method(const char *method, char* address, GVariant 
 
     // e.g. /org/bluez/hci0/dev_C1_B4_70_76_57_EE
     get_path_from_address(address, path, sizeof(path));
-    g_print("Path %s\n", path);
+    //g_print("Path %s\n", path);
 
     g_dbus_connection_call(con,
                            "org.bluez",
@@ -531,6 +532,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
         time(&existing->earliest);
         existing->column = 0;
         existing->count = 0;
+        existing->try_connect_state = 0;
 
         // RSSI values are stored with kalman filtering
         kalman_initialize(&existing->kalman);
@@ -556,18 +558,6 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
     // Mark the most recent time for this device
     time(&existing->latest);
     existing->count++;
-
-    // After a few messages, try forcing a connect to get a full dump from the device
-    if (existing->count == ((existing->id * 37 % 7) + 3) && existing->name == NULL) {
-        g_print("------------- Connect to %s\n", address);
-        bluez_adapter_connect_device(address);
-    }
-
-    if (existing->count == ((existing->id * 37 % 7) + 10) && existing->connected) {
-        g_print("------------- Disconnect to %s\n", address);
-        bluez_adapter_disconnect_device(address);
-    }
-
 
     // If after examining every key/value pair, distance has been set then we will send it
     bool send_distance = FALSE;
@@ -1364,6 +1354,47 @@ int dump_all_devices_tick(void *parameters)
     return TRUE;
 }
 
+
+/*
+    Try connecting to a device that isn't currently connected
+    Rate limited to one connection attempt every 15s, followed by a disconnect
+*/
+
+bool only_one = FALSE;
+
+void try_connect (gpointer key, gpointer value, gpointer user_data)
+{
+  (void)user_data;
+  struct Device* a = (struct Device*) value;
+
+  if (only_one) return;
+  if (a->name != NULL) return;    // already named
+
+  if (a->count > 1 && a->try_connect_state == 0) {
+    a->try_connect_state = 1;
+    // Try forcing a connect to get a full dump from the device
+    g_print("------------- Connect to %s\n", (char*)key);
+    bluez_adapter_connect_device(key);
+    only_one = TRUE;
+  }
+  else if (a->try_connect_state == 1 && a->connected) {
+    a->try_connect_state = 2;
+    g_print("------------- Disconnect to %s\n", (char*)key);
+    bluez_adapter_disconnect_device(key);
+    only_one = TRUE;
+  }
+}
+
+int try_connect_tick(void *parameters)
+{
+    (void)parameters; // not used
+    if (starting) return TRUE;   // not during first 30s startup time
+    if (hash == NULL) return TRUE;
+    only_one = FALSE;
+    g_hash_table_foreach(hash, try_connect, hash);
+    return TRUE;
+}
+
 /*
 static void connect_reply(DBusMessage *message, void *user_data)
 {
@@ -1527,8 +1558,11 @@ int main(int argc, char **argv)
     // Also clear starting flag
     g_timeout_add_seconds(30, clear_cache, loop);
 
-    // Every 45s dump all devices
+    // Every 15s dump all devices
     g_timeout_add_seconds(15, dump_all_devices_tick, loop);
+
+    // Every 13s see if any unnamed device is ready to be connected
+    g_timeout_add_seconds(13, try_connect_tick, loop);
 
     g_print("Start main loop\n");
 
