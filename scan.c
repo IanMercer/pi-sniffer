@@ -308,6 +308,36 @@ static int bluez_device_call_method(const char *method, char* address, GVariant 
     return 0;
 }
 
+
+/*
+      Get a single property from a Bluez device
+*/
+
+static int bluez_adapter_get_property(const char* path, const char *prop, method_cb_t method_cb)
+{
+	GError *error = NULL;
+
+	g_dbus_connection_call(con,
+				     "org.bluez",
+                                     path,
+				     "org.freedesktop.DBus.Properties",
+				     "Get",
+                                     g_variant_new("(ss)", "org.bluez.Adapter1", prop),
+				     // For "set": g_variant_new("(ssv)", "org.bluez.Device1", prop, value),
+				     NULL,
+				     G_DBUS_CALL_FLAGS_NONE,
+				     20000,
+				     NULL,
+                                     method_cb,
+				     &error);
+	if(error != NULL)
+		return 1;
+
+	return 0;
+}
+
+
+
 static void bluez_get_discovery_filter_cb(GObject *con,
                                           GAsyncResult *res,
                                           gpointer data)
