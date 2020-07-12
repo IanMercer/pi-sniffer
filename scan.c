@@ -112,10 +112,7 @@ int range_to_scan = 0;
     Ignore devices that are too far away, don't have enough points, haven't been seen in a while ...
 */
 bool ignore (struct Device* device) {
-
   if (device->distance > range_to_scan) return TRUE;
-  if (device->count < 2) return TRUE;
-
   // ignore devices that we haven't seen from in a while (5 min)
   double delta_time = difftime(now, device->latest);
   if (delta_time > MAX_TIME_AGO_MINUTES * 60) return TRUE;
@@ -708,14 +705,14 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                     memcpy(allocdata, uuidArray, actualLength * sizeof(char *));
                     g_print("  %s UUIDs has changed      ", address);
                     send_to_mqtt_uuids(address, "uuids", allocdata, actualLength);
+                    existing->uuids_length = actualLength;
                 }
                 else
                 {
                     g_print("  %s UUIDs have gone        ", address);
                     send_to_mqtt_uuids(address, "uuids", NULL, 0);
+                    // But don't actually set uuids_length to null as it may come back
                 }
-
-                existing->uuids_length = actualLength;
 
                 // Free up the individual UUID strings after sending them
                 for (int i = 0; i < actualLength; i++)
