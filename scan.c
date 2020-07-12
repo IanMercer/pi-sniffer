@@ -75,6 +75,7 @@ struct Device
     uint16_t appearance;
     int manufacturer_data_hash;
     int uuids_length;              // should use a Hash instead
+    int uuid_hash;                 // Hash value of all UUIDs - may ditinguish devices
     int txpower;                   // TX Power
     time_t last_rssi;              // last time an RSSI was received. If gap > 0.5 hour, ignore initial point (dead letter post)
     struct Kalman kalman;
@@ -101,21 +102,12 @@ bool Overlaps (struct Device* a, struct Device* b) {
 
 bool made_changes = FALSE;
 
-#define MAX_TIME_AGO_MINUTES 5
+#define MAX_TIME_AGO_COUNTING_MINUTES 5
+#define MAX_TIME_AGO_LOGGING_MINUTES 10
 
 // Updated before any function that needs to calculate relative time
 time_t now;
 
-
-/*
-    Ignore devices that are too far away, don't have enough points, haven't been seen in a while ...
-*/
-bool ignore (struct Device* device) {
-  // ignore devices that we haven't seen from in a while (5 min)
-  double delta_time = difftime(now, device->latest);
-  if (delta_time > MAX_TIME_AGO_MINUTES * 60) return TRUE;
-  return FALSE;
-}
 
 void set_column_to_zero (gpointer key, gpointer value, gpointer user_data)
 {
@@ -135,9 +127,6 @@ void examine_overlap_inner (gpointer key, gpointer value, gpointer user_data)
   struct Device* b = (struct Device*) user_data;
   if (a->id >= b->id) return;             // only compare in lower-triangle
   if (a->column != b->column) return;     // Already on separate columns
-
-  if (ignore(a)) return;
-  if (ignore(b)) return;
 
   bool overlaps = Overlaps(a, b);
 
@@ -242,6 +231,10 @@ void report_devices_count(GHashTable* table) {
         for (int col=0; col < N_COLUMNS; col++)
         {
            if (columns[col].distance < 0.01) continue;   // not allocated
+
+           double delta_time = difftime(now, columns[col].latest);
+           if (delta_time > MAX_TIME_AGO_COUNTING_MINUTES * 60) continue;
+
            if (columns[col].distance < range) min++;
         }
 
@@ -528,6 +521,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
         existing->manufacturer_data_hash = 0;
         existing->appearance = 0;
         existing->uuids_length = 0;
+        existing->uuid_hash = 0;
         existing->txpower = 12;
         time(&existing->earliest);
         existing->column = 0;
@@ -739,16 +733,24 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
             GVariantIter *iter_array;
             char *str;
 
+            int uuid_hash = 0;
+
             g_variant_get(prop_val, "as", &iter_array);
             while (g_variant_iter_loop(iter_array, "s", &str))
             {
                 uuidArray[actualLength++] = strdup(str);
+                for (uint32_t i = 0; i < strlen(str); i++) {
+                   uuid_hash += (i+1) * str[i];  // sensitive to position in UUID but not to order of UUIDs
+                }
             }
             g_variant_iter_free(iter_array);
 
+            if (actualLength > 0) {
+                existing->uuid_hash = uuid_hash & 0xffffffff;
+            }
+
             if (existing->uuids_length != actualLength)
             {
-
                 if (actualLength > 0)
                 {
                     char **allocdata = g_malloc(actualLength * sizeof(char *));
@@ -1327,10 +1329,10 @@ void dump_device (gpointer key, gpointer value, gpointer user_data)
   (void)user_data;
   struct Device* a = (struct Device*) value;
 
-  // Ignore any that have not been seen for over five minutes
+  // Ignore any that have not been seen recently
   double delta_time = difftime(now, a->latest);
-  if (delta_time > MAX_TIME_AGO_MINUTES * 60) return;
-  g_print("%s %4i %6s  %6.2fm %4i %5li - %5li %20s %20s\n", (char*)key, a->count, a->addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias);
+  if (delta_time > MAX_TIME_AGO_LOGGING_MINUTES * 60) return;
+  g_print("%s %4i %6s  %6.2fm %4i %5li - %5li %20s %20s %8x\n", (char*)key, a->count, a->addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash);
 }
 
 
@@ -1345,12 +1347,12 @@ int dump_all_devices_tick(void *parameters)
     if (hash == NULL) return TRUE;
     if (!logTable) return TRUE; // no changes since last time
     logTable = FALSE;
-    g_print("---------------------------------------------------------------------------------------------------\n");
-    g_print("Address          Count Type   Distance   Col Earliest Latest              Name                Alias\n");
-    g_print("---------------------------------------------------------------------------------------------------\n");
+    g_print("-------------------------------------------------------------------------------------------------------------\n");
+    g_print("Address          Count Type   Distance   Col Earliest Latest              Name                Alias     UUID#\n");
+    g_print("-------------------------------------------------------------------------------------------------------------\n");
     time(&now);
     g_hash_table_foreach(hash, dump_device, hash);
-    g_print("---------------------------------------------------------------------------------------------------\n\n");
+    g_print("-------------------------------------------------------------------------------------------------------------\n\n");
     return TRUE;
 }
 
