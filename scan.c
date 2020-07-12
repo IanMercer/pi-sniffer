@@ -1551,7 +1551,7 @@ int main(int argc, char **argv)
 
     // Once after startup send any changes to static information
     // Added back because I don't think this is the issue
-    g_timeout_add_seconds(15, get_managed_objects, loop);
+// REMOVED AGAIN NOW WE CONNECR TO EACH    g_timeout_add_seconds(15, get_managed_objects, loop);
 
     // MQTT send
     g_timeout_add_seconds(5, mqtt_refresh, loop);
