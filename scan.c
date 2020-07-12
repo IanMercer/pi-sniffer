@@ -104,22 +104,29 @@ bool made_changes = FALSE;
 
 // Updated before any function that needs to calculate relative time
 time_t now;
-// Updated for each range being scanned
-int range_to_scan = 0;
 
 
 /*
     Ignore devices that are too far away, don't have enough points, haven't been seen in a while ...
 */
 bool ignore (struct Device* device) {
-  if (device->distance > range_to_scan) return TRUE;
   // ignore devices that we haven't seen from in a while (5 min)
   double delta_time = difftime(now, device->latest);
   if (delta_time > MAX_TIME_AGO_MINUTES * 60) return TRUE;
-
   return FALSE;
 }
 
+void set_column_to_zero (gpointer key, gpointer value, gpointer user_data)
+{
+  (void)key;
+  (void)user_data;
+  struct Device* a = (struct Device*) value;
+  a->column = 0;
+}
+
+/*
+     Examine two devices to see if they overlap in time or are distinct in some other way
+*/
 void examine_overlap_inner (gpointer key, gpointer value, gpointer user_data)
 {
   (void)key;
@@ -132,11 +139,11 @@ void examine_overlap_inner (gpointer key, gpointer value, gpointer user_data)
   if (ignore(b)) return;
 
   bool overlaps = Overlaps(a, b);
-  int min = a->earliest;
-  if (b->earliest < min) min = b->earliest;
+//  int min = a->earliest;
+//  if (b->earliest < min) min = b->earliest;
 
   // cannot be the same device if they are different address types
-  bool haveDifferentAddressTypes = a->addressType && b->addressType && (a->addressType != b->addressType);
+  bool haveDifferentAddressTypes = a->addressType && b->addressType && (a->addressType[0] != b->addressType[0]);
 
   //g_print("(%i,%i = %i  (%li-%li), (%li-%li) ) ", a->id, b->id, overlaps, a->earliest - min, a->latest - min, b->earliest - min, b->latest - min );
 
@@ -146,6 +153,7 @@ void examine_overlap_inner (gpointer key, gpointer value, gpointer user_data)
   }
 }
 
+
 void examine_overlap_outer (gpointer key, gpointer value, gpointer user_data)
 {
   (void)key;
@@ -153,40 +161,49 @@ void examine_overlap_outer (gpointer key, gpointer value, gpointer user_data)
   g_hash_table_foreach(table, examine_overlap_inner, value);
 }
 
-void set_column_to_zero (gpointer key, gpointer value, gpointer user_data)
-{
-  (void)key;
-  (void)user_data;
-  struct Device* a = (struct Device*) value;
-  a->column = 0;
-}
-
-int max_column = -1;
-
-void find_max_column (gpointer key, gpointer value, gpointer user_data)
-{
-  (void)key;
-  (void)user_data;
-  struct Device* a = (struct Device*) value;
-  if (ignore(a)) return;
-  if (a->column > max_column) max_column = a->column;
-}
 
 /*
-  Calculates the minimum number of devices present
+    Allocate devices to columns so that there is no overlap
 */
-int min_devices_present(GHashTable* table, int range) {
-  range_to_scan = range;
-  g_hash_table_foreach(table, examine_overlap_outer, table);
-  max_column = -1;
-
+void allocate_devices_to_columns (GHashTable* table) {
   made_changes = TRUE;
   while(made_changes) {
     made_changes = FALSE;
-    g_hash_table_foreach(table, find_max_column, table);
+    g_hash_table_foreach(table, examine_overlap_outer, table);
   }
-  // g_print("\nMax column = %i\n", max_column);
-  return max_column+1;
+}
+
+// Largest number of devices that can be tracked at once
+#define N_COLUMNS 500
+
+struct ColumnInfo {
+    time_t latest;        // latest observation in this column
+    float distance;       // distance of latest observation in this column
+};
+
+struct ColumnInfo columns[N_COLUMNS];
+
+void compute_column_info (gpointer key, gpointer value, gpointer user_data)
+{
+  (void)key;
+  (void)user_data;
+  struct Device* a = (struct Device*) value;
+  int col = a->column;
+
+  if (columns[col].distance < 0.0 || columns[col].latest < a->latest) {
+    columns[col].distance = a->distance;
+    columns[col].latest = a->latest;
+  }
+}
+
+/*
+    Find latest observation in each column and the distance for that
+*/
+void find_latest_observations (GHashTable* table) {
+   for (uint i=0; i < N_COLUMNS; i++){
+      columns[i].distance = -1.0;
+   }
+   g_hash_table_foreach(table, compute_column_info, table);
 }
 
 
@@ -210,6 +227,12 @@ void report_devices_count(GHashTable* table) {
     time(&now);
     g_hash_table_foreach(table, set_column_to_zero, table);
 
+    // Allocate devices to coluumns so that there is no overlap in time
+    allocate_devices_to_columns(table);
+
+    // Find the latest device record in each column
+    find_latest_observations(table);
+
     // Calculate for each range how many devices are inside that range at the moment
     // Ignoring any that are potential MAC address randomizations of others
     int previous = 0;
@@ -217,8 +240,13 @@ void report_devices_count(GHashTable* table) {
     for (int i = 0; i < N_RANGES; i++) {
         int range = ranges[i];
 
-        // Do the packing of devices into columns for all devices under this range
-        int min = min_devices_present(table, range);
+        int min = 0;
+
+        for (int col=0; col < N_COLUMNS; col++)
+        {
+           if (columns[col].distance < 0.01) continue;   // not allocated
+           if (columns[col].distance < range) min++;
+        }
 
         int just_this_range = min - previous;
         if (reported_ranges[i] != just_this_range) {
@@ -230,6 +258,11 @@ void report_devices_count(GHashTable* table) {
     }
 
     if (made_changes) {
+      g_print("Devices by range: ");
+      for (int i = 0; i < N_RANGES; i++) {
+         g_print(" %i", reported_ranges[i]);
+      }
+      g_print("  ");
       send_to_mqtt_array("summary", "dist_hist", (unsigned char*)reported_ranges, N_RANGES * sizeof(int8_t));
     }
 }
