@@ -139,13 +139,9 @@ void examine_overlap_inner (gpointer key, gpointer value, gpointer user_data)
   if (ignore(b)) return;
 
   bool overlaps = Overlaps(a, b);
-//  int min = a->earliest;
-//  if (b->earliest < min) min = b->earliest;
 
-  // cannot be the same device if they are different address types
-  bool haveDifferentAddressTypes = a->addressType && b->addressType && (a->addressType[0] != b->addressType[0]);
-
-  //g_print("(%i,%i = %i  (%li-%li), (%li-%li) ) ", a->id, b->id, overlaps, a->earliest - min, a->latest - min, b->earliest - min, b->latest - min );
+  // cannot be the same device if either has a public address (or we don't have an address type yet)
+  bool haveDifferentAddressTypes = (a->addressType == NULL || a->addressType[0]=='p') || (b->addressType == NULL || b->addressType[0]=='p');
 
   if (overlaps || haveDifferentAddressTypes) {
     b->column++;
@@ -346,6 +342,7 @@ static int bluez_device_call_method(const char *method, char* address, GVariant 
       Get a single property from a Bluez device
 */
 
+/*
 static int bluez_adapter_get_property(const char* path, const char *prop, method_cb_t method_cb)
 {
 	GError *error = NULL;
@@ -368,7 +365,7 @@ static int bluez_adapter_get_property(const char* path, const char *prop, method
 
 	return 0;
 }
-
+*/
 
 
 static void bluez_get_discovery_filter_cb(GObject *con,
