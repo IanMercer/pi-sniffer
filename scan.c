@@ -1332,7 +1332,7 @@ void dump_device (gpointer key, gpointer value, gpointer user_data)
   // Ignore any that have not been seen recently
   double delta_time = difftime(now, a->latest);
   if (delta_time > MAX_TIME_AGO_LOGGING_MINUTES * 60) return;
-  g_print("%s %4i %6s  %6.2fm %4i %5li - %5li %20s %20s %8x\n", (char*)key, a->count, a->addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash);
+  g_print("%s %4i %6s  %6.2fm %4i %6li - %6li %20s %20s %8x\n", (char*)key, a->count, a->addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash);
 }
 
 
@@ -1347,12 +1347,12 @@ int dump_all_devices_tick(void *parameters)
     if (hash == NULL) return TRUE;
     if (!logTable) return TRUE; // no changes since last time
     logTable = FALSE;
-    g_print("-------------------------------------------------------------------------------------------------------------\n");
-    g_print("Address          Count Type   Distance   Col Earliest Latest              Name                Alias     UUID#\n");
-    g_print("-------------------------------------------------------------------------------------------------------------\n");
+    g_print("---------------------------------------------------------------------------------------------------------------\n");
+    g_print("Address          Count Type   Distance   Col  Earliest  Latest              Name                Alias     UUID#\n");
+    g_print("---------------------------------------------------------------------------------------------------------------\n");
     time(&now);
     g_hash_table_foreach(hash, dump_device, hash);
-    g_print("-------------------------------------------------------------------------------------------------------------\n\n");
+    g_print("---------------------------------------------------------------------------------------------------------------\n\n");
     return TRUE;
 }
 
