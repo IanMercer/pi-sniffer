@@ -776,8 +776,9 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                 }
                 else
                 {
-                    g_print("  %s UUIDs have gone        ", address);
-                    send_to_mqtt_uuids(address, "uuids", NULL, 0);
+                    // Ignore this, this is after we've collected them and iPhone disconnects and then reconnects
+                    //g_print("  %s UUIDs have gone        ", address);
+                    //send_to_mqtt_uuids(address, "uuids", NULL, 0);
                     // But don't actually set uuids_length to null as it may come back
                 }
 
@@ -891,24 +892,24 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
 		if (manufacturer == 0x004c) {
                   uint8_t apple_device_type = allocdata[00];
                   if (apple_device_type == 0x02) {
-                    g_print("  Beacon \n");
-                    if (existing->alias == NULL) existing->alias = strdup("Beacon");
+                    if (existing->alias == NULL) { existing->alias = strdup("Beacon"); g_print("  Beacon\n") ; }
                   }
                   else if (apple_device_type == 0x03) g_print("  Airprint \n");
                   else if (apple_device_type == 0x05) g_print("  Airdrop \n");
                   else if (apple_device_type == 0x07) {
-                     g_print("  Airpods \n");
-                     if (existing->alias == NULL) existing->alias = strdup("Airpods");
+                     if (existing->alias == NULL) { existing->alias = strdup("Airpods"); g_print("  Airpods \n"); }
                   }
-                  else if (apple_device_type == 0x08) g_print("  Siri \n");
-                  else if (apple_device_type == 0x09) g_print("  Airplay \n");
+                  else if (apple_device_type == 0x08) {
+                    if (existing->alias == NULL) { existing->alias = strdup("Siri"); g_print("  Siri \n"); }
+                  }
+                  else if (apple_device_type == 0x09) {
+                    if (existing->alias == NULL) { existing->alias = strdup("Airplay"); g_print("  Airplay \n"); }
+                  }
                   else if (apple_device_type == 0x0a) {
-                     g_print("  Apple 0a \n");
-                     if (existing->alias == NULL) existing->alias = strdup("Apple 0a");
+                     if (existing->alias == NULL) { existing->alias = strdup("Apple 0a"); g_print("  Apple 0a \n"); }
                   }
                   else if (apple_device_type == 0x0b) {
-                     g_print("  Watch_c \n");
-                    if (existing->alias == NULL) existing->alias = strdup("iWatch?");
+                    if (existing->alias == NULL) { existing->alias = strdup("iWatch?"); g_print("  Watch_c \n"); }
                   }
                   else if (apple_device_type == 0x0c) g_print("  Handoff \n");
                   else if (apple_device_type == 0x0d) g_print("  WifiSet \n");
