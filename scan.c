@@ -822,7 +822,6 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
         else if (strcmp(property_name, "ServiceData") == 0)
         {
             // A a{sv} value
-
             // {'000080e7-0000-1000-8000-00805f9b34fb': <[byte 0xb0, 0x23, 0x25, 0xcb, ...]>}
             pretty_print2("  ServiceData ", prop_val, TRUE); // a{sv}
         }
@@ -834,6 +833,9 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
         }
         else if (strcmp(property_name, "ManufacturerData") == 0)
         {
+            if (isUpdate == FALSE) {
+               continue;    // ignore this, it's stale
+            }
             // ManufacturerData {uint16 76: <[byte 0x10, 0x06, 0x10, 0x1a, 0x52, 0xe9, 0xc8, 0x08]>}
             // {a(sv)}
 
