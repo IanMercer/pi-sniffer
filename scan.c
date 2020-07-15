@@ -551,8 +551,13 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
     {
         // get value from hashtable
         existing = (struct Device *)g_hash_table_lookup(hash, address);
-        //g_print("Existing value %s\n", existing->address);
-        g_print("Existing device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
+
+        if (!isUpdate) {
+           g_print("Repeat ");   // from get_all_devices which includes stale data
+        } else {
+           g_print("Existing ");
+        }
+        g_print("device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
     }
 
     // Mark the most recent time for this device (but not if it's a get all devices call)
