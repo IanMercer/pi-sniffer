@@ -133,10 +133,10 @@ void examine_overlap_inner (gpointer key, gpointer value, gpointer user_data)
   // cannot be the same device if either has a public address (or we don't have an address type yet)
   bool haveDifferentAddressTypes = (a->addressType == NULL || a->addressType[0]=='p') || (b->addressType == NULL || b->addressType[0]=='p');
 
-  // cannot be the same if they both have names and the names are different
-  bool haveDifferentNames = (a->name != NULL) && (b->name != NULL) && (g_strcmp0(a->name, b->name) != 0);
+  // Check for has names and names are not the same
 
-  if (overlaps || haveDifferentAddressTypes || haveDifferentNames) {
+
+  if (overlaps || haveDifferentAddressTypes) {
     b->column++;
     made_changes = TRUE;
   }
