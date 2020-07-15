@@ -505,6 +505,12 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
 
     if (!g_hash_table_contains(hash, address))
     {
+        if (!isUpdate)
+        {
+           g_print("Skip %s, bluez get_devices call and not seen yet", address);
+           return;
+        }
+
         existing = g_malloc0(sizeof(struct Device));
         g_hash_table_insert(hash, strdup(address), existing);
 
@@ -1258,12 +1264,9 @@ int get_managed_objects(void *parameters)
 {
     GMainLoop *loop = (GMainLoop *)parameters;
 
-    if (!repeat) {
-      repeat = TRUE;
+    g_print("Get managed objects\n");
 
-      g_print("Get managed objects\n");
-
-      g_dbus_connection_call(con,
+    g_dbus_connection_call(con,
                            "org.bluez",
                            "/",
                            "org.freedesktop.DBus.ObjectManager",
@@ -1276,7 +1279,6 @@ int get_managed_objects(void *parameters)
                            (GAsyncReadyCallback)bluez_list_devices,
                            loop);
 
-    }
     return TRUE;
 }
 
@@ -1332,7 +1334,7 @@ void dump_device (gpointer key, gpointer value, gpointer user_data)
   // Ignore any that have not been seen recently
   double delta_time = difftime(now, a->latest);
   if (delta_time > MAX_TIME_AGO_LOGGING_MINUTES * 60) return;
-  g_print("%s %4i %6s  %6.2fm %4i %6li - %6li %20s %20s %8x\n", (char*)key, a->count, a->addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash);
+  g_print("%s %4i %6s  %6.2fm %4i  %6li - %6li %20s %20s %8x\n", (char*)key, a->count, a->addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash);
 }
 
 
@@ -1347,12 +1349,12 @@ int dump_all_devices_tick(void *parameters)
     if (hash == NULL) return TRUE;
     if (!logTable) return TRUE; // no changes since last time
     logTable = FALSE;
-    g_print("---------------------------------------------------------------------------------------------------------------\n");
-    g_print("Address          Count Type   Distance   Col  Earliest  Latest              Name                Alias     UUID#\n");
-    g_print("---------------------------------------------------------------------------------------------------------------\n");
+    g_print("----------------------------------------------------------------------------------------------------------------\n");
+    g_print("Address          Count Type   Distance   Col  Earliest  Latest               Name                Alias     UUID#\n");
+    g_print("----------------------------------------------------------------------------------------------------------------\n");
     time(&now);
     g_hash_table_foreach(hash, dump_device, hash);
-    g_print("---------------------------------------------------------------------------------------------------------------\n\n");
+    g_print("----------------------------------------------------------------------------------------------------------------\n\n");
     return TRUE;
 }
 
@@ -1549,9 +1551,10 @@ int main(int argc, char **argv)
 
     prepare_mqtt(mqtt_addr, mqtt_port, client_id);
 
-    // Once after startup send any changes to static information
-    // Added back because I don't think this is the issue
-// REMOVED AGAIN NOW WE CONNECR TO EACH    g_timeout_add_seconds(15, get_managed_objects, loop);
+    // Periodically ask Bluez for every device including ones that are long departed
+    // but only do updates to devices we have seen, do no not create a device for each
+    // as there are too many and most are old, random mac addresses
+    g_timeout_add_seconds(30, get_managed_objects, loop);
 
     // MQTT send
     g_timeout_add_seconds(5, mqtt_refresh, loop);
