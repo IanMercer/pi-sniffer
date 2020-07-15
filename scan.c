@@ -765,20 +765,6 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                 for (uint32_t i = 0; i < strlen(str); i++) {
                    uuid_hash += (i+1) * str[i];  // sensitive to position in UUID but not to order of UUIDs
                 }
-
-                // All BLE UUIDs are of the form: so we only need four hex nibbles: 0000XXXX-0000-1000-8000-00805f9b34fb
-                str[8] = '\0';
-                int16_t ble_uuid = (int)strtol(str, NULL, 0);
-
-                // https://www.bluetooth.com/specifications/gatt/characteristics/
-                if (ble_uuid == 0x2a29) g_print("Manufacturer ");
-                else if (ble_uuid == 0x1800) g_print("Generic access ");
-                else if (ble_uuid == 0x1801) g_print("Generic attribute ");
-                else if (ble_uuid == 0x180f) g_print("Battery ");
-                else if (ble_uuid == 0x180a) g_print("Device information ");
-                else if (ble_uuid == 0x180d) g_print("Heart rate service ");
-                else if (ble_uuid == 0x2A37) g_print("Heart rate measurement ");
-                else g_print("Unknown(%s) ", str);
             }
             g_variant_iter_free(iter_array);
 
@@ -790,6 +776,26 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
             {
                 if (actualLength > 0)
                 {
+                    // Print off the UUIDs here
+                    for (int i = 0; i < actualLength; i++) {
+                      char* strCopy = strdup(uuidArray[i]);
+
+	                // All BLE UUIDs are of the form: so we only need four hex nibbles: 0000XXXX-0000-1000-8000-00805f9b34fb
+	                strCopy[8] = '\0';
+	                int16_t ble_uuid = (int)strtol(strCopy, NULL, 16);
+
+	                // https://www.bluetooth.com/specifications/gatt/characteristics/
+	                if (ble_uuid == 0x2a29) g_print("Manufacturer, ");
+	                else if (ble_uuid == 0x1800) g_print("Generic access, ");
+	                else if (ble_uuid == 0x1801) g_print("Generic attribute, ");
+	                else if (ble_uuid == 0x1805) g_print("Current time service, ");
+	                else if (ble_uuid == 0x180f) g_print("Battery, ");
+	                else if (ble_uuid == 0x180a) g_print("Device information, ");
+	                else if (ble_uuid == 0x180d) g_print("Heart rate service, ");
+	                else if (ble_uuid == 0x2A37) g_print("Heart rate measurement ");
+	                else g_print("Unknown(%s), ", strCopy);
+                    }
+                    g_print("\n");
                     char **allocdata = g_malloc(actualLength * sizeof(char *));
                     memcpy(allocdata, uuidArray, actualLength * sizeof(char *));
                     g_print("  %s UUIDs has changed      ", address);
