@@ -759,21 +759,26 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
             while (g_variant_iter_loop(iter_array, "s", &str))
             {
                 if (strlen(str) < 36) continue;  // invalid GUID
+
+                uuidArray[actualLength++] = strdup(str);
+
+                for (uint32_t i = 0; i < strlen(str); i++) {
+                   uuid_hash += (i+1) * str[i];  // sensitive to position in UUID but not to order of UUIDs
+                }
+
                 // All BLE UUIDs are of the form: so we only need four hex nibbles: 0000XXXX-0000-1000-8000-00805f9b34fb
                 str[8] = '\0';
                 int16_t ble_uuid = (int)strtol(str, NULL, 0);
 
                 // https://www.bluetooth.com/specifications/gatt/characteristics/
-                if (ble_uuid == 0x2a29) g_print("Manufacturer name string ");
-                else if (ble_uuid == 0x180a) g_print("Device information service ");
+                if (ble_uuid == 0x2a29) g_print("Manufacturer ");
+                else if (ble_uuid == 0x180a) g_print("Generic access ");
+                else if (ble_uuid == 0x180a) g_print("Generic attribute ");
+                else if (ble_uuid == 0x180a) g_print("Battery ");
+                else if (ble_uuid == 0x180a) g_print("Device information ");
                 else if (ble_uuid == 0x180d) g_print("Heart rate service ");
                 else if (ble_uuid == 0x2A37) g_print("Heart rate measurement ");
                 else g_print("Unknown(%s) ", str);
-
-                uuidArray[actualLength++] = strdup(str);
-                for (uint32_t i = 0; i < strlen(str); i++) {
-                   uuid_hash += (i+1) * str[i];  // sensitive to position in UUID but not to order of UUIDs
-                }
             }
             g_variant_iter_free(iter_array);
 
