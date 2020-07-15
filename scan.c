@@ -634,9 +634,9 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
             g_free(addressType);
         }
         else if (strcmp(property_name, "RSSI") == 0 && (isUpdate == FALSE)) {
-            int16_t rssi = g_variant_get_int16(prop_val);
-            g_print("  %s RSSI repeat %i\n", address, rssi);
-            // But don't update average etc. to ensure next update gets sent
+            // Ignore this, it isn't helpful
+            // int16_t rssi = g_variant_get_int16(prop_val);
+            // g_print("  %s RSSI repeat %i\n", address, rssi);
         }
         else if (strcmp(property_name, "RSSI") == 0)
         {
