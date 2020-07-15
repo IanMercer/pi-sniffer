@@ -1281,7 +1281,7 @@ int get_managed_objects(void *parameters)
 {
     GMainLoop *loop = (GMainLoop *)parameters;
 
-    g_print("Get managed objects\n");
+    //DEBUG g_print("Get managed objects\n");
 
     g_dbus_connection_call(con,
                            "org.bluez",
