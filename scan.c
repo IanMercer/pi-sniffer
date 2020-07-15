@@ -507,7 +507,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
     {
         if (!isUpdate)
         {
-           g_print("Skip %s, bluez get_devices call and not seen yet", address);
+           // DEBUG g_print("Skip %s, bluez get_devices call and not seen yet\n", address);
            return;
         }
 
@@ -1060,8 +1060,8 @@ static void bluez_device_disappeared(GDBusConnection *sig,
             char address[BT_ADDRESS_STRING_SIZE];
             if (get_address_from_path(address, BT_ADDRESS_STRING_SIZE, object))
             {
-                g_print("Device %s removed (by bluez) ignoring this\n", address);
-                report_device_disconnected_to_MQTT(address);
+                // DEBUG g_print("Device %s removed (by bluez) ignoring this\n", address);
+                // report_device_disconnected_to_MQTT(address);
             }
         }
         // Nope ... g_variant_unref(interface_name);
