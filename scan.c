@@ -772,9 +772,9 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
 
                 // https://www.bluetooth.com/specifications/gatt/characteristics/
                 if (ble_uuid == 0x2a29) g_print("Manufacturer ");
-                else if (ble_uuid == 0x180a) g_print("Generic access ");
-                else if (ble_uuid == 0x180a) g_print("Generic attribute ");
-                else if (ble_uuid == 0x180a) g_print("Battery ");
+                else if (ble_uuid == 0x1800) g_print("Generic access ");
+                else if (ble_uuid == 0x1801) g_print("Generic attribute ");
+                else if (ble_uuid == 0x180f) g_print("Battery ");
                 else if (ble_uuid == 0x180a) g_print("Device information ");
                 else if (ble_uuid == 0x180d) g_print("Heart rate service ");
                 else if (ble_uuid == 0x2A37) g_print("Heart rate measurement ");
