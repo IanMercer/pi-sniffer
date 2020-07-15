@@ -555,9 +555,12 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
         g_print("Existing device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
     }
 
-    // Mark the most recent time for this device
-    time(&existing->latest);
-    existing->count++;
+    // Mark the most recent time for this device (but not if it's a get all devices call)
+    if (isUpdate)
+    {
+        time(&existing->latest);
+        existing->count++;
+    }
 
     // If after examining every key/value pair, distance has been set then we will send it
     bool send_distance = FALSE;
@@ -587,7 +590,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                 send_to_mqtt_single(address, "name", name);
             }
             else {
-                g_print("  Name unchanged '%s'\n", name);
+                // DEBUG g_print("  Name unchanged '%s'\n", name);
             }
             if (existing->name != NULL)
               g_free(existing->name);
@@ -604,7 +607,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                 // NOT CURRENTLY USED: send_to_mqtt_single(address, "alias", alias);
             }
             else {
-                g_print("  Alias unchanged '%s'\n", alias);
+                // DEBUG g_print("  Alias unchanged '%s'\n", alias);
             }
             if (existing->alias != NULL)
                 g_free(existing->alias);
@@ -626,7 +629,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                 }
             }
             else {
-                g_print("  Address type unchanged\n");
+                // DEBUG g_print("  Address type unchanged\n");
             }
             g_free(addressType);
         }
@@ -637,6 +640,12 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
         }
         else if (strcmp(property_name, "RSSI") == 0)
         {
+            if (!isUpdate)
+            {
+               g_print("$$$$$$$$$$$$ RSSI is unreliable for get all devices\n");
+               continue;
+            }
+
             int16_t rssi = g_variant_get_int16(prop_val);
             //send_to_mqtt_single_value(address, "rssi", rssi);
 
@@ -1061,7 +1070,7 @@ static void bluez_device_disappeared(GDBusConnection *sig,
             if (get_address_from_path(address, BT_ADDRESS_STRING_SIZE, object))
             {
                 // DEBUG g_print("Device %s removed (by bluez) ignoring this\n", address);
-                // report_device_disconnected_to_MQTT(address);
+                report_device_disconnected_to_MQTT(address);
             }
         }
         // Nope ... g_variant_unref(interface_name);
