@@ -285,6 +285,16 @@ GDBusConnection *con;
 
 typedef void (*method_cb_t)(GObject *, GAsyncResult *, gpointer);
 
+
+static void print_and_free_error(GError *error) 
+{
+  if (error)
+  {
+       g_print("Error: %s", error->message);
+       g_error_free (error);
+  }
+}
+
 static int bluez_adapter_call_method(const char *method, GVariant *param, method_cb_t method_cb)
 {
     //    g_print("bluez_adapter_call_method(%s)\n", method);
@@ -303,7 +313,10 @@ static int bluez_adapter_call_method(const char *method, GVariant *param, method
                            method_cb,
                            &error);
     if (error != NULL)
-        return 1;
+    {
+       print_and_free_error(error);
+       return 1;
+    }
     return 0;
 }
 
@@ -330,7 +343,10 @@ static int bluez_device_call_method(const char *method, char* address, GVariant 
                            method_cb,                  // callback or null
                            &error);
     if (error != NULL)
-        return 1;
+    {
+       print_and_free_error(error);
+       return 1;
+    }
     return 0;
 }
 
@@ -373,9 +389,15 @@ static void bluez_get_discovery_filter_cb(GObject *con,
     (void)data;
 
     GVariant *result = NULL;
-    result = g_dbus_connection_call_finish((GDBusConnection *)con, res, NULL);
-    if (result == NULL)
+    GError *error = NULL;
+
+    result = g_dbus_connection_call_finish((GDBusConnection *)con, res, &error);
+
+    if (result == NULL || error) 
+    {
         g_print("Unable to get result for GetDiscoveryFilter\n");
+        print_and_free_error(error);
+    }
 
     if (result)
     {
@@ -1185,7 +1207,10 @@ static int bluez_adapter_set_property(const char *prop, GVariant *value)
     // not needed: g_variant_unref(gvv);
 
     if (error != NULL)
-        return 1;
+    {
+       print_and_free_error(error);
+       return 1;
+    }
 
     return 0;
 }
@@ -1206,6 +1231,7 @@ static int bluez_set_discovery_filter()
     //g_variant_builder_add(b, "{sv}", "UUIDs", g_variant_builder_end(u));
 
     GVariant *device_dict = g_variant_builder_end(b);
+
     //g_variant_builder_unref(u);
     g_variant_builder_unref(b);
 
@@ -1242,12 +1268,19 @@ static void bluez_list_devices(GDBusConnection *con,
     GVariantIter i;
     const gchar *object_path;
     GVariant *ifaces_and_properties;
+    GError *error = NULL;
 
     //        g_print("List devices\n");
 
-    result = g_dbus_connection_call_finish(con, res, NULL);
-    if (result == NULL)
+    result = g_dbus_connection_call_finish(con, res, &error);
+    if ((result == NULL) || error)
+    {
         g_print("Unable to get result for GetManagedObjects\n");
+        if (error) {
+          g_print("Error: %s", error->message);
+          g_error_free (error);
+        }
+    }
 
     /* Parse the result */
     if (result)
