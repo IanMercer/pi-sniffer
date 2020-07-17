@@ -1375,11 +1375,18 @@ gboolean remove_func (gpointer key, void *value, gpointer user_data) {
   if (remove) {
     g_print("  Cache remove %s %s %.1fs %.1fm\n", (char*)key, existing->name, delta_time, existing->distance);
 
-    GVariant* param = g_variant_new_string((char*)key);  // want type {"o"}
+    // And so when this device reconnects we get a proper reconnect message and so that BlueZ doesn't fill up a huge
+    // cache of iOS devices that have passed by or changed mac address
+
+    GVariant* vars[1];
+    vars[0] = g_variant_new_string((char*)key);
+    GVariant* param = g_variant_new_tuple(vars, 1);
 
     int rc = bluez_adapter_call_method("RemoveDevice", param, NULL);
     if (rc)
       g_print("Not able to remove %s\n", (char*)key);
+    else
+      g_print("    ** Removed %s from BlueZ cache too\n", (char*)key);
   }
 
   return remove;  // 60 min of no activity = remove from cache
