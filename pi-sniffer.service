@@ -8,6 +8,7 @@ WorkingDirectory=/home/ian/pi-sniffer
 StandardOutput=inherit
 StandardError=inherit
 Restart=always
+RestartSec=20
 MemoryAccounting=true
 MemoryHigh=6096K
 MemoryMax=12192K

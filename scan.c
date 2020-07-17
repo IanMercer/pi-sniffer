@@ -322,7 +322,7 @@ static int bluez_adapter_call_method(const char *method, GVariant *param, method
 
 static int bluez_device_call_method(const char *method, char* address, GVariant *param, method_cb_t method_cb)
 {
-    //    g_print("bluez_adapter_call_method(%s)\n", method);
+    //    g_print("bluez_device_call_method(%s)\n", method);
     GError *error = NULL;
     char path[100];
 
@@ -1310,6 +1310,7 @@ static void bluez_list_devices(GDBusConnection *con,
 }
 
 
+
 // Every 10s we need to let MQTT send and receive messages
 int mqtt_refresh(void *parameters)
 {
@@ -1373,6 +1374,12 @@ gboolean remove_func (gpointer key, void *value, gpointer user_data) {
 
   if (remove) {
     g_print("  Cache remove %s %s %.1fs %.1fm\n", (char*)key, existing->name, delta_time, existing->distance);
+
+    GVariant* param = g_variant_new_string((char*)key);  // want type {"o"}
+
+    int rc = bluez_adapter_call_method("RemoveDevice", param, NULL);
+    if (rc)
+      g_print("Not able to remove %s\n", (char*)key);
   }
 
   return remove;  // 60 min of no activity = remove from cache
