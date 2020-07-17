@@ -1597,7 +1597,7 @@ int main(int argc, char **argv)
     // Periodically ask Bluez for every device including ones that are long departed
     // but only do updates to devices we have seen, do no not create a device for each
     // as there are too many and most are old, random mac addresses
-    g_timeout_add_seconds(30, get_managed_objects, loop);
+    g_timeout_add_seconds(60, get_managed_objects, loop);
 
     // MQTT send
     g_timeout_add_seconds(5, mqtt_refresh, loop);
