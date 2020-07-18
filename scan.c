@@ -1396,7 +1396,6 @@ int clear_cache(void *parameters)
     starting = FALSE;
 
 //    g_print("Clearing cache\n");
-    //GMainLoop * loop = (GMainLoop*) parameters;
     (void)parameters; // not used
 
     // Remove any item in cache that hasn't been seen for a long time

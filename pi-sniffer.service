@@ -3,14 +3,14 @@ Description=Pi Sniffer
 After=network.target
 
 [Service]
-ExecStart=/home/ian/pi-sniffer/scan 192.168.0.120 1883
+ExecStart=/home/ian/pi-sniffer/scan 192.168.0.52 1883
 WorkingDirectory=/home/ian/pi-sniffer
 StandardOutput=inherit
 StandardError=inherit
 Restart=always
 RestartSec=20
 MemoryAccounting=true
-MemoryHigh=6096K
+MemoryHigh=8096K
 MemoryMax=12192K
 
 [Install]
