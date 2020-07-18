@@ -14,7 +14,7 @@ chmod a+x ./scan
 
 # update running service
 
-if false && [ -e /lib/systemd/system/pi-sniffer.service ]
+if false # [ -e /lib/systemd/system/pi-sniffer.service ]
 then
     echo stopping and restarting service
     sudo systemctl stop pi-sniffer.service
