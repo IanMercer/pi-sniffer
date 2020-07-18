@@ -16,13 +16,14 @@ chmod a+x ./scan
 
 if [ -e /lib/systemd/system/pi-sniffer.service ]
 then
-    echo stopping service
-    sudo systemctl stop pi-sniffer.service
+echo stopping service
+sudo systemctl stop pi-sniffer.service
 fi
 
 echo installing service
 sudo cp pi-sniffer.service /lib/systemd/system/
 sudo chmod 644 /lib/systemd/system/pi-sniffer.service
+sudo systemctl enable pi-sniffer.service
 sudo systemctl daemon-reload
 sudo systemctl enable pi-sniffer.service
 
