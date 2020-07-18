@@ -1270,16 +1270,13 @@ static void bluez_list_devices(GDBusConnection *con,
     GVariant *ifaces_and_properties;
     GError *error = NULL;
 
-    //        g_print("List devices\n");
+    g_print("List devices call back\n");
 
     result = g_dbus_connection_call_finish(con, res, &error);
     if ((result == NULL) || error)
     {
         g_print("Unable to get result for GetManagedObjects\n");
-        if (error) {
-          g_print("Error: %s", error->message);
-          g_error_free (error);
-        }
+        print_and_free_error(error);
     }
 
     /* Parse the result */
@@ -1341,7 +1338,7 @@ int get_managed_objects(void *parameters)
 {
     GMainLoop *loop = (GMainLoop *)parameters;
 
-    //DEBUG g_print("Get managed objects\n");
+    g_print("Get managed objects\n");
 
     g_dbus_connection_call(con,
                            "org.bluez",
