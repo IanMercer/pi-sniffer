@@ -1034,6 +1034,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                 //handle_service_data(existing, manufacturer, allocdata);
 
                 g_variant_unref(s_value);
+                g_free(allocdata);
             }
 
         }
@@ -1088,6 +1089,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                 handle_manufacturer(existing, manufacturer, allocdata);
 
                 g_variant_unref(s_value);
+                g_free(allocdata);
             }
         }
         else
