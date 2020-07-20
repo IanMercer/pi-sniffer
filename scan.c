@@ -1284,9 +1284,6 @@ static void bluez_device_disappeared(GDBusConnection *sig,
                 report_device_disconnected_to_MQTT(address);
             }
         }
-        else {
-          g_print("Device disappeared, did not recognize %s\n", interface_name);
-        }
         g_free(interface_name);
     }
     g_variant_iter_free(interface_iter);
@@ -1455,9 +1452,6 @@ static void bluez_list_devices(GDBusConnection *con,
                 if (g_ascii_strcasecmp(interface_name, "org.bluez.Device1") == 0)
                 {
                     report_device_to_MQTT(properties, NULL, FALSE);
-                }
-                else {
-                   g_print("List devices, did not recognize interface %s\n", interface_name);
                 }
                 g_variant_unref(properties);
             }
