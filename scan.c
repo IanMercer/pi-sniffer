@@ -37,6 +37,18 @@ static bool starting = TRUE;
 #include "mqtt_send.c"
 #include "kalman.c"
 
+// Enable or disable extra debugging
+
+void debug( const char *format , ... ){
+   (void)format; // when not debugging
+/*
+   va_list arglist;
+   va_start( arglist, format );
+   vprintf( format, arglist );
+   va_end( arglist );
+*/
+}
+
 // delta distance x delta time threshold for sending an update
 // e.g. 5m after 2s or 1m after 10s
 // prevents swamping MQTT with very small changes
@@ -208,7 +220,7 @@ static int8_t reported_ranges[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -
 */
 
 void report_devices_count(GHashTable* table) {
-
+    debug("report_devices_count\n");
     if (starting) return;   // not during first 30s startup time
 
     //int max = g_hash_table_size(table);
@@ -386,8 +398,9 @@ static void bluez_get_discovery_filter_cb(GObject *con,
                                           GAsyncResult *res,
                                           gpointer data)
 {
-    g_print("bluez_get_discovery_filter_cb(...)\n");
     (void)data;
+
+    debug("START bluez_get_discovery_filter_cb\n");
 
     GVariant *result = NULL;
     GError *error = NULL;
@@ -407,6 +420,7 @@ static void bluez_get_discovery_filter_cb(GObject *con,
         g_variant_unref(child);
     }
     g_variant_unref(result);
+    debug("DONE bluez_get_discovery_filter_cb\n");
 }
 
 
@@ -500,14 +514,18 @@ unsigned char* read_byte_array(GVariant* s_value, int* actualLength, uint8_t* ha
     unsigned char byteArray[2048];
     int len = 0;
 
-    GVariantIter *iter_array;
+    GVariantIter* iter_array;
     guchar str;
 
+    debug("START read_byte_array\n");
+
     g_variant_get(s_value, "ay", &iter_array);
+
     while (g_variant_iter_loop(iter_array, "y", &str))
     {
         byteArray[len++] = str;
     }
+
     g_variant_iter_free(iter_array);
 
     unsigned char* allocdata = g_malloc(len);
@@ -519,6 +537,8 @@ unsigned char* read_byte_array(GVariant* s_value, int* actualLength, uint8_t* ha
     }
 
     *actualLength = len;
+
+    debug("END read_byte_array\n");
     return allocdata;
 }
 
@@ -528,6 +548,7 @@ unsigned char* read_byte_array(GVariant* s_value, int* actualLength, uint8_t* ha
 */
 void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsigned char* allocdata)
 {
+    debug("START handle_manufacturer\n");
     if (manufacturer == 0x004c) {   // Apple
         uint8_t apple_device_type = allocdata[00];
         if (apple_device_type == 0x02) {
@@ -606,15 +627,24 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
 }
 
 
+/*
+    Report a new or changed device to MQTT endpoint
+
+    NOTE: Free's address when done
+*/
 static void report_device_to_MQTT(GVariant *properties, char *address, bool isUpdate)
 {
+    debug("START report_device_to_MQTT\n");
+
+    char* allocated_address = NULL;  // If we allocate an address we must free it afterwards
+
     logTable = TRUE;
     //       g_print("report_device_to_MQTT(%s)\n", address);
 
 
     //pretty_print("report_device", properties);
 
-    // Get address from dictionary if not already present
+    // Get address from properies dictionary if not already present
     GVariant *address_from_dict = g_variant_lookup_value(properties, "Address", G_VARIANT_TYPE_STRING);
     if (address_from_dict != NULL)
     {
@@ -624,6 +654,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
         }
         address = g_variant_dup_string(address_from_dict, NULL);
         g_variant_unref(address_from_dict);
+        allocated_address = address;
     }
 
     if (address == NULL)
@@ -890,12 +921,13 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
             char *uuidArray[2048];
             int actualLength = 0;
 
-            GVariantIter *iter_array;
+            GVariantIter* iter_array;
             char *str;
 
             int uuid_hash = 0;
 
             g_variant_get(prop_val, "as", &iter_array);
+
             while (g_variant_iter_loop(iter_array, "s", &str))
             {
                 if (strlen(str) < 36) continue;  // invalid GUID
@@ -918,7 +950,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                 {
                     // Print off the UUIDs here
                     for (int i = 0; i < actualLength; i++) {
-                      char* strCopy = strdup(uuidArray[i]);
+                        char* strCopy = strdup(uuidArray[i]);
 
 	                // All BLE UUIDs are of the form: so we only need four hex nibbles: 0000XXXX-0000-1000-8000-00805f9b34fb
 	                strCopy[8] = '\0';
@@ -934,13 +966,16 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
 	                else if (ble_uuid == 0x180d) g_print("Heart rate service, ");
 	                else if (ble_uuid == 0x2A37) g_print("Heart rate measurement ");
 	                else g_print("Unknown(%s), ", strCopy);
+
+                        g_free(strCopy);
                     }
                     g_print("\n");
-                    char **allocdata = g_malloc(actualLength * sizeof(char *));
+                    char **allocdata = g_malloc(actualLength * sizeof(char *));  // array of pointers to strings
                     memcpy(allocdata, uuidArray, actualLength * sizeof(char *));
                     g_print("  %s UUIDs has changed      ", address);
                     send_to_mqtt_uuids(address, "uuids", allocdata, actualLength);
                     existing->uuids_length = actualLength;
+                    g_free(allocdata); // no need to free the actual strings, that happens below
                 }
                 else
                 {
@@ -1114,8 +1149,10 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
         }
     }
 
+    if (allocated_address) {
+      g_free(allocated_address);
+    }
     report_devices_count(hash);
-
 }
 
 static void bluez_device_appeared(GDBusConnection *sig,
@@ -1133,35 +1170,84 @@ static void bluez_device_appeared(GDBusConnection *sig,
     (void)signal_name;
     (void)user_data;
 
-    GVariantIter *interfaces;
+    GVariantIter* interfaces;
     const char *object;
     const gchar *interface_name;
     GVariant *properties;
     //int rc;
 
-    //g_print("device appeared\n");
+    //pretty_print("  params = ", parameters);
+    /*
+      e.g.  params =  ('/org/bluez/hci0/dev_63_87_D4_04_F8_3B/service0006',
+                         {'org.freedesktop.DBus.Introspectable': {},
+                          'org.bluez.GattService1':
+                             {'UUID': <'00001801-0000-1000-8000-00805f9b34fb'>,
+                              'Device': <objectpath '/org/bluez/hci0/dev_63_87_D4_04_F8_3B'>,
+                              'Primary': <true>,
+                              'Includes': <@ao []>},
+                              'org.freedesktop.DBus.Properties': {}})
+
+      e.g. params =  ('/org/bluez/hci0/dev_42_1E_F8_62_6D_F9',
+                        {'org.freedesktop.DBus.Introspectable': {},
+                         'org.bluez.Device1': {
+                             'Address': <'42:1E:F8:62:6D:F9'>,
+                             'AddressType': <'random'>,
+                             'Alias': <'42-1E-F8-62-6D-F9'>,
+                             'Paired': <false>,
+                             'Trusted': <false>,
+                             'Blocked': <false>,
+                             'LegacyPairing': <false>,
+                             'RSSI': <int16 -80>,
+                             'Connected': <false>,
+                             'UUIDs': <@as []>,
+                             'Adapter': <objectpath '/org/bluez/hci0'>,
+                             'ManufacturerData': <{uint16 76: <[byte 0x10, 0x05, 0x03, 0x1c, 0xdb, 0x1a, 0x22]>}>,
+                             'TxPower': <int16 12>,
+                             'ServicesResolved': <false>}, 'org.freedesktop.DBus.Properties': {}})
+
+    */
 
     g_variant_get(parameters, "(&oa{sa{sv}})", &object, &interfaces);
 
     while (g_variant_iter_next(interfaces, "{&s@a{sv}}", &interface_name, &properties))
     {
-        if (g_strstr_len(g_ascii_strdown(interface_name, -1), -1, "device"))
+        if (g_ascii_strcasecmp(interface_name, "org.bluez.Device1") == 0)
         {
-            // interface_name is something like /org/bluez/hci0/dev_40_F8_A3_77_C5_2B
             // Report device immediately, including RSSI
             report_device_to_MQTT(properties, NULL, TRUE);
         }
+        else if (g_ascii_strcasecmp(interface_name, "org.bluez.GattService1") == 0)
+        {
+           pretty_print("  Gatt service = ", properties);
+        }
+        else if (g_ascii_strcasecmp(interface_name, "org.bluez.GattCharacteristic1") == 0)
+        {
+           //pretty_print("  Gatt characteristic = ", properties);
+        }
+        else if (g_ascii_strcasecmp(interface_name, "org.bluez.GattDescriptor1") == 0)
+        {
+           //pretty_print("  Gatt descriptor = ", properties);
+        }
+        else if (g_ascii_strcasecmp(interface_name, "org.freedesktop.DBus.Introspectable") == 0)
+        {
+           //pretty_print("  DBus Introspectable = ", properties);
+        }
+        else if (g_ascii_strcasecmp(interface_name, "org.freedesktop.DBus.Properties") == 0)
+        {
+           //pretty_print("  DBus properties = ", properties);
+        }
+        else if (g_ascii_strcasecmp(interface_name, "org.bluez.GattService1") == 0)
+        {
+           pretty_print("  Gatt service = ", properties);
+        }
+        else {
+           g_print("Device appeared, unknown interface: %s\n", interface_name);
+        }
+
         g_variant_unref(properties);
     }
+    g_variant_iter_free(interfaces);
 
-    // Nope ... g_variant_unref(object);
-    // Nope ... g_variant_unref(interfaces);
-
-    /*
-    rc = bluez_adapter_call_method("RemoveDevice", g_variant_new("(o)", object));
-    if(rc)
-        g_print("Not able to remove %s\n", object);
-*/
     return;
 }
 
@@ -1181,15 +1267,15 @@ static void bluez_device_disappeared(GDBusConnection *sig,
     (void)signal_name;
     (void)user_data;
 
-    GVariantIter *interfaces;
+    GVariantIter *interface_iter;  // heap allocated
     const char *object;
-    const gchar *interface_name;
+    gchar *interface_name;
 
-    g_variant_get(parameters, "(&oas)", &object, &interfaces);
+    g_variant_get(parameters, "(&oas)", &object, &interface_iter);
 
-    while (g_variant_iter_next(interfaces, "s", &interface_name))
+    while (g_variant_iter_next(interface_iter, "s", &interface_name))
     {
-        if (g_strstr_len(g_ascii_strdown(interface_name, -1), -1, "device"))
+        if (g_ascii_strcasecmp(interface_name, "device") == 0)
         {
             char address[BT_ADDRESS_STRING_SIZE];
             if (get_address_from_path(address, BT_ADDRESS_STRING_SIZE, object))
@@ -1198,9 +1284,9 @@ static void bluez_device_disappeared(GDBusConnection *sig,
                 report_device_disconnected_to_MQTT(address);
             }
         }
-        // Nope ... g_variant_unref(interface_name);
+        g_free(interface_name);
     }
-    // Nope ... g_variant_unref(interfaces);
+    g_variant_iter_free(interface_iter);
 }
 
 /*
@@ -1228,7 +1314,7 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
 
     // ('org.bluez.Adapter1', {'Discovering': <true>}, [])
     // or a device ... handled by address
-    // pretty_print("adapter_changed params = ", params);
+    //pretty_print("adapter_changed params = ", params);
 
     const gchar *signature = g_variant_get_type_string(params);
     if (strcmp(signature, "(sa{sv}as)") != 0)
@@ -1249,6 +1335,7 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
     }
 
     g_variant_unref(p);
+    g_variant_iter_free(unknown);
 
     return;
 }
@@ -1339,7 +1426,7 @@ static void bluez_list_devices(GDBusConnection *con,
     GVariant *ifaces_and_properties;
     GError *error = NULL;
 
-    g_print("List devices call back\n");
+    debug("List devices call back\n");
 
     result = g_dbus_connection_call_finish(con, res, &error);
     if ((result == NULL) || error)
@@ -1362,7 +1449,7 @@ static void bluez_list_devices(GDBusConnection *con,
             g_variant_iter_init(&ii, ifaces_and_properties);
             while (g_variant_iter_next(&ii, "{&s@a{sv}}", &interface_name, &properties))
             {
-                if (g_strstr_len(g_ascii_strdown(interface_name, -1), -1, "device"))
+                if (g_ascii_strcasecmp(interface_name, "device") == 0)
                 {
                     report_device_to_MQTT(properties, NULL, FALSE);
                 }
@@ -1407,7 +1494,7 @@ int get_managed_objects(void *parameters)
 {
     GMainLoop *loop = (GMainLoop *)parameters;
 
-    g_print("Get managed objects\n");
+    debug("Get managed objects\n");
 
     g_dbus_connection_call(con,
                            "org.bluez",
