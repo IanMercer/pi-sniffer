@@ -8,8 +8,8 @@ git pull
 echo building service
 gcc `pkg-config --cflags glib-2.0 gio-2.0` -Wall -Wextra -g -o scan scan.c mqtt.c mqtt_pal.c -lm `pkg-config --libs glib-2.0 gio-2.0`
 
-echo if you want to test the service, stop here and run under valgrind (passing your MQTT server address)
-echo     valgrind --tool=memcheck --leak-check=full --track-origins=yes ./scan 192.168.0.52 1883
+echo "if you want to test the service, stop here and run under valgrind (passing your MQTT server address)"
+echo "    valgrind --tool=memcheck --leak-check=full --track-origins=yes ./scan 192.168.0.52 1883"
 
 chmod a+x ./scan
 
