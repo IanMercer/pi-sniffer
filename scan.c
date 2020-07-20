@@ -1275,7 +1275,7 @@ static void bluez_device_disappeared(GDBusConnection *sig,
 
     while (g_variant_iter_next(interface_iter, "s", &interface_name))
     {
-        if (g_ascii_strcasecmp(interface_name, "device") == 0)
+        if (g_ascii_strcasecmp(interface_name, "org.bluez.Device1") == 0)
         {
             char address[BT_ADDRESS_STRING_SIZE];
             if (get_address_from_path(address, BT_ADDRESS_STRING_SIZE, object))
@@ -1283,6 +1283,9 @@ static void bluez_device_disappeared(GDBusConnection *sig,
                 // DEBUG g_print("Device %s removed (by bluez) ignoring this\n", address);
                 report_device_disconnected_to_MQTT(address);
             }
+        }
+        else {
+          g_print("Device disappeared, did not recognize %s\n", interface_name);
         }
         g_free(interface_name);
     }
@@ -1449,9 +1452,12 @@ static void bluez_list_devices(GDBusConnection *con,
             g_variant_iter_init(&ii, ifaces_and_properties);
             while (g_variant_iter_next(&ii, "{&s@a{sv}}", &interface_name, &properties))
             {
-                if (g_ascii_strcasecmp(interface_name, "device") == 0)
+                if (g_ascii_strcasecmp(interface_name, "org.bluez.Device1") == 0)
                 {
                     report_device_to_MQTT(properties, NULL, FALSE);
+                }
+                else {
+                   g_print("List devices, did not recognize interface %s\n", interface_name);
                 }
                 g_variant_unref(properties);
             }
