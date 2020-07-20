@@ -74,6 +74,7 @@ struct Device
     uint32_t deviceclass; // https://www.bluetooth.com/specifications/assigned-numbers/Baseband/
     uint16_t appearance;
     int manufacturer_data_hash;
+    int service_data_hash;
     int uuids_length;              // should use a Hash instead
     int uuid_hash;                 // Hash value of all UUIDs - may ditinguish devices
     int txpower;                   // TX Power
@@ -661,6 +662,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
         existing->deviceclass = 0;
         existing->manufacturer = 0;
         existing->manufacturer_data_hash = 0;
+        existing->service_data_hash = 0;
         existing->appearance = 0;
         existing->uuids_length = 0;
         existing->uuid_hash = 0;
@@ -994,6 +996,34 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
             //    <[byte 0xb0, 0x23, 0x25, 0xcb, 0x66, 0x54, 0xae, 0xab, 0x0a, 0x2b, 0x00, 0x04, 0x33, 0x09, 0xee, 0x60, 0x24, 0x2e, 0x00, 0xf7, 0x07, 0x00, 0x00]>}
 
             pretty_print2("  ServiceData ", prop_val, TRUE); // a{sv}
+
+            GVariant *s_value;
+            GVariantIter i;
+            char* service_guid;
+
+            g_variant_iter_init(&i, prop_val);
+            while (g_variant_iter_next(&i, "{qv}", &service_guid, &s_value))
+            { // Just one?
+
+                uint8_t hash;
+                int actualLength;
+                unsigned char* allocdata;
+
+                read_byte_array(s_value, &allocdata, &actualLength, &hash);
+
+                if (existing->service_data_hash != hash)
+                {
+                    pretty_print2("  ServiceData", prop_val, TRUE);  // a{qv}
+                    g_print("  ServiceData has changed ");
+                    send_to_mqtt_array(address, "servicedata", allocdata, actualLength);
+                    existing->service_data_hash = hash;
+                }
+
+                //handle_service_data(existing, manufacturer, allocdata);
+
+                g_variant_unref(s_value);
+            }
+
         }
         else if (strcmp(property_name, "Adapter") == 0)
         {
