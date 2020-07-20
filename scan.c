@@ -491,6 +491,117 @@ static int bluez_adapter_disconnect_device(char *address)
 	return 0;
 }
 
+/*
+   Read byte array from GVariant
+*/
+
+void read_byte_array(GVariant* s_value, unsigned char** allocdata, int* actualLength, uint8_t* hash)
+{
+    unsigned char byteArray[2048];
+
+    GVariantIter *iter_array;
+    guchar str;
+
+    g_variant_get(s_value, "ay", &iter_array);
+    while (g_variant_iter_loop(iter_array, "y", &str))
+    {
+        byteArray[*actualLength++] = str;
+    }
+    g_variant_iter_free(iter_array);
+
+    // TODO : malloc etc... report.manufacturerData = byteArray
+    *allocdata = g_malloc(*actualLength);
+    memcpy(*allocdata, byteArray, *actualLength);
+
+    *hash = 0;
+    for (int i = 0; i < *actualLength; i++) {
+      *hash += *allocdata[i];
+    }
+}
+
+
+/*
+     handle the manufacturer data
+*/
+void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsigned char* allocdata)
+{
+    if (manufacturer == 0x004c) {   // Apple
+        uint8_t apple_device_type = allocdata[00];
+        if (apple_device_type == 0x02) {
+            if (existing->alias == NULL) { existing->alias = strdup("Beacon"); g_print("  Beacon\n") ; }
+        }
+        else if (apple_device_type == 0x03) g_print("  Airprint \n");
+        else if (apple_device_type == 0x05) g_print("  Airdrop \n");
+        else if (apple_device_type == 0x07) {
+           if (existing->alias == NULL) { existing->alias = strdup("Airpods"); g_print("  Airpods \n"); }
+        }
+        else if (apple_device_type == 0x08) {
+          if (existing->alias == NULL) { existing->alias = strdup("Siri"); g_print("  Siri \n"); }
+        }
+        else if (apple_device_type == 0x09) {
+          if (existing->alias == NULL) { existing->alias = strdup("Airplay"); g_print("  Airplay \n"); }
+        }
+        else if (apple_device_type == 0x0a) {
+           if (existing->alias == NULL) { existing->alias = strdup("Apple 0a"); g_print("  Apple 0a \n"); }
+        }
+        else if (apple_device_type == 0x0b) {
+          if (existing->alias == NULL) { existing->alias = strdup("iWatch?"); g_print("  Watch_c \n"); }
+        }
+        else if (apple_device_type == 0x0c) g_print("  Handoff \n");
+        else if (apple_device_type == 0x0d) g_print("  WifiSet \n");
+        else if (apple_device_type == 0x0e) g_print("  Hotspot \n");
+        else if (apple_device_type == 0x0f) g_print("  WifiJoin \n");
+        else if (apple_device_type == 0x10) {
+          g_print("  Nearby ");
+
+          if (existing->alias == NULL) { existing->alias = strdup("iPhone?"); }
+
+          uint8_t device_status = allocdata[02];
+          if (device_status & 0x80) g_print("0x80 "); else g_print(" ");
+          if (device_status & 0x40) g_print(" ON +"); else g_print("OFF +");
+
+          uint8_t lower_bits = device_status & 0x3f;
+
+          if (lower_bits == 0x07) g_print(" Lock screen (0x07) ");
+          else if (lower_bits == 0x17) g_print(" Lock screen   (0x17) ");
+          else if (lower_bits == 0x1b) g_print(" Home screen   (0x1b) ");
+          else if (lower_bits == 0x1c) g_print(" Home screen   (0x1c) ");
+          else if (lower_bits == 0x10) g_print(" Home screen   (0x10) ");
+          else if (lower_bits == 0x0e) g_print(" Outgoing call (0x0e) ");
+          else if (lower_bits == 0x1e) g_print(" Incoming call (0x1e) ");
+          else g_print(" Unknown (0x%.2x) ", lower_bits);
+
+          if (allocdata[03] &0x10) g_print("1"); else g_print("0");
+          if (allocdata[03] &0x08) g_print("1"); else g_print("0");
+          if (allocdata[03] &0x04) g_print("1"); else g_print("0");
+          if (allocdata[03] &0x02) g_print("1"); else g_print("0");
+          if (allocdata[03] &0x01) g_print("1"); else g_print("0");
+
+          // These do not seem to be quite right
+          if (allocdata[03] == 0x18) g_print(" Apple? (0x18)"); else
+          if (allocdata[03] == 0x1c) g_print(" Apple? (0x1c)"); else
+          if (allocdata[03] == 0x1e) g_print(" iPhone?  (0x1e)"); else
+          if (allocdata[03] == 0x1a) g_print(" iWatch?  (0x1a)"); else
+          if (allocdata[03] == 0x00) g_print(" TBD "); else
+            g_print (" Device type (%.2x)", allocdata[03]);
+
+          g_print("\n");
+        } else {
+          g_print("Did not recognize apple device type %.2x", apple_device_type);
+        }
+      } else if (manufacturer == 0x0087) {
+          if (existing->alias == NULL) existing->alias = strdup("Garmin");
+      } else if (manufacturer == 0xb4c1) {
+          if (existing->alias == NULL) existing->alias = strdup("Dycoo");   // not on official Bluetooth website
+      } else if (manufacturer == 0x0310) {
+          if (existing->alias == NULL) existing->alias = strdup("SGL Italia S.r.l.");
+      } else {
+        // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
+        g_print("  Did not recognize manufacturer 0x%.4x\n", manufacturer);
+          if (existing->alias == NULL) existing->alias = strdup("Not an Apple");
+    }
+}
+
 
 static void report_device_to_MQTT(GVariant *properties, char *address, bool isUpdate)
 {
@@ -874,8 +985,14 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
         }
         else if (strcmp(property_name, "ServiceData") == 0)
         {
+            if (isUpdate == FALSE) {
+               continue;    // ignore this, it's stale
+            }
             // A a{sv} value
-            // {'000080e7-0000-1000-8000-00805f9b34fb': <[byte 0xb0, 0x23, 0x25, 0xcb, ...]>}
+            // {'000080e7-0000-1000-8000-00805f9b34fb':
+            //    <[byte 0xb0, 0x23, 0x25, 0xcb, ...]>}
+            //    <[byte 0xb0, 0x23, 0x25, 0xcb, 0x66, 0x54, 0xae, 0xab, 0x0a, 0x2b, 0x00, 0x04, 0x33, 0x09, 0xee, 0x60, 0x24, 0x2e, 0x00, 0xf7, 0x07, 0x00, 0x00]>}
+
             pretty_print2("  ServiceData ", prop_val, TRUE); // a{sv}
         }
         else if (strcmp(property_name, "Adapter") == 0)
@@ -907,27 +1024,11 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                     existing->manufacturer = manufacturer;
                 }
 
-                unsigned char byteArray[2048];
-                int actualLength = 0;
+                uint8_t hash;
+                int actualLength;
+                unsigned char* allocdata;
 
-                GVariantIter *iter_array;
-                guchar str;
-
-                g_variant_get(s_value, "ay", &iter_array);
-                while (g_variant_iter_loop(iter_array, "y", &str))
-                {
-                    byteArray[actualLength++] = str;
-                }
-                g_variant_iter_free(iter_array);
-
-                // TODO : malloc etc... report.manufacturerData = byteArray
-                unsigned char *allocdata = g_malloc(actualLength);
-                memcpy(allocdata, byteArray, actualLength);
-
-                uint8_t hash = 0;
-                for (int i = 0; i < actualLength; i++) {
-                  hash += allocdata[i];
-                }
+                read_byte_array(s_value, &allocdata, &actualLength, &hash);
 
                 if (existing->manufacturer_data_hash != hash)
                 {
@@ -944,81 +1045,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                     }
                 }
 
-		if (manufacturer == 0x004c) {
-                  uint8_t apple_device_type = allocdata[00];
-                  if (apple_device_type == 0x02) {
-                    if (existing->alias == NULL) { existing->alias = strdup("Beacon"); g_print("  Beacon\n") ; }
-                  }
-                  else if (apple_device_type == 0x03) g_print("  Airprint \n");
-                  else if (apple_device_type == 0x05) g_print("  Airdrop \n");
-                  else if (apple_device_type == 0x07) {
-                     if (existing->alias == NULL) { existing->alias = strdup("Airpods"); g_print("  Airpods \n"); }
-                  }
-                  else if (apple_device_type == 0x08) {
-                    if (existing->alias == NULL) { existing->alias = strdup("Siri"); g_print("  Siri \n"); }
-                  }
-                  else if (apple_device_type == 0x09) {
-                    if (existing->alias == NULL) { existing->alias = strdup("Airplay"); g_print("  Airplay \n"); }
-                  }
-                  else if (apple_device_type == 0x0a) {
-                     if (existing->alias == NULL) { existing->alias = strdup("Apple 0a"); g_print("  Apple 0a \n"); }
-                  }
-                  else if (apple_device_type == 0x0b) {
-                    if (existing->alias == NULL) { existing->alias = strdup("iWatch?"); g_print("  Watch_c \n"); }
-                  }
-                  else if (apple_device_type == 0x0c) g_print("  Handoff \n");
-                  else if (apple_device_type == 0x0d) g_print("  WifiSet \n");
-                  else if (apple_device_type == 0x0e) g_print("  Hotspot \n");
-                  else if (apple_device_type == 0x0f) g_print("  WifiJoin \n");
-                  else if (apple_device_type == 0x10) {
-                    g_print("  Nearby ");
-
-                    if (existing->alias == NULL) { existing->alias = strdup("iPhone?"); }
-
-                    uint8_t device_status = allocdata[02];
-                    if (device_status & 0x80) g_print("0x80 "); else g_print(" ");
-                    if (device_status & 0x40) g_print(" ON +"); else g_print("OFF +");
-
-                    uint8_t lower_bits = device_status & 0x3f;
-
-                    if (lower_bits == 0x07) g_print(" Lock screen (0x07) ");
-                    else if (lower_bits == 0x17) g_print(" Lock screen   (0x17) ");
-                    else if (lower_bits == 0x1b) g_print(" Home screen   (0x1b) ");
-                    else if (lower_bits == 0x1c) g_print(" Home screen   (0x1c) ");
-                    else if (lower_bits == 0x10) g_print(" Home screen   (0x10) ");
-                    else if (lower_bits == 0x0e) g_print(" Outgoing call (0x0e) ");
-                    else if (lower_bits == 0x1e) g_print(" Incoming call (0x1e) ");
-                    else g_print(" Unknown (0x%.2x) ", lower_bits);
-
-                    if (allocdata[03] &0x10) g_print("1"); else g_print("0");
-                    if (allocdata[03] &0x08) g_print("1"); else g_print("0");
-                    if (allocdata[03] &0x04) g_print("1"); else g_print("0");
-                    if (allocdata[03] &0x02) g_print("1"); else g_print("0");
-                    if (allocdata[03] &0x01) g_print("1"); else g_print("0");
-
-                    // These do not seem to be quite right
-                    if (allocdata[03] == 0x18) g_print(" Apple? (0x18)"); else
-                    if (allocdata[03] == 0x1c) g_print(" Apple? (0x1c)"); else
-                    if (allocdata[03] == 0x1e) g_print(" iPhone?  (0x1e)"); else
-                    if (allocdata[03] == 0x1a) g_print(" iWatch?  (0x1a)"); else
-                    if (allocdata[03] == 0x00) g_print(" TBD "); else
-                      g_print (" Device type (%.2x)", allocdata[03]);
-
-                    g_print("\n");
-                  } else {
-                    g_print("Did not recognize apple device type %.2x", apple_device_type);
-                  }
-                } else if (manufacturer == 0x0087) {
-                    if (existing->alias == NULL) existing->alias = strdup("Garmin");
-                } else if (manufacturer == 0xb4c1) {
-                    if (existing->alias == NULL) existing->alias = strdup("Dycoo");   // not on official Bluetooth website
-                } else if (manufacturer == 0x0310) {
-                    if (existing->alias == NULL) existing->alias = strdup("SGL Italia S.r.l.");
-                } else {
-                  // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
-                  g_print("  Did not recognize manufacturer 0x%.4x\n", manufacturer);
-                  if (existing->alias == NULL) existing->alias = strdup("Not an Apple");
-                }
+                handle_manufacturer(existing, manufacturer, allocdata);
 
                 g_variant_unref(s_value);
             }
