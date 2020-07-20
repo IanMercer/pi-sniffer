@@ -1017,6 +1017,18 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                     pretty_print2("  ServiceData", prop_val, TRUE);  // a{qv}
                     send_to_mqtt_array(address, "servicedata", allocdata, actualLength);
                     existing->service_data_hash = hash;
+
+                    // temp={p[16] - 10} brightness={p[17]} motioncount={p[19] + p[20] * 256} moving={p[22]}");
+                    if (strcmp(service_guid, "000080e7-0000-1000-8000-00805f9b34fb") == 0) {  // Sensoro
+                      int battery = allocdata[14] + 256 * allocdata[15]; // ???
+                      int p14 = allocdata[14];
+                      int p15 = allocdata[15];
+                      int temp = allocdata[16] - 10;
+                      int brightness = allocdata[17] + allocdata[18] * 256;
+                      int motionCount = allocdata[19] + allocdata[20] * 256;
+                      int moving = allocdata[21];
+                      g_print("Sensoro battery=%i, p14=%i, p15=%i, temp=%i, brightness=%i, motionCount=%i, moving=%i\n", battery, p14, p15, temp, brightness, motionCount, moving);
+                    }
                 }
 
                 //handle_service_data(existing, manufacturer, allocdata);
