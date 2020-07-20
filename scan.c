@@ -1002,7 +1002,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
             char* service_guid;
 
             g_variant_iter_init(&i, prop_val);
-            while (g_variant_iter_next(&i, "{qv}", &service_guid, &s_value))
+            while (g_variant_iter_next(&i, "{sv}", &service_guid, &s_value))
             { // Just one?
 
                 uint8_t hash;
