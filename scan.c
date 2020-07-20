@@ -495,10 +495,10 @@ static int bluez_adapter_disconnect_device(char *address)
 /*
    Read byte array from GVariant
 */
-
-void read_byte_array(GVariant* s_value, unsigned char** allocdata, int* actualLength, uint8_t* hash)
+unsigned char* read_byte_array(GVariant* s_value, int* actualLength, uint8_t* hash)
 {
     unsigned char byteArray[2048];
+    int len = 0;
 
     GVariantIter *iter_array;
     guchar str;
@@ -506,18 +506,20 @@ void read_byte_array(GVariant* s_value, unsigned char** allocdata, int* actualLe
     g_variant_get(s_value, "ay", &iter_array);
     while (g_variant_iter_loop(iter_array, "y", &str))
     {
-        byteArray[*actualLength++] = str;
+        byteArray[len++] = str;
     }
     g_variant_iter_free(iter_array);
 
-    // TODO : malloc etc... report.manufacturerData = byteArray
-    *allocdata = g_malloc(*actualLength);
-    memcpy(*allocdata, byteArray, *actualLength);
+    unsigned char* allocdata = g_malloc(len);
+    memcpy(allocdata, byteArray, len);
 
     *hash = 0;
-    for (int i = 0; i < *actualLength; i++) {
-      *hash += *allocdata[i];
+    for (int i = 0; i < len; i++) {
+      *hash += allocdata[i];
     }
+
+    *actualLength = len;
+    return allocdata;
 }
 
 
@@ -995,7 +997,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
             //    <[byte 0xb0, 0x23, 0x25, 0xcb, ...]>}
             //    <[byte 0xb0, 0x23, 0x25, 0xcb, 0x66, 0x54, 0xae, 0xab, 0x0a, 0x2b, 0x00, 0x04, 0x33, 0x09, 0xee, 0x60, 0x24, 0x2e, 0x00, 0xf7, 0x07, 0x00, 0x00]>}
 
-            pretty_print2("  ServiceData ", prop_val, TRUE); // a{sv}
+            //pretty_print2("  ServiceData ", prop_val, TRUE); // a{sv}
 
             GVariant *s_value;
             GVariantIter i;
@@ -1003,18 +1005,16 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
 
             g_variant_iter_init(&i, prop_val);
             while (g_variant_iter_next(&i, "{sv}", &service_guid, &s_value))
-            { // Just one?
+            { // Just one
 
                 uint8_t hash;
                 int actualLength;
-                unsigned char* allocdata;
-
-                read_byte_array(s_value, &allocdata, &actualLength, &hash);
+                unsigned char* allocdata = read_byte_array(s_value, &actualLength, &hash);
 
                 if (existing->service_data_hash != hash)
                 {
-                    pretty_print2("  ServiceData", prop_val, TRUE);  // a{qv}
                     g_print("  ServiceData has changed ");
+                    pretty_print2("  ServiceData", prop_val, TRUE);  // a{qv}
                     send_to_mqtt_array(address, "servicedata", allocdata, actualLength);
                     existing->service_data_hash = hash;
                 }
@@ -1056,9 +1056,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
 
                 uint8_t hash;
                 int actualLength;
-                unsigned char* allocdata;
-
-                read_byte_array(s_value, &allocdata, &actualLength, &hash);
+                unsigned char* allocdata = read_byte_array(s_value, &actualLength, &hash);
 
                 if (existing->manufacturer_data_hash != hash)
                 {
