@@ -1860,8 +1860,9 @@ void int_handler(int dummy) {
     if (sockfd != -1)
         close(sockfd);
 
-    if (hash != NULL)
+    if (hash != NULL) {
         g_hash_table_destroy (hash);
+    }
 
     g_print("Clean exit\n");
 
