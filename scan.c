@@ -303,7 +303,7 @@ static void print_and_free_error(GError *error)
 {
   if (error)
   {
-       g_print("Error: %s", error->message);
+       g_print("Error: %s\n", error->message);
        g_error_free (error);
   }
 }
@@ -1433,6 +1433,8 @@ static void bluez_list_devices(GDBusConnection *con,
     {
         g_print("Unable to get result for GetManagedObjects\n");
         print_and_free_error(error);
+        // probably out of memory
+        exit_mqtt(EXIT_FAILURE, sockfd);
     }
 
     /* Parse the result */
