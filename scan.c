@@ -68,6 +68,11 @@ int rssi_one_meter = -64;     // Put a device 1m away and measure the average RS
 float rssi_factor = 3.5;      // 2.0 to 4.0, lower for indoor or cluttered environments
 
 /*
+      Connection to DBUS
+*/
+GDBusConnection *conn;
+
+/*
    Structure for reporting to MQTT
 
    TODO: Add time_t to this struct, keep them around not clearing hash an report every five minutes
@@ -294,8 +299,6 @@ void device_report_free(void *object)
     g_free(val);
 }
 
-GDBusConnection *con;
-
 typedef void (*method_cb_t)(GObject *, GAsyncResult *, gpointer);
 
 
@@ -313,7 +316,7 @@ static int bluez_adapter_call_method(const char *method, GVariant *param, method
     //    g_print("bluez_adapter_call_method(%s)\n", method);
     GError *error = NULL;
 
-    g_dbus_connection_call(con,
+    g_dbus_connection_call(conn,
                            "org.bluez", /* TODO Find the adapter path runtime */
                            "/org/bluez/hci0",
                            "org.bluez.Adapter1",
@@ -343,7 +346,7 @@ static int bluez_device_call_method(const char *method, char* address, GVariant 
     get_path_from_address(address, path, sizeof(path));
     //g_print("Path %s\n", path);
 
-    g_dbus_connection_call(con,
+    g_dbus_connection_call(conn,
                            "org.bluez",
                            path,
                            "org.bluez.Device1",
@@ -373,7 +376,7 @@ static int bluez_adapter_get_property(const char* path, const char *prop, method
 {
 	GError *error = NULL;
 
-	g_dbus_connection_call(con,
+	g_dbus_connection_call(conn,
 				     "org.bluez",
                                      path,
 				     "org.freedesktop.DBus.Properties",
@@ -678,6 +681,9 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
         if (!isUpdate)
         {
            // DEBUG g_print("Skip %s, bluez get_devices call and not seen yet\n", address);
+	   if (allocated_address) {
+	     g_free(allocated_address);
+	   }
            return;
         }
 
@@ -984,12 +990,11 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
                     //send_to_mqtt_uuids(address, "uuids", NULL, 0);
                     // But don't actually set uuids_length to null as it may come back
                 }
-
-                // Free up the individual UUID strings after sending them
-                for (int i = 0; i < actualLength; i++)
-                {
-                    g_free(uuidArray[i]);
-                }
+            }
+            // Free up the individual UUID strings after sending them
+            for (int i = 0; i < actualLength; i++)
+            {
+                g_free(uuidArray[i]);
             }
         }
         else if (strcmp(property_name, "Modalias") == 0)
@@ -1346,7 +1351,7 @@ static int bluez_adapter_set_property(const char *prop, GVariant *value)
     GError *error = NULL;
     GVariant *gvv = g_variant_new("(ssv)", "org.bluez.Adapter1", prop, value);
 
-    result = g_dbus_connection_call_sync(con,
+    result = g_dbus_connection_call_sync(conn,
                                          "org.bluez",
                                          "/org/bluez/hci0",
                                          "org.freedesktop.DBus.Properties",
@@ -1498,7 +1503,7 @@ int get_managed_objects(void *parameters)
 
     debug("Get managed objects\n");
 
-    g_dbus_connection_call(con,
+    g_dbus_connection_call(conn,
                            "org.bluez",
                            "/",
                            "org.freedesktop.DBus.ObjectManager",
@@ -1699,7 +1704,6 @@ int main(int argc, char **argv)
 {
     GMainLoop *loop;
     int rc;
-    //guint getmanagedobjects;
 
     signal(SIGINT, int_handler);
     signal(SIGTERM, int_handler);
@@ -1726,8 +1730,8 @@ int main(int argc, char **argv)
 
     g_print("\n\nStarting\n\n");
 
-    con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
-    if (con == NULL)
+    conn = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
+    if (conn == NULL)
     {
         g_print("Not able to get connection to system bus\n");
         return 1;
@@ -1738,7 +1742,7 @@ int main(int argc, char **argv)
 
     loop = g_main_loop_new(NULL, FALSE);
 
-    prop_changed = g_dbus_connection_signal_subscribe(con,
+    prop_changed = g_dbus_connection_signal_subscribe(conn,
                                                       "org.bluez",
                                                       "org.freedesktop.DBus.Properties",
                                                       "PropertiesChanged",
@@ -1749,7 +1753,7 @@ int main(int argc, char **argv)
                                                       NULL,
                                                       NULL);
 
-    iface_added = g_dbus_connection_signal_subscribe(con,
+    iface_added = g_dbus_connection_signal_subscribe(conn,
                                                      "org.bluez",
                                                      "org.freedesktop.DBus.ObjectManager",
                                                      "InterfacesAdded",
@@ -1760,7 +1764,7 @@ int main(int argc, char **argv)
                                                      loop,
                                                      NULL);
 
-    iface_removed = g_dbus_connection_signal_subscribe(con,
+    iface_removed = g_dbus_connection_signal_subscribe(conn,
                                                        "org.bluez",
                                                        "org.freedesktop.DBus.ObjectManager",
                                                        "InterfacesRemoved",
@@ -1835,10 +1839,11 @@ int main(int argc, char **argv)
     if (rc)
         g_print("Not able to disable the adapter\n");
 fail:
-    g_dbus_connection_signal_unsubscribe(con, prop_changed);
-    g_dbus_connection_signal_unsubscribe(con, iface_added);
-    g_dbus_connection_signal_unsubscribe(con, iface_removed);
-    g_object_unref(con);
+    g_dbus_connection_signal_unsubscribe(conn, prop_changed);
+    g_dbus_connection_signal_unsubscribe(conn, iface_added);
+    g_dbus_connection_signal_unsubscribe(conn, iface_removed);
+    g_dbus_connection_close_sync (conn, NULL, NULL);
+    g_object_unref(conn);
     return 0;
 }
 
@@ -1846,10 +1851,11 @@ void int_handler(int dummy) {
     (void) dummy;
 
     //keepRunning = 0;
-    g_dbus_connection_signal_unsubscribe(con, prop_changed);
-    g_dbus_connection_signal_unsubscribe(con, iface_added);
-    g_dbus_connection_signal_unsubscribe(con, iface_removed);
-    g_object_unref(con);
+    g_dbus_connection_signal_unsubscribe(conn, prop_changed);
+    g_dbus_connection_signal_unsubscribe(conn, iface_added);
+    g_dbus_connection_signal_unsubscribe(conn, iface_removed);
+    g_dbus_connection_close_sync (conn, NULL, NULL);
+    g_object_unref(conn);
 
     if (sockfd != -1)
         close(sockfd);
