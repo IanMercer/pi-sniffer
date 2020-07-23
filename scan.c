@@ -604,7 +604,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         // dummy struct filled with unmatched values
         existing->name[0] = '\0';
         existing->alias[0] = '\0';
-        existing->addressType = NULL;
+        existing->addressType = '\0';
         existing->connected = FALSE;
         existing->trusted = FALSE;
         existing->paired = FALSE;
@@ -708,7 +708,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             {
                 g_print("  %s Type has changed '%s' -> '%s'  ", address, existing->addressType, addressType);
                 send_to_mqtt_single(address, "type", addressType);
-                if (g_strcmp0("pub", addressType) == 0) {
+                if (g_strcmp0("public", addressType) == 0) {
                   existing->addressType = "pub";
                 } else {
                   existing->addressType = "ran";
