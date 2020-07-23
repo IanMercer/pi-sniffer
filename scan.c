@@ -973,6 +973,14 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
                       int motionCount = allocdata[19] + allocdata[20] * 256;
                       int moving = allocdata[21];
                       g_print("Sensoro battery=%i, p14=%i, p15=%i, temp=%i, brightness=%i, motionCount=%i, moving=%i\n", battery, p14, p15, temp, brightness, motionCount, moving);
+                      g_print("  ");
+                      send_to_mqtt_single_value(address, "temperature", temp);
+                      g_print("  ");
+                      send_to_mqtt_single_value(address, "brightness", brightness);
+                      g_print("  ");
+                      send_to_mqtt_single_value(address, "motionCount", motionCount);
+                      g_print("  ");
+                      send_to_mqtt_single_value(address, "moving", moving);
                     }
                 }
 
