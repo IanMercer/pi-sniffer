@@ -679,14 +679,14 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             // Trim whitespace (Bad Tracker device keeps flipping name)
             trim(name);
 
-            if (!g_str_has_prefix(name, existing->name))   // has_prefix because we may have truncated it
+            if (!strncmp(name, existing->name, NAME_LENGTH))
             {
                 g_print("  %s Name has changed '%s' -> '%s'  ", address, existing->name, name);
                 send_to_mqtt_single(address, "name", name);
                 g_strlcpy(existing->name, name, NAME_LENGTH);
             }
             else {
-                g_print("  Name unchanged '%s'=='%s'\n", name, existing->name);
+                // g_print("  Name unchanged '%s'=='%s'\n", name, existing->name);
             }
         }
         else if (strcmp(property_name, "Alias") == 0)
@@ -694,14 +694,14 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             char *alias = g_variant_dup_string(prop_val, NULL);
             trim(alias);
 
-            if (!g_str_has_prefix(alias, existing->alias))  // has_prefix because we may have truncated it
+            if (!strncmp(alias, existing->alias, NAME_LENGTH))  // has_prefix because we may have truncated it
             {
                 g_print("  %s Alias has changed '%s' -> '%s'  \n", address, existing->alias, alias);
                 // NOT CURRENTLY USED: send_to_mqtt_single(address, "alias", alias);
                 g_strlcpy(existing->alias, alias, NAME_LENGTH);
             }
             else {
-                g_print("  Alias unchanged '%s'=='%s'\n", alias, existing->alias);
+                // g_print("  Alias unchanged '%s'=='%s'\n", alias, existing->alias);
             }
         }
         else if (strcmp(property_name, "AddressType") == 0)
