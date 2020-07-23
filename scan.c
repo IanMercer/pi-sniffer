@@ -1497,14 +1497,27 @@ int dump_all_devices_tick(void *parameters)
     if (starting) return TRUE;   // not during first 30s startup time
     if (!logTable) return TRUE; // no changes since last time
     logTable = FALSE;
-    g_print("-------------------------------------------------------------------------------------------------------------------\n");
-    g_print("Id  Address          Count Typ   Dist  Col Earliest  Latest                 Name                Alias    UUID# Manf\n");
-    g_print("-------------------------------------------------------------------------------------------------------------------\n");
+    g_print("--------------------------------------------------------------------------------------------------------------------\n");
+    g_print("Id  Address          Count Typ   Dist   Col Earliest  Latest                 Name                Alias    UUID# Manf\n");
+    g_print("--------------------------------------------------------------------------------------------------------------------\n");
     time(&now);
     for (int i=0; i<n; i++) {
       dump_device(&devices[i]);
     }
-    g_print("-------------------------------------------------------------------------------------------------------------------\n");
+    g_print("--------------------------------------------------------------------------------------------------------------------\n");
+
+    unsigned long total_minutes = (now - started) / 60;  // minutes
+    unsigned int minutes = total_minutes % 60;
+    unsigned int hours = (total_minutes / 60) % 24;
+    unsigned int days = (total_minutes) / 60 / 24;
+
+    if (days > 1)
+      g_print("Uptime: %i days %02i:%02i\n", days, hours, minutes);
+    else if (days == 1)
+      g_print("Uptime: 1 day %02i:%02i\n", hours, minutes);
+    else
+      g_print("Uptime: %02i:%02i\n", hours, minutes);
+
     return TRUE;
 }
 
