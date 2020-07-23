@@ -27,6 +27,9 @@
 // Max allowed devices
 #define N 2048
 
+#define PUBLIC_ADDRESS_TYPE 1
+#define RANDOM_ADDRESS_TYPE 2
+
 static char* client_id = NULL;
 static bool starting = TRUE;
 
@@ -86,7 +89,7 @@ struct Device
     char mac[17];                 // mac address string
     char name[17];
     char alias[17];
-    char *addressType;
+    int8_t addressType;           // 0, 1, 2
     int32_t manufacturer;
     bool paired;
     bool connected;
@@ -138,7 +141,7 @@ void pack_columns()
       bool over = overlaps(a, b);
 
       // cannot be the same device if either has a public address (or we don't have an address type yet)
-      bool haveDifferentAddressTypes = (a->addressType && b->addressType && a->addressType[0]!=b->addressType[0]);
+      bool haveDifferentAddressTypes = (a->addressType>0 && b->addressType>0 && a->addressType != b->addressType);
 
       // cannot be the same if they both have names and the names are different
       bool haveDifferentNames = (strlen(a->name) > 0) && (strlen(b->name) > 0) && (g_strcmp0(a->name, b->name) != 0);
@@ -604,7 +607,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         // dummy struct filled with unmatched values
         existing->name[0] = '\0';
         existing->alias[0] = '\0';
-        existing->addressType = '\0';
+        existing->addressType = 0;
         existing->connected = FALSE;
         existing->trusted = FALSE;
         existing->paired = FALSE;
@@ -702,17 +705,13 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         else if (strcmp(property_name, "AddressType") == 0)
         {
             char *addressType = g_variant_dup_string(prop_val, NULL);
+            int newAddressType = (g_strcmp0("public", addressType) == 0) ? PUBLIC_ADDRESS_TYPE : RANDOM_ADDRESS_TYPE;
 
             // Compare values and send
-            if (g_strcmp0(existing->addressType, addressType) != 0)
-            {
-                g_print("  %s Type has changed '%s' -> '%s'  ", address, existing->addressType, addressType);
+            if (existing->addressType != newAddressType) {
+                existing->addressType = newAddressType;
                 send_to_mqtt_single(address, "type", addressType);
-                if (g_strcmp0("public", addressType) == 0) {
-                  existing->addressType = "pub";
-                } else {
-                  existing->addressType = "ran";
-                }
+                g_print("  %s Address type has changed -> '%s'  ", address, addressType);
             }
             else {
                 // DEBUG g_print("  Address type unchanged\n");
@@ -1483,7 +1482,9 @@ void dump_device (struct Device* a)
   double delta_time = difftime(now, a->latest);
   if (delta_time > MAX_TIME_AGO_LOGGING_MINUTES * 60) return;
 
-  g_print("%3i %s %4i %3s  %6.2fm %4i  %6li - %6li %20s %20s %8x %4x\n", a->id%100, a->mac, a->count, a->addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash, a->manufacturer);
+  char* addressType = a->addressType == PUBLIC_ADDRESS_TYPE ? "pub" : a->addressType == RANDOM_ADDRESS_TYPE ? "ran" : "---";
+
+  g_print("%3i %s %4i %3s  %6.2fm %4i  %6li - %6li %20s %20s %8x %4x\n", a->id%100, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash, a->manufacturer);
 }
 
 
