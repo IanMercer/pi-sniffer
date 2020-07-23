@@ -84,8 +84,8 @@ struct Device
 {
     int id;
     char mac[17];                 // mac address string
-    char *name;
-    char *alias;
+    char name[17];
+    char alias[17];
     char *addressType;
     int32_t manufacturer;
     bool paired;
@@ -114,14 +114,6 @@ int n = 0;       // current devices
 
 static struct Device devices[N];
 
-// Free an allocated device
-
-void free_device(struct Device* device)
-{
-    g_free(device->name);
-    g_free(device->alias);
-}
-
 /*
   Do these two devices overlap in time? If so they cannot be the same device
 */
@@ -149,7 +141,7 @@ void pack_columns()
       bool haveDifferentAddressTypes = (a->addressType && b->addressType && a->addressType[0]!=b->addressType[0]);
 
       // cannot be the same if they both have names and the names are different
-      bool haveDifferentNames = (a->name != NULL) && (b->name != NULL) && (g_strcmp0(a->name, b->name) != 0);
+      bool haveDifferentNames = (strlen(a->name) > 0) && (strlen(b->name) > 0) && (g_strcmp0(a->name, b->name) != 0);
 
       if (over || haveDifferentAddressTypes || haveDifferentNames) {
         b->column++;
@@ -163,7 +155,6 @@ void pack_columns()
    Remove a device from array and move all later devices up one spot
 */
 void remove_device(int index) {
-  free_device(&devices[index]);
   for (int i = index; i < n-1; i++) {
     devices[i] = devices[i+1];
     struct Device* dev = &devices[i];
@@ -476,6 +467,11 @@ unsigned char* read_byte_array(GVariant* s_value, int* actualLength, uint8_t* ha
     return allocdata;
 }
 
+void optional(char* name, char* value) {
+  if (strlen(name)) return;
+  g_strlcpy(name, value, 17);
+}
+
 
 /*
      handle the manufacturer data
@@ -485,26 +481,14 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
     debug("START handle_manufacturer\n");
     if (manufacturer == 0x004c) {   // Apple
         uint8_t apple_device_type = allocdata[00];
-        if (apple_device_type == 0x02) {
-            if (existing->alias == NULL) { existing->alias = strdup("Beacon"); g_print("  Beacon\n") ; }
-        }
+        if (apple_device_type == 0x02) { optional(existing->alias, "Beacon"); g_print("  Beacon\n") ; }
         else if (apple_device_type == 0x03) g_print("  Airprint \n");
         else if (apple_device_type == 0x05) g_print("  Airdrop \n");
-        else if (apple_device_type == 0x07) {
-           if (existing->alias == NULL) { existing->alias = strdup("Airpods"); g_print("  Airpods \n"); }
-        }
-        else if (apple_device_type == 0x08) {
-          if (existing->alias == NULL) { existing->alias = strdup("Siri"); g_print("  Siri \n"); }
-        }
-        else if (apple_device_type == 0x09) {
-          if (existing->alias == NULL) { existing->alias = strdup("Airplay"); g_print("  Airplay \n"); }
-        }
-        else if (apple_device_type == 0x0a) {
-           if (existing->alias == NULL) { existing->alias = strdup("Apple 0a"); g_print("  Apple 0a \n"); }
-        }
-        else if (apple_device_type == 0x0b) {
-          if (existing->alias == NULL) { existing->alias = strdup("iWatch?"); g_print("  Watch_c \n"); }
-        }
+        else if (apple_device_type == 0x07) { optional(existing->alias, "Airpods"); g_print("  Airpods \n"); }
+        else if (apple_device_type == 0x08) { optional(existing->alias, "Siri"); g_print("  Siri \n"); }
+        else if (apple_device_type == 0x09) { optional(existing->alias, "Airplay"); g_print("  Airplay \n"); }
+        else if (apple_device_type == 0x0a) { optional(existing->alias, "Apple 0a"); g_print("  Apple 0a \n"); }
+        else if (apple_device_type == 0x0b) { optional(existing->alias, "iWatch?"); g_print("  Watch_c \n"); }
         else if (apple_device_type == 0x0c) g_print("  Handoff \n");
         else if (apple_device_type == 0x0d) g_print("  WifiSet \n");
         else if (apple_device_type == 0x0e) g_print("  Hotspot \n");
@@ -512,7 +496,7 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         else if (apple_device_type == 0x10) {
           g_print("  Nearby ");
 
-          if (existing->alias == NULL) { existing->alias = strdup("iPhone?"); }
+          optional(existing->alias, "iPhone?");
 
           uint8_t device_status = allocdata[02];
           if (device_status & 0x80) g_print("0x80 "); else g_print(" ");
@@ -547,16 +531,13 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         } else {
           g_print("Did not recognize apple device type %.2x", apple_device_type);
         }
-      } else if (manufacturer == 0x0087) {
-          if (existing->alias == NULL) existing->alias = strdup("Garmin");
-      } else if (manufacturer == 0xb4c1) {
-          if (existing->alias == NULL) existing->alias = strdup("Dycoo");   // not on official Bluetooth website
-      } else if (manufacturer == 0x0310) {
-          if (existing->alias == NULL) existing->alias = strdup("SGL Italia S.r.l.");
+      } else if (manufacturer == 0x0087) { optional(existing->alias, "Garmin");
+      } else if (manufacturer == 0xb4c1) { optional(existing->alias, "Dycoo");   // not on official Bluetooth website
+      } else if (manufacturer == 0x0310) { optional(existing->alias, "SGL Italia S.r.l.");
       } else {
         // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
         g_print("  Did not recognize manufacturer 0x%.4x\n", manufacturer);
-          if (existing->alias == NULL) existing->alias = strdup("Not an Apple");
+        optional(existing->alias, "Not an Apple");
     }
 }
 
@@ -621,8 +602,8 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         g_strlcpy(existing->mac, address, 17);   // address
 
         // dummy struct filled with unmatched values
-        existing->name = NULL;
-        existing->alias = NULL;
+        existing->name[0] = '\0';
+        existing->alias[0] = '\0';
         existing->addressType = NULL;
         existing->connected = FALSE;
         existing->trusted = FALSE;
@@ -700,9 +681,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             else {
                 // DEBUG g_print("  Name unchanged '%s'\n", name);
             }
-            if (existing->name != NULL)
-              g_free(existing->name);
-            existing->name = name;
+            g_strlcpy(existing->name, name, 17);
         }
         else if (strcmp(property_name, "Alias") == 0)
         {
@@ -717,9 +696,8 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             else {
                 // DEBUG g_print("  Alias unchanged '%s'\n", alias);
             }
-            if (existing->alias != NULL)
-                g_free(existing->alias);
-            existing->alias = alias;
+
+            g_strlcpy(existing->alias, alias, 17);
         }
         else if (strcmp(property_name, "AddressType") == 0)
         {
@@ -1538,7 +1516,7 @@ int dump_all_devices_tick(void *parameters)
 
 gboolean try_connect (struct Device* a)
 {
-  if (a->name != NULL) return FALSE;    // already named
+  if (strlen(a->name) > 0) return FALSE;    // already named
 
   if (a->count > 1 && a->try_connect_state == 0) {
     a->try_connect_state = 1;
@@ -1777,10 +1755,6 @@ void int_handler(int dummy) {
 
     if (sockfd != -1)
         close(sockfd);
-
-    for (int i=0; i<n; i++) {
-      free_device(&devices[i]);
-    }
 
     g_print("Clean exit\n");
 

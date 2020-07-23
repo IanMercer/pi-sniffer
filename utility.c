@@ -58,7 +58,7 @@ void getMemory(
 
 // trim string (https://stackoverflow.com/a/122974/224370 but simplified)
 
-char *trim(char *str)
+char* trim(char *str)
 {
     size_t len = 0;
     char *frontp = str;
