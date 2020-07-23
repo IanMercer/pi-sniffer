@@ -86,7 +86,7 @@ GDBusConnection *conn;
 struct Device
 {
     int id;
-    char mac[17];                 // mac address string
+    char mac[18];                 // mac address string
     char name[17];
     char alias[17];
     int8_t addressType;           // 0, 1, 2
@@ -558,17 +558,17 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
     //       g_print("report_device_to_MQTT(%s)\n", address);
     //pretty_print("report_device", properties);
 
-    char address[17];
+    char address[18];
 
     if (known_address) {
-       g_strlcpy(address, known_address, 17);
+       g_strlcpy(address, known_address, 18);
     } else {
       // Get address from properies dictionary if not already present
       GVariant *address_from_dict = g_variant_lookup_value(properties, "Address", G_VARIANT_TYPE_STRING);
       if (address_from_dict)
       {
           const char* addr = g_variant_get_string(address_from_dict, NULL);
-          g_strlcpy(address, addr, 17);
+          g_strlcpy(address, addr, 18);
           g_variant_unref(address_from_dict);
       }
       else {
@@ -1484,7 +1484,7 @@ void dump_device (struct Device* a)
 
   char* addressType = a->addressType == PUBLIC_ADDRESS_TYPE ? "pub" : a->addressType == RANDOM_ADDRESS_TYPE ? "ran" : "---";
 
-  g_print("%3i %s %4i %3s  %6.2fm %4i  %6li - %6li %20s %20s %8x %4x\n", a->id%100, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash, a->manufacturer);
+  g_print("%3i %s %4i %3s %6.2fm %4i  %6li - %6li %20s %20s %8x %4x\n", a->id%100, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash, a->manufacturer);
 }
 
 
@@ -1498,14 +1498,14 @@ int dump_all_devices_tick(void *parameters)
     if (starting) return TRUE;   // not during first 30s startup time
     if (!logTable) return TRUE; // no changes since last time
     logTable = FALSE;
-    g_print("--------------------------------------------------------------------------------------------------------------------\n");
-    g_print("Id  Address         Count Typ Distance  Col Earliest  Latest                 Name                Alias    UUID# Manu\n");
-    g_print("--------------------------------------------------------------------------------------------------------------------\n");
+    g_print("-----------------------------------------------------------------------------------------------------------------\n");
+    g_print("Id  Address          Count Typ  Dist  Col Earliest  Latest                 Name                Alias    UUID# Manu\n");
+    g_print("---------------------------------------------------------------------------------------------------------------------\n");
     time(&now);
     for (int i=0; i<n; i++) {
       dump_device(&devices[i]);
     }
-    g_print("--------------------------------------------------------------------------------------------------------------------\n");
+    g_print("-----------------------------------------------------------------------------------------------------------------\n");
     return TRUE;
 }
 
