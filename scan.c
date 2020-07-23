@@ -1504,7 +1504,7 @@ void dump_device (struct Device* a)
   double delta_time = difftime(now, a->latest);
   if (delta_time > MAX_TIME_AGO_LOGGING_MINUTES * 60) return;
 
-  g_print("%4i %s %4i %6s  %6.2fm %4i  %6li - %6li %20s %20s %8x\n", a->id, a->mac, a->count, a->addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash);
+  g_print("%3i %s %4i %6s  %6.2fm %4i  %6li - %6li %20s %20s %8x\n", a->id%100, a->mac, a->count, a->addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash);
 }
 
 
@@ -1518,14 +1518,14 @@ int dump_all_devices_tick(void *parameters)
     if (starting) return TRUE;   // not during first 30s startup time
     if (!logTable) return TRUE; // no changes since last time
     logTable = FALSE;
-    g_print("---------------------------------------------------------------------------------------------------------------------\n");
-    g_print("Id   Address          Count Type   Distance   Col  Earliest  Latest               Name                Alias     UUID#\n");
-    g_print("---------------------------------------------------------------------------------------------------------------------\n");
+    g_print("--------------------------------------------------------------------------------------------------------------------\n");
+    g_print("Id  Address          Count Type   Distance   Col  Earliest  Latest               Name                Alias     UUID#\n");
+    g_print("--------------------------------------------------------------------------------------------------------------------\n");
     time(&now);
     for (int i=0; i<n; i++) {
       dump_device(&devices[i]);
     }
-    g_print("----------------------------------------------------------------------------------------------------------------\n\n");
+    g_print("--------------------------------------------------------------------------------------------------------------------\n");
     return TRUE;
 }
 

@@ -18,6 +18,44 @@
 #include <signal.h>
 
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+
+/*
+ * Measures the current (and peak) resident and virtual memories
+ * usage of your linux C process, in kB
+ */
+void getMemory(
+    int* currRealMem, int* peakRealMem,
+    int* currVirtMem, int* peakVirtMem) {
+
+    // stores each word in status file
+    char buffer[1024] = "";
+
+    // linux file contains this-process info
+    FILE* file = fopen("/proc/self/status", "r");
+
+    // read the entire file
+    while (fscanf(file, " %1023s", buffer) == 1) {
+
+        if (strcmp(buffer, "VmRSS:") == 0) {
+            fscanf(file, " %d", currRealMem);
+        }
+        if (strcmp(buffer, "VmHWM:") == 0) {
+            fscanf(file, " %d", peakRealMem);
+        }
+        if (strcmp(buffer, "VmSize:") == 0) {
+            fscanf(file, " %d", currVirtMem);
+        }
+        if (strcmp(buffer, "VmPeak:") == 0) {
+            fscanf(file, " %d", peakVirtMem);
+        }
+    }
+    fclose(file);
+}
+
 // trim string (https://stackoverflow.com/a/122974/224370 but simplified)
 
 char *trim(char *str)
