@@ -30,6 +30,9 @@
 #define PUBLIC_ADDRESS_TYPE 1
 #define RANDOM_ADDRESS_TYPE 2
 
+// Max allowed length of names and aliases
+#define NAME_LENGTH         20
+
 static char* client_id = NULL;
 static bool starting = TRUE;
 
@@ -87,8 +90,8 @@ struct Device
 {
     int id;
     char mac[18];                 // mac address string
-    char name[17];
-    char alias[17];
+    char name[NAME_LENGTH];
+    char alias[NAME_LENGTH];
     int8_t addressType;           // 0, 1, 2
     int32_t manufacturer;
     bool paired;
@@ -472,7 +475,7 @@ unsigned char* read_byte_array(GVariant* s_value, int* actualLength, uint8_t* ha
 
 void optional(char* name, char* value) {
   if (strlen(name)) return;
-  g_strlcpy(name, value, 17);
+  g_strlcpy(name, value, NAME_LENGTH);
 }
 
 
@@ -676,11 +679,11 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             // Trim whitespace (Bad Tracker device keeps flipping name)
             trim(name);
 
-            if (g_strcmp0(existing->name, name) != 0)
+            if (!g_str_has_prefix(name, existing->name))   // has_prefix because we may have truncated it
             {
                 g_print("  %s Name has changed '%s' -> '%s'  ", address, existing->name, name);
                 send_to_mqtt_single(address, "name", name);
-                g_strlcpy(existing->name, name, 17);
+                g_strlcpy(existing->name, name, NAME_LENGTH);
             }
             else {
                 // DEBUG g_print("  Name unchanged '%s'\n", name);
@@ -691,11 +694,11 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             char *alias = g_variant_dup_string(prop_val, NULL);
             trim(alias);
 
-            if (g_strcmp0(existing->alias, alias) != 0)
+            if (!g_str_has_prefix(alias, existing->alias))  // has_prefix because we may have truncated it
             {
                 g_print("  %s Alias has changed '%s' -> '%s'  \n", address, existing->alias, alias);
                 // NOT CURRENTLY USED: send_to_mqtt_single(address, "alias", alias);
-                g_strlcpy(existing->alias, alias, 17);
+                g_strlcpy(existing->alias, alias, NAME_LENGTH);
             }
             else {
                 // DEBUG g_print("  Alias unchanged '%s'\n", alias);
