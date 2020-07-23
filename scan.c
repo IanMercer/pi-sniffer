@@ -679,7 +679,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             // Trim whitespace (Bad Tracker device keeps flipping name)
             trim(name);
 
-            if (!strncmp(name, existing->name, NAME_LENGTH))
+            if (strncmp(name, existing->name, NAME_LENGTH) != 0)
             {
                 g_print("  %s Name has changed '%s' -> '%s'  ", address, existing->name, name);
                 send_to_mqtt_single(address, "name", name);
@@ -694,7 +694,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             char *alias = g_variant_dup_string(prop_val, NULL);
             trim(alias);
 
-            if (!strncmp(alias, existing->alias, NAME_LENGTH))  // has_prefix because we may have truncated it
+            if (strncmp(alias, existing->alias, NAME_LENGTH) != 0)  // has_prefix because we may have truncated it
             {
                 g_print("  %s Alias has changed '%s' -> '%s'  \n", address, existing->alias, alias);
                 // NOT CURRENTLY USED: send_to_mqtt_single(address, "alias", alias);
