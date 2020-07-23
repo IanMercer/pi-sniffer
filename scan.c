@@ -1481,12 +1481,12 @@ static time_t started;
 void dump_device (struct Device* a)
 {
   // Ignore any that have not been seen recently
-  double delta_time = difftime(now, a->latest);
-  if (delta_time > MAX_TIME_AGO_LOGGING_MINUTES * 60) return;
+  //double delta_time = difftime(now, a->latest);
+  //if (delta_time > MAX_TIME_AGO_LOGGING_MINUTES * 60) return;
 
   char* addressType = a->addressType == PUBLIC_ADDRESS_TYPE ? "pub" : a->addressType == RANDOM_ADDRESS_TYPE ? "ran" : "---";
 
-  g_print("%3i %s %4i %3s %6.2fm %4i  %6li - %6li %20s %20s %8x %4x\n", a->id%100, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash, a->manufacturer);
+  g_print("%3i %s %4i %3s %6.2fm %4i  %6li - %6li %20s %20s %8x %4x\n", a->id%1000, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash, a->manufacturer);
 }
 
 
