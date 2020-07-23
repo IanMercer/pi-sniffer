@@ -581,7 +581,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
 
     // Get existing device report
     for (int i = 0; i<n; i++) {
-      if (memcmp(devices[i].mac, address, 17) == 0) {
+      if (memcmp(devices[i].mac, address, 18) == 0) {
          existing = &devices[i];
       }
     }
@@ -602,7 +602,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         // Grab the next empty item in the array
         existing = &devices[n++];
         existing->id = id_gen++;                 // unique ID for each
-        g_strlcpy(existing->mac, address, 17);   // address
+        g_strlcpy(existing->mac, address, 18);   // address
 
         // dummy struct filled with unmatched values
         existing->name[0] = '\0';
@@ -680,11 +680,11 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             {
                 g_print("  %s Name has changed '%s' -> '%s'  ", address, existing->name, name);
                 send_to_mqtt_single(address, "name", name);
+                g_strlcpy(existing->name, name, 17);
             }
             else {
                 // DEBUG g_print("  Name unchanged '%s'\n", name);
             }
-            g_strlcpy(existing->name, name, 17);
         }
         else if (strcmp(property_name, "Alias") == 0)
         {
@@ -695,12 +695,11 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             {
                 g_print("  %s Alias has changed '%s' -> '%s'  \n", address, existing->alias, alias);
                 // NOT CURRENTLY USED: send_to_mqtt_single(address, "alias", alias);
+                g_strlcpy(existing->alias, alias, 17);
             }
             else {
                 // DEBUG g_print("  Alias unchanged '%s'\n", alias);
             }
-
-            g_strlcpy(existing->alias, alias, 17);
         }
         else if (strcmp(property_name, "AddressType") == 0)
         {
@@ -1498,14 +1497,14 @@ int dump_all_devices_tick(void *parameters)
     if (starting) return TRUE;   // not during first 30s startup time
     if (!logTable) return TRUE; // no changes since last time
     logTable = FALSE;
-    g_print("-----------------------------------------------------------------------------------------------------------------\n");
-    g_print("Id  Address          Count Typ  Dist  Col Earliest  Latest                 Name                Alias    UUID# Manu\n");
-    g_print("---------------------------------------------------------------------------------------------------------------------\n");
+    g_print("-------------------------------------------------------------------------------------------------------------------\n");
+    g_print("Id  Address          Count Typ   Dist  Col Earliest  Latest                 Name                Alias    UUID# Manf\n");
+    g_print("-------------------------------------------------------------------------------------------------------------------\n");
     time(&now);
     for (int i=0; i<n; i++) {
       dump_device(&devices[i]);
     }
-    g_print("-----------------------------------------------------------------------------------------------------------------\n");
+    g_print("-------------------------------------------------------------------------------------------------------------------\n");
     return TRUE;
 }
 
