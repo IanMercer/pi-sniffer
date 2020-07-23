@@ -708,10 +708,10 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             {
                 g_print("  %s Type has changed '%s' -> '%s'  ", address, existing->addressType, addressType);
                 send_to_mqtt_single(address, "type", addressType);
-                if (g_strcmp0("public", addressType) == 0) {
-                  existing->addressType = "public";
+                if (g_strcmp0("pub", addressType) == 0) {
+                  existing->addressType = "pub";
                 } else {
-                  existing->addressType = "random";
+                  existing->addressType = "ran";
                 }
             }
             else {
@@ -1483,7 +1483,7 @@ void dump_device (struct Device* a)
   double delta_time = difftime(now, a->latest);
   if (delta_time > MAX_TIME_AGO_LOGGING_MINUTES * 60) return;
 
-  g_print("%3i %s %4i %6s  %6.2fm %4i  %6li - %6li %20s %20s %8x\n", a->id%100, a->mac, a->count, a->addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash);
+  g_print("%3i %s %4i %3s  %6.2fm %4i  %6li - %6li %20s %20s %8x %4x\n", a->id%100, a->mac, a->count, a->addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash, a->manufacturer);
 }
 
 
@@ -1498,7 +1498,7 @@ int dump_all_devices_tick(void *parameters)
     if (!logTable) return TRUE; // no changes since last time
     logTable = FALSE;
     g_print("--------------------------------------------------------------------------------------------------------------------\n");
-    g_print("Id  Address          Count Type   Distance   Col  Earliest  Latest               Name                Alias     UUID#\n");
+    g_print("Id  Address         Count Typ Distance  Col Earliest  Latest                 Name                Alias    UUID# Manu\n");
     g_print("--------------------------------------------------------------------------------------------------------------------\n");
     time(&now);
     for (int i=0; i<n; i++) {
