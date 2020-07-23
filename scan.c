@@ -710,8 +710,8 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             // Compare values and send
             if (existing->addressType != newAddressType) {
                 existing->addressType = newAddressType;
-                send_to_mqtt_single(address, "type", addressType);
                 g_print("  %s Address type has changed -> '%s'  ", address, addressType);
+                send_to_mqtt_single(address, "type", addressType);
             }
             else {
                 // DEBUG g_print("  Address type unchanged\n");
