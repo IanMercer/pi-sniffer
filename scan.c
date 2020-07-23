@@ -30,8 +30,8 @@
 #define PUBLIC_ADDRESS_TYPE 1
 #define RANDOM_ADDRESS_TYPE 2
 
-// Max allowed length of names and aliases
-#define NAME_LENGTH         20
+// Max allowed length of names and aliases (plus 1 for null)
+#define NAME_LENGTH         21
 
 static char* client_id = NULL;
 static bool starting = TRUE;
@@ -686,7 +686,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
                 g_strlcpy(existing->name, name, NAME_LENGTH);
             }
             else {
-                // DEBUG g_print("  Name unchanged '%s'\n", name);
+                g_print("  Name unchanged '%s'=='%s'\n", name, existing->name);
             }
         }
         else if (strcmp(property_name, "Alias") == 0)
@@ -701,7 +701,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
                 g_strlcpy(existing->alias, alias, NAME_LENGTH);
             }
             else {
-                // DEBUG g_print("  Alias unchanged '%s'\n", alias);
+                g_print("  Alias unchanged '%s'=='%s'\n", alias, existing->alias);
             }
         }
         else if (strcmp(property_name, "AddressType") == 0)
