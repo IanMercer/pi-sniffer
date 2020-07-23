@@ -114,6 +114,14 @@ int n = 0;       // current devices
 
 static struct Device devices[N];
 
+// Free an allocated device
+
+void free_device(struct Device* device)
+{
+    g_free(device->name);
+    g_free(device->alias);
+}
+
 /*
   Do these two devices overlap in time? If so they cannot be the same device
 */
@@ -122,7 +130,6 @@ bool overlaps (struct Device* a, struct Device* b) {
   if (b->earliest > a->latest) return FALSE; // b is entirely after a
   return TRUE; // must overlap if not entirely after or before
 }
-
 
 /*
     Compute the minimum number of devices present by assigning each in a non-overlapping manner to columns
@@ -156,6 +163,7 @@ void pack_columns()
    Remove a device from array and move all later devices up one spot
 */
 void remove_device(int index) {
+  free_device(&devices[index]);
   for (int i = index; i < n-1; i++) {
     devices[i] = devices[i+1];
     struct Device* dev = &devices[i];
@@ -268,13 +276,6 @@ void report_devices_count() {
 /* SEND TO MQTT WITH ACCESS POINT MAC ADDRESS AND TIME STAMP */
 
 
-// Free an allocated device
-
-void free_device(struct Device* device)
-{
-    g_free(device->name);
-    g_free(device->alias);
-}
 
 typedef void (*method_cb_t)(GObject *, GAsyncResult *, gpointer);
 
