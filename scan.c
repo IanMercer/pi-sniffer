@@ -24,6 +24,9 @@
 #include <signal.h>
 #include <stdlib.h>
 
+// Max allowed devices
+#define N 2048
+
 static char* client_id = NULL;
 static bool starting = TRUE;
 
@@ -74,13 +77,13 @@ GDBusConnection *conn;
 
 /*
    Structure for reporting to MQTT
-
-   TODO: Add time_t to this struct, keep them around not clearing hash an report every five minutes
-   on all still connected devices incase MQTT isn't saving values.
+   TODO: Add time_t to this struct, keep them around and report every five minutes
+   on all still connected devices in case MQTT isn't saving values.
 */
 struct Device
 {
     int id;
+    char mac[17];                 // mac address string
     char *name;
     char *alias;
     char *addressType;
@@ -107,18 +110,62 @@ struct Device
     int try_connect_state;         // Zero = never tried, 1 = Try in progress, 2 = Done
 };
 
+int n = 0;       // current devices
 
+static struct Device devices[N];
 
 /*
   Do these two devices overlap in time? If so they cannot be the same device
 */
-bool Overlaps (struct Device* a, struct Device* b) {
+bool overlaps (struct Device* a, struct Device* b) {
   if (a->earliest > b->latest) return FALSE; // a is entirely after b
   if (b->earliest > a->latest) return FALSE; // b is entirely after a
   return TRUE; // must overlap if not entirely after or before
 }
 
-bool made_changes = FALSE;
+
+/*
+    Compute the minimum number of devices present by assigning each in a non-overlapping manner to columns
+*/
+void pack_columns()
+{
+  for (int i = 0; i < n; i++) {
+    for (int j = i+1; j < n; j++) {
+      struct Device* a = &devices[i];
+      struct Device* b = &devices[j];
+
+      if (a->column != b-> column) continue;
+
+      bool over = overlaps(a, b);
+
+      // cannot be the same device if either has a public address (or we don't have an address type yet)
+      bool haveDifferentAddressTypes = (a->addressType && b->addressType && a->addressType[0]!=b->addressType[0]);
+
+      // cannot be the same if they both have names and the names are different
+      bool haveDifferentNames = (a->name != NULL) && (b->name != NULL) && (g_strcmp0(a->name, b->name) != 0);
+
+      if (over || haveDifferentAddressTypes || haveDifferentNames) {
+        b->column++;
+        // g_print("Compare %i to %i and bump %4i %s to %i, %i %i %i\n", i, j, b->id, b->mac, b->column, over, haveDifferentAddressTypes, haveDifferentNames);
+      }
+    }
+  }
+}
+
+/*
+   Remove a device from array and move all later devices up one spot
+*/
+void remove_device(int index) {
+  for (int i = index; i < n-1; i++) {
+    devices[i] = devices[i+1];
+    struct Device* dev = &devices[i];
+    // decrease column count, may create clashes, will fix these up next
+    dev->column = dev->column > 0 ? dev->column - 1 : 0;
+  }
+  n--;
+  pack_columns();
+}
+
 
 #define MAX_TIME_AGO_COUNTING_MINUTES 5
 #define MAX_TIME_AGO_LOGGING_MINUTES 10
@@ -126,59 +173,6 @@ bool made_changes = FALSE;
 // Updated before any function that needs to calculate relative time
 time_t now;
 
-
-void set_column_to_zero (gpointer key, gpointer value, gpointer user_data)
-{
-  (void)key;
-  (void)user_data;
-  struct Device* a = (struct Device*) value;
-  a->column = 0;
-}
-
-/*
-     Examine two devices to see if they overlap in time or are distinct in some other way
-*/
-void examine_overlap_inner (gpointer key, gpointer value, gpointer user_data)
-{
-  (void)key;
-  struct Device* a = (struct Device*) value;
-  struct Device* b = (struct Device*) user_data;
-  if (a->id >= b->id) return;             // only compare in lower-triangle
-  if (a->column != b->column) return;     // Already on separate columns
-
-  bool overlaps = Overlaps(a, b);
-
-  // cannot be the same device if either has a public address (or we don't have an address type yet)
-  bool haveDifferentAddressTypes = (a->addressType == NULL || a->addressType[0]=='p') || (b->addressType == NULL || b->addressType[0]=='p');
-
-  // cannot be the same if they both have names and the names are different
-  bool haveDifferentNames = (a->name != NULL) && (b->name != NULL) && (g_strcmp0(a->name, b->name) != 0);
-
-  if (overlaps || haveDifferentAddressTypes || haveDifferentNames) {
-    b->column++;
-    made_changes = TRUE;
-  }
-}
-
-
-void examine_overlap_outer (gpointer key, gpointer value, gpointer user_data)
-{
-  (void)key;
-  GHashTable* table = (GHashTable*)user_data;
-  g_hash_table_foreach(table, examine_overlap_inner, value);
-}
-
-
-/*
-    Allocate devices to columns so that there is no overlap
-*/
-void allocate_devices_to_columns (GHashTable* table) {
-  made_changes = TRUE;
-  while(made_changes) {
-    made_changes = FALSE;
-    g_hash_table_foreach(table, examine_overlap_outer, table);
-  }
-}
 
 // Largest number of devices that can be tracked at once
 #define N_COLUMNS 500
@@ -190,27 +184,21 @@ struct ColumnInfo {
 
 struct ColumnInfo columns[N_COLUMNS];
 
-void compute_column_info (gpointer key, gpointer value, gpointer user_data)
-{
-  (void)key;
-  (void)user_data;
-  struct Device* a = (struct Device*) value;
-  int col = a->column;
-
-  if (columns[col].distance < 0.0 || columns[col].latest < a->latest) {
-    columns[col].distance = a->distance;
-    columns[col].latest = a->latest;
-  }
-}
-
 /*
     Find latest observation in each column and the distance for that
 */
-void find_latest_observations (GHashTable* table) {
+void find_latest_observations () {
    for (uint i=0; i < N_COLUMNS; i++){
       columns[i].distance = -1.0;
    }
-   g_hash_table_foreach(table, compute_column_info, table);
+   for (int i = 0; i < n; i++) {
+      struct Device* a = &devices[i];
+      int col = a->column;
+      if (columns[col].distance < 0.0 || columns[col].latest < a->latest) {
+        columns[col].distance = a->distance;
+        columns[col].latest = a->latest;
+      }
+   }
 }
 
 
@@ -224,21 +212,18 @@ static int8_t reported_ranges[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -
     While there is any overlap, find the overlapping pair, move the second one to the next column
 */
 
-void report_devices_count(GHashTable* table) {
+void report_devices_count() {
     debug("report_devices_count\n");
     if (starting) return;   // not during first 30s startup time
 
-    //int max = g_hash_table_size(table);
-
     // Initialize time and columns
     time(&now);
-    g_hash_table_foreach(table, set_column_to_zero, table);
 
     // Allocate devices to coluumns so that there is no overlap in time
-    allocate_devices_to_columns(table);
+    pack_columns();
 
     // Find the latest device record in each column
-    find_latest_observations(table);
+    find_latest_observations();
 
     // Calculate for each range how many devices are inside that range at the moment
     // Ignoring any that are potential MAC address randomizations of others
@@ -283,20 +268,12 @@ void report_devices_count(GHashTable* table) {
 /* SEND TO MQTT WITH ACCESS POINT MAC ADDRESS AND TIME STAMP */
 
 
-GHashTable *hash = NULL;
-
 // Free an allocated device
 
-void device_report_free(void *object)
+void free_device(struct Device* device)
 {
-    struct Device *val = (struct Device *)object;
-    //g_print("FREE name '%s'\n", val->name);
-    /* Free any members you need to */
-    g_free(val->name);
-    //g_print("FREE alias '%s'\n", val->alias);
-    g_free(val->alias);
-    //g_print("FREE value\n");
-    g_free(val);
+    g_free(device->name);
+    g_free(device->alias);
 }
 
 typedef void (*method_cb_t)(GObject *, GAsyncResult *, gpointer);
@@ -438,56 +415,9 @@ static bool repeat = FALSE; // runs the get managed objects call just once, 15s 
 
 static void report_device_disconnected_to_MQTT(char* address)
 {
-    if (hash == NULL) return;
-
-    if (!g_hash_table_contains(hash, address))
-        return;
-
-    //struct Device * existing = (struct Device *)g_hash_table_lookup(hash, address);
-
-    // Reinitialize it so next value is swallowed??
-    //kalman_initialize(&existing->kalman);
-
-    // TODO: A stable iBeacon gets disconnect events all the time - this is not useful data
-
-    // Send a marker value to say "GONE"
-    //int fake_rssi = 40 + ((float)(address[5] & 0xF) / 10.0) + ((float)(access_point_address[5] & 0x3) / 2.0);
-
-    //send_to_mqtt_single_value(address, "rssi", -fake_rssi);
-
-    // DON'T REMOVE VALUE FROM HASH TABLE - We get disconnected messages and then immediately reconnects
-    // Remove value from hash table
-    // g_hash_table_remove(hash, address);
+    (void)address;
+   // Not used
 }
-
-/*
-static void bluez_result_async_cb(GObject *con, GAsyncResult *res, gpointer data)
-{
-        (void)data;
-	//const gchar *key = (gchar *)data;
-	GVariant *result = NULL;
-	GError *error = NULL;
-
-	result = g_dbus_connection_call_finish((GDBusConnection *)con, res, &error);
-	if(error != NULL) {
-		g_print("Unable to get result: %s\n", error->message);
-		return;
-	}
-
-	if(result) {
-		result = g_variant_get_child_value(result, 0);
-                g_print("Async callback\n");
-                //pretty_print2("Async callback", result, TRUE);
-		//bluez_property_value(key, result);
-	}
-        else {
-          g_print("No result");
-        }
-        if (result) {
-	        g_variant_unref(result);
-        }
-}
-*/
 
 static int bluez_adapter_connect_device(char *address)
 {
@@ -635,63 +565,61 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
 
     NOTE: Free's address when done
 */
-static void report_device_to_MQTT(GVariant *properties, char *address, bool isUpdate)
+static void report_device_to_MQTT(GVariant *properties, char *known_address, bool isUpdate)
 {
     debug("START report_device_to_MQTT\n");
 
-    char* allocated_address = NULL;  // If we allocate an address we must free it afterwards
-
     logTable = TRUE;
     //       g_print("report_device_to_MQTT(%s)\n", address);
-
-
     //pretty_print("report_device", properties);
 
-    // Get address from properies dictionary if not already present
-    GVariant *address_from_dict = g_variant_lookup_value(properties, "Address", G_VARIANT_TYPE_STRING);
-    if (address_from_dict != NULL)
-    {
-        if (address != NULL)
-        {
-            g_print("ERROR found two addresses\n");
-        }
-        address = g_variant_dup_string(address_from_dict, NULL);
-        g_variant_unref(address_from_dict);
-        allocated_address = address;
-    }
+    char address[17];
 
-    if (address == NULL)
-    {
+    if (known_address) {
+       g_strlcpy(address, known_address, 17);
+    } else {
+      // Get address from properies dictionary if not already present
+      GVariant *address_from_dict = g_variant_lookup_value(properties, "Address", G_VARIANT_TYPE_STRING);
+      if (address_from_dict)
+      {
+          const char* addr = g_variant_get_string(address_from_dict, NULL);
+          g_strlcpy(address, addr, 17);
+          g_variant_unref(address_from_dict);
+      }
+      else {
         g_print("ERROR address is null");
         return;
+      }
     }
 
-    // Get existing report
+    struct Device *existing = NULL;
 
-    if (hash == NULL)
-    {
-        g_print("Starting a new hash table\n");
-        hash = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, device_report_free);
+    // Get existing device report
+    for (int i = 0; i<n; i++) {
+      if (memcmp(devices[i].mac, address, 17) == 0) {
+         existing = &devices[i];
+      }
     }
 
-    struct Device *existing;
-
-    if (!g_hash_table_contains(hash, address))
+    if (existing == NULL)
     {
         if (!isUpdate)
         {
            // DEBUG g_print("Skip %s, bluez get_devices call and not seen yet\n", address);
-	   if (allocated_address) {
-	     g_free(allocated_address);
-	   }
            return;
         }
 
-        existing = g_malloc0(sizeof(struct Device));
-        g_hash_table_insert(hash, strdup(address), existing);
+        if (n == N) {
+          g_print("Error, array of devices is full\n");
+          return;
+        }
+
+        // Grab the next empty item in the array
+        existing = &devices[n++];
+        existing->id = id_gen++;                 // unique ID for each
+        g_strlcpy(existing->mac, address, 17);   // address
 
         // dummy struct filled with unmatched values
-        existing->id = id_gen++;   // unique ID for each
         existing->name = NULL;
         existing->alias = NULL;
         existing->addressType = NULL;
@@ -726,9 +654,6 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
     }
     else
     {
-        // get value from hashtable
-        existing = (struct Device *)g_hash_table_lookup(hash, address);
-
         if (!isUpdate) {
            g_print("Repeat ");   // from get_all_devices which includes stale data
         } else {
@@ -1154,10 +1079,7 @@ static void report_device_to_MQTT(GVariant *properties, char *address, bool isUp
         }
     }
 
-    if (allocated_address) {
-      g_free(allocated_address);
-    }
-    report_devices_count(hash);
+    report_devices_count();
 }
 
 static void bluez_device_appeared(GDBusConnection *sig,
@@ -1521,10 +1443,8 @@ int get_managed_objects(void *parameters)
 
 
 // Remove old items from cache
-gboolean remove_func (gpointer key, void *value, gpointer user_data) {
-  (void)user_data;
-  struct Device *existing = (struct Device *)value;
-
+gboolean remove_func (struct Device* existing)
+{
   time_t now;
   time(&now);
 
@@ -1533,20 +1453,21 @@ gboolean remove_func (gpointer key, void *value, gpointer user_data) {
   gboolean remove = (existing->count == 1 && delta_time > 60) || delta_time > 60 * 60;  // 1 min for single hit, 60 min for regular ping
 
   if (remove) {
-    g_print("  Cache remove %s %s %.1fs %.1fm\n", (char*)key, existing->name, delta_time, existing->distance);
+
+    g_print("  Cache remove %s %s %.1fs %.1fm\n", existing->mac, existing->name, delta_time, existing->distance);
 
     // And so when this device reconnects we get a proper reconnect message and so that BlueZ doesn't fill up a huge
     // cache of iOS devices that have passed by or changed mac address
 
     GVariant* vars[1];
-    vars[0] = g_variant_new_string((char*)key);
+    vars[0] = g_variant_new_string(existing->mac);
     GVariant* param = g_variant_new_tuple(vars, 1);
 
     int rc = bluez_adapter_call_method("RemoveDevice", param, NULL);
     if (rc)
-      g_print("Not able to remove %s\n", (char*)key);
+      g_print("Not able to remove %s\n", existing->mac);
     else
-      g_print("    ** Removed %s from BlueZ cache too\n", (char*)key);
+      g_print("    ** Removed %s from BlueZ cache too\n", existing->mac);
   }
 
   return remove;  // 60 min of no activity = remove from cache
@@ -1555,18 +1476,20 @@ gboolean remove_func (gpointer key, void *value, gpointer user_data) {
 
 int clear_cache(void *parameters)
 {
-    if (hash == NULL) return TRUE;
     starting = FALSE;
 
 //    g_print("Clearing cache\n");
     (void)parameters; // not used
 
     // Remove any item in cache that hasn't been seen for a long time
-    gpointer user_data = NULL;
-    g_hash_table_foreach_remove (hash, &remove_func, user_data);
+    for (int i=0; i<n; i++) {
+      while (i<n && remove_func(&devices[i])) {
+        remove_device(i);              // changes n, but brings a new device to position i
+      }
+    }
 
     // And report the updated count of devices present
-    report_devices_count(hash);
+    report_devices_count();
 
     return TRUE;
 }
@@ -1575,15 +1498,13 @@ int clear_cache(void *parameters)
 // Time when service started running (used to print a delta time)
 static time_t started;
 
-void dump_device (gpointer key, gpointer value, gpointer user_data)
+void dump_device (struct Device* a)
 {
-  (void)user_data;
-  struct Device* a = (struct Device*) value;
-
   // Ignore any that have not been seen recently
   double delta_time = difftime(now, a->latest);
   if (delta_time > MAX_TIME_AGO_LOGGING_MINUTES * 60) return;
-  g_print("%s %4i %6s  %6.2fm %4i  %6li - %6li %20s %20s %8x\n", (char*)key, a->count, a->addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash);
+
+  g_print("%4i %s %4i %6s  %6.2fm %4i  %6li - %6li %20s %20s %8x\n", a->id, a->mac, a->count, a->addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash);
 }
 
 
@@ -1595,14 +1516,15 @@ int dump_all_devices_tick(void *parameters)
 {
     (void)parameters; // not used
     if (starting) return TRUE;   // not during first 30s startup time
-    if (hash == NULL) return TRUE;
     if (!logTable) return TRUE; // no changes since last time
     logTable = FALSE;
-    g_print("----------------------------------------------------------------------------------------------------------------\n");
-    g_print("Address          Count Type   Distance   Col  Earliest  Latest               Name                Alias     UUID#\n");
-    g_print("----------------------------------------------------------------------------------------------------------------\n");
+    g_print("---------------------------------------------------------------------------------------------------------------------\n");
+    g_print("Id   Address          Count Type   Distance   Col  Earliest  Latest               Name                Alias     UUID#\n");
+    g_print("---------------------------------------------------------------------------------------------------------------------\n");
     time(&now);
-    g_hash_table_foreach(hash, dump_device, hash);
+    for (int i=0; i<n; i++) {
+      dump_device(&devices[i]);
+    }
     g_print("----------------------------------------------------------------------------------------------------------------\n\n");
     return TRUE;
 }
@@ -1613,38 +1535,31 @@ int dump_all_devices_tick(void *parameters)
     Rate limited to one connection attempt every 15s, followed by a disconnect
 */
 
-bool only_one = FALSE;
-
-void try_connect (gpointer key, gpointer value, gpointer user_data)
+gboolean try_connect (struct Device* a)
 {
-  (void)user_data;
-  struct Device* a = (struct Device*) value;
-
-  if (only_one) return;
-  if (a->name != NULL) return;    // already named
+  if (a->name != NULL) return FALSE;    // already named
 
   if (a->count > 1 && a->try_connect_state == 0) {
     a->try_connect_state = 1;
     // Try forcing a connect to get a full dump from the device
-    g_print("------------- Connect to %s\n", (char*)key);
-    bluez_adapter_connect_device(key);
-    only_one = TRUE;
+    g_print("------------- Connect to %s\n", a->mac);
+    bluez_adapter_connect_device(a->mac);
   }
   else if (a->try_connect_state == 1 && a->connected) {
     a->try_connect_state = 2;
-    g_print("------------- Disconnect to %s\n", (char*)key);
-    bluez_adapter_disconnect_device(key);
-    only_one = TRUE;
+    g_print("------------- Disconnect from %s\n", a->mac);
+    bluez_adapter_disconnect_device(a->mac);
   }
+  return TRUE;
 }
 
 int try_connect_tick(void *parameters)
 {
     (void)parameters; // not used
     if (starting) return TRUE;   // not during first 30s startup time
-    if (hash == NULL) return TRUE;
-    only_one = FALSE;
-    g_hash_table_foreach(hash, try_connect, hash);
+    for (int i=0; i<n; i++) {
+      if (try_connect(&devices[i])) break;
+    }
     return TRUE;
 }
 
@@ -1699,10 +1614,10 @@ static void cmd_connect(int argc, char *address)
 guint prop_changed;
 guint iface_added;
 guint iface_removed;
+GMainLoop *loop;
 
 int main(int argc, char **argv)
 {
-    GMainLoop *loop;
     int rc;
 
     signal(SIGINT, int_handler);
@@ -1850,7 +1765,9 @@ fail:
 void int_handler(int dummy) {
     (void) dummy;
 
-    //keepRunning = 0;
+    g_main_loop_quit(loop);
+    g_main_loop_unref(loop);
+
     g_dbus_connection_signal_unsubscribe(conn, prop_changed);
     g_dbus_connection_signal_unsubscribe(conn, iface_added);
     g_dbus_connection_signal_unsubscribe(conn, iface_removed);
@@ -1860,8 +1777,8 @@ void int_handler(int dummy) {
     if (sockfd != -1)
         close(sockfd);
 
-    if (hash != NULL) {
-        g_hash_table_destroy (hash);
+    for (int i=0; i<n; i++) {
+      free_device(&devices[i]);
     }
 
     g_print("Clean exit\n");
