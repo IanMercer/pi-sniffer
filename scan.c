@@ -1461,8 +1461,6 @@ gboolean should_remove(struct Device* existing)
       g_print("Not able to remove %s\n", existing->mac);
     else
       g_print("    ** Removed %s from BlueZ cache too\n", existing->mac);
-
-    g_variant_unref(vars[0]);
   }
 
   return remove;  // 60 min of no activity = remove from cache
