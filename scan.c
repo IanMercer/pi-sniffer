@@ -410,8 +410,6 @@ static void bluez_get_discovery_filter_cb(GObject *con,
     appeared = we know this is fresh data so send RSSI and TxPower with timestamp
 */
 
-static bool repeat = FALSE; // runs the get managed objects call just once, 15s after startup
-
 static void report_device_disconnected_to_MQTT(char* address)
 {
     (void)address;
