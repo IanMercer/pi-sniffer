@@ -910,7 +910,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         else if (strcmp(property_name, "Class") == 0)
         { // type 'u' which is uint32
             uint32_t deviceclass = g_variant_get_uint32(prop_val);
-            if (repeat || existing->deviceclass != deviceclass)
+            if (existing->deviceclass != deviceclass)
             {
                 g_print("Class has changed         ");
                 send_to_mqtt_single_value(address, "class", deviceclass);
@@ -926,7 +926,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         else if (strcmp(property_name, "Appearance") == 0)
         { // type 'q' which is uint16
             uint16_t appearance = g_variant_get_uint16(prop_val);
-            if (repeat || existing->appearance != appearance)
+            if (existing->appearance != appearance)
             {
                 g_print("  %s Appearance has changed ", address);
                 send_to_mqtt_single_value(address, "appearance", appearance);
