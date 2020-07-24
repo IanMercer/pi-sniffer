@@ -174,6 +174,7 @@ void remove_device(int index) {
 
 #define MAX_TIME_AGO_COUNTING_MINUTES 5
 #define MAX_TIME_AGO_LOGGING_MINUTES 10
+#define MAX_TIME_AGO_CACHE 10
 
 // Updated before any function that needs to calculate relative time
 time_t now;
@@ -1431,14 +1432,18 @@ int get_managed_objects(void *parameters)
 
 
 // Remove old items from cache
-gboolean remove_func (struct Device* existing)
+gboolean should_remove(struct Device* existing)
 {
   time_t now;
   time(&now);
 
   double delta_time = difftime(now, existing->latest);
 
-  gboolean remove = (existing->count == 1 && delta_time > 60) || delta_time > 60 * 60;  // 1 min for single hit, 60 min for regular ping
+  // 1 min for single hit, 160 min for regular ping
+  int max_time_ago_seconds = existing->count * 60;   // 1 after 1 min, 2 after 2 min, ...
+  if (max_time_ago_seconds > 60 * MAX_TIME_AGO_CACHE) { max_time_ago_seconds = 60 * MAX_TIME_AGO_CACHE; }
+
+  gboolean remove = delta_time > max_time_ago_seconds;
 
   if (remove) {
 
@@ -1449,13 +1454,15 @@ gboolean remove_func (struct Device* existing)
 
     GVariant* vars[1];
     vars[0] = g_variant_new_string(existing->mac);
-    GVariant* param = g_variant_new_tuple(vars, 1);
+    GVariant* param = g_variant_new_tuple(vars, 1);  // floating
 
     int rc = bluez_adapter_call_method("RemoveDevice", param, NULL);
     if (rc)
       g_print("Not able to remove %s\n", existing->mac);
     else
       g_print("    ** Removed %s from BlueZ cache too\n", existing->mac);
+
+    g_variant_unref(vars[0]);
   }
 
   return remove;  // 60 min of no activity = remove from cache
@@ -1471,7 +1478,7 @@ int clear_cache(void *parameters)
 
     // Remove any item in cache that hasn't been seen for a long time
     for (int i=0; i<n; i++) {
-      while (i<n && remove_func(&devices[i])) {
+      while (i<n && should_remove(&devices[i])) {
         remove_device(i);              // changes n, but brings a new device to position i
       }
     }
@@ -1545,15 +1552,17 @@ gboolean try_connect (struct Device* a)
   if (a->count > 1 && a->try_connect_state == 0) {
     a->try_connect_state = 1;
     // Try forcing a connect to get a full dump from the device
-    g_print("------------- Connect to %s\n", a->mac);
+    g_print(">>>>>> Connect to %s\n", a->mac);
     bluez_adapter_connect_device(a->mac);
-  }
+    return TRUE;  }
   else if (a->try_connect_state == 1 && a->connected) {
     a->try_connect_state = 2;
-    g_print("------------- Disconnect from %s\n", a->mac);
+    g_print(">>>>>> Disconnect from %s\n", a->mac);
     bluez_adapter_disconnect_device(a->mac);
+    return TRUE;
   }
-  return TRUE;
+  // didn't change state, try next one
+  return FALSE;
 }
 
 int try_connect_tick(void *parameters)
