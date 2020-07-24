@@ -97,7 +97,7 @@ struct Device
     bool paired;
     bool connected;
     bool trusted;
-    uint32_t deviceclass; // https://www.bluetooth.com/specifications/assigned-numbers/Baseband/
+    uint32_t deviceclass;          // https://www.bluetooth.com/specifications/assigned-numbers/Baseband/
     uint16_t appearance;
     int manufacturer_data_hash;
     int service_data_hash;
@@ -174,7 +174,7 @@ void remove_device(int index) {
 
 #define MAX_TIME_AGO_COUNTING_MINUTES 5
 #define MAX_TIME_AGO_LOGGING_MINUTES 10
-#define MAX_TIME_AGO_CACHE 10
+#define MAX_TIME_AGO_CACHE 60
 
 // Updated before any function that needs to calculate relative time
 time_t now;
@@ -970,7 +970,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
                       int p14 = allocdata[14];
                       int p15 = allocdata[15];
                       int temp = allocdata[16] - 10;
-                      int brightness = allocdata[17] + allocdata[18] * 256;
+                      int brightness = allocdata[18];
                       int motionCount = allocdata[19] + allocdata[20] * 256;
                       int moving = allocdata[21];
                       g_print("Sensoro battery=%i, p14=%i, p15=%i, temp=%i, brightness=%i, motionCount=%i, moving=%i\n", battery, p14, p15, temp, brightness, motionCount, moving);
@@ -1499,7 +1499,7 @@ void dump_device (struct Device* a)
 
   char* addressType = a->addressType == PUBLIC_ADDRESS_TYPE ? "pub" : a->addressType == RANDOM_ADDRESS_TYPE ? "ran" : "---";
 
-  g_print("%3i %s %4i %3s %6.2fm %4i  %6li - %6li %20s %20s %8x %4x\n", a->id%1000, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash, a->manufacturer);
+  g_print("%3i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %20s %5x %4x %4x\n", a->id%1000, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash, a->manufacturer, a->deviceclass);
 }
 
 
@@ -1513,14 +1513,14 @@ int dump_all_devices_tick(void *parameters)
     if (starting) return TRUE;   // not during first 30s startup time
     if (!logTable) return TRUE; // no changes since last time
     logTable = FALSE;
-    g_print("--------------------------------------------------------------------------------------------------------------------\n");
-    g_print("Id  Address          Count Typ   Dist   Col Earliest  Latest                 Name                Alias    UUID# Manf\n");
-    g_print("--------------------------------------------------------------------------------------------------------------------\n");
+    g_print("-------------------------------------------------------------------------------------------------------------------\n");
+    g_print("Id  Address          Count Typ   Dist  Col First   Last                   Name                Alias UUID# Manf Clss\n");
+    g_print("-------------------------------------------------------------------------------------------------------------------\n");
     time(&now);
     for (int i=0; i<n; i++) {
       dump_device(&devices[i]);
     }
-    g_print("--------------------------------------------------------------------------------------------------------------------\n");
+    g_print("-------------------------------------------------------------------------------------------------------------------\n");
 
     unsigned long total_minutes = (now - started) / 60;  // minutes
     unsigned int minutes = total_minutes % 60;
