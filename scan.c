@@ -758,14 +758,14 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
 
             float averaged = kalman_update(&existing->kalman, distance);
 
-            // 100s with RSSI change of 1 triggers send
-            // 10s with RSSI change of 10 triggers send
+            // 10s with distance change of 1m triggers send
+            // 1s with distance change of 10m triggers send
 
             double delta_time_sent = difftime(now, existing->last_sent);
             double delta_v = fabs(existing->distance - averaged);
-            double score =  delta_v * (delta_time_sent + 1.0);
+            double score =  delta_v * delta_time_sent;
 
-            if (score > 10.0 || delta_time_sent > 60) {
+            if (score > 10.0 || delta_time_sent > 30) {
 	      //g_print("  %s Will send rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
               existing->distance = averaged;
               send_distance = TRUE;
