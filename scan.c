@@ -97,7 +97,7 @@ struct Device
     bool paired;
     bool connected;
     bool trusted;
-    uint32_t deviceclass;          // https://www.bluetooth.com/specifications/assigned-numbers/Baseband/
+    // uint32_t deviceclass;          // https://www.bluetooth.com/specifications/assigned-numbers/Baseband/
     uint16_t appearance;
     int manufacturer_data_hash;
     int service_data_hash;
@@ -613,7 +613,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         existing->connected = FALSE;
         existing->trusted = FALSE;
         existing->paired = FALSE;
-        existing->deviceclass = 0;
+        //existing->deviceclass = 0;
         existing->manufacturer = 0;
         existing->manufacturer_data_hash = 0;
         existing->service_data_hash = 0;
@@ -906,14 +906,16 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             // not used
         }
         else if (strcmp(property_name, "Class") == 0)
-        { // type 'u' which is uint32
-            uint32_t deviceclass = g_variant_get_uint32(prop_val);
-            if (existing->deviceclass != deviceclass)
-            {
-                g_print("Class has changed         ");
-                send_to_mqtt_single_value(address, "class", deviceclass);
-                existing->deviceclass = deviceclass;
-            }
+        {
+            // type 'u' which is uint32
+            // Ignored - very few devices send this information
+            // uint32_t deviceclass = g_variant_get_uint32(prop_val);
+            // if (existing->deviceclass != deviceclass)
+            //{
+            //    g_print("Class has changed         ");
+            //    send_to_mqtt_single_value(address, "class", deviceclass);
+            //    existing->deviceclass = deviceclass;
+            //}
         }
         else if (strcmp(property_name, "Icon") == 0)
         {
@@ -1497,7 +1499,7 @@ void dump_device (struct Device* a)
 
   char* addressType = a->addressType == PUBLIC_ADDRESS_TYPE ? "pub" : a->addressType == RANDOM_ADDRESS_TYPE ? "ran" : "---";
 
-  g_print("%3i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %20s %5x %4x %4x\n", a->id%1000, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash, a->manufacturer, a->deviceclass);
+  g_print("%3i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %20s %5x %4x\n", a->id%1000, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash, a->manufacturer);
 }
 
 
@@ -1511,14 +1513,14 @@ int dump_all_devices_tick(void *parameters)
     if (starting) return TRUE;   // not during first 30s startup time
     if (!logTable) return TRUE; // no changes since last time
     logTable = FALSE;
-    g_print("-------------------------------------------------------------------------------------------------------------------\n");
-    g_print("Id  Address          Count Typ   Dist  Col First   Last                   Name                Alias UUID# Manf Clss\n");
-    g_print("-------------------------------------------------------------------------------------------------------------------\n");
+    g_print("--------------------------------------------------------------------------------------------------------------\n");
+    g_print("Id  Address          Count Typ   Dist  Col First   Last                   Name                Alias UUID# Manf\n");
+    g_print("--------------------------------------------------------------------------------------------------------------\n");
     time(&now);
     for (int i=0; i<n; i++) {
       dump_device(&devices[i]);
     }
-    g_print("-------------------------------------------------------------------------------------------------------------------\n");
+    g_print("--------------------------------------------------------------------------------------------------------------\n");
 
     unsigned long total_minutes = (now - started) / 60;  // minutes
     unsigned int minutes = total_minutes % 60;
