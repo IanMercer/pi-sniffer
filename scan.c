@@ -1532,6 +1532,10 @@ int dump_all_devices_tick(void *parameters)
     else
       g_print("Uptime: %02i:%02i\n", hours, minutes);
 
+
+    // Bluez eventually seems to stop sending us data, so for now, just restart every six hours
+    if (hours > 5) int_handler(0);
+
     return TRUE;
 }
 
