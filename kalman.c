@@ -1,22 +1,11 @@
-#include <glib.h>
+#include "kalman.h"
 #include <stdbool.h>
 #include <stdio.h>
-#include <time.h>
 #include <math.h>
 
 /*
       Kalman filter
 */
-
-struct Kalman
-{
-    double err_measure;
-    double err_estimate;
-    double q;
-    double current_estimate;
-    double last_estimate;
-    double kalman_gain;
-};
 
 void kalman_initialize(struct Kalman *k)
 {

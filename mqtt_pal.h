@@ -129,12 +129,12 @@ typedef SOCKET mqtt_pal_socket_handle;
 /**
  * @brief Sends all the bytes in a buffer.
  * @ingroup pal
- * 
+ *
  * @param[in] fd The file-descriptor (or handle) of the socket.
  * @param[in] buf A pointer to the first byte in the buffer to send.
  * @param[in] len The number of bytes to send (starting at \p buf).
  * @param[in] flags Flags which are passed to the underlying socket.
- * 
+ *
  * @returns The number of bytes sent if successful, an \ref MQTTErrors otherwise.
  */
 ssize_t mqtt_pal_sendall(mqtt_pal_socket_handle fd, const void *buf, size_t len, int flags);
@@ -142,12 +142,12 @@ ssize_t mqtt_pal_sendall(mqtt_pal_socket_handle fd, const void *buf, size_t len,
 /**
  * @brief Non-blocking receive all the byte available.
  * @ingroup pal
- * 
+ *
  * @param[in] fd The file-descriptor (or handle) of the socket.
  * @param[in] buf A pointer to the receive buffer.
  * @param[in] bufsz The max number of bytes that can be put into \p buf.
  * @param[in] flags Flags which are passed to the underlying socket.
- * 
+ *
  * @returns The number of bytes received if successful, an \ref MQTTErrors otherwise.
  */
 ssize_t mqtt_pal_recvall(mqtt_pal_socket_handle fd, void *buf, size_t bufsz, int flags);

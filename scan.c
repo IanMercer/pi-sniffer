@@ -24,27 +24,29 @@
 #include <signal.h>
 #include <stdlib.h>
 
+#include "utility.h"
+#include "mqtt_send.h"
+#include "kalman.h"
+
 // Max allowed devices
 #define N 2048
 
 #define PUBLIC_ADDRESS_TYPE 1
 #define RANDOM_ADDRESS_TYPE 2
 
+#define CATEGORY_UNKNOWN "unknown"
+#define CATEGORY_PHONE "phone"
+#define CATEGORY_WATCH "watch"
+#define CATEGORY_HEADPHONES "hp"
+#define CATEGORY_LAPTOP "laptop"
+#define CATEGORY_TV "TV"    // AppleTV
+#define CATEGORY_FIXED "fixed"
+#define CATEGORY_BEACON "beacon"
+
 // Max allowed length of names and aliases (plus 1 for null)
 #define NAME_LENGTH         21
 
-static char* client_id = NULL;
 static bool starting = TRUE;
-
-// The mac address of the wlan0 interface (every Pi has one so fairly safe to assume wlan0 exists)
-// All defined in utility.c now
-//static unsigned char access_point_address[6];
-//char controller_mac_address[13];
-//char hostbuffer[256];
-
-#include "utility.c"
-#include "mqtt_send.c"
-#include "kalman.c"
 
 // Enable or disable extra debugging
 
@@ -82,9 +84,7 @@ float rssi_factor = 3.5;      // 2.0 to 4.0, lower for indoor or cluttered envir
 GDBusConnection *conn;
 
 /*
-   Structure for reporting to MQTT
-   TODO: Add time_t to this struct, keep them around and report every five minutes
-   on all still connected devices in case MQTT isn't saving values.
+   Structure for tracking BLE devices in range
 */
 struct Device
 {
@@ -93,11 +93,12 @@ struct Device
     char name[NAME_LENGTH];
     char alias[NAME_LENGTH];
     int8_t addressType;           // 0, 1, 2
+    char* category;               // Reasoned guess at what kind of device it is
     int32_t manufacturer;
     bool paired;
     bool connected;
     bool trusted;
-    // uint32_t deviceclass;          // https://www.bluetooth.com/specifications/assigned-numbers/Baseband/
+    uint32_t deviceclass;          // https://www.bluetooth.com/specifications/assigned-numbers/Baseband/
     uint16_t appearance;
     int manufacturer_data_hash;
     int service_data_hash;
@@ -486,22 +487,34 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
     debug("START handle_manufacturer\n");
     if (manufacturer == 0x004c) {   // Apple
         uint8_t apple_device_type = allocdata[00];
-        if (apple_device_type == 0x02) { optional(existing->alias, "Beacon"); g_print("  Beacon\n") ; }
+        if (apple_device_type == 0x02) {
+          optional(existing->alias, "Beacon");
+          g_print("  Beacon\n") ;
+          existing->category = CATEGORY_BEACON;
+        }
         else if (apple_device_type == 0x03) g_print("  Airprint \n");
         else if (apple_device_type == 0x05) g_print("  Airdrop \n");
-        else if (apple_device_type == 0x07) { optional(existing->alias, "Airpods"); g_print("  Airpods \n"); }
+        else if (apple_device_type == 0x07) {
+          optional(existing->alias, "Airpods");
+          g_print("  Airpods \n");
+          existing->category = CATEGORY_HEADPHONES;
+        }
         else if (apple_device_type == 0x08) { optional(existing->alias, "Siri"); g_print("  Siri \n"); }
         else if (apple_device_type == 0x09) { optional(existing->alias, "Airplay"); g_print("  Airplay \n"); }
         else if (apple_device_type == 0x0a) { optional(existing->alias, "Apple 0a"); g_print("  Apple 0a \n"); }
-        else if (apple_device_type == 0x0b) { optional(existing->alias, "iWatch?"); g_print("  Watch_c \n"); }
+        else if (apple_device_type == 0x0b) {
+          optional(existing->alias, "iWatch?");
+          g_print("  Watch_c \n");
+          existing->category = CATEGORY_WATCH;
+        }
         else if (apple_device_type == 0x0c) g_print("  Handoff \n");
         else if (apple_device_type == 0x0d) g_print("  WifiSet \n");
         else if (apple_device_type == 0x0e) g_print("  Hotspot \n");
         else if (apple_device_type == 0x0f) g_print("  WifiJoin \n");
         else if (apple_device_type == 0x10) {
           g_print("  Nearby ");
-
           optional(existing->alias, "iPhone?");
+          existing->category = CATEGORY_PHONE;
 
           uint8_t device_status = allocdata[02];
           if (device_status & 0x80) g_print("0x80 "); else g_print(" ");
@@ -536,9 +549,14 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         } else {
           g_print("Did not recognize apple device type %.2x", apple_device_type);
         }
-      } else if (manufacturer == 0x0087) { optional(existing->alias, "Garmin");
-      } else if (manufacturer == 0xb4c1) { optional(existing->alias, "Dycoo");   // not on official Bluetooth website
-      } else if (manufacturer == 0x0310) { optional(existing->alias, "SGL Italia S.r.l.");
+      } else if (manufacturer == 0x0087) {
+        optional(existing->alias, "Garmin");
+        existing->category = CATEGORY_WATCH; // could be fitness tracker
+      } else if (manufacturer == 0xb4c1) { 
+        optional(existing->alias, "Dycoo");   // not on official Bluetooth website
+      } else if (manufacturer == 0x0310) {
+        optional(existing->alias, "SGL Italia S.r.l.");
+        existing->category = CATEGORY_HEADPHONES;
       } else {
         // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
         g_print("  Did not recognize manufacturer 0x%.4x\n", manufacturer);
@@ -610,10 +628,11 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         existing->name[0] = '\0';
         existing->alias[0] = '\0';
         existing->addressType = 0;
+        existing->category = CATEGORY_UNKNOWN;
         existing->connected = FALSE;
         existing->trusted = FALSE;
         existing->paired = FALSE;
-        //existing->deviceclass = 0;
+        existing->deviceclass = 0;
         existing->manufacturer = 0;
         existing->manufacturer_data_hash = 0;
         existing->service_data_hash = 0;
@@ -642,11 +661,11 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
     else
     {
         if (!isUpdate) {
-           g_print("Repeat ");   // from get_all_devices which includes stale data
+           // from get_all_devices which includes stale data
+           debug("Repeat device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
         } else {
-           g_print("Existing ");
+           g_print("Existing device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
         }
-        g_print("device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
     }
 
     // Mark the most recent time for this device (but not if it's a get all devices call)
@@ -687,6 +706,10 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             else {
                 // g_print("  Name unchanged '%s'=='%s'\n", name, existing->name);
             }
+            if (strcmp(name, "iPhone") == 0) existing->category = CATEGORY_PHONE;
+            if (strcmp(name, "iWatch") == 0) existing->category = CATEGORY_WATCH;
+            if (strcmp(name, "AppleTV") == 0) existing->category = CATEGORY_TV;
+            // TODO: Android device names
         }
         else if (strcmp(property_name, "Alias") == 0)
         {
@@ -908,20 +931,20 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         else if (strcmp(property_name, "Class") == 0)
         {
             // type 'u' which is uint32
-            // Ignored - very few devices send this information
-            // uint32_t deviceclass = g_variant_get_uint32(prop_val);
-            // if (existing->deviceclass != deviceclass)
-            //{
-            //    g_print("Class has changed         ");
-            //    send_to_mqtt_single_value(address, "class", deviceclass);
-            //    existing->deviceclass = deviceclass;
-            //}
+            // Very few devices send this information (not very useful)
+            uint32_t deviceclass = g_variant_get_uint32(prop_val);
+            if (existing->deviceclass != deviceclass)
+            {
+                g_print("Class has changed         ");
+                send_to_mqtt_single_value(address, "class", deviceclass);
+                existing->deviceclass = deviceclass;
+            }
         }
         else if (strcmp(property_name, "Icon") == 0)
         {
             // A string value
-            //const char* type = g_variant_get_type_string (prop_val);
-            //g_print("Unknown property: %s %s\n", property_name, type);
+            const char* type = g_variant_get_type_string (prop_val);
+            g_print("Icon: %s %s\n", property_name, type);
         }
         else if (strcmp(property_name, "Appearance") == 0)
         { // type 'q' which is uint16
@@ -966,6 +989,8 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
 
                     // temp={p[16] - 10} brightness={p[17]} motioncount={p[19] + p[20] * 256} moving={p[22]}");
                     if (strcmp(service_guid, "000080e7-0000-1000-8000-00805f9b34fb") == 0) {  // Sensoro
+                      existing->category = CATEGORY_BEACON;
+
                       int battery = allocdata[14] + 256 * allocdata[15]; // ???
                       int p14 = allocdata[14];
                       int p15 = allocdata[15];
@@ -1046,10 +1071,40 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
                 g_free(allocdata);
             }
         }
+        else if (strcmp(property_name, "Player") == 0)
+        {
+            // Property: Player o
+            pretty_print2(property_name, prop_val, TRUE);
+        }
+        else if (strcmp(property_name, "Repeat") == 0)
+        {
+            // Property: Repeat s
+            pretty_print2(property_name, prop_val, TRUE);
+        }
+        else if (strcmp(property_name, "Shuffle") == 0)
+        {
+            // Property: Shuffle s
+            pretty_print2(property_name, prop_val, TRUE);
+        }
+        else if (strcmp(property_name, "Track") == 0)
+        {
+            // Property: Track a {sv}
+            pretty_print2(property_name, prop_val, TRUE);
+        }
+        else if (strcmp(property_name, "Position") == 0)
+        {
+            // Property: Position {u}
+            pretty_print2(property_name, prop_val, TRUE);
+        }
+        else if (strcmp(property_name, "State") == 0)
+        {
+            // Property: Position {u}
+            pretty_print2(property_name, prop_val, TRUE);
+        }
         else
         {
             const char *type = g_variant_get_type_string(prop_val);
-            g_print("ERROR Unknown property: %s %s\n", property_name, type);
+            g_print("ERROR Unknown property: '%s' %s\n", property_name, type);
         }
 
         //g_print("un_ref prop_val\n");
@@ -1155,6 +1210,14 @@ static void bluez_device_appeared(GDBusConnection *sig,
         else if (g_ascii_strcasecmp(interface_name, "org.bluez.GattService1") == 0)
         {
            pretty_print("  Gatt service = ", properties);
+        }
+        else if (g_ascii_strcasecmp(interface_name, "org.bluez.MediaTransport1") == 0)
+        {
+           pretty_print("  Media transport = ", properties);
+        }
+        else if (g_ascii_strcasecmp(interface_name, "org.bluez.MediaPlayer1") == 0)
+        {
+           pretty_print("  Media player = ", properties);
         }
         else {
            g_print("Device appeared, unknown interface: %s\n", interface_name);
@@ -1459,8 +1522,8 @@ gboolean should_remove(struct Device* existing)
     int rc = bluez_adapter_call_method("RemoveDevice", param, NULL);
     if (rc)
       g_print("Not able to remove %s\n", existing->mac);
-    else
-      g_print("    ** Removed %s from BlueZ cache too\n", existing->mac);
+    //else
+    //  debug("    ** Removed %s from BlueZ cache too\n", existing->mac);
   }
 
   return remove;  // 60 min of no activity = remove from cache
@@ -1499,7 +1562,7 @@ void dump_device (struct Device* a)
 
   char* addressType = a->addressType == PUBLIC_ADDRESS_TYPE ? "pub" : a->addressType == RANDOM_ADDRESS_TYPE ? "ran" : "---";
 
-  g_print("%3i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %20s %5x %4x\n", a->id%1000, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->uuid_hash, a->manufacturer);
+  g_print("%3i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %20s %s\n", a->id%1000, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->category);
 }
 
 
@@ -1514,7 +1577,7 @@ int dump_all_devices_tick(void *parameters)
     if (!logTable) return TRUE; // no changes since last time
     logTable = FALSE;
     g_print("--------------------------------------------------------------------------------------------------------------\n");
-    g_print("Id  Address          Count Typ   Dist  Col First   Last                   Name                Alias UUID# Manf\n");
+    g_print("Id  Address          Count Typ   Dist  Col First   Last                   Name                Alias Category  \n");
     g_print("--------------------------------------------------------------------------------------------------------------\n");
     time(&now);
     for (int i=0; i<n; i++) {
@@ -1629,6 +1692,9 @@ guint prop_changed;
 guint iface_added;
 guint iface_removed;
 GMainLoop *loop;
+static char client_id[256];         // linux allows more, truncated
+static char mac_address[6];        // bytes
+static char mac_address_text[13];  // string
 
 int main(int argc, char **argv)
 {
@@ -1639,14 +1705,24 @@ int main(int argc, char **argv)
 
     if (argc < 2)
     {
-        g_print("scan <mqtt server> [port:1883]");
+        g_print("Bluetooth scanner\n");
+        g_print("   scan <mqtt server> [port:1883]\n");
         return -1;
     }
 
     char *mqtt_addr = argv[1];
-    char *mqtt_port = argc > 1 ? argv[2] : "1883";
+    char *mqtt_port = argc > 2 ? argv[2] : "1883";
 
-    get_mac_address();
+    gethostname(client_id, sizeof(client_id));
+
+    g_print("Hostname is %s\n", client_id);
+
+    g_print("Get mac address\n");
+
+    get_mac_address(mac_address);
+
+    mac_address_to_string(mac_address_text, sizeof(mac_address_text), mac_address);
+    g_print("Local MAC address is: %s\n", mac_address_text);
 
     const char* s_rssi_one_meter = getenv("RSSI_ONE_METER");
     const char* s_rssi_factor = getenv("RSSI_FACTOR");
@@ -1726,7 +1802,7 @@ int main(int argc, char **argv)
     }
     g_print("Started discovery\n");
 
-    prepare_mqtt(mqtt_addr, mqtt_port, client_id);
+    prepare_mqtt(mqtt_addr, mqtt_port, client_id, mac_address);
 
     // Periodically ask Bluez for every device including ones that are long departed
     // but only do updates to devices we have seen, do no not create a device for each

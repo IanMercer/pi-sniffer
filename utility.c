@@ -2,25 +2,15 @@
     Utility functions
 */
 
-#include <glib.h>
 #include <gio/gio.h>
-#include "mqtt.h"
-#include "mqtt_pal.h"
-#include "posix_sockets.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <net/if.h>
-#include <time.h>
-#include <math.h>
-#include <signal.h>
 
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "utility.h"
 
 
 /*
@@ -170,14 +160,14 @@ bool get_address_from_path(char *address, int length, const char *path)
 /*
   pretty_print a GVariant with a label
 */
-static void pretty_print2(const char *field_name, GVariant *value, gboolean types)
+void pretty_print2(const char *field_name, GVariant *value, gboolean types)
 {
     gchar *pretty = g_variant_print(value, types);
     g_print("%s %s\n", field_name, pretty);
     g_free(pretty);
 }
 
-static void pretty_print(const char *field_name, GVariant *value)
+void pretty_print(const char *field_name, GVariant *value)
 {
     gchar *pretty = g_variant_print(value, FALSE);
     g_print("%s %s\n", field_name, pretty);
@@ -187,29 +177,7 @@ static void pretty_print(const char *field_name, GVariant *value)
 
 // The mac address of the wlan0 interface (every Pi has one so fairly safe to assume wlan0 exists)
 
-static char access_point_address[6];
-static bool try_get_mac_address(const char* ifname);
-
-static char controller_mac_address[13];
-static char hostbuffer[256];
-
-static void get_mac_address()
-{
-    gethostname(hostbuffer, sizeof(hostbuffer));
-
-    g_print("Hostname %s\n", hostbuffer);
-    client_id = hostbuffer;
-
-    // Take first common interface name that returns a valid mac address
-    if (try_get_mac_address("wlan0")) return;
-    if (try_get_mac_address("eth0")) return;
-    if (try_get_mac_address("enp4s0")) return;
-    g_print("ERROR: Could not get local mac address\n");
-    exit(-23);
-}
-
-
-static bool try_get_mac_address(const char* ifname)
+static bool try_get_mac_address(const char* ifname, char* access_point_address)
 {
     int s;
     struct ifreq buffer;
@@ -219,21 +187,29 @@ static bool try_get_mac_address(const char* ifname)
     strcpy(buffer.ifr_name, ifname);
     ioctl(s, SIOCGIFHWADDR, &buffer);
     close(s);
-    memcpy(&access_point_address, &buffer.ifr_hwaddr.sa_data, 6);
+    memcpy(access_point_address, &buffer.ifr_hwaddr.sa_data, 6);
     if (access_point_address[0] == 0) return FALSE;
-
-    snprintf(controller_mac_address, sizeof(controller_mac_address), "%.2x%.2x%.2x%.2x%.2x%.2x", access_point_address[0], access_point_address[1],
-        access_point_address[2], access_point_address[3], access_point_address[4], access_point_address[5]);
-    controller_mac_address[12] = '\0';
-
-    // Use hostname instead ... client_id = controller_mac_address;
-
-    g_print("Local MAC address for %s is: %s\n", ifname, controller_mac_address);
-//    for (s = 0; s < 6; s++)
-//    {
-//        g_print("%.2X", (unsigned char)access_point_address[s]);
-//    }
-//    g_print("\n");
     return TRUE;
 }
+
+/*
+   Get mac address (6 bytes) and string version (18 bytes)
+*/
+void get_mac_address(char* access_point_address)
+{
+    // Take first common interface name that returns a valid mac address
+    if (try_get_mac_address("wlan0", access_point_address)) return;
+    if (try_get_mac_address("eth0", access_point_address)) return;
+    if (try_get_mac_address("enp4s0", access_point_address)) return;
+    g_print("ERROR: Could not get local mac address\n");
+    exit(-23);
+}
+
+void mac_address_to_string(char* output, int length, char* access_point_address)
+{
+    snprintf(output, length, "%.2x%.2x%.2x%.2x%.2x%.2x", access_point_address[0], access_point_address[1],
+        access_point_address[2], access_point_address[3], access_point_address[4], access_point_address[5]);
+    output[12] = '\0';
+}
+
 

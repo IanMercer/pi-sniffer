@@ -3,12 +3,10 @@
     And utility functions
 */
 
+#include "mqtt_send.h"
 
 #include <glib.h>
 #include <gio/gio.h>
-#include "mqtt.h"
-#include "mqtt_pal.h"
-#include "posix_sockets.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
@@ -19,6 +17,8 @@
 #include <math.h>
 #include <signal.h>
 #include <stdlib.h>
+
+const char *topicRoot = "BLF";
 
 static void publish_callback(void **unused, struct mqtt_response_publish *published)
 {
@@ -33,7 +33,7 @@ static void publish_callback(void **unused, struct mqtt_response_publish *publis
     free(topic_name);
 }
 
-static void exit_mqtt(int status, int sockfd)
+void exit_mqtt(int status, int sockfd)
 {
     if (sockfd != -1)
         close(sockfd);
@@ -41,18 +41,33 @@ static void exit_mqtt(int status, int sockfd)
     exit(status);
 }
 
-const char *topicRoot = "BLF";
-
-static int sockfd;
-struct mqtt_client mqtt;
 uint8_t sendbuf[4 * 1024 * 1024]; /* 4MByte sendbuf should be large enough to hold multiple whole mqtt messages */
 uint8_t recvbuf[2048];            /* recvbuf should be large enough any whole mqtt message expected to be received */
 
 /* Ensure we have a clean session */
 uint8_t connect_flags = MQTT_CONNECT_CLEAN_SESSION;
 
-static void prepare_mqtt(char *mqtt_addr, char *mqtt_port, char* client_id)
+static char* access_point_address;
+
+void prepare_mqtt(char *mqtt_addr, char *mqtt_port, char* client_id, char* mac_address)
 {
+    access_point_address = mac_address;
+
+    if (mqtt_addr == NULL) {
+      printf("MQTT Address must be set");
+      exit(-24);
+    }
+
+    if (mqtt_port == NULL) {
+      printf("MQTT Port must be set");
+      exit(-24);
+    }
+
+    if (client_id == NULL) {
+      printf("Client ID must be set");
+      exit(-24);
+    }
+
     printf("Starting MQTT %s:%s client_id=%s\n", mqtt_addr, mqtt_port, client_id);
 
     /* open the non-blocking TCP socket (connecting to the broker) */
