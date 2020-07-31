@@ -962,6 +962,8 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             g_print("  %s Icon: '%s'\n", address, icon);
             if (strcmp(icon, "computer") == 0) existing->category=CATEGORY_LAPTOP;
             else if (strcmp(icon, "phone") == 0) existing->category=CATEGORY_PHONE;
+            else if (strcmp(icon, "multimedia-player") == 0) existing->category=CATEGORY_TV;
+
             g_free(icon);
         }
         else if (strcmp(property_name, "Appearance") == 0)
