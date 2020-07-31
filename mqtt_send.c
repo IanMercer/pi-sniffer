@@ -20,6 +20,7 @@
 
 const char *topicRoot = "BLF";
 static char access_point_address[6];
+static char* access_point_name;
 
 static void publish_callback(void **unused, struct mqtt_response_publish *published)
 {
@@ -37,6 +38,7 @@ static void publish_callback(void **unused, struct mqtt_response_publish *publis
 void exit_mqtt(int status, int sockfd)
 {
     if (sockfd != -1) close(sockfd);
+    if (access_point_name) g_free(access_point_name);
     //return bt_shell_noninteractive_quit(EXIT_FAILURE);
     exit(status);
 }
@@ -47,9 +49,11 @@ uint8_t recvbuf[2048];            /* recvbuf should be large enough any whole mq
 /* Ensure we have a clean session */
 uint8_t connect_flags = MQTT_CONNECT_CLEAN_SESSION;
 
+
 void prepare_mqtt(char *mqtt_addr, char *mqtt_port, char* client_id, char* mac_address)
 {
     memcpy(&access_point_address, mac_address, 6);
+    access_point_name = strdup(client_id);
 
     if (mqtt_addr == NULL) {
       printf("MQTT Address must be set");
@@ -98,7 +102,7 @@ void send_to_mqtt_null(char *mac_address, char *key)
 {
     /* Create topic including mac address */
     char topic[256];
-    snprintf(topic, sizeof(topic), "%s/%s/%s", topicRoot, mac_address, key);
+    snprintf(topic, sizeof(topic), "%s/%s/%s/%s", topicRoot, access_point_name, mac_address, key);
 
     printf("MQTT %s %s\n", topicRoot, "NULL");
 
@@ -128,11 +132,11 @@ void send_to_mqtt_with_time_and_mac(char *mac_address, char *key, int i, char *v
 
     if (i < 0)
     {
-        snprintf(topic, sizeof(topic), "%s/%s/%s", topicRoot, mac_address, key);
+        snprintf(topic, sizeof(topic), "%s/%s/%s/%s", topicRoot, access_point_name, mac_address, key);
     }
     else
     {
-        snprintf(topic, sizeof(topic), "%s/%s/%s/%d", topicRoot, mac_address, key, i);
+        snprintf(topic, sizeof(topic), "%s/%s/%s/%s/%d", topicRoot, access_point_name, mac_address, key, i);
     }
 
     // Add time and access point mac address to packet
@@ -189,13 +193,13 @@ void send_to_mqtt_with_time_and_mac(char *mac_address, char *key, int i, char *v
 
 void send_to_mqtt_single(char *mac_address, char *key, char *value)
 {
-    printf("MQTT %s/%s/%s %s\n", topicRoot, mac_address, key, value);
+    printf("MQTT %s/%s/%s/%s %s\n", topicRoot, access_point_name, mac_address, key, value);
     send_to_mqtt_with_time_and_mac(mac_address, key, -1, value, strlen(value) + 1, MQTT_PUBLISH_QOS_1 | MQTT_PUBLISH_RETAIN);
 }
 
 void send_to_mqtt_array(char *mac_address, char *key, unsigned char *value, int length)
 {
-    printf("MQTT %s/%s/%s bytes[%d]\n", topicRoot, mac_address, key, length);
+    printf("MQTT %s/%s/%s/%s bytes[%d]\n", topicRoot, access_point_name, mac_address, key, length);
     send_to_mqtt_with_time_and_mac(mac_address, key, -1, (char *)value, length, MQTT_PUBLISH_QOS_1 | MQTT_PUBLISH_RETAIN);
 }
 
@@ -216,7 +220,7 @@ void send_to_mqtt_uuids(char *mac_address, char *key, char **uuids, int length)
     for (int i = 0; i < length; i++)
     {
         char *uuid = uuids[i];
-        printf("MQTT %s/%s/%s/%d uuid[%d]\n", topicRoot, mac_address, key, i, (int)strlen(uuid));
+        printf("MQTT %s/%s/%s/%s/%d uuid[%d]\n", topicRoot, access_point_name, mac_address, key, i, (int)strlen(uuid));
         send_to_mqtt_with_time_and_mac(mac_address, key, i, uuid, strlen(uuid) + 1, MQTT_PUBLISH_QOS_1 | MQTT_PUBLISH_RETAIN);
         if (i < length-1) printf("    ");
     }
@@ -228,7 +232,7 @@ void send_to_mqtt_single_value(char *mac_address, char *key, int32_t value)
 {
     char rssi[12];
     snprintf(rssi, sizeof(rssi), "%i", value);
-    printf("MQTT %s/%s/%s %s\n", topicRoot, mac_address, key, rssi);
+    printf("MQTT %s/%s/%s/%s %s\n", topicRoot, access_point_name, mac_address, key, rssi);
     send_to_mqtt_with_time_and_mac(mac_address, key, -1, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_1);
 }
 
@@ -236,7 +240,7 @@ void send_to_mqtt_single_value_keep(char *mac_address, char *key, int32_t value)
 {
     char rssi[12];
     snprintf(rssi, sizeof(rssi), "%i", value);
-    printf("MQTT %s/%s/%s %s\n", topicRoot, mac_address, key, rssi);
+    printf("MQTT %s/%s/%s/%s %s\n", topicRoot, access_point_name, mac_address, key, rssi);
     send_to_mqtt_with_time_and_mac(mac_address, key, -1, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_1 | MQTT_PUBLISH_RETAIN);
 }
 
@@ -244,6 +248,6 @@ void send_to_mqtt_single_float(char *mac_address, char *key, float value)
 {
     char rssi[12];
     snprintf(rssi, sizeof(rssi), "%.3f", value);
-    printf("MQTT %s/%s/%s %s\n", topicRoot, mac_address, key, rssi);
+    printf("MQTT %s/%s/%s/%s %s\n", topicRoot, access_point_name, mac_address, key, rssi);
     send_to_mqtt_with_time_and_mac(mac_address, key, -1, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_1);
 }
