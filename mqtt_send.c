@@ -19,7 +19,7 @@
 #include <stdlib.h>
 
 const char *topicRoot = "BLF";
-static char* access_point_address;
+static char access_point_address[6];
 
 static void publish_callback(void **unused, struct mqtt_response_publish *published)
 {
@@ -37,7 +37,6 @@ static void publish_callback(void **unused, struct mqtt_response_publish *publis
 void exit_mqtt(int status, int sockfd)
 {
     if (sockfd != -1) close(sockfd);
-    if (access_point_address) g_free(access_point_address);
     //return bt_shell_noninteractive_quit(EXIT_FAILURE);
     exit(status);
 }
@@ -50,7 +49,7 @@ uint8_t connect_flags = MQTT_CONNECT_CLEAN_SESSION;
 
 void prepare_mqtt(char *mqtt_addr, char *mqtt_port, char* client_id, char* mac_address)
 {
-    access_point_address = strdup(mac_address);
+    memcpy(&access_point_address, mac_address, 6);
 
     if (mqtt_addr == NULL) {
       printf("MQTT Address must be set");
