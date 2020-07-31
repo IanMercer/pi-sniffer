@@ -483,6 +483,11 @@ void optional(char* name, char* value) {
   g_strlcpy(name, value, NAME_LENGTH);
 }
 
+void soft_set(char** name, char* value) {
+  if (strcmp(*name, CATEGORY_UNKNOWN) == 0) {
+    *name = value;
+  }
+}
 
 /*
      handle the manufacturer data
@@ -527,13 +532,13 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
 
           uint8_t lower_bits = device_status & 0x3f;
 
-          if (lower_bits == 0x07) { g_print(" Lock screen (0x07) "); existing->category = CATEGORY_PHONE; }
-          else if (lower_bits == 0x17) { g_print(" Lock screen   (0x17) "); existing->category = CATEGORY_PHONE; }
-          else if (lower_bits == 0x1b) { g_print(" Home screen   (0x1b) "); existing->category = CATEGORY_PHONE; }
-          else if (lower_bits == 0x1c) { g_print(" Home screen   (0x1c) "); existing->category = CATEGORY_PHONE; }
-          else if (lower_bits == 0x10) { g_print(" Home screen   (0x10) "); existing->category = CATEGORY_PHONE; }
-          else if (lower_bits == 0x0e) { g_print(" Outgoing call (0x0e) "); existing->category = CATEGORY_PHONE; }
-          else if (lower_bits == 0x1e) { g_print(" Incoming call (0x1e) "); existing->category = CATEGORY_PHONE; }
+          if (lower_bits == 0x07) { g_print(" Lock screen (0x07) "); soft_set(&existing->category, CATEGORY_PHONE); }
+          else if (lower_bits == 0x17) { g_print(" Lock screen   (0x17) "); soft_set(&existing->category, CATEGORY_PHONE); }
+          else if (lower_bits == 0x1b) { g_print(" Home screen   (0x1b) "); soft_set(&existing->category, CATEGORY_PHONE); }
+          else if (lower_bits == 0x1c) { g_print(" Home screen   (0x1c) "); soft_set(&existing->category, CATEGORY_PHONE); }
+          else if (lower_bits == 0x10) { g_print(" Home screen   (0x10) "); soft_set(&existing->category, CATEGORY_PHONE); }
+          else if (lower_bits == 0x0e) { g_print(" Outgoing call (0x0e) "); soft_set(&existing->category, CATEGORY_PHONE); }
+          else if (lower_bits == 0x1e) { g_print(" Incoming call (0x1e) "); soft_set(&existing->category, CATEGORY_PHONE); }
           else g_print(" Unknown (0x%.2x) ", lower_bits);
 
           if (allocdata[03] &0x10) g_print("1"); else g_print("0");
