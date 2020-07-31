@@ -947,12 +947,11 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         }
         else if (strcmp(property_name, "Class") == 0)
         {
-            // type 'u' which is uint32
             // Very few devices send this information (not very useful)
             uint32_t deviceclass = g_variant_get_uint32(prop_val);
             if (existing->deviceclass != deviceclass)
             {
-                g_print("Class has changed         ");
+                g_print("  %s Class has changed         ", address);
                 send_to_mqtt_single_value(address, "class", deviceclass);
                 existing->deviceclass = deviceclass;
             }
@@ -960,9 +959,9 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         else if (strcmp(property_name, "Icon") == 0)
         {
             char *icon = g_variant_dup_string(prop_val, NULL);
-            g_print("Icon: '%s'\n", icon);
-            if (strcmp(icon, "computer")) existing->category=CATEGORY_LAPTOP;
-            else if (strcmp(icon, "phone")) existing->category=CATEGORY_PHONE;
+            g_print("  %s Icon: '%s'\n", address, icon);
+            if (strcmp(icon, "computer") == 0) existing->category=CATEGORY_LAPTOP;
+            else if (strcmp(icon, "phone") == 0) existing->category=CATEGORY_PHONE;
             g_free(icon);
         }
         else if (strcmp(property_name, "Appearance") == 0)
