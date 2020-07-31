@@ -960,9 +960,9 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         {
             char *icon = g_variant_dup_string(prop_val, NULL);
             g_print("  %s Icon: '%s'\n", address, icon);
-            if (strcmp(icon, "computer") == 0) existing->category=CATEGORY_LAPTOP;
-            else if (strcmp(icon, "phone") == 0) existing->category=CATEGORY_PHONE;
-            else if (strcmp(icon, "multimedia-player") == 0) existing->category=CATEGORY_TV;
+            if (strcmp(icon, "computer") == 0) existing->category=CATEGORY_LAPTOP;  // overrides
+            else if (strcmp(icon, "phone") == 0 && existing->category==NULL) existing->category=CATEGORY_PHONE;
+            else if (strcmp(icon, "multimedia-player") == 0 && existing->category==NULL) existing->category=CATEGORY_TV; // doesnt override
 
             g_free(icon);
         }
