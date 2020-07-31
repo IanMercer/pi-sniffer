@@ -515,7 +515,7 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         else if (apple_device_type == 0x10) {
           g_print("  Nearby ");
           optional(existing->alias, "iPhone?");
-          existing->category = CATEGORY_PHONE;
+          // Not right, MacBook Pro seems to send this too
 
           uint8_t device_status = allocdata[02];
           if (device_status & 0x80) g_print("0x80 "); else g_print(" ");
@@ -523,13 +523,13 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
 
           uint8_t lower_bits = device_status & 0x3f;
 
-          if (lower_bits == 0x07) g_print(" Lock screen (0x07) ");
-          else if (lower_bits == 0x17) g_print(" Lock screen   (0x17) ");
-          else if (lower_bits == 0x1b) g_print(" Home screen   (0x1b) ");
-          else if (lower_bits == 0x1c) g_print(" Home screen   (0x1c) ");
-          else if (lower_bits == 0x10) g_print(" Home screen   (0x10) ");
-          else if (lower_bits == 0x0e) g_print(" Outgoing call (0x0e) ");
-          else if (lower_bits == 0x1e) g_print(" Incoming call (0x1e) ");
+          if (lower_bits == 0x07) { g_print(" Lock screen (0x07) "); existing->category = CATEGORY_PHONE; }
+          else if (lower_bits == 0x17) { g_print(" Lock screen   (0x17) "); existing->category = CATEGORY_PHONE; }
+          else if (lower_bits == 0x1b) { g_print(" Home screen   (0x1b) "); existing->category = CATEGORY_PHONE; }
+          else if (lower_bits == 0x1c) { g_print(" Home screen   (0x1c) "); existing->category = CATEGORY_PHONE; }
+          else if (lower_bits == 0x10) { g_print(" Home screen   (0x10) "); existing->category = CATEGORY_PHONE; }
+          else if (lower_bits == 0x0e) { g_print(" Outgoing call (0x0e) "); existing->category = CATEGORY_PHONE; }
+          else if (lower_bits == 0x1e) { g_print(" Incoming call (0x1e) "); existing->category = CATEGORY_PHONE; }
           else g_print(" Unknown (0x%.2x) ", lower_bits);
 
           if (allocdata[03] &0x10) g_print("1"); else g_print("0");
@@ -709,6 +709,9 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             }
             if (strcmp(name, "iPhone") == 0) existing->category = CATEGORY_PHONE;
             if (strcmp(name, "iPad") == 0) existing->category = CATEGORY_TABLET;
+            if (strcmp(name, "MacBook pro") == 0) existing->category = CATEGORY_LAPTOP;
+            if (strcmp(name, "BOOTCAMP") == 0) existing->category = CATEGORY_LAPTOP;
+            if (strcmp(name, "BOOTCAMP2") == 0) existing->category = CATEGORY_LAPTOP;
             if (strcmp(name, "iWatch") == 0) existing->category = CATEGORY_WATCH;
             if (strcmp(name, "AppleTV") == 0) existing->category = CATEGORY_TV;
             // TODO: Android device names
