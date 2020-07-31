@@ -37,6 +37,7 @@
 #define CATEGORY_UNKNOWN "unknown"
 #define CATEGORY_PHONE "phone"
 #define CATEGORY_WATCH "watch"
+#define CATEGORY_TABLET "tablet"
 #define CATEGORY_HEADPHONES "hp"
 #define CATEGORY_LAPTOP "laptop"
 #define CATEGORY_TV "TV"    // AppleTV
@@ -707,6 +708,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
                 // g_print("  Name unchanged '%s'=='%s'\n", name, existing->name);
             }
             if (strcmp(name, "iPhone") == 0) existing->category = CATEGORY_PHONE;
+            if (strcmp(name, "iPad") == 0) existing->category = CATEGORY_TABLET;
             if (strcmp(name, "iWatch") == 0) existing->category = CATEGORY_WATCH;
             if (strcmp(name, "AppleTV") == 0) existing->category = CATEGORY_TV;
             // TODO: Android device names
@@ -887,7 +889,9 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
 
 	                // All BLE UUIDs are of the form: so we only need four hex nibbles: 0000XXXX-0000-1000-8000-00805f9b34fb
 	                strCopy[8] = '\0';
-	                int16_t ble_uuid = (int)strtol(strCopy, NULL, 16);
+	                int64_t ble_uuid = (int)strtol(strCopy, NULL, 16);
+
+                        // EST Unknown(b9401000), Unknown(b9403000), Unknown(b9404000), Unknown(b9406000),
 
 	                // https://www.bluetooth.com/specifications/gatt/characteristics/
 	                if (ble_uuid == 0x2a29) g_print("Manufacturer, ");
@@ -895,9 +899,14 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
 	                else if (ble_uuid == 0x1801) g_print("Generic attribute, ");
 	                else if (ble_uuid == 0x1805) g_print("Current time service, ");
 	                else if (ble_uuid == 0x180f) g_print("Battery, ");
+	                else if (ble_uuid == 0x111e) g_print("HandsFree, ");
 	                else if (ble_uuid == 0x180a) g_print("Device information, ");
 	                else if (ble_uuid == 0x180d) g_print("Heart rate service, ");
 	                else if (ble_uuid == 0x2A37) g_print("Heart rate measurement ");
+	                else if (ble_uuid == 0x89d3502b) g_print("Apple MS ");
+	                else if (ble_uuid == 0x7905f431) g_print("Apple NCS ");
+	                else if (ble_uuid == 0xd0611e78) g_print("Apple CS ");
+	                else if (ble_uuid == 0x9fa480e0) g_print("Apple XX ");
 	                else g_print("Unknown(%s), ", strCopy);
 
                         g_free(strCopy);
