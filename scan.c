@@ -717,6 +717,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             if (strcmp(name, "BOOTCAMP") == 0) existing->category = CATEGORY_LAPTOP;
             if (strcmp(name, "BOOTCAMP2") == 0) existing->category = CATEGORY_LAPTOP;
             if (strcmp(name, "iWatch") == 0) existing->category = CATEGORY_WATCH;
+            if (strcmp(name, "Apple Watch") == 0) existing->category = CATEGORY_WATCH;
             if (strcmp(name, "AppleTV") == 0) existing->category = CATEGORY_TV;
             // TODO: Android device names
         }
