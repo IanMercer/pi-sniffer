@@ -557,7 +557,7 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
       } else if (manufacturer == 0x0087) {
         optional(existing->alias, "Garmin");
         existing->category = CATEGORY_WATCH; // could be fitness tracker
-      } else if (manufacturer == 0xb4c1) { 
+      } else if (manufacturer == 0xb4c1) {
         optional(existing->alias, "Dycoo");   // not on official Bluetooth website
       } else if (manufacturer == 0x0310) {
         optional(existing->alias, "SGL Italia S.r.l.");
@@ -712,13 +712,13 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
                 // g_print("  Name unchanged '%s'=='%s'\n", name, existing->name);
             }
             if (strcmp(name, "iPhone") == 0) existing->category = CATEGORY_PHONE;
-            if (strcmp(name, "iPad") == 0) existing->category = CATEGORY_TABLET;
-            if (strcmp(name, "MacBook pro") == 0) existing->category = CATEGORY_LAPTOP;
-            if (strcmp(name, "BOOTCAMP") == 0) existing->category = CATEGORY_LAPTOP;
-            if (strcmp(name, "BOOTCAMP2") == 0) existing->category = CATEGORY_LAPTOP;
-            if (strcmp(name, "iWatch") == 0) existing->category = CATEGORY_WATCH;
-            if (strcmp(name, "Apple Watch") == 0) existing->category = CATEGORY_WATCH;
-            if (strcmp(name, "AppleTV") == 0) existing->category = CATEGORY_TV;
+            else if (strcmp(name, "iPad") == 0) existing->category = CATEGORY_TABLET;
+            else if (strcmp(name, "MacBook pro") == 0) existing->category = CATEGORY_LAPTOP;
+            else if (strcmp(name, "BOOTCAMP") == 0) existing->category = CATEGORY_LAPTOP;
+            else if (strcmp(name, "BOOTCAMP2") == 0) existing->category = CATEGORY_LAPTOP;
+            else if (strcmp(name, "iWatch") == 0) existing->category = CATEGORY_WATCH;
+            else if (strcmp(name, "Apple Watch") == 0) existing->category = CATEGORY_WATCH;
+            else if (strcmp(name, "AppleTV") == 0) existing->category = CATEGORY_TV;
             // TODO: Android device names
         }
         else if (strcmp(property_name, "Alias") == 0)
@@ -961,6 +961,8 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         {
             char *icon = g_variant_dup_string(prop_val, NULL);
             g_print("Icon: '%s'\n", icon);
+            if (strcmp(icon, "computer")) existing->category=CATEGORY_LAPTOP;
+            else if (strcmp(icon, "phone")) existing->category=CATEGORY_PHONE;
             g_free(icon);
         }
         else if (strcmp(property_name, "Appearance") == 0)
