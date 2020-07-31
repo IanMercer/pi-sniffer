@@ -188,6 +188,7 @@ time_t now;
 struct ColumnInfo {
     time_t latest;        // latest observation in this column
     float distance;       // distance of latest observation in this column
+    char* category;       // category of device in this column (phone, laptop, ...)
 };
 
 struct ColumnInfo columns[N_COLUMNS];
@@ -198,6 +199,7 @@ struct ColumnInfo columns[N_COLUMNS];
 void find_latest_observations () {
    for (uint i=0; i < N_COLUMNS; i++){
       columns[i].distance = -1.0;
+      columns[i].category = CATEGORY_UNKNOWN;
    }
    for (int i = 0; i < n; i++) {
       struct Device* a = &devices[i];
@@ -205,6 +207,7 @@ void find_latest_observations () {
       if (columns[col].distance < 0.0 || columns[col].latest < a->latest) {
         columns[col].distance = a->distance;
         columns[col].latest = a->latest;
+        columns[col].category = a->category;
       }
    }
 }
@@ -244,6 +247,7 @@ void report_devices_count() {
 
         for (int col=0; col < N_COLUMNS; col++)
         {
+           if (strcmp(columns[col].category, CATEGORY_PHONE) != 0) continue;   // only counting phones now not beacons, laptops, ...
            if (columns[col].distance < 0.01) continue;   // not allocated
 
            double delta_time = difftime(now, columns[col].latest);

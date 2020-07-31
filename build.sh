@@ -5,6 +5,9 @@ set -e
 
 git pull
 
+# Force a build to happen
+touch *.h
+
 echo building service
 make
 
