@@ -959,9 +959,9 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         }
         else if (strcmp(property_name, "Icon") == 0)
         {
-            // A string value
-            const char* type = g_variant_get_type_string (prop_val);
-            g_print("Icon: %s %s\n", property_name, type);
+            char *icon = g_variant_dup_string(prop_val, NULL);
+            g_print("Icon: '%s'\n", icon);
+            g_free(icon);
         }
         else if (strcmp(property_name, "Appearance") == 0)
         { // type 'q' which is uint16
