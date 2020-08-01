@@ -4,7 +4,7 @@
 */
 
 #include "mqtt_send.h"
-#include <MQTTClient.h>
+#include <MQTTAsync.h>
 
 #include <glib.h>
 #include <gio/gio.h>
@@ -31,22 +31,115 @@ static char access_point_address[6];
 static char* access_point_name;
 
 
-//Callback functions
-static void connect_callback(MQTTClient* mosq, void* obj, int result)
+void connlost(void *context, char *cause)
 {
-    (void)mosq;
-    (void)obj;
-    printf("Connect Callback returned : %i \r\n", result);
-    if (result)
-        printf("Connection Refused, please check your SAS Token, expired ?\r\n");
+	MQTTAsync client = (MQTTAsync)context;
+	MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
+	int rc;
+
+	printf("\nConnection lost\n");
+	printf("     cause: %s\n", cause);
+
+	printf("Reconnecting\n");
+	conn_opts.keepAliveInterval = 20;
+	conn_opts.cleansession = 1;
+	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to start connect, return code %d\n", rc);
+	}
 }
 
-static void publish_callback(MQTTClient* mosq, void* userdata, int mid)
+void onDisconnectFailure(void* context, MQTTAsync_failureData* response)
 {
-    (void)mosq;
-    (void)userdata;
-    (void)mid;
-    g_print("Publish callback\n");
+    (void)context;
+    (void)response;
+	printf("Disconnect failed\n");
+}
+
+void onDisconnect(void* context, MQTTAsync_successData* response)
+{
+    (void)context;
+    (void)response;
+	printf("Successful disconnection\n");
+}
+
+void onSendFailure(void* context, MQTTAsync_failureData* response)
+{
+    (void)context;
+//	MQTTAsync client = (MQTTAsync)context;
+//	MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
+//	int rc;
+
+	printf("Message send failed token %d error code %d\n", response->token, response->code);
+//	opts.onSuccess = onDisconnect;
+//	opts.onFailure = onDisconnectFailure;
+//	opts.context = client;
+//	if ((rc = MQTTAsync_disconnect(client, &opts)) != MQTTASYNC_SUCCESS)
+//	{
+//		printf("Failed to start disconnect, return code %d\n", rc);
+//		exit(EXIT_FAILURE);
+//	}
+}
+
+void onSend(void* context, MQTTAsync_successData* response)
+{
+    (void)context;
+//	MQTTAsync client = (MQTTAsync)context;
+//	MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
+//	int rc;
+
+	printf("Message with token value %d delivery confirmed\n", response->token);
+//	opts.onSuccess = onDisconnect;
+//	opts.onFailure = onDisconnectFailure;
+//	opts.context = client;
+//	if ((rc = MQTTAsync_disconnect(client, &opts)) != MQTTASYNC_SUCCESS)
+//	{
+//		printf("Failed to start disconnect, return code %d\n", rc);
+//		exit(EXIT_FAILURE);
+//	}
+}
+
+
+void onConnectFailure(void* context, MQTTAsync_failureData* response)
+{
+    (void)context;
+	//MQTTAsync client = (MQTTAsync)context;
+	printf("Connect failed, rc %d\n", response ? response->code : 0);
+}
+
+
+void onConnect(void* context, MQTTAsync_successData* response)
+{
+    (void)response;
+	MQTTAsync client = (MQTTAsync)context;
+	int rc;
+
+	printf("Successful connection\n");
+
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	opts.onSuccess = onSend;
+	opts.onFailure = onSendFailure;
+	opts.context = client;
+	pubmsg.payload = "up\0";
+	pubmsg.payloadlen = (int)strlen(pubmsg.payload) + 1;
+	pubmsg.qos = 0;
+	pubmsg.retained = 0;
+	if ((rc = MQTTAsync_sendMessage(client, "blf/tiger/status", &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to start sendMessage, return code %d\n", rc);
+		exit(EXIT_FAILURE);
+	}
+}
+
+int messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* m)
+{
+    (void)context;
+    (void)topicName;
+    (void)m;
+    printf("Message arrived %i", topicLen);
+	/* not expecting any messages */
+	return 1;
     ///* note that published->topic_name is NOT null-terminated (here we'll change it to a c-string) */
     //char *topic_name = (char *)malloc(published->topic_name_size + 1);
     //memcpy(topic_name, published->topic_name, published->topic_name_size);
@@ -55,11 +148,14 @@ static void publish_callback(MQTTClient* mosq, void* userdata, int mid)
     //g_free(topic_name);
 }
 
+
 void exit_mqtt(int status, int sockfd)
 {
+    // TODO: Destroy MQTT Client
+
     if (sockfd != -1) close(sockfd);
     if (access_point_name) g_free(access_point_name);
-    //return bt_shell_noninteractive_quit(EXIT_FAILURE);
+
     exit(status);
 }
 
@@ -98,7 +194,7 @@ void prepare_mqtt(char *mqtt_addr, char *mqtt_port, char* client_id, char* mac_a
     printf("Username '%s'\n", username);
     printf("Password '%s'\n", password);
 
-    MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
+    MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
 
     opts.username = username;
     opts.password = password;
@@ -113,23 +209,44 @@ void prepare_mqtt(char *mqtt_addr, char *mqtt_port, char* client_id, char* mac_a
 	//opts.will = NULL;
 
     int rc;
-    MQTTClient_create(&client, mqtt_addr, client_id, MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
-    opts.keepAliveInterval = 20;
-    opts.cleansession = 1;
-    if ((rc = MQTTClient_connect(client, &opts)) != MQTTCLIENT_SUCCESS)
+    MQTTAsync_create(&client, mqtt_addr, client_id, MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);  // MQTTASYNC_SUCCESS
+
+
+    if ((rc = MQTTAsync_setCallbacks(client, NULL, connlost, messageArrived, NULL)) != MQTTASYNC_SUCCESS)
     {
-        printf("Failed to connect, return code %d\n", rc);
-        exit(-1);
+        printf("Failed to set callback, return code %d\n", rc);
+        exit(EXIT_FAILURE);
     }
 
-    MQTTClient_message pubmsg = MQTTClient_message_initializer;
-    MQTTClient_deliveryToken token;
-    pubmsg.payload = "up";
-    pubmsg.payloadlen = strlen(pubmsg.payload)+1;
-    pubmsg.qos = 0;
-    pubmsg.retained = 0;
+	opts.keepAliveInterval = 20;
+	opts.cleansession = 1;
+	opts.onSuccess = onConnect;
+	opts.onFailure = onConnectFailure;
+	opts.context = client;
+	if ((rc = MQTTAsync_connect(client, &opts)) != MQTTASYNC_SUCCESS)
+	{
+	    printf("Failed to start connect, return code %d\n", rc);
+	    exit(EXIT_FAILURE);
+	}
 
-    MQTTClient_publishMessage(client, "BLF/tiger/status", &pubmsg, &token);
+
+//	while (!finished)
+//		#if defined(_WIN32)
+//			Sleep(100);
+//		#else
+//			usleep(10000L);
+//		#endif
+
+//	MQTTAsync_destroy(&client);
+
+//    MQTTClient_message pubmsg = MQTTClient_message_initializer;
+//    MQTTClient_deliveryToken token;
+//    pubmsg.payload = "up";
+//    pubmsg.payloadlen = strlen(pubmsg.payload)+1;
+//    pubmsg.qos = 0;
+//    pubmsg.retained = 0;
+
+//    MQTTClient_publishMessage(client, "BLF/tiger/status", &pubmsg, &token);
 //    printf("Waiting for publication\n");
 //    rc = MQTTClient_waitForCompletion(client, token, 10000);
 //    printf("Message with delivery token %d delivered\n", token);
@@ -147,17 +264,21 @@ void send_to_mqtt_null(char *mac_address, char *key)
 
     printf("MQTT %s %s\n", topicRoot, "NULL");
 
-    MQTTClient_message pubmsg = MQTTClient_message_initializer;
-    pubmsg.payload = "";
-    pubmsg.payloadlen = 0;
-    pubmsg.qos = 0;
-    pubmsg.retained = 0;
-
-    MQTTClient_deliveryToken dt;
-    int rc = MQTTClient_publishMessage(client, topic, &pubmsg, &dt);
-
- //   int rc = MQTTClient_waitForCompletion(client, dt, 10000);
- //   printf("Message with delivery token %d delivered\n", dt);
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	opts.onSuccess = onSend;
+	opts.onFailure = onSendFailure;
+	opts.context = client;
+	pubmsg.payload = "";
+	pubmsg.payloadlen = (int)strlen(pubmsg.payload) + 1;
+	pubmsg.qos = 0;
+	pubmsg.retained = 0;
+        int rc = 0;
+	if ((rc = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to start sendMessage, return code %d\n", rc);
+		exit(EXIT_FAILURE);
+	}
 
     /* check for errors */
     if (rc)
@@ -209,45 +330,25 @@ void send_to_mqtt_with_time_and_mac(char *mac_address, char *key, int i, char *v
     memcpy(&packet[14], value, value_length);
     int packet_length = value_length + 14;
 
-    MQTTClient_message pubmsg = MQTTClient_message_initializer;
-    pubmsg.payload = packet;
-    pubmsg.payloadlen = packet_length;
-    pubmsg.qos = qos;
-    pubmsg.retained = retained;
-
-    MQTTClient_deliveryToken dt;
-    int rc = MQTTClient_publishMessage(client, topic, &pubmsg, &dt);
-
-    //int rc = MQTTClient_waitForCompletion(client, dt, 10000);
-    //printf("Message with delivery token %d delivered\n", dt);
-
-    time_t end_t = time(0);
-    int diff = (int)difftime(end_t, now);
-    if (diff > 0) g_print("MQTT execution time = %is\n", diff);
-
-    /* check for errors */
-    if (rc)
-    {
-        fprintf(stderr, "\n\nERROR Send w time and mac: %i\n", rc);
-
-        send_errors ++;
-        if (send_errors > 10) {
-          g_print("\n\nToo many send errors, restarting\n\n");
-          exit_mqtt(EXIT_FAILURE, sockfd);
-        }
-    }
-
-    /*
-	int s;
-        g_print(" ");
-
-	for(s = 0; s < packet_length; s++ )
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	opts.onSuccess = onSend;
+	opts.onFailure = onSendFailure;
+	opts.context = client;
+	pubmsg.payload = packet;
+	pubmsg.payloadlen = packet_length;
+	pubmsg.qos = qos;
+	pubmsg.retained = retained;
+        int rc = 0;
+	if ((rc = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
 	{
-	    g_print("%.2X", (unsigned char)packet[s]);
-            if (s == 6 || s == 6+8) g_print(" ");
-	}
-        g_print("\n");
-*/
+	    printf("Failed to start sendMessage, return code %d\n", rc);
+            send_errors ++;
+            if (send_errors > 10) {
+              g_print("\n\nToo many send errors, restarting\n\n");
+             exit_mqtt(EXIT_FAILURE, sockfd);
+           }
+        }
 }
 
 void send_to_mqtt_single(char *mac_address, char *key, char *value)
