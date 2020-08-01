@@ -41,40 +41,27 @@ The mqqt packet contains bytes as follows:
 
 For a specific BLE device the following topics containing that device's mac address are sent:
 
-    BLF/56:DA:8D:18:25:8D/distance   -- the distance in meters as a string (rough, calculated from RSSI)
-    BLF/56:DA:8D:18:25:8D/name       -- the name (or for unknown devices a best effort like 'iPhone' or 'Beacon')
-    BLF/56:DA:8D:18:25:8D/alias      -- the BLUEZ alias (currently disabled)
-    BLF/56:DA:8D:18:25:8D/power      -- the power level (currently disabled)
-    BLF/56:DA:8D:18:25:8D/type       -- the mac address type: `public` or `random`
+    BLF/<hostname>/56:DA:8D:18:25:8D/distance   -- the distance in meters as a string (rough, calculated from RSSI)
+    BLF/<hostname>/56:DA:8D:18:25:8D/name       -- the name (or for unknown devices a best effort like 'iPhone' or 'Beacon')
+    BLF/<hostname>/56:DA:8D:18:25:8D/alias      -- the BLUEZ alias (currently disabled)
+    BLF/<hostname>/56:DA:8D:18:25:8D/power      -- the power level (currently disabled)
+    BLF/<hostname>/56:DA:8D:18:25:8D/type       -- the mac address type: `public` or `random`
    
-For a summary of all devices seen by the access point the following topics are sent:
+For a summary of all devices seen by the access point the following topic is sent:
 
-    BLF/summary/min_devices           -- a count of nearby devices as a string
-    BLF/summary/dist_hist             -- an array of bytes containing the count of devices at each range 
+    BLF/<hostname>/summary/dist_hist             -- an array of bytes containing the count of devices at each range 
    
-The following legacy topics are also sent but will be discontinued in favor of the array topic above. These ones contain a cumulative value (all devices closer than range specified).
-
-    BLF/summary/1                     -- a count of nearby devices under 1m away
-    BLF/summary/2                     -- a count of nearby devices under 2m away
-    BLF/summary/5                     -- a count of nearby devices under 5m away
-    BLF/summary/10                    -- a count of nearby devices under 10m away
-    BLF/summary/15                    -- a count of nearby devices under 15m away
-    BLF/summary/20                    -- a count of nearby devices under 20m away
-    BLF/summary/25                    -- a count of nearby devices under 25m away
-    BLF/summary/30                    -- a count of nearby devices under 30m away
-    BLF/summary/35                    -- a count of nearby devices under 35m away
-
 # Time
 
 Given delays in MQTT transmit, receive and re-transmit to the receiving application it's a good idea to use the timestamp passed in the packet. Make
 sure all your Pis are synchronized to the same time.
 
 # status
-This is a work in progress and is still changing fairly rapidly.
-It includes the essential source and header files to make it compile and run without any external dependencies. 
-There is a `build.sh` file that builds and runs the code. 
-The MQTT topic prefix is hard-coded but the MQTT server IP (or FQDN) and port are configurable.
-Environment variables are used to configure the RSSI to distance conversion parameters for indoor/outdoor settings.
+* Recently updated to use the Eclipse PAHO MQTT C library which support SSL and Async code. This is the only dependency.
+* This is a work in progress and is still changing fairly rapidly.
+* There is a `build.sh` file that builds and runs the code. 
+* The MQTT topic prefix is hard-coded but the MQTT server IP (or FQDN) and port are configurable.
+* Environment variables are used to configure the RSSI to distance conversion parameters for indoor/outdoor settings.
 
 # plans
 * Look into pairing iPhones to eliminate random mac addresses
@@ -84,8 +71,11 @@ Environment variables are used to configure the RSSI to distance conversion para
 
 # getting started
 
+* update package lists: `sudo apt-get update`
+* install GIT if you don't already have it `sudo apt-get install git-core`
+* install dependencies: `sudo apt-get install libglib2.0-dev` and `libssl-dev`
+* clone the Elcipse PAHO MQTT C source from GIT; build and install it using `make install`
 * clone this repository
-* install dependencies:    `sudo apt-get install libglib2.0-dev`
 * edit your Mosquitto connection details into the last line of build.sh that launches the sniffer
 * build the code:   `sudo ./build/sh`
 * try the sniffer: ./scan <mqtt server ip> [<port>]
