@@ -7,7 +7,7 @@
 
 #include <glib.h>
 #include <gio/gio.h>
-#include "mqtt.h"
+#include <MQTTClient.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
@@ -22,15 +22,15 @@
 
 int sockfd;
 
-struct mqtt_client mqtt;
+MQTTClient* mqtt;
 
 void exit_mqtt(int status, int sockfd);
 
-void prepare_mqtt(char *mqtt_addr, char *mqtt_port, char* client_id, char* mac_address);
+void prepare_mqtt(char *mqtt_addr, char *mqtt_port, char* client_id, char* mac_address, char* username, char* password);
 
 void send_to_mqtt_null(char *mac_address, char *key);
 
-void send_to_mqtt_with_time_and_mac(char *mac_address, char *key, int i, char *value, int value_length, int flags);
+void send_to_mqtt_with_time_and_mac(char *mac_address, char *key, int i, char *value, int value_length, int flags, int retained);
 
 void send_to_mqtt_single(char *mac_address, char *key, char *value);
 
@@ -43,5 +43,7 @@ void send_to_mqtt_single_value(char *mac_address, char *key, int32_t value);
 void send_to_mqtt_single_value_keep(char *mac_address, char *key, int32_t value);
 
 void send_to_mqtt_single_float(char *mac_address, char *key, float value);
+
+void mqtt_sync();
 
 #endif

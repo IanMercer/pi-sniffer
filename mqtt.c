@@ -24,11 +24,11 @@ SOFTWARE.
 
 #include "mqtt.h"
 
-/** 
- * @file 
+/**
+ * @file
  * @brief Implements the functionality of MQTT-C.
  * @note The only files that are included are mqtt.h and mqtt_pal.h.
- * 
+ *
  * @cond Doxygen_Suppress
  */
 
@@ -188,7 +188,7 @@ void mqtt_reinit(struct mqtt_client *client,
     client->recv_buffer.curr_sz = client->recv_buffer.mem_size;
 }
 
-/** 
+/**
  * A macro function that:
  *      1) Checks that the client isn't in an error state.
  *      2) Attempts to pack to client's message queue.
@@ -564,7 +564,7 @@ ssize_t __mqtt_send(struct mqtt_client *client)
         client->time_of_last_send = MQTT_PAL_TIME();
         msg->time_sent = client->time_of_last_send;
 
-        /* 
+        /*
         Determine the state to put the message in.
         Control Types:
         MQTT_CONTROL_CONNECT     -> awaiting

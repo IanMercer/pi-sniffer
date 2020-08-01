@@ -1477,7 +1477,7 @@ int mqtt_refresh(void *parameters)
     (void)parameters;
     //GMainLoop *loop = (GMainLoop *)parameters;
     // Send any MQTT messages
-    mqtt_sync(&mqtt);
+    mqtt_sync();
     return TRUE;
 }
 
@@ -1732,12 +1732,14 @@ int main(int argc, char **argv)
     if (argc < 2)
     {
         g_print("Bluetooth scanner\n");
-        g_print("   scan <mqtt server> [port:1883]\n");
+        g_print("   scan <mqtt server> [port:1883] [username] [password]\n");
         return -1;
     }
 
     char *mqtt_addr = argv[1];
     char *mqtt_port = argc > 2 ? argv[2] : "1883";
+    char* username = argc > 3 ? argv[3] : NULL;
+    char* password = argc > 4 ? argv[4] : NULL;
 
     gethostname(client_id, sizeof(client_id));
 
@@ -1828,7 +1830,7 @@ int main(int argc, char **argv)
     }
     g_print("Started discovery\n");
 
-    prepare_mqtt(mqtt_addr, mqtt_port, client_id, mac_address);
+    prepare_mqtt(mqtt_addr, mqtt_port, client_id, mac_address, username, password);
 
     // Periodically ask Bluez for every device including ones that are long departed
     // but only do updates to devices we have seen, do no not create a device for each
