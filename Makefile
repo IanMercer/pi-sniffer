@@ -3,10 +3,10 @@
 
 # See https://github.com/eclipse/paho.mqtt.c for details as to which paho lib to use
 
-CFLAGS = -Wall -Wextra -g `pkg-config --cflags --libs glib-2.0 gio-2.0` -lm -I. -lpaho-mqtt3as
+CFLAGS = -Wall -Wextra -g `pkg-config --cflags --libs glib-2.0 gio-2.0` -lm -I. -lpaho-mqtt3as -lwiringPi
 
-DEPS = utility.h mqtt_send.h kalman.h bluetooth.h certs.h
-OBJ = scan.o utility.o mqtt_send.o kalman.o certs.o
+DEPS = utility.h mqtt_send.h kalman.h bluetooth.h certs.h pca9685.h
+OBJ = scan.o utility.o mqtt_send.o kalman.o certs.o pca9685.o
 
 # Compile without linking
 %.o: %.c $(DEPS)

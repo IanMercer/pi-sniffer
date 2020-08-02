@@ -1,3 +1,5 @@
+//#define INDICATOR true
+
 /*
  * bluez sniffer
  *  Sends bluetooth information to MQTT with a separate topic per device and parameter
@@ -24,6 +26,10 @@
 #include <signal.h>
 #include <stdlib.h>
 
+#include <pca9685.h>
+#include <wiringPi.h>
+#include <wiringPiI2C.h>
+
 #include "utility.h"
 #include "mqtt_send.h"
 #include "kalman.h"
@@ -39,7 +45,7 @@
 #define CATEGORY_WATCH "watch"
 #define CATEGORY_TABLET "tablet"
 #define CATEGORY_HEADPHONES "hp"
-#define CATEGORY_LAPTOP "laptop"
+#define CATEGORY_COMPUTER "computer"
 #define CATEGORY_TV "TV"    // AppleTV
 #define CATEGORY_FIXED "fixed"
 #define CATEGORY_BEACON "beacon"
@@ -78,6 +84,9 @@ bool logTable = FALSE;  // set to true each time something changes
 
 int rssi_one_meter = -64;     // Put a device 1m away and measure the average RSSI
 float rssi_factor = 3.5;      // 2.0 to 4.0, lower for indoor or cluttered environments
+
+bool pca = false;  // is there a PCA8833 attached?
+
 
 /*
       Connection to DBUS
@@ -136,26 +145,42 @@ bool overlaps (struct Device* a, struct Device* b) {
 */
 void pack_columns()
 {
+  // Push every device back to column zero as category may have changed
   for (int i = 0; i < n; i++) {
-    for (int j = i+1; j < n; j++) {
-      struct Device* a = &devices[i];
-      struct Device* b = &devices[j];
+    struct Device* a = &devices[i];
+    a->column = 0;
+  }
 
-      if (a->column != b-> column) continue;
+  for (int k = 0; k< n; k++) {
+    bool changed = false;
 
-      bool over = overlaps(a, b);
+    for (int i = 0; i < n; i++) {
+      for (int j = i+1; j < n; j++) {
+        struct Device* a = &devices[i];
+        struct Device* b = &devices[j];
 
-      // cannot be the same device if either has a public address (or we don't have an address type yet)
-      bool haveDifferentAddressTypes = (a->addressType>0 && b->addressType>0 && a->addressType != b->addressType);
+        if (a->column != b-> column) continue;
 
-      // cannot be the same if they both have names and the names are different
-      bool haveDifferentNames = (strlen(a->name) > 0) && (strlen(b->name) > 0) && (g_strcmp0(a->name, b->name) != 0);
+        bool over = overlaps(a, b);
 
-      if (over || haveDifferentAddressTypes || haveDifferentNames) {
-        b->column++;
-        // g_print("Compare %i to %i and bump %4i %s to %i, %i %i %i\n", i, j, b->id, b->mac, b->column, over, haveDifferentAddressTypes, haveDifferentNames);
+        // cannot be the same device if either has a public address (or we don't have an address type yet)
+        bool haveDifferentAddressTypes = (a->addressType>0 && b->addressType>0 && a->addressType != b->addressType);
+
+        // cannot be the same if they both have names and the names are different
+        bool haveDifferentNames = (strlen(a->name) > 0) && (strlen(b->name) > 0) && (g_strcmp0(a->name, b->name) != 0);
+
+        // cannot be the same if they both have known categories and they are different
+        bool haveDifferentCategories = (g_strcmp0(a->category, b->category) != 0 &&
+           g_strcmp0(a->category, CATEGORY_UNKNOWN) != 0 && g_strcmp0(b->category, CATEGORY_UNKNOWN) != 0);
+
+        if (over || haveDifferentAddressTypes || haveDifferentNames || haveDifferentCategories) {
+          b->column++;
+          changed = true;
+          // g_print("Compare %i to %i and bump %4i %s to %i, %i %i %i\n", i, j, b->id, b->mac, b->column, over, haveDifferentAddressTypes, haveDifferentNames);
+        }
       }
     }
+    if (!changed) break;
   }
 }
 
@@ -188,7 +213,7 @@ time_t now;
 struct ColumnInfo {
     time_t latest;        // latest observation in this column
     float distance;       // distance of latest observation in this column
-    char* category;       // category of device in this column (phone, laptop, ...)
+    char* category;       // category of device in this column (phone, computer, ...)
 };
 
 struct ColumnInfo columns[N_COLUMNS];
@@ -216,12 +241,14 @@ void find_latest_observations () {
 #define N_RANGES 10
 static int32_t ranges[N_RANGES] = {1, 2, 5, 10, 15, 20, 25, 30, 35, 100};
 static int8_t reported_ranges[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+int people_count = 0;
 
 /*
     Find best packing of device time ranges into columns
     //Set every device to column zero
     While there is any overlap, find the overlapping pair, move the second one to the next column
 */
+
 
 void report_devices_count() {
     debug("report_devices_count\n");
@@ -273,6 +300,39 @@ void report_devices_count() {
       g_print("  ");
       send_to_mqtt_array("summary", "dist_hist", (unsigned char*)reported_ranges, N_RANGES * sizeof(int8_t));
     }
+
+
+    int range_limit = 5;
+    int people = 0;
+
+    for (int i=0; i < range_limit; i++)
+    {
+       people += reported_ranges[i];
+    }
+
+    if (people != people_count) {
+      people_count = people;
+
+      g_print("People count = %i\n", people);
+
+      int r=0, g=0, b=0, v=0;
+
+      if (people < 2) g = 4096;
+      else if (people < 4) b = 4096;
+      else r = 4096;
+      // pulse the LEDs the appropriate color
+      //int r = 2048 + 2048 * sin((float)tick * 16 / 128);
+      //int g = 2048 + 2048 * sin((float)tick * 4 / 128);
+      //int b = 2048 + 2048 * sin((float)tick * 1 / 128);
+      //int v = 4096;// 2048 + 2048 * sin((float)tick * 7 / 128);
+
+      if (pca) {
+        pwmWrite (300, b);
+        pwmWrite (301, r);
+        pwmWrite (302, g);
+        pwmWrite (303, v);
+      }
+   }
 }
 
 
@@ -718,9 +778,9 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             }
             if (strcmp(name, "iPhone") == 0) existing->category = CATEGORY_PHONE;
             else if (strcmp(name, "iPad") == 0) existing->category = CATEGORY_TABLET;
-            else if (strcmp(name, "MacBook pro") == 0) existing->category = CATEGORY_LAPTOP;
-            else if (strcmp(name, "BOOTCAMP") == 0) existing->category = CATEGORY_LAPTOP;
-            else if (strcmp(name, "BOOTCAMP2") == 0) existing->category = CATEGORY_LAPTOP;
+            else if (strcmp(name, "MacBook pro") == 0) existing->category = CATEGORY_COMPUTER;
+            else if (strcmp(name, "BOOTCAMP") == 0) existing->category = CATEGORY_COMPUTER;
+            else if (strcmp(name, "BOOTCAMP2") == 0) existing->category = CATEGORY_COMPUTER;
             else if (strcmp(name, "iWatch") == 0) existing->category = CATEGORY_WATCH;
             else if (strcmp(name, "Apple Watch") == 0) existing->category = CATEGORY_WATCH;
             else if (strcmp(name, "AppleTV") == 0) existing->category = CATEGORY_TV;
@@ -966,7 +1026,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         {
             char *icon = g_variant_dup_string(prop_val, NULL);
             g_print("  %s Icon: '%s'\n", address, icon);
-            if (strcmp(icon, "computer") == 0) existing->category=CATEGORY_LAPTOP;  // overrides
+            if (strcmp(icon, "computer") == 0) existing->category=CATEGORY_COMPUTER;  // overrides
             else if (strcmp(icon, "phone") == 0 && existing->category==NULL) existing->category=CATEGORY_PHONE;
             else if (strcmp(icon, "multimedia-player") == 0 && existing->category==NULL) existing->category=CATEGORY_TV; // doesnt override
 
@@ -1244,6 +1304,10 @@ static void bluez_device_appeared(GDBusConnection *sig,
         else if (g_ascii_strcasecmp(interface_name, "org.bluez.MediaPlayer1") == 0)
         {
            pretty_print("  Media player = ", properties);
+        }
+        else if (g_ascii_strcasecmp(interface_name, "org.bluez.Battery1") == 0)
+        {
+           pretty_print("  Battery = ", properties);
         }
         else {
            g_print("Device appeared, unknown interface: %s\n", interface_name);
@@ -1722,6 +1786,7 @@ static char client_id[256];         // linux allows more, truncated
 static char mac_address[6];        // bytes
 static char mac_address_text[13];  // string
 
+
 int main(int argc, char **argv)
 {
     int rc;
@@ -1734,6 +1799,20 @@ int main(int argc, char **argv)
         g_print("Bluetooth scanner\n");
         g_print("   scan <mqtt server> [port:1883] [username] [password]\n");
         return -1;
+    }
+
+/* WIRING PI AND PWB9685 */
+
+    wiringPiSetup();
+    int fd = pca9685Setup(300, 0x40, 50);
+
+    if (fd < 0) {
+      g_print("No 9685 found %i\n", fd);
+      pca = false;
+    }
+    else {
+      pca = true;
+      pca9685PWMReset(fd);
     }
 
     char *mqtt_addr = argv[1];
