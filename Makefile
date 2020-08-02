@@ -12,10 +12,14 @@ DEPS = utility.h mqtt_send.h kalman.h bluetooth.h
 SRC = scan.c utility.c mqtt_send.c kalman.c
 
 # Set these if you have a PCA8833 connected to I2C with LEDs
+ifeq (, $(shell which gpio))
+$(echo "No gpio in $(PATH), assuming you don't want any local LED display")
+else
 CFLAGS := $(CFLAGS) -DINDICATOR="PCA8833"
 LIBS := $(LIBS) -lwiringPi
 DEPS := $(DEPS) pca9685.h
 SRC := $(SRC) pca9685.c
+endif
 
 scan: $(SRC)
 	gcc -o $@ $^ $(CFLAGS) $(LIBS)
