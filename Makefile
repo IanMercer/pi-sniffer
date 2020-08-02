@@ -2,20 +2,22 @@
 # -lm link with math library
 
 # See https://github.com/eclipse/paho.mqtt.c for details as to which paho lib to use
+CC = gcc -g
 
-CFLAGS = -Wall -Wextra -g `pkg-config --cflags --libs glib-2.0 gio-2.0` -lm -I. -lpaho-mqtt3as -lwiringPi
+CFLAGS = -Wall -Wextra -g `pkg-config --cflags glib-2.0 gio-2.0` -I.
 
-DEPS = utility.h mqtt_send.h kalman.h bluetooth.h certs.h pca9685.h
-OBJ = scan.o utility.o mqtt_send.o kalman.o certs.o pca9685.o
+LIBS = -lm -lpaho-mqtt3as `pkg-config --libs glib-2.0 gio-2.0`
 
-# Compile without linking
-%.o: %.c $(DEPS)
-	gcc -c -o $@ $< $(CFLAGS) 
+DEPS = utility.h mqtt_send.h kalman.h bluetooth.h
+SRC = scan.c utility.c mqtt_send.c kalman.c
 
-# Link
-scan: $(OBJ)
-	gcc -o $@ $^ $(CFLAGS)
+SRC_FILES := $(wildcard *.c)
 
-#
-#scan: scan.c utility.c mqtt.c mqtt_pal.c
-#	gcc `pkg-config --cflags glib-2.0 gio-2.0` -Wall -Wextra -g -o scan scan.c mqtt.c mqtt_pal.c -lm `pkg-config --libs glib-2.0 gio-2.0`
+# Set these if you have a PCA8833 connected to I2C with LEDs
+#CFLAGS := $(CFLAGS) -DINDICATOR="PCA8833"
+#LIBS := $(LIBS) -lwiringPi
+#DEPS := $(DEPS) pca9685.h
+
+scan: $(SRC)
+	gcc -o $@ $^ $(CFLAGS) $(LIBS)
+

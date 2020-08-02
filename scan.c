@@ -1,4 +1,4 @@
-//#define INDICATOR true
+//#define INDICATOR PCA8833 in Makefile
 
 /*
  * bluez sniffer
@@ -26,9 +26,11 @@
 #include <signal.h>
 #include <stdlib.h>
 
+#if defined(INDICATOR)
 #include <pca9685.h>
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
+#endif
 
 #include "utility.h"
 #include "mqtt_send.h"
@@ -85,8 +87,9 @@ bool logTable = FALSE;  // set to true each time something changes
 int rssi_one_meter = -64;     // Put a device 1m away and measure the average RSSI
 float rssi_factor = 3.5;      // 2.0 to 4.0, lower for indoor or cluttered environments
 
+#if defined(INDICATOR)
 bool pca = false;  // is there a PCA8833 attached?
-
+#endif
 
 /*
       Connection to DBUS
@@ -315,6 +318,7 @@ void report_devices_count() {
 
       g_print("People count = %i\n", people);
 
+#if defined(INDICATOR)
       int r=0, g=0, b=0, v=0;
 
       if (people < 2) g = 4096;
@@ -332,6 +336,7 @@ void report_devices_count() {
         pwmWrite (302, g);
         pwmWrite (303, v);
       }
+#endif
    }
 }
 
@@ -1801,8 +1806,8 @@ int main(int argc, char **argv)
         return -1;
     }
 
+#if defined(INDICATOR)
 /* WIRING PI AND PWB9685 */
-
     wiringPiSetup();
     int fd = pca9685Setup(300, 0x40, 50);
 
@@ -1814,6 +1819,7 @@ int main(int argc, char **argv)
       pca = true;
       pca9685PWMReset(fd);
     }
+#endif
 
     char *mqtt_addr = argv[1];
     char *mqtt_port = argc > 2 ? argv[2] : "1883";
