@@ -976,7 +976,10 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
 	                if (ble_uuid == 0x2a29) g_print("Manufacturer, ");
 	                else if (ble_uuid == 0x1800) g_print("Generic access, ");
 	                else if (ble_uuid == 0x1801) g_print("Generic attribute, ");
-	                else if (ble_uuid == 0x1805) g_print("Current time service, ");
+	                else if (ble_uuid == 0x1802) g_print("Immediate Alert, ");
+	                else if (ble_uuid == 0x1803) g_print("Link loss, ");
+	                else if (ble_uuid == 0x1804) g_print("Tx Power level, ");
+	                else if (ble_uuid == 0x1805) g_print("Current time, ");
 	                else if (ble_uuid == 0x180f) g_print("Battery, ");
 	                else if (ble_uuid == 0x111e) g_print("HandsFree, ");
 	                else if (ble_uuid == 0x180a) g_print("Device information, ");
@@ -986,8 +989,10 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
 	                else if (ble_uuid == 0x7905f431) g_print("Apple NCS ");
 	                else if (ble_uuid == 0xd0611e78) g_print("Apple CS ");
 	                else if (ble_uuid == 0x9fa480e0) g_print("Apple XX ");
-	                else g_print("Unknown(%s), ", strCopy);
-
+	                else if (ble_uuid == 0xd0611e78) g_print("Continuity ");
+	                else if (ble_uuid == 0xffa0) g_print("Accelerometer ");
+	                else if (ble_uuid == 0xffe0) g_print("Temperature ");
+                        else g_print("Unknown(%s), ", strCopy);
                         g_free(strCopy);
                     }
                     g_print("\n");
