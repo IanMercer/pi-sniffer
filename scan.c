@@ -25,6 +25,8 @@
 #include <math.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <sys/types.h>
 
 #if defined(INDICATOR)
 #include <pca9685.h>
@@ -54,6 +56,12 @@
 
 // Max allowed length of names and aliases (plus 1 for null)
 #define NAME_LENGTH         21
+
+typedef uint8_t  u_int8_t;
+typedef uint16_t u_int16_t;
+typedef uint32_t u_int32_t;
+typedef uint64_t u_int64_t;
+
 
 static bool starting = TRUE;
 
@@ -235,7 +243,10 @@ void find_latest_observations () {
       if (columns[col].distance < 0.0 || columns[col].latest < a->latest) {
         columns[col].distance = a->distance;
         columns[col].latest = a->latest;
-        columns[col].category = a->category;
+        if (strcmp(columns[col].category, CATEGORY_UNKNOWN) == 0) {
+          // a later unknown does not override an actual phone category
+          columns[col].category = a->category;
+        }
       }
    }
 }
@@ -301,7 +312,7 @@ void report_devices_count() {
          g_print(" %i", reported_ranges[i]);
       }
       g_print("  ");
-      send_to_mqtt_array("summary", "dist_hist", (unsigned char*)reported_ranges, N_RANGES * sizeof(int8_t));
+      send_to_mqtt_distances((unsigned char*)reported_ranges, N_RANGES * sizeof(int8_t));
     }
 
 
@@ -1513,7 +1524,7 @@ static void bluez_list_devices(GDBusConnection *con,
         g_print("Unable to get result for GetManagedObjects\n");
         print_and_free_error(error);
         // probably out of memory
-        exit_mqtt(EXIT_FAILURE, sockfd);
+        exit(-1);
     }
 
     /* Parse the result */
@@ -1807,7 +1818,8 @@ int main(int argc, char **argv)
     if (argc < 2)
     {
         g_print("Bluetooth scanner\n");
-        g_print("   scan <mqtt server> [port:1883] [username] [password]\n");
+        g_print("   scan <[ssl://]mqtt server:[port]> [topicRoot=BLF] [username] [password]\n");
+        g_print("For Azure you must use ssl:// and :8833\n");
         return -1;
     }
 
@@ -1826,8 +1838,8 @@ int main(int argc, char **argv)
     }
 #endif
 
-    char *mqtt_addr = argv[1];
-    char *mqtt_port = argc > 2 ? argv[2] : "1883";
+    char* mqtt_uri = argv[1];
+    char* mqtt_topicRoot = argc > 2 ? argv[2] : "BLF";
     char* username = argc > 3 ? argv[3] : NULL;
     char* password = argc > 4 ? argv[4] : NULL;
 
@@ -1920,7 +1932,7 @@ int main(int argc, char **argv)
     }
     g_print("Started discovery\n");
 
-    prepare_mqtt(mqtt_addr, mqtt_port, client_id, mac_address, username, password);
+    prepare_mqtt(mqtt_uri, mqtt_topicRoot, client_id, mac_address, username, password);
 
     // Periodically ask Bluez for every device including ones that are long departed
     // but only do updates to devices we have seen, do no not create a device for each
@@ -1982,8 +1994,7 @@ void int_handler(int dummy) {
     g_dbus_connection_close_sync (conn, NULL, NULL);
     g_object_unref(conn);
 
-    if (sockfd != -1)
-        close(sockfd);
+    exit_mqtt();
 
     g_print("Clean exit\n");
 

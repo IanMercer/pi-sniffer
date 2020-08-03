@@ -4,6 +4,7 @@
 */
 
 #include "mqtt_send.h"
+#include <MQTTClient.h>
 #include <MQTTAsync.h>
 
 #include <glib.h>
@@ -18,6 +19,12 @@
 #include <math.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/types.h>
+
+
+#include <sys/socket.h>
+#include <netdb.h>
+#include <fcntl.h>
 
 #define CERTIFICATEFILE "IoTHubRootCA_Baltimore.pem"
 #define MQTT_PUBLISH_QOS_0 0
@@ -26,11 +33,18 @@
 #define MQTT_PUBLISH_DONT_RETAIN 0
 #define MQTT_PUBLISH_RETAIN 1
 
-const char *topicRoot = "BLF";
+// Azure does not allow arbitrary MQTT message topics, we have to insert this
+#define AZURE_TOPIC_PREFIX "devices"
+#define AZURE_TOPIC_SUFFIX "/messages/events"
+
+static bool isAzure;      // Azure is 'limited' in what it can handle
+static char* topicRoot;
+static char* topicSuffix; // required by Azure
 static char access_point_address[6];
 static char* access_point_name;
 static char* username;
 static char* password;
+
 MQTTClient client;
 
 bool connected = false;
@@ -42,6 +56,7 @@ void connlost(void *context, char *cause)
 
     printf("\nConnection lost\n");
     printf("     cause: %s\n", cause);
+    printf("     Make sure you don't have another copy running\n");
 
     connected = false;
 }
@@ -124,14 +139,11 @@ int messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_messa
 }
 
 
-void exit_mqtt(int status, int sockfd)
+void exit_mqtt()
 {
     // TODO: Destroy MQTT Client
 
-    if (sockfd != -1) close(sockfd);
     if (access_point_name) g_free(access_point_name);
-
-    exit(status);
 }
 
 
@@ -185,19 +197,28 @@ uint8_t recvbuf[2048];            /* recvbuf should be large enough any whole mq
 
 
 
-void prepare_mqtt(char *mqtt_addr, char *mqtt_port, char* client_id, char* mac_address,
+void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* client_id, char* mac_address,
                   char* user, char* pass)
 {
     username = user;
     password = pass;
+    topicRoot = mqtt_topicRoot;
 
-    if (mqtt_addr == NULL) {
-      printf("MQTT Address must be set");
+    if (strcmp(topicRoot, AZURE_TOPIC_PREFIX) == 0) {
+      isAzure = true;
+      topicSuffix = AZURE_TOPIC_SUFFIX;
+    } else {
+      isAzure = false;
+      topicSuffix = "";
+    }
+
+    if (mqtt_uri == NULL) {
+      printf("MQTT Uri must be set");
       exit(-24);
     }
 
-    if (mqtt_port == NULL) {
-      printf("MQTT Port must be set");
+    if (mqtt_topicRoot == NULL) {
+      printf("MQTT Topic Root must be set");
       exit(-24);
     }
 
@@ -214,16 +235,19 @@ void prepare_mqtt(char *mqtt_addr, char *mqtt_port, char* client_id, char* mac_a
 
     //const char* will_message = "down";
 
-    printf("Starting MQTT %s:%s client_id=%s\n", mqtt_addr, mqtt_port, client_id);
+    printf("Starting MQTT `%s` topic root=`%s` client_id=`%s`\n", mqtt_uri, mqtt_topicRoot, client_id);
     printf("Username '%s'\n", username);
     printf("Password '%s'\n", password);
+    if (isAzure) {
+      printf("Sending only limited messages to Azure");
+    }
 
     MQTTAsync_init_options inits = MQTTAsync_init_options_initializer;
     inits.do_openssl_init = 1;
     MQTTAsync_global_init(&inits);
 
     g_print("Create\n");
-    MQTTAsync_create(&client, mqtt_addr, client_id, MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);  // MQTTASYNC_SUCCESS
+    MQTTAsync_create(&client, mqtt_uri, client_id, MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);  // MQTTASYNC_SUCCESS
 
     //MQTTAsync_connectOptions opts = get_opts();
     //if (options.server_key_file)
@@ -263,35 +287,47 @@ void prepare_mqtt(char *mqtt_addr, char *mqtt_port, char* client_id, char* mac_a
 }
 
 
+/* Create topic string */
+
+void get_topic_short(char* topic, int topic_length, char* key)
+{
+    snprintf(topic, topic_length, "%s/%s%s/%s", topicRoot, access_point_name, topicSuffix, key);
+}
+
+void get_topic(char* topic, int topic_length, char* mac_address, char* key, int index) {
+
+    if (index < 0)
+    {
+        snprintf(topic, topic_length, "%s/%s%s/%s/%s", topicRoot, access_point_name, topicSuffix, mac_address, key);
+    }
+    else
+    {
+        snprintf(topic, topic_length, "%s/%s%s/%s/%s/%d", topicRoot, access_point_name, topicSuffix, mac_address, key, index);
+    }
+}
+
+
 void send_to_mqtt_null(char *mac_address, char *key)
 {
     /* Create topic including mac address */
     char topic[256];
-    snprintf(topic, sizeof(topic), "%s/%s/%s/%s", topicRoot, access_point_name, mac_address, key);
+    get_topic(topic, sizeof(topic), mac_address, key, -1);
 
-    printf("MQTT %s %s\n", topicRoot, "NULL");
+    printf("MQTT %s %s\n", topic, "NULL");
 
-	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
-	opts.onSuccess = onSend;
-	opts.onFailure = onSendFailure;
-	opts.context = client;
-	pubmsg.payload = "";
-	pubmsg.payloadlen = (int)strlen(pubmsg.payload) + 1;
-	pubmsg.qos = 0;
-	pubmsg.retained = 0;
-        int rc = 0;
-	if ((rc = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
-	{
-		printf("Failed to start sendMessage, return code %d\n", rc);
-		exit(EXIT_FAILURE);
-	}
-
-    /* check for errors */
-    if (rc)
+    MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+    MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+    opts.onSuccess = onSend;
+    opts.onFailure = onSendFailure;
+    opts.context = client;
+    pubmsg.payload = "";
+    pubmsg.payloadlen = (int)strlen(pubmsg.payload) + 1;
+    pubmsg.qos = 0;
+    pubmsg.retained = 0;
+    int rc = 0;
+    if ((rc = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
     {
-        //fprintf(stderr, "\n\nERROR MQTT Send: %s\n", mqtt_error_str(mqtt.error));
-        exit_mqtt(EXIT_FAILURE, sockfd);
+        printf("Failed to send null message, return code %d\n", rc);
     }
 }
 
@@ -302,22 +338,8 @@ static int send_errors = 0;
 static uint16_t sequence = 0;
 
 
-void send_to_mqtt_with_time_and_mac(char *mac_address, char *key, int i, char *value, int value_length, int qos, int retained)
+void send_to_mqtt_with_time_and_mac(char* topic, char *value, int value_length, int qos, int retained)
 {
-    //        g_print("send_to_mqtt_with_time_and_mac\n");
-
-    /* Create topic including mac address */
-    char topic[256];
-
-    if (i < 0)
-    {
-        snprintf(topic, sizeof(topic), "%s/%s/%s/%s", topicRoot, access_point_name, mac_address, key);
-    }
-    else
-    {
-        snprintf(topic, sizeof(topic), "%s/%s/%s/%s/%d", topicRoot, access_point_name, mac_address, key, i);
-    }
-
     // Add time and access point mac address to packet
     //  00-05  access_point_address
     //  06-13  time
@@ -337,41 +359,60 @@ void send_to_mqtt_with_time_and_mac(char *mac_address, char *key, int i, char *v
     memcpy(&packet[14], value, value_length);
     int packet_length = value_length + 14;
 
-	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
-	opts.onSuccess = onSend;
-	opts.onFailure = onSendFailure;
-	opts.context = client;
-	pubmsg.payload = packet;
-	pubmsg.payloadlen = packet_length;
-	pubmsg.qos = qos;
-	pubmsg.retained = retained;
-        int rc = 0;
-	if ((rc = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
-	{
-	    printf("Failed to start sendMessage, return code %d\n", rc);
-            send_errors ++;
-            if (send_errors > 10) {
-              g_print("\n\nToo many send errors, restarting\n\n");
-             exit_mqtt(EXIT_FAILURE, sockfd);
-           }
+    MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+    MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+    opts.onSuccess = onSend;
+    opts.onFailure = onSendFailure;
+    opts.context = client;
+    pubmsg.payload = packet;
+    pubmsg.payloadlen = packet_length;
+    pubmsg.qos = qos;
+    pubmsg.retained = retained;
+    int rc = 0;
+    if ((rc = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
+    {
+        printf("Failed to start sendMessage, return code %d\n", rc);
+        send_errors ++;
+        if (send_errors > 10) {
+            g_print("\n\nToo many send errors, restarting\n\n");
+            exit(-1);
         }
+    }
 }
 
 void send_to_mqtt_single(char *mac_address, char *key, char *value)
 {
-    printf("MQTT %s/%s/%s/%s %s\n", topicRoot, access_point_name, mac_address, key, value);
-    send_to_mqtt_with_time_and_mac(mac_address, key, -1, value, strlen(value) + 1, MQTT_PUBLISH_QOS_1, MQTT_PUBLISH_RETAIN);
+    if (isAzure) { printf("\n"); return; } // can't handle topics
+    char topic[256];
+    get_topic(topic, sizeof(topic), mac_address, key, -1);
+
+    printf("MQTT %s %s\n", topic, value);
+    send_to_mqtt_with_time_and_mac(topic, value, strlen(value) + 1, MQTT_PUBLISH_QOS_1, MQTT_PUBLISH_RETAIN);
 }
 
 void send_to_mqtt_array(char *mac_address, char *key, unsigned char *value, int length)
 {
-    printf("MQTT %s/%s/%s/%s bytes[%d]\n", topicRoot, access_point_name, mac_address, key, length);
-    send_to_mqtt_with_time_and_mac(mac_address, key, -1, (char *)value, length, MQTT_PUBLISH_QOS_1, MQTT_PUBLISH_RETAIN);
+    if (isAzure) { printf("\n"); return; } // can't handle topics
+    char topic[256];
+    get_topic(topic, sizeof(topic), mac_address, key, -1);
+
+    printf("MQTT %s bytes[%d]\n", topic, length);
+    send_to_mqtt_with_time_and_mac(topic, (char *)value, length, MQTT_PUBLISH_QOS_1, MQTT_PUBLISH_RETAIN);
+}
+
+void send_to_mqtt_distances(unsigned char *value, int length)
+{
+    // Suitable for Azure
+    char topic[256];
+    get_topic_short(topic, sizeof(topic), "summary");
+
+    printf("MQTT %s bytes[%d]\n", topic, length);
+    send_to_mqtt_with_time_and_mac(topic, (char *)value, length, MQTT_PUBLISH_QOS_1, MQTT_PUBLISH_RETAIN);
 }
 
 void send_to_mqtt_uuids(char *mac_address, char *key, char **uuids, int length)
 {
+    if (isAzure) { printf("\n"); return; } // can't handle topics
     if (uuids == NULL)
     {
         printf("MQTT null UUIDs to send\n");
@@ -386,9 +427,13 @@ void send_to_mqtt_uuids(char *mac_address, char *key, char **uuids, int length)
 
     for (int i = 0; i < length; i++)
     {
+        /* Create topic including mac address */
+        char topic[256];
+        get_topic(topic, sizeof(topic), mac_address, key, i);
+
         char *uuid = uuids[i];
-        printf("MQTT %s/%s/%s/%s/%d uuid[%d]\n", topicRoot, access_point_name, mac_address, key, i, (int)strlen(uuid));
-        send_to_mqtt_with_time_and_mac(mac_address, key, i, uuid, strlen(uuid) + 1, MQTT_PUBLISH_QOS_1, MQTT_PUBLISH_RETAIN);
+        printf("MQTT %s uuid[%d]\n", topic, (int)strlen(uuid));
+        send_to_mqtt_with_time_and_mac(topic, uuid, strlen(uuid) + 1, MQTT_PUBLISH_QOS_1, MQTT_PUBLISH_RETAIN);
         if (i < length-1) printf("    ");
     }
 }
@@ -397,26 +442,41 @@ void send_to_mqtt_uuids(char *mac_address, char *key, char **uuids, int length)
 
 void send_to_mqtt_single_value(char *mac_address, char *key, int32_t value)
 {
+    if (isAzure) { printf("\n"); return; } // can't handle topics
+    /* Create topic including mac address */
+    char topic[256];
+    get_topic(topic, sizeof(topic), mac_address, key, -1);
+
     char rssi[12];
     snprintf(rssi, sizeof(rssi), "%i", value);
-    printf("MQTT %s/%s/%s/%s %s\n", topicRoot, access_point_name, mac_address, key, rssi);
-    send_to_mqtt_with_time_and_mac(mac_address, key, -1, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_1, 0);
+    printf("MQTT %s %s\n", topicRoot, rssi);
+    send_to_mqtt_with_time_and_mac(topic, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_1, 0);
 }
 
 void send_to_mqtt_single_value_keep(char *mac_address, char *key, int32_t value)
 {
+    if (isAzure) { printf("\n"); return; } // can't handle topics
+    /* Create topic including mac address */
+    char topic[256];
+    get_topic(topic, sizeof(topic), mac_address, key, -1);
+
     char rssi[12];
     snprintf(rssi, sizeof(rssi), "%i", value);
-    printf("MQTT %s/%s/%s/%s %s\n", topicRoot, access_point_name, mac_address, key, rssi);
-    send_to_mqtt_with_time_and_mac(mac_address, key, -1, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_1, MQTT_PUBLISH_RETAIN);
+    printf("MQTT %s %s\n", topic, rssi);
+    send_to_mqtt_with_time_and_mac(topic, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_1, MQTT_PUBLISH_RETAIN);
 }
 
 void send_to_mqtt_single_float(char *mac_address, char *key, float value)
 {
+    if (isAzure) { printf("\n"); return; } // can't handle topics
+    /* Create topic including mac address */
+    char topic[256];
+    get_topic(topic, sizeof(topic), mac_address, key, -1);
+
     char rssi[12];
     snprintf(rssi, sizeof(rssi), "%.3f", value);
-    printf("MQTT %s/%s/%s/%s %s\n", topicRoot, access_point_name, mac_address, key, rssi);
-    send_to_mqtt_with_time_and_mac(mac_address, key, -1, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_1, 0);
+    printf("MQTT %s %s\n", topic, rssi);
+    send_to_mqtt_with_time_and_mac(topic, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_1, 0);
 }
 
 void mqtt_sync()
@@ -427,15 +487,4 @@ void mqtt_sync()
     printf("Reconnecting\n");
     connect_async(client);
   }
-//    MQTTClient_message pubmsg = MQTTClient_message_initializer;
-//    MQTTClient_deliveryToken token;
-//    pubmsg.payload = "sync";
-//    pubmsg.payloadlen = strlen(pubmsg.payload)+1;
-//    pubmsg.qos = 0;
-//    pubmsg.retained = 0;
-
-//    MQTTClient_publishMessage(client, "BLF/tiger/status", &pubmsg, &token);
-
- // not needed for Paho?
-//   mosquitto_loop();
 }

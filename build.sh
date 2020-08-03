@@ -12,12 +12,12 @@ echo building service
 make
 
 echo "if you want to test the service, stop here and run under valgrind (passing your MQTT server address)"
-echo "    G_DEBUG=gc-friendly G_SLICE=always-malloc valgrind --tool=memcheck --suppressions=/usr/share/glib-2.0/valgrind/glib.supp --leak-check=full --track-origins=yes ./scan 192.168.0.52 1883"
+echo "    G_DEBUG=gc-friendly G_SLICE=always-malloc valgrind --tool=memcheck --suppressions=/usr/share/glib-2.0/valgrind/glib.supp --leak-check=full --track-origins=yes ./scan 192.168.0.52:1883"
 
 chmod a+x ./scan
 
 # run immediately
-# sudo ./scan 192.168.0.120 1883
+# sudo ./scan 192.168.0.52:1883
 
 # update running service
 
