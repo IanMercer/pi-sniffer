@@ -286,29 +286,20 @@ void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* client_id, char* m
 
 /* Create topic string */
 
-void get_topic_short(char* topic, int topic_length, char* key)
+void get_topic(char* topic, int topic_length, char* mac_address, char* key)
 {
-    snprintf(topic, topic_length, "%s/%s%s/%s", topicRoot, access_point_name, topicSuffix, key);
+    // Azure: devices/{device-id}/messages/events/
+    //        devices/{device_id}/messages/events/{property_bag}
+
+    (void)mac_address;   // Was used in a topic but Azure can't handle it
+    snprintf(topic, topic_length, "%s/%s%s/%s", topicRoot, access_point_name, "/messages/events", key);
 }
 
-void get_topic(char* topic, int topic_length, char* mac_address, char* key, int index) {
-
-    if (index < 0)
-    {
-        snprintf(topic, topic_length, "%s/%s%s/%s/%s", topicRoot, access_point_name, topicSuffix, mac_address, key);
-    }
-    else
-    {
-        snprintf(topic, topic_length, "%s/%s%s/%s/%s/%d", topicRoot, access_point_name, topicSuffix, mac_address, key, index);
-    }
-}
-
-
+/*
 void send_to_mqtt_null(char *mac_address, char *key)
 {
-    /* Create topic including mac address */
     char topic[256];
-    get_topic(topic, sizeof(topic), mac_address, key, -1);
+    get_topic(topic, sizeof(topic), key);
 
     printf("MQTT %s %s\n", topic, "NULL");
 
@@ -327,42 +318,108 @@ void send_to_mqtt_null(char *mac_address, char *key)
         printf("Failed to send null message, return code %d\n", rc);
     }
 }
+*/
 
-
-/* SEND TO MQTT WITH ACCESS POINT MAC ADDRESS AND TIME STAMP */
 
 static int send_errors = 0;
-static uint16_t sequence = 0;
 
+/* Pseudo JSON formatters */
 
-void send_to_mqtt_with_time_and_mac(char* topic, char *value, int value_length, int qos, int retained)
-{
-    // Add time and access point mac address to packet
-    //  00-05  access_point_address
-    //  06-13  time
-    //  14-..  data
-    char packet[2048];
-
-    memset(packet, 0, 14 + 20);
-
+void json_int(char*message, int length, char* mac, char* field, int value) {
     time_t now = time(0);
+    snprintf(message, length, "{\"mac\":\"%s\", \"time\":%lu, \"%s\":%i}", mac, now, field, value);
+}
 
-    memcpy(&packet[00], &access_point_address, 6);
-    memcpy(&packet[06], &now, 8);
+void json_long(char*message, int length, char* mac, char* field, long value) {
+    time_t now = time(0);
+    snprintf(message, length, "{\"mac\":\"%s\", \"time\":%lu, \"%s\":%lu}", mac, now, field, value);
+}
 
-    sequence++;
-    //memcpy(&packet[14], &sequence, 2);
+void json_float(char*message, int length, char* mac, char* field, float value) {
+    time_t now = time(0);
+    snprintf(message, length, "{\"mac\":\"%s\", \"time\":%lu, \"%s\":%.3f}", mac, now, field, value);
+}
 
-    memcpy(&packet[14], value, value_length);
-    int packet_length = value_length + 14;
+void json_double(char*message, int length, char* mac, char* field, double value) {
+    time_t now = time(0);
+    snprintf(message, length, "{\"mac\":\"%s\", \"time\":%lu, \"%s\":%f}", mac, now, field, value);
+}
+
+void json_string(char*message, int length, char* mac, char* field, char* value) {
+    time_t now = time(0);
+    snprintf(message, length, "{\"mac\":\"%s\", \"time\":%lu, \"%s\":\"%s\"}", mac, now, field, value);
+}
+
+void json_int_array(char*message, int length, char* mac, char* field, int* values, int values_length) {
+    time_t now = time(0);
+    snprintf(message, length, "{\"mac\":\"%s\", \"time\":%lu, \"%s\":[", mac, now, field);
+
+    int ptr = strlen(message);
+    for(int i = 0; i < values_length; i++)
+    {
+        ptr += snprintf(message + ptr, length - ptr, "%i,", values[i]);
+    }
+
+    // go back one for the comma and overwrite
+    snprintf(message + ptr - 1, length - ptr, "]}");
+}
+
+void json_byte_array(char*message, int length, char* mac, char* field, unsigned char* values, int values_length) {
+    time_t now = time(0);
+    snprintf(message, length, "{\"mac\":\"%s\", \"time\":%lu, \"%s\":[", mac, now, field);
+
+    int ptr = strlen(message);
+    for(int i = 0; i < values_length; i++)
+    {
+        ptr += snprintf(message + ptr, length - ptr, "%i,", values[i]);
+    }
+
+    // go back one for the comma and overwrite
+    snprintf(message + ptr - 1, length - ptr, "]}");
+}
+
+void json_string_array(char*message, int length, char* mac, char* field, char** values, int values_length) {
+    time_t now = time(0);
+    snprintf(message, length, "{\"mac\":\"%s\", \"time\":%lu, \"%s\":[", mac, now, field);
+
+    int ptr = strlen(message);
+    for(int i = 0; i < values_length; i++)
+    {
+        ptr += snprintf(message + ptr, length - ptr, "\"%s\",", values[i]);
+    }
+
+    // go back one for the comma and overwrite
+    snprintf(message + ptr - 1, length - ptr, "]}");
+}
+
+void json_array_no_mac(char*message, int length, char* field, unsigned char* values, int values_length) {
+    time_t now = time(0);
+    snprintf(message, length, "{\"time\":%lu, \"%s\":[", now, field);
+
+    int ptr = strlen(message);
+    for(int i = 0; i < values_length; i++)
+    {
+        ptr += snprintf(message + ptr, length - ptr, "%i,", values[i]);
+    }
+
+    // go back one for the comma and overwrite
+    snprintf(message + ptr - 1, length - ptr, "]}");
+}
+
+/* Send JSON string to MQTT */
+
+void send_to_mqtt(char* topic, char *json, int qos, int retained)
+{
+    printf("\n    MQTT %s %s\n", topic, json);
+    int length = strlen(json);
 
     MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
     MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
     opts.onSuccess = onSend;
     opts.onFailure = onSendFailure;
     opts.context = client;
-    pubmsg.payload = packet;
-    pubmsg.payloadlen = packet_length;
+    pubmsg.payload = json;
+    pubmsg.payloadlen = length + 1;
     pubmsg.qos = qos;
     pubmsg.retained = retained;
     int rc = 0;
@@ -379,101 +436,73 @@ void send_to_mqtt_with_time_and_mac(char* topic, char *value, int value_length, 
 
 void send_to_mqtt_single(char *mac_address, char *key, char *value)
 {
-    if (isAzure) { printf("\n"); return; } // can't handle topics
     char topic[256];
-    get_topic(topic, sizeof(topic), mac_address, key, -1);
+    get_topic(topic, sizeof(topic), mac_address, key);
 
-    printf("MQTT %s %s\n", topic, value);
-    send_to_mqtt_with_time_and_mac(topic, value, strlen(value) + 1, MQTT_PUBLISH_QOS_1, MQTT_PUBLISH_RETAIN);
+    char packet[2048];
+    json_string(packet, sizeof(packet), mac_address, key, value);
+    send_to_mqtt(topic, packet, MQTT_PUBLISH_QOS_1, 0);
 }
 
 void send_to_mqtt_array(char *mac_address, char *key, unsigned char *value, int length)
 {
-    if (isAzure) { printf("\n"); return; } // can't handle topics
     char topic[256];
-    get_topic(topic, sizeof(topic), mac_address, key, -1);
-
-    printf("MQTT %s bytes[%d]\n", topic, length);
-    send_to_mqtt_with_time_and_mac(topic, (char *)value, length, MQTT_PUBLISH_QOS_1, MQTT_PUBLISH_RETAIN);
+    get_topic(topic, sizeof(topic), mac_address, key);
+    char packet[2048];
+    json_byte_array(packet, sizeof(packet), mac_address, key, value, length);
+    send_to_mqtt(topic, packet, MQTT_PUBLISH_QOS_1, 0);
 }
 
 void send_to_mqtt_distances(unsigned char *value, int length)
 {
-    // Suitable for Azure
     char topic[256];
-    get_topic_short(topic, sizeof(topic), "summary");
-
-    printf("MQTT %s bytes[%d]\n", topic, length);
-    send_to_mqtt_with_time_and_mac(topic, (char *)value, length, MQTT_PUBLISH_QOS_1, MQTT_PUBLISH_RETAIN);
+    get_topic(topic, sizeof(topic), "no-mac", "summary");
+    char packet[2048];
+    json_array_no_mac(packet, sizeof(packet), "distances", value, length);
+    send_to_mqtt(topic, packet, MQTT_PUBLISH_QOS_1, 0);
 }
 
 void send_to_mqtt_uuids(char *mac_address, char *key, char **uuids, int length)
 {
-    if (isAzure) { printf("\n"); return; } // can't handle topics
-    if (uuids == NULL)
-    {
-        printf("MQTT null UUIDs to send\n");
-        return;
-    }
+// TODO    if (isAzure) { printf("\n"); return; }
+    char topic[256];
+    get_topic(topic, sizeof(topic), mac_address, key);
 
-    if (length < 1)
-    {
-        printf("MQTT zero UUIDs to send\n");
-        return;
-    }
-
-    for (int i = 0; i < length; i++)
-    {
-        /* Create topic including mac address */
-        char topic[256];
-        get_topic(topic, sizeof(topic), mac_address, key, i);
-
-        char *uuid = uuids[i];
-        printf("MQTT %s uuid[%d]\n", topic, (int)strlen(uuid));
-        send_to_mqtt_with_time_and_mac(topic, uuid, strlen(uuid) + 1, MQTT_PUBLISH_QOS_1, MQTT_PUBLISH_RETAIN);
-        if (i < length-1) printf("    ");
-    }
+    char packet[2048];
+    json_string_array(packet, sizeof(packet), mac_address, "uuids", uuids, length);
+    send_to_mqtt(topic, packet, MQTT_PUBLISH_QOS_1, 0);
 }
-
-// numeric values that change all the time not retained, all others retained by MQTT
 
 void send_to_mqtt_single_value(char *mac_address, char *key, int32_t value)
 {
-    if (isAzure) { printf("\n"); return; } // can't handle topics
-    /* Create topic including mac address */
     char topic[256];
-    get_topic(topic, sizeof(topic), mac_address, key, -1);
+    get_topic(topic, sizeof(topic), mac_address, key);
 
-    char rssi[12];
-    snprintf(rssi, sizeof(rssi), "%i", value);
-    printf("MQTT %s %s\n", topicRoot, rssi);
-    send_to_mqtt_with_time_and_mac(topic, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_1, 0);
+    char packet[2048];
+    json_int(packet, sizeof(packet), mac_address, key, value);
+    send_to_mqtt(topic, packet, MQTT_PUBLISH_QOS_1, 0);
 }
 
 void send_to_mqtt_single_value_keep(char *mac_address, char *key, int32_t value)
 {
-    if (isAzure) { printf("\n"); return; } // can't handle topics
-    /* Create topic including mac address */
     char topic[256];
-    get_topic(topic, sizeof(topic), mac_address, key, -1);
+    get_topic(topic, sizeof(topic), mac_address, key);
 
-    char rssi[12];
-    snprintf(rssi, sizeof(rssi), "%i", value);
-    printf("MQTT %s %s\n", topic, rssi);
-    send_to_mqtt_with_time_and_mac(topic, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_1, MQTT_PUBLISH_RETAIN);
+    char packet[2048];
+    json_int(packet, sizeof(packet), mac_address, key, value);
+
+    send_to_mqtt(topic, packet, MQTT_PUBLISH_QOS_1, MQTT_PUBLISH_RETAIN);
 }
 
 void send_to_mqtt_single_float(char *mac_address, char *key, float value)
 {
-    if (isAzure) { printf("\n"); return; } // can't handle topics
-    /* Create topic including mac address */
     char topic[256];
-    get_topic(topic, sizeof(topic), mac_address, key, -1);
+    get_topic(topic, sizeof(topic), mac_address, key);
 
-    char rssi[12];
-    snprintf(rssi, sizeof(rssi), "%.3f", value);
-    printf("MQTT %s %s\n", topic, rssi);
-    send_to_mqtt_with_time_and_mac(topic, rssi, strlen(rssi) + 1, MQTT_PUBLISH_QOS_1, 0);
+    char packet[2048];
+    json_float(packet, sizeof(packet), mac_address, key, value);
+
+    send_to_mqtt(topic, packet, MQTT_PUBLISH_QOS_1, 0);
 }
 
 void mqtt_sync()
