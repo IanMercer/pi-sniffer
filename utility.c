@@ -2,6 +2,7 @@
     Utility functions
 */
 
+#include <glib.h>
 #include <gio/gio.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -9,6 +10,7 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <net/if.h>
+#include <string.h>
 
 #include "utility.h"
 

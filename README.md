@@ -74,7 +74,10 @@ sure all your Pis are synchronized to the same time.
 * update package lists: `sudo apt-get update`
 * install GIT if you don't already have it `sudo apt-get install git-core`
 * install dependencies: `sudo apt-get install libglib2.0-dev` and `libssl-dev`
-* clone the Elcipse PAHO MQTT C source from GIT; build and install it using `make install`
+* clone the Elcipse PAHO MQTT C source from GIT; 
+    `git clone https://github.com/eclipse/paho.mqtt.c.git`
+* build and install it
+    `sudo make install`
 * clone this repository
 * edit your Mosquitto connection details into the last line of build.sh that launches the sniffer
 * build the code:   `sudo ./build/sh`

@@ -19,12 +19,9 @@
 #include <math.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <sys/types.h>
-
-
-#include <sys/socket.h>
-#include <netdb.h>
-#include <fcntl.h>
+#include <string.h>
 
 #define CERTIFICATEFILE "IoTHubRootCA_Baltimore.pem"
 #define MQTT_PUBLISH_QOS_0 0

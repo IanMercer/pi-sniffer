@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <string.h>
 
 #if defined(INDICATOR)
 #include <pca9685.h>
