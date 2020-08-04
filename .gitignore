@@ -8,3 +8,8 @@ scan
 *.save.1
 *.save.2
 tiger-*
+raspberrypi-*
+store-*
+*.c.save
+*.c.old
+*.msg

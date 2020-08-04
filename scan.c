@@ -100,6 +100,81 @@ float rssi_factor = 3.5;      // 2.0 to 4.0, lower for indoor or cluttered envir
 bool pca = false;  // is there a PCA8833 attached?
 #endif
 
+//	Random value will be from 0 to #
+int rnd (int min, int max)
+{
+    return (rand() % (max - min + 1)) + min;
+}
+
+int pins[6] = { 7, 4, 1, 6, 3, 0 };  // 2 and 5 are GND
+
+void set_level(int i, int v) {
+    i = i % 3;
+    int pin1 = 300 + pins[i];
+    int pin2 = 300 + pins[5-i];
+    pwmWrite (pin1, v);
+    pwmWrite (pin2, v);
+}
+
+
+float light_target;   // 0 to 3.0
+float light_state;    // 0 to 3.0
+
+
+void head_to_target() {
+  light_state += (light_target - light_state) * 0.20;
+
+  float fraction = light_state - (int)light_state;
+
+  if (light_state < 0.5) {
+       set_level(0, 4096);
+       set_level(1, fraction * 2096);
+       set_level(2, 0);
+  } else if (light_state < 1.0) {
+       set_level(0, (1.0 - fraction) * 2096);
+       set_level(1, 4096);
+       set_level(2, 0);
+  } else if (light_state < 1.5) {
+       set_level(0, 0);
+       set_level(1, 4096);
+       set_level(2, fraction * 2096);
+  } else if (light_state < 2.0) {
+       set_level(0, 0);
+       set_level(1, (1.0 - fraction) * 2096);
+       set_level(2, 4096);
+  } else {
+       set_level(0, 0);
+       set_level(1, 0);
+       set_level(2, 4096);
+       // Add flashing
+  }
+}
+
+
+
+void demo(){
+  unsigned int iseed = (unsigned int)time(NULL);			//Seed srand() using time() otherwise it will start from a default value of 1
+  srand (iseed);
+  g_print("DEMO\n");
+  if (pca)
+  for (int i=0; i <2000; i++)
+  {
+     int a = 4096 * sin(i * 6.28 / 100);
+     int b = 4096 * sin((i + 333) * 6.28 / 100);
+     int c = 4096 * sin((i + 666) * 6.28 / 100);
+
+     if (a < 0) a = 0;
+     if (b < 0) b = 0;
+     if (c < 0) c = 0;
+
+     set_level(0, a);
+     set_level(1, b);
+     set_level(2, c);
+   }
+   g_print("Demo done\n");
+}
+
+
 /*
       Connection to DBUS
 */
@@ -331,6 +406,13 @@ void report_devices_count() {
       g_print("People count = %i\n", people);
 
 #if defined(INDICATOR)
+
+
+      light_target = people / 5.0;   // 3 = red
+
+      head_to_target();
+
+/*
       int r=0, g=0, b=0, v=0;
 
       if (people < 2) g = 4096;
@@ -348,6 +430,8 @@ void report_devices_count() {
         pwmWrite (302, g);
         pwmWrite (303, v);
       }
+*/
+
 #endif
    }
 }
@@ -1564,6 +1648,7 @@ int mqtt_refresh(void *parameters)
     //GMainLoop *loop = (GMainLoop *)parameters;
     // Send any MQTT messages
     mqtt_sync();
+    head_to_target();
     return TRUE;
 }
 
@@ -1703,11 +1788,11 @@ int dump_all_devices_tick(void *parameters)
     unsigned int days = (total_minutes) / 60 / 24;
 
     if (days > 1)
-      g_print("Uptime: %i days %02i:%02i\n", days, hours, minutes);
+      g_print("Uptime: %i days %02i:%02i  People %i   target %.1f %.1f\n", days, hours, minutes, people_count, light_target, light_state);
     else if (days == 1)
-      g_print("Uptime: 1 day %02i:%02i\n", hours, minutes);
+      g_print("Uptime: 1 day %02i:%02i  People %i   target %.1f %.1f\n", hours, minutes, people_count,light_target, light_state);
     else
-      g_print("Uptime: %02i:%02i\n", hours, minutes);
+      g_print("Uptime: %02i:%02i  People %i   target %.1f %.1f\n", hours, minutes, people_count, light_target, light_state);
 
 
     // Bluez eventually seems to stop sending us data, so for now, just restart every six hours
@@ -1827,7 +1912,7 @@ int main(int argc, char **argv)
 #if defined(INDICATOR)
 /* WIRING PI AND PWB9685 */
     wiringPiSetup();
-    int fd = pca9685Setup(300, 0x40, 50);
+    int fd = pca9685Setup(300, 0x40, 100);  // 100Hz less flicker
 
     if (fd < 0) {
       g_print("No 9685 found %i\n", fd);
@@ -1837,6 +1922,9 @@ int main(int argc, char **argv)
       pca = true;
       pca9685PWMReset(fd);
     }
+
+    demo();
+
 #endif
 
     char* mqtt_uri = argv[1];
