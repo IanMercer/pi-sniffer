@@ -1543,6 +1543,7 @@ int mqtt_refresh(void *parameters)
     //GMainLoop *loop = (GMainLoop *)parameters;
     // Send any MQTT messages
     mqtt_sync();
+
     return TRUE;
 }
 
