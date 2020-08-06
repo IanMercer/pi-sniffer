@@ -157,11 +157,11 @@ void demo(){
   srand (iseed);
   g_print("DEMO\n");
   if (pca)
-  for (int i=0; i <2000; i++)
+  for (int i=0; i <1000; i++)
   {
-     int a = 4096 * sin(i * 6.28 / 100);
-     int b = 4096 * sin((i + 333) * 6.28 / 100);
-     int c = 4096 * sin((i + 666) * 6.28 / 100);
+     int a = 4096 * cos(i * 6.28 / 100);
+     int b = 4096 * cos((i + 333) * 6.28 / 100);
+     int c = 4096 * cos((i + 666) * 6.28 / 100);
 
      if (a < 0) a = 0;
      if (b < 0) b = 0;
@@ -171,6 +171,17 @@ void demo(){
      set_level(1, b);
      set_level(2, c);
    }
+
+  for (int i=0; i <25000; i++)
+  {
+     light_target = 1.25 - 1.25 * cos(i * 6.28 / 1000);
+     printf("target %f actual %f\n", light_target, light_state);
+     for (int j = 1; j < 5; j++) {
+       head_to_target();
+       delayMicroseconds (5);
+     }
+   }
+
    g_print("Demo done\n");
 }
 
