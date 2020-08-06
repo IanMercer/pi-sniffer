@@ -8,8 +8,8 @@ CFLAGS = -Wall -Wextra -g `pkg-config --cflags glib-2.0 gio-2.0` -I.
 
 LIBS = -lm -lpaho-mqtt3as `pkg-config --libs glib-2.0 gio-2.0`
 
-DEPS = utility.h mqtt_send.h kalman.h bluetooth.h
-SRC = scan.c utility.c mqtt_send.c kalman.c
+DEPS = utility.h mqtt_send.h kalman.h bluetooth.h udp.h
+SRC = scan.c utility.c mqtt_send.c kalman.c udp.c
 
 # Set these if you have a PCA8833 connected to I2C with LEDs
 ifeq (, $(shell which gpio))
