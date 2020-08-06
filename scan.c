@@ -98,7 +98,6 @@ float rssi_factor = 3.5;      // 2.0 to 4.0, lower for indoor or cluttered envir
 
 #if defined(INDICATOR)
 bool pca = false;  // is there a PCA8833 attached?
-#endif
 
 //	Random value will be from 0 to #
 int rnd (int min, int max)
@@ -117,11 +116,14 @@ void set_level(int i, int v) {
 }
 
 
+#endif
+
 float light_target;   // 0 to 3.0
 float light_state;    // 0 to 3.0
 
 
 void head_to_target() {
+#if defined(INDICATOR)
   light_state += (light_target - light_state) * 0.20;
 
   float fraction = light_state - (int)light_state;
@@ -148,9 +150,10 @@ void head_to_target() {
        set_level(2, 4096);
        // Add flashing
   }
+#endif
 }
 
-
+#if defined(INDICATOR)
 
 void demo(){
   unsigned int iseed = (unsigned int)time(NULL);			//Seed srand() using time() otherwise it will start from a default value of 1
@@ -174,6 +177,7 @@ void demo(){
    g_print("Demo done\n");
 }
 
+#endif
 
 /*
       Connection to DBUS
