@@ -3,7 +3,7 @@ Description=Pi Sniffer
 After=network.target
 
 [Service]
-ExecStart=/home/ian/pi-sniffer/scan 192.168.0.52:1883 BLF
+ExecStart=/home/ian/pi-sniffer/scan 192.168.0.52:1883 BLF 7778
 WorkingDirectory=/home/ian/pi-sniffer
 StandardOutput=inherit
 StandardError=inherit

@@ -1804,14 +1804,14 @@ int main(int argc, char **argv)
     if (argc < 2)
     {
         g_print("Bluetooth scanner\n");
-        g_print("   scan <[ssl://]mqtt server:[port]> [udpPort] [topicRoot=BLF] [username] [password]\n");
+        g_print("   scan <[ssl://]mqtt server:[port]> [topicRoot=BLF] [udpPort] [username] [password]\n");
         g_print("For Azure you must use ssl:// and :8833\n");
         return -1;
     }
 
     char* mqtt_uri = argv[1];
-    char* udp_port_arg = argc > 2 ? argv[2] : "0";
-    char* mqtt_topicRoot = argc > 3 ? argv[3] : "BLF";
+    char* mqtt_topicRoot = argc > 2 ? argv[2] : "BLF";
+    char* udp_port_arg = argc > 3 ? argv[3] : "0";
     char* username = argc > 4 ? argv[4] : NULL;
     char* password = argc > 5 ? argv[5] : NULL;
 
