@@ -58,8 +58,10 @@ typedef uint16_t u_int16_t;
 typedef uint32_t u_int32_t;
 typedef uint64_t u_int64_t;
 
-
 static bool starting = TRUE;
+
+// Set only if you want to broadcast people to whole of LAN
+int udp_port = 0;
 
 // Enable or disable extra debugging
 
@@ -323,13 +325,16 @@ void report_devices_count() {
     }
 
     // Always send it in case display gets unplugged and then plugged back in
-    char msg[4];
-    msg[0] = people;
-    msg[1] = 0;
-    msg[2] = 0;
-    msg[3] = 0;
-    
-    udp_send(7778, msg, sizeof(msg));
+    if (udp_port > 0)
+    {
+        char msg[4];
+        msg[0] = people;
+        msg[1] = 0;
+        msg[2] = 0;
+        msg[3] = 0;
+        
+        udp_send(udp_port, msg, sizeof(msg));
+    }
 }
 
 
@@ -1799,15 +1804,18 @@ int main(int argc, char **argv)
     if (argc < 2)
     {
         g_print("Bluetooth scanner\n");
-        g_print("   scan <[ssl://]mqtt server:[port]> [topicRoot=BLF] [username] [password]\n");
+        g_print("   scan <[ssl://]mqtt server:[port]> [udpPort] [topicRoot=BLF] [username] [password]\n");
         g_print("For Azure you must use ssl:// and :8833\n");
         return -1;
     }
 
     char* mqtt_uri = argv[1];
-    char* mqtt_topicRoot = argc > 2 ? argv[2] : "BLF";
-    char* username = argc > 3 ? argv[3] : NULL;
-    char* password = argc > 4 ? argv[4] : NULL;
+    char* udp_port_arg = argc > 2 ? argv[2] : "0";
+    char* mqtt_topicRoot = argc > 3 ? argv[3] : "BLF";
+    char* username = argc > 4 ? argv[4] : NULL;
+    char* password = argc > 5 ? argv[5] : NULL;
+
+    udp_port = atoi(udp_port_arg);
 
     gethostname(client_id, sizeof(client_id));
 
