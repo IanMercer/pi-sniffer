@@ -342,7 +342,7 @@ void report_devices_count() {
         char msg[4];
         msg[0] = people;       // old code
         // send as int for ease of consumption on ESP8266
-        msg[1] = people * 10;  // new code
+        msg[1] = (int)(people * 10.0);  // new code
         msg[2] = 0;
         msg[3] = 0;
 
