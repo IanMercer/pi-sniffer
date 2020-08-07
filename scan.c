@@ -249,7 +249,7 @@ void find_latest_observations () {
 #define N_RANGES 10
 static int32_t ranges[N_RANGES] = {1, 2, 5, 10, 15, 20, 25, 30, 35, 100};
 static int8_t reported_ranges[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
-int people_count = 0;
+float people_count = 0.0;
 
 /*
     Find best packing of device time ranges into columns
@@ -309,30 +309,43 @@ void report_devices_count() {
       send_to_mqtt_distances((unsigned char*)reported_ranges, N_RANGES * sizeof(int8_t));
     }
 
-
     int range_limit = 5;
-    int people = 0;
+    int range = ranges[range_limit];
 
-    for (int i=0; i < range_limit; i++)
+    // Expected value of number of people here (decays if not detected recently)
+    float people = 0.0;
+
+    for (int col=0; col < N_COLUMNS; col++)
     {
-       people += reported_ranges[i];
+       if (columns[col].distance >= range) continue;
+       if (strcmp(columns[col].category, CATEGORY_PHONE) != 0) continue;   // only counting phones now not beacons, laptops, ...
+       if (columns[col].distance < 0.01) continue;   // not allocated
+
+       double delta_time = difftime(now, columns[col].latest);
+       if (delta_time > MAX_TIME_AGO_COUNTING_MINUTES * 60) continue;
+
+       double score = 0.55 - atan(delta_time/20.0  - 4.0) / 3.0;
+       // A curve that stays a 1.0 for a while and then drops rapidly around 1 minute out
+
+       // Expected value E[x] = i x p(i) so sum p(i) for each column which is one person
+       people = people + score;
     }
 
-    if (people != people_count) {
+    if (fabs(people - people_count) > 0.001) {
       people_count = people;
-
-      g_print("People count = %i\n", people);
+      g_print("People count = %.2f\n", people);
     }
 
     // Always send it in case display gets unplugged and then plugged back in
     if (udp_port > 0)
     {
         char msg[4];
-        msg[0] = people;
-        msg[1] = 0;
+        msg[0] = people;       // old code
+        // send as int for ease of consumption on ESP8266
+        msg[1] = people * 10;  // new code
         msg[2] = 0;
         msg[3] = 0;
-        
+
         udp_send(udp_port, msg, sizeof(msg));
     }
 }
@@ -1688,11 +1701,11 @@ int dump_all_devices_tick(void *parameters)
     unsigned int days = (total_minutes) / 60 / 24;
 
     if (days > 1)
-      g_print("Uptime: %i days %02i:%02i  People %i\n", days, hours, minutes, people_count);
+      g_print("Uptime: %i days %02i:%02i  People %.2f\n", days, hours, minutes, people_count);
     else if (days == 1)
-      g_print("Uptime: 1 day %02i:%02i  People %i\n", hours, minutes, people_count);
+      g_print("Uptime: 1 day %02i:%02i  People %.2f\n", hours, minutes, people_count);
     else
-      g_print("Uptime: %02i:%02i  People %i\n", hours, minutes, people_count);
+      g_print("Uptime: %02i:%02i  People %.2f\n", hours, minutes, people_count);
 
 
     // Bluez eventually seems to stop sending us data, so for now, just restart every six hours
