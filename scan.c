@@ -336,13 +336,18 @@ void report_devices_count() {
       g_print("People count = %.2f\n", people);
     }
 
+    int scale_factor = 0.95;  // This adjusts how people map to lights which are on a 0.0-3.0 range
+    // 0.0 = green
+    // 1.5 = blue
+    // 3.0 = red
+
     // Always send it in case display gets unplugged and then plugged back in
     if (udp_port > 0)
     {
         char msg[4];
         msg[0] = people;       // old code
         // send as int for ease of consumption on ESP8266
-        msg[1] = (int)(people * 10.0);  // new code
+        msg[1] = (int)(people * scale_factor * 10.0);  // new code
         msg[2] = 0;
         msg[3] = 0;
 

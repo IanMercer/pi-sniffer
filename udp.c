@@ -34,13 +34,14 @@ void udp_send(int port, const char* message, int message_length) {
     //servaddr.sin_addr.s_addr = INADDR_ANY;
     servaddr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
 
-    int sent = sendto(sockfd, message, message_length, 0, (const struct sockaddr *) &servaddr, sizeof(struct sockaddr_in)); 
-    printf("Message sent to port %i - %i.\n", port, sent);
-    
+    //int sent = 
+    sendto(sockfd, message, message_length, 0, (const struct sockaddr *) &servaddr, sizeof(struct sockaddr_in));
+//    printf("Message sent to port %i - %i.\n", port, sent);
+
 //    char buffer[MAXLINE];
-//    n = recvfrom(sockfd, (char *)buffer, MAXLINE, MSG_WAITALL, (struct sockaddr *) &servaddr, &len); 
-//    buffer[n] = '\0'; 
-//    printf("Server : %s\n", buffer); 
-  
-    close(sockfd); 
-} 
+//    n = recvfrom(sockfd, (char *)buffer, MAXLINE, MSG_WAITALL, (struct sockaddr *) &servaddr, &len);
+//    buffer[n] = '\0';
+//    printf("Server : %s\n", buffer);
+
+    close(sockfd);
+}
