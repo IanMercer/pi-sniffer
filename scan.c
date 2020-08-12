@@ -1,11 +1,11 @@
 /*
  *  CROWDING INDICATOR
- * 
+ *
  *  Sends bluetooth information to MQTT with a separate topic per device and parameter
  *  BLE/<device mac>/parameter
  *
  *  Sends calculated person count over UDP to port 7778 as a broadcast
- * 
+ *
  *  Applies a simple kalman filter to RSSI to smooth it out somewhat
  *  Sends RSSI only when it changes enough but also regularly a keep-alive
  *
@@ -580,6 +580,12 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
           optional(existing->alias, "Beacon");
           g_print("  Beacon\n") ;
           existing->category = CATEGORY_BEACON;
+
+          // Aprilbeacon temperature sensor
+          if (strncmp(existing->name, "abtemp", 6) == 0) {
+             uint8_t temperature = allocdata[21];
+             send_to_mqtt_single_value(existing->mac, "temperature", temperature);
+          }
         }
         else if (apple_device_type == 0x03) g_print("  Airprint \n");
         else if (apple_device_type == 0x05) g_print("  Airdrop \n");
@@ -638,15 +644,18 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         } else {
           g_print("Did not recognize apple device type %.2x", apple_device_type);
         }
-      } else if (manufacturer == 0x0087) {
+    } else if (manufacturer == 0x0087) {
         optional(existing->alias, "Garmin");
         existing->category = CATEGORY_WATCH; // could be fitness tracker
-      } else if (manufacturer == 0xb4c1) {
+    } else if (manufacturer == 0xb4c1) {
         optional(existing->alias, "Dycoo");   // not on official Bluetooth website
-      } else if (manufacturer == 0x0310) {
+    } else if (manufacturer == 0x0310) {
         optional(existing->alias, "SGL Italia S.r.l.");
         existing->category = CATEGORY_HEADPHONES;
-      } else {
+    } else if (manufacturer == 0x00d2) {
+        optional(existing->alias, "AbTemp");
+        g_print("Ignoring manufdata\n");
+    } else {
         // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
         g_print("  Did not recognize manufacturer 0x%.4x\n", manufacturer);
         optional(existing->alias, "Not an Apple");
@@ -1617,15 +1626,18 @@ gboolean should_remove(struct Device* existing)
 
   double delta_time = difftime(now, existing->latest);
 
-  // 1 min for single hit, 160 min for regular ping
-  int max_time_ago_seconds = existing->count * 60;   // 1 after 1 min, 2 after 2 min, ...
+  // 2 min for single hit, 160 min for regular ping
+  int max_time_ago_seconds = existing->count * 120;   // 1 after 1 min, 2 after 2 min, ...
+  // x5 if it's a public mac address, iBeacons etc.
+  if (existing->addressType == PUBLIC_ADDRESS_TYPE) { max_time_ago_seconds *= 5; }
+
   if (max_time_ago_seconds > 60 * MAX_TIME_AGO_CACHE) { max_time_ago_seconds = 60 * MAX_TIME_AGO_CACHE; }
 
   gboolean remove = delta_time > max_time_ago_seconds;
 
   if (remove) {
 
-    g_print("  Cache remove %s %s %.1fs %.1fm\n", existing->mac, existing->name, delta_time, existing->distance);
+    g_print("  Cache remove %s '%s' count=%i dt=%.1fs dist=%.1fm\n", existing->mac, existing->name, existing->count, delta_time, existing->distance);
 
     // And so when this device reconnects we get a proper reconnect message and so that BlueZ doesn't fill up a huge
     // cache of iOS devices that have passed by or changed mac address
