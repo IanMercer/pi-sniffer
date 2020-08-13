@@ -176,7 +176,7 @@ int messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_messa
 
     struct Device device;
 
-    memcpy(&device, payloadptr, sizeof(struct Device));
+    memcpy(&device, payloadptr+32, sizeof(struct Device));
 
     printf("  Update for %s '%s'\n", device.mac, device.name);
 
@@ -497,8 +497,11 @@ void send_device_mqtt(struct Device* device)
     char buffer[1024];
     memcpy(buffer, access_point_name, strlen(access_point_name)+1);  // assume this is <32 characters
     buffer[31] = '\0'; // Just in case it wasn't
-    memcpy(buffer, device, sizeof(struct Device));
+
+    memcpy(buffer+32, device, sizeof(struct Device));
     int length = 32 + sizeof(struct Device);
+
+    printf("  Buffer: %s\n", buffer);
 
     MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
     MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
