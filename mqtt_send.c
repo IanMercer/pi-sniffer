@@ -4,6 +4,7 @@
 */
 
 #include "mqtt_send.h"
+#include "device.h"
 #include <MQTTClient.h>
 #include <MQTTAsync.h>
 
@@ -33,6 +34,9 @@
 // Azure does not allow arbitrary MQTT message topics, we have to insert this
 #define AZURE_TOPIC_PREFIX "devices"
 #define AZURE_TOPIC_SUFFIX "/messages/events"
+
+// Internal communication assumes a local MQTT broker to relay between access points
+#define MESH_TOPIC "mesh"
 
 static bool isAzure;      // Azure is 'limited' in what it can handle
 static char* topicRoot;
@@ -85,64 +89,110 @@ void onSend(void* context, MQTTAsync_successData* response)
 }
 
 
+void onSubscribe(void* context, MQTTAsync_successData* response)
+{
+    (void)context;
+    (void)response;
+    printf("Subscribe succeeded\n");
+    // subscribed = 1;
+}
+
+void onSubscribeFailure(void* context, MQTTAsync_failureData* response)
+{
+    (void)context;
+    printf("Subscribe failed, rc %d\n", response ? response->code : 0);
+    // finished = 1;
+}
+
+
+
 void onConnectFailure(void* context, MQTTAsync_failureData* response)
 {
     (void)context;
     //MQTTAsync client = (MQTTAsync)context;
     printf("Connect failed, rc %d\n", response ? response->code : 0);
-    connected = false;
+    //connected = false;
 }
 
 
 void onConnect(void* context, MQTTAsync_successData* response)
 {
     (void)response;
-	MQTTAsync client = (MQTTAsync)context;
-	int rc;
+    MQTTAsync client = (MQTTAsync)context;
+    int rc;
 
-	printf("Successful connection\n");
+    printf("Successful connection\n");
 
-	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
-	opts.onSuccess = onSend;
-	opts.onFailure = onSendFailure;
-	opts.context = client;
-        const char* topic = "devices/tiger/messages/events/";
-	pubmsg.payload = "up";
-	pubmsg.payloadlen = (int)strlen(pubmsg.payload) + 1;
-	pubmsg.qos = 0;
-	pubmsg.retained = 0;
-	if ((rc = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
-	{
-		printf("Failed to start sendMessage, return code %d\n", rc);
-		exit(EXIT_FAILURE);
-	}
+    MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+    MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+    opts.onSuccess = onSend;
+    opts.onFailure = onSendFailure;
+    opts.context = client;
+
+    /*
+        Send an 'alive' message
+    */
+
+    char topic[128];
+    snprintf(topic, sizeof(topic), "%s/%s/messages/events/up", topicRoot, access_point_name);
+
+    pubmsg.payload = "up";
+    pubmsg.payloadlen = (int)strlen(pubmsg.payload) + 1;
+    pubmsg.qos = 0;
+    pubmsg.retained = 0;
+    if ((rc = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
+    {
+        printf("Failed to start sendMessage, return code %d\n", rc);
+        exit(EXIT_FAILURE);
+    }
+
+    /*
+        And subscribe so we get messages from all other scanners
+    */
+
+    MQTTAsync_responseOptions opts2 = MQTTAsync_responseOptions_initializer;
+    //MQTTAsync_message pubmsg2 = MQTTAsync_message_initializer;
+
+    opts2.onSuccess = onSubscribe;
+    opts2.onFailure = onSubscribeFailure;
+    opts2.context = client;
+    //deliveredtoken = 0;
+
+    if ((rc = MQTTAsync_subscribe(client, MESH_TOPIC, 0, &opts2)) != MQTTASYNC_SUCCESS)
+    {
+       printf("Failed to start subscribe, return code %d\n", rc);
+       exit(EXIT_FAILURE);
+    }
 }
 
 int messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* m)
 {
     (void)context;
-    (void)topicName;
-    (void)m;
-    printf("Message arrived %i", topicLen);
-	/* not expecting any messages */
-	return 1;
-    ///* note that published->topic_name is NOT null-terminated (here we'll change it to a c-string) */
-    //char *topic_name = (char *)malloc(published->topic_name_size + 1);
-    //memcpy(topic_name, published->topic_name, published->topic_name_size);
-    //topic_name[published->topic_name_size] = '\0';
-    //printf("Received publish('%s'): %s\n", topic_name, (const char *)published->application_message);
-    //g_free(topic_name);
+    (void)topicLen;
+
+    char* payloadptr = m->payload;
+
+    printf("Incoming from: %s", payloadptr);  // starts with a string (the access point sending it)
+
+    struct Device device;
+
+    memcpy(&device, payloadptr, sizeof(struct Device));
+
+    printf("  Update for %s '%s'\n", device.mac, device.name);
+
+    // TODO: Put this into the global array and update which access point is closest
+
+    MQTTAsync_freeMessage(&m);
+    MQTTAsync_free(topicName);
+    return 1;
 }
 
 
 void exit_mqtt()
 {
     // TODO: Destroy MQTT Client
-
     if (access_point_name) g_free(access_point_name);
 }
-
 
 int ssl_error_cb(const char *str, size_t len, void *u) {
     (void)len;
@@ -424,6 +474,43 @@ void send_to_mqtt(char* topic, char *json, int qos, int retained)
     pubmsg.retained = retained;
     int rc = 0;
     if ((rc = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
+    {
+        printf("Failed to start sendMessage, return code %d\n", rc);
+        send_errors ++;
+        if (send_errors > 10) {
+            g_print("\n\nToo many send errors, restarting\n\n");
+            exit(-1);
+        }
+    }
+}
+
+
+/*
+     Access points also communicate directly with each other to inform of changes
+*/
+
+
+void send_device_mqtt(struct Device* device)
+{
+    printf("    MQTT %s device %s '%s'\n", MESH_TOPIC, device->mac, device->name);
+
+    char buffer[1024];
+    memcpy(buffer, access_point_name, strlen(access_point_name)+1);  // assume this is <32 characters
+    buffer[31] = '\0'; // Just in case it wasn't
+    memcpy(buffer, device, sizeof(struct Device));
+    int length = 32 + sizeof(struct Device);
+
+    MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+    MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+    opts.onSuccess = onSend;
+    opts.onFailure = onSendFailure;
+    opts.context = client;
+    pubmsg.payload = device;
+    pubmsg.payloadlen = length;
+    pubmsg.qos = 0;
+    pubmsg.retained = 0;
+    int rc = 0;
+    if ((rc = MQTTAsync_sendMessage(client, MESH_TOPIC, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
     {
         printf("Failed to start sendMessage, return code %d\n", rc);
         send_errors ++;

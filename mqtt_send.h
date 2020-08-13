@@ -5,6 +5,7 @@
     And utility functions
 */
 
+#include <device.h>
 #include <glib.h>
 #include <gio/gio.h>
 #include <stdbool.h>
@@ -39,5 +40,7 @@ void send_to_mqtt_single_value_keep(char *mac_address, char *key, int32_t value)
 void send_to_mqtt_single_float(char *mac_address, char *key, float value);
 
 void mqtt_sync();
+
+void send_device_mqtt(struct Device* device);
 
 #endif
