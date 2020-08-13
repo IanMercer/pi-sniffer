@@ -504,8 +504,6 @@ void send_device_mqtt(struct Device* device)
     memcpy(buffer+32, device, sizeof(struct Device));
     int length = 32 + sizeof(struct Device);
 
-    printf("  Buffer: %s\n", buffer);
-
     MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
     MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
     opts.onSuccess = onSend;
