@@ -172,6 +172,9 @@ int messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_messa
 
     char* payloadptr = m->payload;
 
+    // ignore messages from self
+    if (strcmp(payloadptr, access_point_name) == 0) return 1;
+
     printf("Incoming from: %s", payloadptr);  // starts with a string (the access point sending it)
 
     struct Device device;
@@ -508,7 +511,7 @@ void send_device_mqtt(struct Device* device)
     opts.onSuccess = onSend;
     opts.onFailure = onSendFailure;
     opts.context = client;
-    pubmsg.payload = device;
+    pubmsg.payload = buffer;
     pubmsg.payloadlen = length;
     pubmsg.qos = 0;
     pubmsg.retained = 0;
