@@ -497,7 +497,7 @@ void send_device_mqtt(struct Device* device)
 {
     printf("    MQTT %s device %s '%s'\n", MESH_TOPIC, device->mac, device->name);
 
-    char buffer[1024];
+    char buffer[2048];
     memcpy(buffer, access_point_name, strlen(access_point_name)+1);  // assume this is <32 characters
     buffer[31] = '\0'; // Just in case it wasn't
 
@@ -513,7 +513,7 @@ void send_device_mqtt(struct Device* device)
     opts.context = client;
     pubmsg.payload = buffer;
     pubmsg.payloadlen = length;
-    pubmsg.qos = 0;
+    pubmsg.qos = 1;
     pubmsg.retained = 0;
     int rc = 0;
     if ((rc = MQTTAsync_sendMessage(client, MESH_TOPIC, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
