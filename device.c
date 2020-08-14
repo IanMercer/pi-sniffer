@@ -12,6 +12,25 @@
     See https://github.com/DaveGamble/cJSON
 */
 
+void optional_set(char* name, char* value) {
+  if (strlen(name)) return;
+  g_strlcpy(name, value, NAME_LENGTH);
+}
+
+void soft_set_category(char** name, char* value) {
+  if (strcmp(*name, CATEGORY_UNKNOWN) == 0) {
+    *name = value;
+  }
+}
+
+void merge(struct Device* local, struct Device* remote)
+{
+   optional_set(local->name, remote->name);
+   optional_set(local->alias, remote->alias);
+   soft_set_category(&local->category, remote->category);
+   // TODO: Other fields that we can transfer over
+}
+
 char* device_to_json (struct Device* device, const char* from)
 {
     char *string = NULL;
@@ -83,30 +102,21 @@ bool device_from_json(const char* json, struct Device* device, char* from, int f
         device->earliest = earliest->valueint;
     }
 
+    cJSON *category = cJSON_GetObjectItemCaseSensitive(djson, "category");
+    if (cJSON_IsString(category) && (category->valuestring != NULL))
+    {
+        if (strcmp(category->valuestring, CATEGORY_BEACON) == 0) device->category = CATEGORY_BEACON;
+        if (strcmp(category->valuestring, CATEGORY_COMPUTER) == 0) device->category = CATEGORY_COMPUTER;
+        if (strcmp(category->valuestring, CATEGORY_FIXED) == 0) device->category = CATEGORY_FIXED;
+        if (strcmp(category->valuestring, CATEGORY_HEADPHONES) == 0) device->category = CATEGORY_HEADPHONES;
+        if (strcmp(category->valuestring, CATEGORY_PHONE) == 0) device->category = CATEGORY_PHONE;
+        if (strcmp(category->valuestring, CATEGORY_TABLET) == 0) device->category = CATEGORY_TABLET;
+        if (strcmp(category->valuestring, CATEGORY_TV) == 0) device->category = CATEGORY_TV;
+        if (strcmp(category->valuestring, CATEGORY_WATCH) == 0) device->category = CATEGORY_WATCH;
+    }
 
    cJSON_Delete(djson);
 
    return true;
 }
 
-
-void optional_set(char* name, char* value) {
-  if (strlen(name)) return;
-  g_strlcpy(name, value, NAME_LENGTH);
-}
-
-void soft_set_category(char** name, char* value) {
-  if (strcmp(*name, CATEGORY_UNKNOWN) == 0) {
-    *name = value;
-  }
-}
-
-void merge(struct Device* local, struct Device* remote)
-{
-   optional_set(local->name, remote->name);
-   optional_set(local->alias, remote->alias);
-}
-
-
-__sig_atomic_t buffer_write_position;
-__sig_atomic_t buffer_read_position;
