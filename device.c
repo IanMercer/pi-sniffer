@@ -23,6 +23,24 @@ char* device_to_json (struct Device* device, const char* from)
     cJSON_AddStringToObject(j, "alias", device->alias);
     cJSON_AddNumberToObject(j, "addressType", device->addressType);
     cJSON_AddStringToObject(j, "category", device->category);
+    cJSON_AddNumberToObject(j, "manufacturer", device->manufacturer);
+    cJSON_AddBoolToObject(j, "paired", device->paired);
+    cJSON_AddBoolToObject(j, "connected", device->connected);
+    cJSON_AddBoolToObject(j, "trusted", device->trusted);
+    cJSON_AddNumberToObject(j, "deviceclass", device->deviceclass);
+    cJSON_AddNumberToObject(j, "appearance", device->appearance);
+    cJSON_AddNumberToObject(j, "manufacturer_data_hash", device->manufacturer_data_hash);
+    cJSON_AddNumberToObject(j, "service_data_hash", device->service_data_hash);
+    cJSON_AddNumberToObject(j, "uuids_length", device->uuids_length);
+    cJSON_AddNumberToObject(j, "uuid_hash", device->uuid_hash);
+    cJSON_AddNumberToObject(j, "txpower", device->txpower);
+    cJSON_AddNumberToObject(j, "last_sent", device->last_sent);
+    cJSON_AddNumberToObject(j, "distance", device->distance);
+    cJSON_AddNumberToObject(j, "earliest", device->earliest);
+    cJSON_AddNumberToObject(j, "latest", device->latest);
+    cJSON_AddNumberToObject(j, "count", device->count);
+    cJSON_AddNumberToObject(j, "column", device->column);
+    cJSON_AddNumberToObject(j, "try_connect_state", device->try_connect_state);
 
     string = cJSON_Print(j);
     cJSON_Delete(j);
