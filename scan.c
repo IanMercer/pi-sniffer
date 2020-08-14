@@ -1186,7 +1186,8 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         }
     }
 
-    send_device_mqtt(existing);
+    //send_device_mqtt(existing);
+    send_device_udp(existing);
 
     report_devices_count();
 }
@@ -1540,7 +1541,6 @@ int mqtt_refresh(void *parameters)
 */
 
 
-
 int get_managed_objects(void *parameters)
 {
     GMainLoop *loop = (GMainLoop *)parameters;
@@ -1769,6 +1769,7 @@ static char client_id[256];         // linux allows more, truncated
 static char mac_address[6];        // bytes
 static char mac_address_text[13];  // string
 
+GCancellable *socket_service;
 
 int main(int argc, char **argv)
 {
@@ -1812,6 +1813,9 @@ int main(int argc, char **argv)
 
     g_print("Using RSSI Power at 1m : %i\n", rssi_one_meter);
     g_print("Using RSSI to distance factor : %.1f (typically 2.0 (indoor, cluttered) to 4.0 (outdoor, no obstacles)\n", rssi_factor);
+
+    // Create a UDP listener for mesh messages about devices connected to other access points in same LAN
+    socket_service = create_socket_service(client_id);
 
     g_print("\n\nStarting\n\n");
 
@@ -1945,6 +1949,8 @@ void int_handler(int dummy) {
     g_object_unref(conn);
 
     exit_mqtt();
+
+    close_socket_service(socket_service);
 
     g_print("Clean exit\n");
 

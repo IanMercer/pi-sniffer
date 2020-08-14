@@ -1,5 +1,5 @@
-#ifndef KALMAN_FILE
-#define KALMAN_FILE
+#ifndef KALMAN_H
+#define KALMAN_H
 
 /*
       Kalman filter

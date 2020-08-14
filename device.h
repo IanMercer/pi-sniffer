@@ -7,6 +7,11 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+typedef uint8_t  u_int8_t;
+typedef uint16_t u_int16_t;
+typedef uint32_t u_int32_t;
+typedef uint64_t u_int64_t;
+
 // Max allowed devices
 #define N 2048
 
@@ -25,11 +30,6 @@
 
 // Max allowed length of names and aliases (plus 1 for null)
 #define NAME_LENGTH         21
-
-typedef uint8_t  u_int8_t;
-typedef uint16_t u_int16_t;
-typedef uint32_t u_int32_t;
-typedef uint64_t u_int64_t;
 
 /*
    Structure for tracking BLE devices in range

@@ -4,25 +4,25 @@
 */
 
 #include "mqtt_send.h"
-#include "device.h"
-#include <MQTTClient.h>
-#include <MQTTAsync.h>
 
 #include <glib.h>
 #include <gio/gio.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
+#include <stdint.h>
 #include <sys/types.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <net/if.h>
 #include <time.h>
 #include <math.h>
 #include <signal.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <sys/types.h>
-#include <string.h>
+
+#include <MQTTClient.h>
+#include <MQTTAsync.h>
+
 
 #define CERTIFICATEFILE "IoTHubRootCA_Baltimore.pem"
 #define MQTT_PUBLISH_QOS_0 0
@@ -136,7 +136,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
     char topic[128];
     snprintf(topic, sizeof(topic), "%s/%s/messages/events/up", topicRoot, access_point_name);
 
-    pubmsg.payload = "up";
+    pubmsg.payload = "{state:\"up\"}";
     pubmsg.payloadlen = (int)strlen(pubmsg.payload) + 1;
     pubmsg.qos = 0;
     pubmsg.retained = 0;

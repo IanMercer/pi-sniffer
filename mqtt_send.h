@@ -6,18 +6,6 @@
 */
 
 #include <device.h>
-#include <glib.h>
-#include <gio/gio.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <net/if.h>
-#include <time.h>
-#include <math.h>
-#include <signal.h>
-#include <stdlib.h>
 
 void exit_mqtt();
 
