@@ -36,9 +36,8 @@
 #include "device.h"
 
 
-int n = 0;       // current devices
-
-static struct Device devices[N];
+static struct DeviceState state;
+// contains ... static struct Device devices[N];
 
 static bool starting = TRUE;
 
@@ -95,18 +94,18 @@ bool overlaps (struct Device* a, struct Device* b) {
 void pack_columns()
 {
   // Push every device back to column zero as category may have changed
-  for (int i = 0; i < n; i++) {
-    struct Device* a = &devices[i];
+  for (int i = 0; i < state.n; i++) {
+    struct Device* a = &state.devices[i];
     a->column = 0;
   }
 
-  for (int k = 0; k< n; k++) {
+  for (int k = 0; k < state.n; k++) {
     bool changed = false;
 
-    for (int i = 0; i < n; i++) {
-      for (int j = i+1; j < n; j++) {
-        struct Device* a = &devices[i];
-        struct Device* b = &devices[j];
+    for (int i = 0; i < state.n; i++) {
+      for (int j = i+1; j < state.n; j++) {
+        struct Device* a = &state.devices[i];
+        struct Device* b = &state.devices[j];
 
         if (a->column != b-> column) continue;
 
@@ -137,13 +136,13 @@ void pack_columns()
    Remove a device from array and move all later devices up one spot
 */
 void remove_device(int index) {
-  for (int i = index; i < n-1; i++) {
-    devices[i] = devices[i+1];
-    struct Device* dev = &devices[i];
+  for (int i = index; i < state.n-1; i++) {
+    state.devices[i] = state.devices[i+1];
+    struct Device* dev = &state.devices[i];
     // decrease column count, may create clashes, will fix these up next
     dev->column = dev->column > 0 ? dev->column - 1 : 0;
   }
-  n--;
+  state.n--;
   pack_columns();
 }
 
@@ -175,8 +174,8 @@ void find_latest_observations () {
       columns[i].distance = -1.0;
       columns[i].category = CATEGORY_UNKNOWN;
    }
-   for (int i = 0; i < n; i++) {
-      struct Device* a = &devices[i];
+   for (int i = 0; i < state.n; i++) {
+      struct Device* a = &state.devices[i];
       int col = a->column;
       if (columns[col].distance < 0.0 || columns[col].latest < a->latest) {
         columns[col].distance = a->distance;
@@ -642,9 +641,9 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
     struct Device *existing = NULL;
 
     // Get existing device report
-    for (int i = 0; i<n; i++) {
-      if (memcmp(devices[i].mac, address, 18) == 0) {
-         existing = &devices[i];
+    for (int i = 0; i < state.n; i++) {
+      if (memcmp(state.devices[i].mac, address, 18) == 0) {
+         existing = &state.devices[i];
       }
     }
 
@@ -656,13 +655,13 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
            return;
         }
 
-        if (n == N) {
+        if (state.n == N) {
           g_print("Error, array of devices is full\n");
           return;
         }
 
         // Grab the next empty item in the array
-        existing = &devices[n++];
+        existing = &state.devices[state.n++];
         existing->id = id_gen++;                 // unique ID for each
         g_strlcpy(existing->mac, address, 18);   // address
 
@@ -1611,8 +1610,8 @@ int clear_cache(void *parameters)
     (void)parameters; // not used
 
     // Remove any item in cache that hasn't been seen for a long time
-    for (int i=0; i<n; i++) {
-      while (i<n && should_remove(&devices[i])) {
+    for (int i=0; i < state.n; i++) {
+      while (i < state.n && should_remove(&state.devices[i])) {
         remove_device(i);              // changes n, but brings a new device to position i
       }
     }
@@ -1653,8 +1652,8 @@ int dump_all_devices_tick(void *parameters)
     g_print("Id  Address          Count Typ   Dist  Col First   Last                   Name                Alias Category  \n");
     g_print("--------------------------------------------------------------------------------------------------------------\n");
     time(&now);
-    for (int i=0; i<n; i++) {
-      dump_device(&devices[i]);
+    for (int i=0; i < state.n; i++) {
+      dump_device(&state.devices[i]);
     }
     g_print("--------------------------------------------------------------------------------------------------------------\n");
 
@@ -1707,8 +1706,8 @@ int try_connect_tick(void *parameters)
 {
     (void)parameters; // not used
     if (starting) return TRUE;   // not during first 30s startup time
-    for (int i=0; i<n; i++) {
-      if (try_connect(&devices[i])) break;
+    for (int i=0; i < state.n; i++) {
+      if (try_connect(&state.devices[i])) break;
     }
     return TRUE;
 }
@@ -1765,7 +1764,6 @@ guint prop_changed;
 guint iface_added;
 guint iface_removed;
 GMainLoop *loop;
-static char client_id[256];         // linux allows more, truncated
 static char mac_address[6];        // bytes
 static char mac_address_text[13];  // string
 
@@ -1774,6 +1772,14 @@ GCancellable *socket_service;
 int main(int argc, char **argv)
 {
     int rc;
+
+    if (pthread_mutex_init(&state.lock, NULL) != 0)
+    {
+        printf("\n mutex init failed\n");
+        exit(123);
+    }
+
+    state.n = 0;     // no devices yet
 
     signal(SIGINT, int_handler);
     signal(SIGTERM, int_handler);
@@ -1794,9 +1800,9 @@ int main(int argc, char **argv)
 
     udp_port = atoi(udp_port_arg);
 
-    gethostname(client_id, sizeof(client_id));
+    gethostname((char*)&state.client_id, 256);
 
-    g_print("Hostname is %s\n", client_id);
+    g_print("Hostname is %s\n", state.client_id);
 
     g_print("Get mac address\n");
 
@@ -1815,7 +1821,7 @@ int main(int argc, char **argv)
     g_print("Using RSSI to distance factor : %.1f (typically 2.0 (indoor, cluttered) to 4.0 (outdoor, no obstacles)\n", rssi_factor);
 
     // Create a UDP listener for mesh messages about devices connected to other access points in same LAN
-    socket_service = create_socket_service(client_id);
+    socket_service = create_socket_service(&state);
 
     g_print("\n\nStarting\n\n");
 
@@ -1886,7 +1892,7 @@ int main(int argc, char **argv)
     }
     g_print("Started discovery\n");
 
-    prepare_mqtt(mqtt_uri, mqtt_topicRoot, client_id, mac_address, username, password);
+    prepare_mqtt(mqtt_uri, mqtt_topicRoot, state.client_id, mac_address, username, password);
 
     // Periodically ask Bluez for every device including ones that are long departed
     // but only do updates to devices we have seen, do no not create a device for each
@@ -1951,6 +1957,8 @@ void int_handler(int dummy) {
     exit_mqtt();
 
     close_socket_service(socket_service);
+
+    pthread_mutex_destroy(&state.lock);
 
     g_print("Clean exit\n");
 

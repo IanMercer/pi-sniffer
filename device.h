@@ -67,6 +67,18 @@ struct Device
 };
 
 char* device_to_json (struct Device* device, const char* from);
+
 bool device_from_json(const char* json, struct Device* device, char* from, int from_length);
+
+void merge(struct Device* local, struct Device* remote);
+
+// Shared device state object (one globally for app, thread safe access needed)
+struct DeviceState 
+{
+    int n;                       // current devices
+    pthread_mutex_t lock;
+    struct Device devices[N];
+    char client_id[256];         // linux allows more, truncated
+};
 
 #endif

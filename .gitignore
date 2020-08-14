@@ -13,3 +13,4 @@ store-*
 *.c.save
 *.c.old
 *.msg
+.vscode

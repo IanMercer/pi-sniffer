@@ -1,11 +1,11 @@
 #include "device.h"
 #include "cJSON.h"
+#include <glib.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/types.h>
-
 
 /*
     Convert device to JSON string
@@ -69,7 +69,44 @@ bool device_from_json(const char* json, struct Device* device, char* from, int f
         strncpy(device->name, name->valuestring, NAME_LENGTH);
     }
 
+    cJSON *latest = cJSON_GetObjectItemCaseSensitive(djson, "latest");
+    if (cJSON_IsNumber(latest))
+    {
+        // TODO: Full date time serialization and deserialization
+        device->latest = latest->valueint;
+    }
+
+    cJSON *earliest = cJSON_GetObjectItemCaseSensitive(djson, "earliest");
+    if (cJSON_IsNumber(earliest))
+    {
+        // TODO: Full date time serialization and deserialization
+        device->earliest = earliest->valueint;
+    }
+
+
    cJSON_Delete(djson);
 
    return true;
 }
+
+
+void optional_set(char* name, char* value) {
+  if (strlen(name)) return;
+  g_strlcpy(name, value, NAME_LENGTH);
+}
+
+void soft_set_category(char** name, char* value) {
+  if (strcmp(*name, CATEGORY_UNKNOWN) == 0) {
+    *name = value;
+  }
+}
+
+void merge(struct Device* local, struct Device* remote)
+{
+   optional_set(local->name, remote->name);
+   optional_set(local->alias, remote->alias);
+}
+
+
+__sig_atomic_t buffer_write_position;
+__sig_atomic_t buffer_read_position;

@@ -2,6 +2,16 @@
 #include "udp.h"
 #include "device.h"
 
+// internal
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+
 #define BLOCK_SIZE 1024
 
 #define MAXLINE 1024
@@ -42,7 +52,7 @@ char* access_point_name;
 
 void *listen_loop(void *param)
 {
-  (void)param;
+  struct DeviceState* state = (struct DeviceState*) param;
   GError *error = NULL;
 
   GInetAddress *iaddr = g_inet_address_new_any(G_SOCKET_FAMILY_IPV4);
@@ -55,6 +65,7 @@ void *listen_loop(void *param)
   g_assert_no_error (error);
 
   g_print("Starting listen thread for mesh operation on port %i\n", PORT);
+  g_print("Local client id is %s\n", state->client_id);
   g_cancellable_reset(cancellable);
 
   while (!g_cancellable_is_cancelled(cancellable))
@@ -73,8 +84,25 @@ void *listen_loop(void *param)
     {
       // ignore messages from self
       if (strcmp(from, access_point_name) == 0) continue;
-      printf("Incoming from: %s", from);
-      printf("  Update for %s '%s'\n", d.mac, d.name);
+
+      time_t now;
+      time(&now);
+
+      printf("Incoming from: %s dt=%li", from, now-d.latest);
+      printf("  Update for %s '%s'", d.mac, d.name);
+
+      // TODO: Lock the structure
+      for(int i = 0; i < state->n; i++)
+      {
+         if (strncmp(d.mac, state->devices[i].mac, 18) == 0)
+         {
+             printf(" * found in local list *\n");
+             merge(&state->devices[i], &d);
+             break;
+         }
+      }
+      printf("\n");
+
     }
   }
   printf("Listen thread finished\n");
@@ -85,13 +113,12 @@ void *listen_loop(void *param)
     Create Socket Service
     TEST:  sudo nc -l -u -b -k -4 -D -p 7779
 */
-GCancellable* create_socket_service (char* access_name)
+GCancellable* create_socket_service (struct DeviceState* state)
 {
   cancellable = g_cancellable_new();
-  access_point_name = access_name;
+  access_point_name = state->client_id;
 
-  int x = PORT;  // sample parameter
-  if (pthread_create(&listen_thread, NULL, listen_loop, &x)) {
+  if (pthread_create(&listen_thread, NULL, listen_loop, state)) {
     fprintf(stderr, "Error creating thread\n");
     return NULL;
   }
@@ -105,11 +132,9 @@ GCancellable* create_socket_service (char* access_name)
 */
 void send_device_udp(struct Device* device) 
 {
-    printf("    Send UDP %i device %s '%s'\n", PORT, device->mac, device->name);
-
+    //printf("    Send UDP %i device %s '%s'\n", PORT, device->mac, device->name);
     char* json = device_to_json(device, access_point_name);
-    printf("    %s", json);
-
+    //printf("    %s", json);
     udp_send(PORT, json, strlen(json)+1);
     free(json);
 }
