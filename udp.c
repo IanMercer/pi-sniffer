@@ -60,22 +60,21 @@ void *listen_loop(void *param)
   {
     char buffer[2048];
     int bytes_read = g_socket_receive_from(broadcast_socket, NULL, buffer, sizeof(buffer), cancellable, &error);
-    if (bytes_read < (int)sizeof(struct Device) + 32) {
-      g_print("Received bytes on listen thread %i < %i\n", bytes_read, 32 + (int)sizeof(struct Device));
+    if (bytes_read < 10)
+    {
+      g_print("Received bytes on listen thread %i < %i\n", bytes_read, 10);
       continue; // not enough to be a device message
     }
 
-    // ignore messages from self
-    if (strcmp(buffer, access_point_name) == 0) continue;
-
-    printf("Incoming from: %s", buffer);  // starts with a string (the access point sending it)
-
-    struct Device device;
-
-    memcpy(&device, buffer+32, sizeof(struct Device));
-
-    printf("  Update for %s '%s'\n", device.mac, device.name);
-
+    struct Device d;
+    char from[32];
+    if (device_from_json(buffer, &d, from, sizeof(from)))
+    {
+      // ignore messages from self
+      if (strcmp(from, access_point_name) == 0) continue;
+      printf("Incoming from: %s", from);
+      printf("  Update for %s '%s'\n", d.mac, d.name);
+    }
   }
   printf("Listen thread finished\n");
   return NULL;
@@ -107,14 +106,11 @@ void send_device_udp(struct Device* device)
 {
     printf("    Send UDP %i device %s '%s'\n", PORT, device->mac, device->name);
 
-    char buffer[2048];
-    memcpy(buffer, access_point_name, strlen(access_point_name)+1);  // assume this is <32 characters
-    buffer[31] = '\0'; // Just in case it wasn't
+    char* json = device_to_json(device, access_point_name);
+    printf("    %s", json);
 
-    memcpy(buffer+32, device, sizeof(struct Device));
-    int length = 32 + sizeof(struct Device);
-
-    udp_send(PORT, buffer, length);
+    udp_send(PORT, json, strlen(json)+1);
+    free(json);
 }
 
 /*
