@@ -1,5 +1,6 @@
 // Client side implementation of UDP client-server model 
 #include "udp.h"
+#include "device.h"
 
 #define BLOCK_SIZE 1024
 
