@@ -19,15 +19,15 @@ typedef uint64_t u_int64_t;
 #define PUBLIC_ADDRESS_TYPE 1
 #define RANDOM_ADDRESS_TYPE 2
 
-#define CATEGORY_UNKNOWN "unknown"
-#define CATEGORY_PHONE "phone"
-#define CATEGORY_WATCH "watch"
-#define CATEGORY_TABLET "tablet"
-#define CATEGORY_HEADPHONES "hp"
-#define CATEGORY_COMPUTER "computer"
-#define CATEGORY_TV "TV"    // AppleTV
-#define CATEGORY_FIXED "fixed"
-#define CATEGORY_BEACON "beacon"
+#define CATEGORY_UNKNOWN 0
+#define CATEGORY_PHONE 1
+#define CATEGORY_WATCH 2
+#define CATEGORY_TABLET 3
+#define CATEGORY_HEADPHONES 4
+#define CATEGORY_COMPUTER 5
+#define CATEGORY_TV 6 
+#define CATEGORY_FIXED 7
+#define CATEGORY_BEACON 8
 
 // Max allowed length of names and aliases (plus 1 for null)
 #define NAME_LENGTH         21
@@ -42,7 +42,7 @@ struct Device
     char name[NAME_LENGTH];
     char alias[NAME_LENGTH];
     int8_t addressType;           // 0, 1, 2
-    char* category;               // Reasoned guess at what kind of device it is
+    int8_t category;               // Reasoned guess at what kind of device it is
     int manufacturer;
     bool paired;
     bool connected;
@@ -65,6 +65,10 @@ struct Device
     int column;                // Allocated column in a non-overlapping range structure
     int8_t try_connect_state;     // Zero = never tried, 1 = Try in progress, 2 = Done
 };
+
+int category_to_int(char* category);
+
+char* category_from_int(uint i);
 
 char* device_to_json (struct Device* device, const char* from);
 

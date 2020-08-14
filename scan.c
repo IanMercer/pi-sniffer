@@ -118,8 +118,7 @@ void pack_columns()
         bool haveDifferentNames = (strlen(a->name) > 0) && (strlen(b->name) > 0) && (g_strcmp0(a->name, b->name) != 0);
 
         // cannot be the same if they both have known categories and they are different
-        bool haveDifferentCategories = (g_strcmp0(a->category, b->category) != 0 &&
-           g_strcmp0(a->category, CATEGORY_UNKNOWN) != 0 && g_strcmp0(b->category, CATEGORY_UNKNOWN) != 0);
+        bool haveDifferentCategories = (a->category != b->category) && (a->category != 0) && (b->category != 0);
 
         if (over || haveDifferentAddressTypes || haveDifferentNames || haveDifferentCategories) {
           b->column++;
@@ -161,7 +160,7 @@ time_t now;
 struct ColumnInfo {
     time_t latest;        // latest observation in this column
     float distance;       // distance of latest observation in this column
-    char* category;       // category of device in this column (phone, computer, ...)
+    int8_t category;       // category of device in this column (phone, computer, ...)
 };
 
 struct ColumnInfo columns[N_COLUMNS];
@@ -180,7 +179,7 @@ void find_latest_observations () {
       if (columns[col].distance < 0.0 || columns[col].latest < a->latest) {
         columns[col].distance = a->distance;
         columns[col].latest = a->latest;
-        if (strcmp(columns[col].category, CATEGORY_UNKNOWN) == 0) {
+        if (columns[col].category == 0) {
           // a later unknown does not override an actual phone category
           columns[col].category = a->category;
         }
@@ -203,6 +202,7 @@ float people_count = 0.0;
 
 void report_devices_count() {
     debug("report_devices_count\n");
+
     if (starting) return;   // not during first 30s startup time
 
     // Initialize time and columns
@@ -225,7 +225,7 @@ void report_devices_count() {
 
         for (int col=0; col < N_COLUMNS; col++)
         {
-           if (strcmp(columns[col].category, CATEGORY_PHONE) != 0) continue;   // only counting phones now not beacons, laptops, ...
+           if (columns[col].category != CATEGORY_PHONE) continue;   // only counting phones now not beacons, laptops, ...
            if (columns[col].distance < 0.01) continue;   // not allocated
 
            double delta_time = difftime(now, columns[col].latest);
@@ -261,7 +261,7 @@ void report_devices_count() {
     for (int col=0; col < N_COLUMNS; col++)
     {
        if (columns[col].distance >= range) continue;
-       if (strcmp(columns[col].category, CATEGORY_PHONE) != 0) continue;   // only counting phones now not beacons, laptops, ...
+       if (columns[col].category != CATEGORY_PHONE) continue;   // only counting phones now not beacons, laptops, ...
        if (columns[col].distance < 0.01) continue;   // not allocated
 
        double delta_time = difftime(now, columns[col].latest);
@@ -505,10 +505,9 @@ void optional(char* name, char* value) {
   g_strlcpy(name, value, NAME_LENGTH);
 }
 
-void soft_set(char** name, char* value) {
-  if (strcmp(*name, CATEGORY_UNKNOWN) == 0) {
-    *name = value;
-  }
+void soft_set_category(int8_t* category, int8_t category_new)
+{
+    if (*category == CATEGORY_UNKNOWN) *category = category_new;
 }
 
 /*
@@ -560,13 +559,13 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
 
           uint8_t lower_bits = device_status & 0x3f;
 
-          if (lower_bits == 0x07) { g_print(" Lock screen (0x07) "); soft_set(&existing->category, CATEGORY_PHONE); }
-          else if (lower_bits == 0x17) { g_print(" Lock screen   (0x17) "); soft_set(&existing->category, CATEGORY_PHONE); }
-          else if (lower_bits == 0x1b) { g_print(" Home screen   (0x1b) "); soft_set(&existing->category, CATEGORY_PHONE); }
-          else if (lower_bits == 0x1c) { g_print(" Home screen   (0x1c) "); soft_set(&existing->category, CATEGORY_PHONE); }
-          else if (lower_bits == 0x10) { g_print(" Home screen   (0x10) "); soft_set(&existing->category, CATEGORY_PHONE); }
-          else if (lower_bits == 0x0e) { g_print(" Outgoing call (0x0e) "); soft_set(&existing->category, CATEGORY_PHONE); }
-          else if (lower_bits == 0x1e) { g_print(" Incoming call (0x1e) "); soft_set(&existing->category, CATEGORY_PHONE); }
+          if (lower_bits == 0x07) { g_print(" Lock screen (0x07) "); soft_set_category(&existing->category, CATEGORY_PHONE); }
+          else if (lower_bits == 0x17) { g_print(" Lock screen   (0x17) "); soft_set_category(&existing->category, CATEGORY_PHONE); }
+          else if (lower_bits == 0x1b) { g_print(" Home screen   (0x1b) "); soft_set_category(&existing->category, CATEGORY_PHONE); }
+          else if (lower_bits == 0x1c) { g_print(" Home screen   (0x1c) "); soft_set_category(&existing->category, CATEGORY_PHONE); }
+          else if (lower_bits == 0x10) { g_print(" Home screen   (0x10) "); soft_set_category(&existing->category, CATEGORY_PHONE); }
+          else if (lower_bits == 0x0e) { g_print(" Outgoing call (0x0e) "); soft_set_category(&existing->category, CATEGORY_PHONE); }
+          else if (lower_bits == 0x1e) { g_print(" Incoming call (0x1e) "); soft_set_category(&existing->category, CATEGORY_PHONE); }
           else g_print(" Unknown (0x%.2x) ", lower_bits);
 
           if (allocdata[03] &0x10) g_print("1"); else g_print("0");
@@ -1002,9 +1001,9 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         {
             char *icon = g_variant_dup_string(prop_val, NULL);
             g_print("  %s Icon: '%s'\n", address, icon);
-            if (strcmp(icon, "computer") == 0) soft_set(&existing->category, CATEGORY_COMPUTER);
-            else if (strcmp(icon, "phone") == 0) soft_set(&existing->category, CATEGORY_PHONE);
-            else if (strcmp(icon, "multimedia-player") == 0) soft_set(&existing->category, CATEGORY_TV);
+            if (strcmp(icon, "computer") == 0) soft_set_category(&existing->category, CATEGORY_COMPUTER);
+            else if (strcmp(icon, "phone") == 0) soft_set_category(&existing->category, CATEGORY_PHONE);
+            else if (strcmp(icon, "multimedia-player") == 0) soft_set_category(&existing->category, CATEGORY_TV);
 
             g_free(icon);
         }
@@ -1633,8 +1632,9 @@ void dump_device (struct Device* a)
   //if (delta_time > MAX_TIME_AGO_LOGGING_MINUTES * 60) return;
 
   char* addressType = a->addressType == PUBLIC_ADDRESS_TYPE ? "pub" : a->addressType == RANDOM_ADDRESS_TYPE ? "ran" : "---";
+  char* category = category_from_int(a->category);
 
-  g_print("%3i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %20s %s\n", a->id%1000, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, a->category);
+  g_print("%3i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %20s %s\n", a->id%1000, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, category);
 }
 
 

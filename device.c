@@ -7,20 +7,31 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-/*
-    Convert device to JSON string
-    See https://github.com/DaveGamble/cJSON
-*/
+// These must be in same order as enum values
+char* categories[] = { "unknown", "phone", "watch", "tablet", "headphones", "computer", "tv", "fixed", "beacon" };
+
+int category_to_int(char* category)
+{
+    for (uint i = 0; i < sizeof(categories); i++) {
+      if (strcmp(category, categories[i]) == 0) return i;
+    }
+    return 0;
+}
+
+char* category_from_int(uint i)
+{
+  if (i >= sizeof(categories)) return categories[0];
+  return categories[i];
+}
 
 void optional_set(char* name, char* value) {
   if (strlen(name)) return;
   g_strlcpy(name, value, NAME_LENGTH);
 }
 
-void soft_set_category(char** name, char* value) {
-  if (strcmp(*name, CATEGORY_UNKNOWN) == 0) {
-    *name = value;
-  }
+void soft_set(int* category, int category_new)
+{
+    if (*category == CATEGORY_UNKNOWN) *category = category_new;
 }
 
 void merge(struct Device* local, struct Device* remote)
@@ -41,7 +52,7 @@ char* device_to_json (struct Device* device, const char* from)
     cJSON_AddStringToObject(j, "name", device->name);
     cJSON_AddStringToObject(j, "alias", device->alias);
     cJSON_AddNumberToObject(j, "addressType", device->addressType);
-    cJSON_AddStringToObject(j, "category", device->category);
+    cJSON_AddStringToObject(j, "category", category_from_int(device->category));
     cJSON_AddNumberToObject(j, "manufacturer", device->manufacturer);
     cJSON_AddBoolToObject(j, "paired", device->paired);
     cJSON_AddBoolToObject(j, "connected", device->connected);
@@ -106,14 +117,7 @@ bool device_from_json(const char* json, struct Device* device, char* from, int f
     cJSON *category = cJSON_GetObjectItemCaseSensitive(djson, "category");
     if (cJSON_IsString(category) && (category->valuestring != NULL))
     {
-        if (strcmp(category->valuestring, CATEGORY_BEACON) == 0) device->category = CATEGORY_BEACON;
-        if (strcmp(category->valuestring, CATEGORY_COMPUTER) == 0) device->category = CATEGORY_COMPUTER;
-        if (strcmp(category->valuestring, CATEGORY_FIXED) == 0) device->category = CATEGORY_FIXED;
-        if (strcmp(category->valuestring, CATEGORY_HEADPHONES) == 0) device->category = CATEGORY_HEADPHONES;
-        if (strcmp(category->valuestring, CATEGORY_PHONE) == 0) device->category = CATEGORY_PHONE;
-        if (strcmp(category->valuestring, CATEGORY_TABLET) == 0) device->category = CATEGORY_TABLET;
-        if (strcmp(category->valuestring, CATEGORY_TV) == 0) device->category = CATEGORY_TV;
-        if (strcmp(category->valuestring, CATEGORY_WATCH) == 0) device->category = CATEGORY_WATCH;
+        device->category = category_to_int(category->valuestring);
     }
 
    cJSON_Delete(djson);
