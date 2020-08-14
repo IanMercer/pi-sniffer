@@ -318,9 +318,9 @@ void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* client_id, char* m
 	//opts.will->topicName = "will topic";
 	//opts.will = NULL;
 
-    int rc;
+    //int rc;
 
-
+    /* LISTEN FOR MQTT - WAS USED FOR MESH, WILL BE USED FOR AZURE CONFIG MESSAGES
     g_print("set call backs\n");
 
     if ((rc = MQTTAsync_setCallbacks(client, NULL, connlost, messageArrived, NULL)) != MQTTASYNC_SUCCESS)
@@ -328,6 +328,7 @@ void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* client_id, char* m
         printf("Failed to set callback, return code %d\n", rc);
         exit(EXIT_FAILURE);
     }
+    */
 
     g_print("connect async\n");
 
@@ -347,32 +348,6 @@ void get_topic(char* topic, int topic_length, char* mac_address, char* key)
     (void)mac_address;   // Was used in a topic but Azure can't handle it
     snprintf(topic, topic_length, "%s/%s%s/%s", topicRoot, access_point_name, "/messages/events", key);
 }
-
-/*
-void send_to_mqtt_null(char *mac_address, char *key)
-{
-    char topic[256];
-    get_topic(topic, sizeof(topic), key);
-
-    printf("MQTT %s %s\n", topic, "NULL");
-
-    MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-    MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
-    opts.onSuccess = onSend;
-    opts.onFailure = onSendFailure;
-    opts.context = client;
-    pubmsg.payload = "";
-    pubmsg.payloadlen = (int)strlen(pubmsg.payload) + 1;
-    pubmsg.qos = 0;
-    pubmsg.retained = 0;
-    int rc = 0;
-    if ((rc = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
-    {
-        printf("Failed to send null message, return code %d\n", rc);
-    }
-}
-*/
-
 
 static int send_errors = 0;
 
@@ -491,8 +466,6 @@ void send_to_mqtt(char* topic, char *json, int qos, int retained)
 /*
      Access points also communicate directly with each other to inform of changes
 */
-
-
 void send_device_mqtt(struct Device* device)
 {
     printf("    MQTT %s device %s '%s'\n", MESH_TOPIC, device->mac, device->name);

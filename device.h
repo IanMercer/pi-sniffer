@@ -36,7 +36,7 @@ typedef uint64_t u_int64_t;
 */
 struct Device
 {
-    int id;
+    uint32_t id;
     char mac[18];                 // mac address string
     char name[NAME_LENGTH];
     char alias[NAME_LENGTH];
@@ -48,11 +48,11 @@ struct Device
     bool trusted;
     uint32_t deviceclass;          // https://www.bluetooth.com/specifications/assigned-numbers/Baseband/
     uint16_t appearance;
-    int manufacturer_data_hash;
-    int service_data_hash;
-    int uuids_length;              // should use a Hash instead
-    int uuid_hash;                 // Hash value of all UUIDs - may ditinguish devices
-    int txpower;                   // TX Power
+    int32_t manufacturer_data_hash;
+    int32_t service_data_hash;
+    int32_t uuids_length;
+    int32_t uuid_hash;             // Hash value of all UUIDs - may ditinguish devices
+    int32_t txpower;               // TX Power
     time_t last_rssi;              // last time an RSSI was received. If gap > 0.5 hour, ignore initial point (dead letter post)
     struct Kalman kalman;
     time_t last_sent;
@@ -60,9 +60,9 @@ struct Device
     struct Kalman kalman_interval; // Tracks time between RSSI events in order to detect large gaps
     time_t earliest;               // Earliest time seen, used to calculate overlap
     time_t latest;                 // Latest time seen, used to calculate overlap
-    int count;                     // Count how many times seen (ignore 1 offs)
-    int column;                    // Allocated column in a non-overlapping range structure
-    int try_connect_state;         // Zero = never tried, 1 = Try in progress, 2 = Done
+    int32_t count;                 // Count how many times seen (ignore 1 offs)
+    int32_t column;                // Allocated column in a non-overlapping range structure
+    int8_t try_connect_state;     // Zero = never tried, 1 = Try in progress, 2 = Done
 };
 
 #endif

@@ -36,43 +36,50 @@ void udp_send(int port, const char* message, int message_length) {
 }
 
 GCancellable *cancellable;
+pthread_t listen_thread;
+char* access_point_name;
 
-void *listen_loop(void *port_void_ptr)
+void *listen_loop(void *param)
 {
+  (void)param;
   GError *error = NULL;
-  gboolean ret;
-
-  int port = *(int *)port_void_ptr;
 
   GInetAddress *iaddr = g_inet_address_new_any(G_SOCKET_FAMILY_IPV4);
-  GSocketAddress *addr = g_inet_socket_address_new(iaddr, port);
+  GSocketAddress *addr = g_inet_socket_address_new(iaddr, PORT);
 
   GSocket* broadcast_socket = g_socket_new(G_SOCKET_FAMILY_IPV4, G_SOCKET_TYPE_DATAGRAM, G_SOCKET_PROTOCOL_UDP, &error);
   g_assert_no_error (error);
 
-  ret = g_socket_bind(broadcast_socket, addr, TRUE, &error);
+  g_socket_bind(broadcast_socket, addr, TRUE, &error);
   g_assert_no_error (error);
 
-  g_print("Starting listen thread for mesh operation on port %i\n", port);
+  g_print("Starting listen thread for mesh operation on port %i\n", PORT);
   g_cancellable_reset(cancellable);
 
   while (!g_cancellable_is_cancelled(cancellable))
   {
     char buffer[2048];
     int bytes_read = g_socket_receive_from(broadcast_socket, NULL, buffer, sizeof(buffer), cancellable, &error);
-    g_print("Received bytes on listen thread %i\n", bytes_read);
-    if (bytes_read < 300) continue; // not enough to be a device message
+    if (bytes_read < (int)sizeof(struct Device) + 32) {
+      g_print("Received bytes on listen thread %i < %i\n", bytes_read, 32 + (int)sizeof(struct Device));
+      continue; // not enough to be a device message
+    }
 
-    // access_point name is at start of message
-    g_print ("Received from %s\n", buffer);
+    // ignore messages from self
+    if (strcmp(buffer, access_point_name) == 0) continue;
+
+    printf("Incoming from: %s", buffer);  // starts with a string (the access point sending it)
+
+    struct Device device;
+
+    memcpy(&device, buffer+32, sizeof(struct Device));
+
+    printf("  Update for %s '%s'\n", device.mac, device.name);
+
   }
   printf("Listen thread finished\n");
   return NULL;
 }
-
-/* this variable is our reference to the second thread */
-pthread_t listen_thread;
-char* access_point_name;
 
 /*
     Create Socket Service
