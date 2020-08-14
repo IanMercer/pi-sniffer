@@ -27,7 +27,7 @@ void merge(struct Device* local, struct Device* remote)
 {
    optional_set(local->name, remote->name);
    optional_set(local->alias, remote->alias);
-   soft_set_category(&local->category, remote->category);
+   //soft_set_category(&local->category, remote->category);
    // TODO: Other fields that we can transfer over
 }
 
@@ -102,6 +102,7 @@ bool device_from_json(const char* json, struct Device* device, char* from, int f
         device->earliest = earliest->valueint;
     }
 
+    device->category = CATEGORY_UNKNOWN;
     cJSON *category = cJSON_GetObjectItemCaseSensitive(djson, "category");
     if (cJSON_IsString(category) && (category->valuestring != NULL))
     {
