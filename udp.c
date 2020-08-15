@@ -91,14 +91,12 @@ void *listen_loop(void *param)
       time_t now;
       time(&now);
 
-      printf("Incoming from: %s dt=%li", from, now-d.latest);
-      printf("  Update for %s '%s'", d.mac, d.name);
-
       // TODO: Lock the structure
       for(int i = 0; i < state->n; i++)
       {
          if (strncmp(d.mac, state->devices[i].mac, 18) == 0)
          {
+             printf("%s '%s' dt=%3li", d.mac, d.name, now-d.latest);
              merge(&state->devices[i], &d);
              float ourdistance = state->devices[i].distance;
              if (d.distance < ourdistance)
