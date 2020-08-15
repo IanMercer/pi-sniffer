@@ -29,7 +29,7 @@ void optional_set(char* name, char* value) {
   g_strlcpy(name, value, NAME_LENGTH);
 }
 
-void soft_set(int* category, int category_new)
+void soft_set(int8_t* category, int8_t category_new)
 {
     if (*category == CATEGORY_UNKNOWN) *category = category_new;
 }
@@ -38,7 +38,7 @@ void merge(struct Device* local, struct Device* remote)
 {
    optional_set(local->name, remote->name);
    optional_set(local->alias, remote->alias);
-   //soft_set_category(&local->category, remote->category);
+   soft_set(&local->category, remote->category);
    // TODO: Other fields that we can transfer over
 }
 
