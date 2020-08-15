@@ -52,8 +52,8 @@ struct Device
     int manufacturer_data_hash;
     int service_data_hash;
     int uuids_length;
-    int uuid_hash;             // Hash value of all UUIDs - may ditinguish devices
-    int txpower;               // TX Power
+    int uuid_hash;                 // Hash value of all UUIDs - may ditinguish devices
+    int txpower;                   // TX Power
     time_t last_rssi;              // last time an RSSI was received. If gap > 0.5 hour, ignore initial point (dead letter post)
     struct Kalman kalman;
     time_t last_sent;
@@ -61,9 +61,11 @@ struct Device
     struct Kalman kalman_interval; // Tracks time between RSSI events in order to detect large gaps
     time_t earliest;               // Earliest time seen, used to calculate overlap
     time_t latest;                 // Latest time seen, used to calculate overlap
-    int count;                 // Count how many times seen (ignore 1 offs)
-    int column;                // Allocated column in a non-overlapping range structure
-    int8_t try_connect_state;     // Zero = never tried, 1 = Try in progress, 2 = Done
+    int count;                     // Count how many times seen (ignore 1 offs)
+    int column;                    // Allocated column in a non-overlapping range structure
+    int8_t try_connect_state;      // Zero = never tried, 1 = Try in progress, 2 = Done
+    // TODO: Collect data, SVM or trilateration TBD
+    char* closest;                 // Closest access point name
 };
 
 int category_to_int(char* category);
@@ -77,7 +79,7 @@ bool device_from_json(const char* json, struct Device* device, char* from, int f
 void merge(struct Device* local, struct Device* remote);
 
 // Shared device state object (one globally for app, thread safe access needed)
-struct DeviceState 
+struct OverallState 
 {
     int n;                       // current devices
     pthread_mutex_t lock;

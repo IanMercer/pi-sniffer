@@ -52,7 +52,7 @@ char* access_point_name;
 
 void *listen_loop(void *param)
 {
-  struct DeviceState* state = (struct DeviceState*) param;
+  struct OverallState* state = (struct OverallState*) param;
   GError *error = NULL;
 
   GInetAddress *iaddr = g_inet_address_new_any(G_SOCKET_FAMILY_IPV4);
@@ -96,8 +96,12 @@ void *listen_loop(void *param)
       {
          if (strncmp(d.mac, state->devices[i].mac, 18) == 0)
          {
-             printf(" * found in local list *\n");
              merge(&state->devices[i], &d);
+             if (d.distance < state->devices[i].distance){
+               printf(" * closest to %s *\n", from);
+             } else {
+               printf(" * found in local list *\n");
+             }
              break;
          }
       }
@@ -113,7 +117,7 @@ void *listen_loop(void *param)
     Create Socket Service
     TEST:  sudo nc -l -u -b -k -4 -D -p 7779
 */
-GCancellable* create_socket_service (struct DeviceState* state)
+GCancellable* create_socket_service (struct OverallState* state)
 {
   cancellable = g_cancellable_new();
   access_point_name = state->client_id;

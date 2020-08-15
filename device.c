@@ -106,6 +106,12 @@ bool device_from_json(const char* json, struct Device* device, char* from, int f
         device->latest = latest->valueint;
     }
 
+    cJSON *distance = cJSON_GetObjectItemCaseSensitive(djson, "distance");
+    if (cJSON_IsNumber(distance))
+    {
+        device->distance = (float)distance->valuedouble;
+    }
+
     cJSON *earliest = cJSON_GetObjectItemCaseSensitive(djson, "earliest");
     if (cJSON_IsNumber(earliest))
     {

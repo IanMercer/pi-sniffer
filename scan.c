@@ -36,7 +36,7 @@
 #include "device.h"
 
 
-static struct DeviceState state;
+static struct OverallState state;
 // contains ... static struct Device devices[N];
 
 static bool starting = TRUE;

@@ -8,7 +8,7 @@
 
 void udp_send(int port, const char* message, int message_length);
 
-GCancellable* create_socket_service (struct DeviceState* state);
+GCancellable* create_socket_service (struct OverallState* state);
 
 void close_socket_service();
 
