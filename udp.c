@@ -97,10 +97,13 @@ void *listen_loop(void *param)
          if (strncmp(d.mac, state->devices[i].mac, 18) == 0)
          {
              merge(&state->devices[i], &d);
-             if (d.distance < state->devices[i].distance){
-               printf(" * closest to %s *\n", from);
-             } else {
-               printf(" * found in local list *\n");
+             double ratio = d.distance / (state->devices[i].distance+0.000001); 
+             if (ratio < 1.0)
+             {
+               printf(" * closest to %s->%s ratio=%.1f*\n", from, access_point_name, ratio);
+             } else 
+             {
+               printf(" * closest to %s<-%s ratio=%.1f*\n", access_point_name, from, 1.0 / ratio);
              }
              break;
          }
