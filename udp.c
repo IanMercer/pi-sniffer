@@ -42,7 +42,10 @@ void udp_send(int port, const char* message, int message_length) {
     servaddr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
 
     int sent = sendto(sockfd, message, message_length, 0, (const struct sockaddr *) &servaddr, sizeof(struct sockaddr_in));
-    printf("    Message sent to port %i - %i.\n", port, sent);
+    if (sent < message_length)
+    {
+      printf("    Incomplete message sent to port %i - %i bytes.\n", port, sent);
+    }
     close(sockfd);
 }
 
