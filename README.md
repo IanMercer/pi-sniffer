@@ -1,7 +1,6 @@
-# pi-sniffer
+# pi-sniffer aka Crowd Warning
 This project is a simple sniffer for Bluetooth LE on Raspberry Pi and sender to MQTT. It uses the built-in BlueZ libraries and Bluetooth antenna on a Raspberry Pi (W or 3+) to scan for nearby BLE devices. 
-It reports all BLE devices found (Mac address, name, type, UUIDs, ...) and their approximate distance to an MQTT endpoint. It applies a simple
-Kalman filter to smooth the distance values. It also handles iPhones and other Apple devices that randomize their mac addresses periodically and can give a reliable count of how many phones/watches/... are in-range.
+It reports all BLE devices found (Mac address, name, type, UUIDs, ...) and their approximate distance to an MQTT endpoint. It applies a simple Kalman filter to smooth the distance values. It also handles iPhones and other Apple devices that randomize their mac addresses periodically and can give a reliable count of how many phones/watches/... are in-range.
 
 ![image](https://user-images.githubusercontent.com/347540/85953280-1cb7f300-b924-11ea-96d5-07c217a57e24.png "Multiple Pis and many BLE devices in action")
 ![image](https://user-images.githubusercontent.com/347540/85953412-dd3dd680-b924-11ea-8eeb-a3b328f91d19.png "A single stationary device")
@@ -33,28 +32,19 @@ It actually transmits a count for each range (1, 2, 5, ...)
 
 # MQTT topics
 
-The mqqt packet contains bytes as follows:
+The MQTT packet is now JSON encoded. It includes the property that has changed and a timestamp. Properties may include `name`, `distance`, `alias`, `power`, `type`, `uuids`, `serviceData`, `manufacturer`, `manufdata`, `temperature`, `humidity`.
 
-    00-05  access_point_address
-    06-13  local time stamp (long seconds)
-    14-..  data
-
-For a specific BLE device the following topics containing that device's mac address are sent:
-
-    BLF/<hostname>/56:DA:8D:18:25:8D/distance   -- the distance in meters as a string (rough, calculated from RSSI)
-    BLF/<hostname>/56:DA:8D:18:25:8D/name       -- the name (or for unknown devices a best effort like 'iPhone' or 'Beacon')
-    BLF/<hostname>/56:DA:8D:18:25:8D/alias      -- the BLUEZ alias (currently disabled)
-    BLF/<hostname>/56:DA:8D:18:25:8D/power      -- the power level (currently disabled)
-    BLF/<hostname>/56:DA:8D:18:25:8D/type       -- the mac address type: `public` or `random`
+The MQTT topic is of the form: BLF/<hostname>/messages/events/<property_name>
    
 For a summary of all devices seen by the access point the following topic is sent:
 
     BLF/<hostname>/summary/dist_hist             -- an array of bytes containing the count of devices at each range 
-   
+
+An `up` message is also sent on startup.
+
 # Time
 
-Given delays in MQTT transmit, receive and re-transmit to the receiving application it's a good idea to use the timestamp passed in the packet. Make
-sure all your Pis are synchronized to the same time.
+Given delays in MQTT transmit, receive and re-transmit to the receiving application it's a good idea to use the timestamp passed in the packet. Make sure all your Pis are synchronized to the same time.
 
 # status
 * Recently updated to use the Eclipse PAHO MQTT C library which support SSL and Async code. This is the only dependency.
@@ -62,12 +52,14 @@ sure all your Pis are synchronized to the same time.
 * There is a `build.sh` file that builds and runs the code. 
 * The MQTT topic prefix is hard-coded but the MQTT server IP (or FQDN) and port are configurable.
 * Environment variables are used to configure the RSSI to distance conversion parameters for indoor/outdoor settings.
+* Multiple instances communicate over UDP on port 7779
+* An optional additional port can be supplied and the total person count (adjusted) is sent to that port
+* A separate ESP8266 project is available that listens to the port and displays a crowd warning indication
 
 # plans
-* Look into pairing iPhones to eliminate random mac addresses
 * Decode advertised data for common iBeacons that also send environmental data (e.g. Sensoro)
 * Gather other advertised data and transmit to MQTT including temperature, battery, steps, heart rate, ...
-* Combine multiple Pi RSSI values to do trilateration and approximate location, simple ML model
+* Combine multiple distance values to do trilateration and approximate location, simple ML model
 
 # getting started
 
@@ -96,6 +88,9 @@ sure all your Pis are synchronized to the same time.
 
 * check it's running:
     `sudo systemctl status pi-sniffer.service`
+
+* [optional] open firewall so multiple instances can communicate
+    `sudo ufw allow 7779/udp`
 
 * [optional] edit the configuration according to the environment
     `sudo systemctl edit pi-sniffer.service`
