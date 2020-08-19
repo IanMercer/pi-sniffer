@@ -269,6 +269,8 @@ void report_devices_count() {
 
        double score = 0.55 - atan(delta_time/20.0  - 4.0) / 3.0;
        // A curve that stays a 1.0 for a while and then drops rapidly around 1 minute out
+       if (score > 0.9) score = 1.0;
+       if (score < 0.0) score = 0.0;
 
        // Expected value E[x] = i x p(i) so sum p(i) for each column which is one person
        people = people + score;
@@ -279,10 +281,10 @@ void report_devices_count() {
       g_print("People count = %.2f\n", people);
     }
 
-    int scale_factor = 0.95;  // This adjusts how people map to lights which are on a 0.0-3.0 range
+    double scale_factor = 0.5;  // This adjusts how people map to lights which are on a 0.0-3.0 range
     // 0.0 = green
     // 1.5 = blue
-    // 3.0 = red
+    // 3.0 = red (but starts going red anywhere above 2.0)
 
     // Always send it in case display gets unplugged and then plugged back in
     if (udp_port > 0)
@@ -295,6 +297,7 @@ void report_devices_count() {
         msg[3] = 0;
 
         udp_send(udp_port, msg, sizeof(msg));
+        g_print("UDP Sent %i\n", msg[1]);
     }
 }
 
@@ -751,10 +754,14 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             else if (strcmp(name, "MacBook pro") == 0) existing->category = CATEGORY_COMPUTER;
             else if (strcmp(name, "BOOTCAMP") == 0) existing->category = CATEGORY_COMPUTER;
             else if (strcmp(name, "BOOTCAMP2") == 0) existing->category = CATEGORY_COMPUTER;
+
             else if (strcmp(name, "iWatch") == 0) existing->category = CATEGORY_WATCH;
             else if (strcmp(name, "Apple Watch") == 0) existing->category = CATEGORY_WATCH;
             else if (strcmp(name, "AppleTV") == 0) existing->category = CATEGORY_TV;
             else if (strcmp(name, "Apple TV") == 0) existing->category = CATEGORY_TV;
+            else if (strncmp(name, "AprilBeacon", 11) == 0) existing->category = CATEGORY_BEACON;
+            else if (strncmp(name, "abtemp", 6) == 0) existing->category = CATEGORY_BEACON;
+            else if (strncmp(name, "fenix", 5) == 0) existing->category = CATEGORY_WATCH;
             // TODO: Android device names
         }
         else if (strcmp(property_name, "Alias") == 0)
