@@ -178,10 +178,10 @@ void find_latest_observations () {
       int col = a->column;
       if (columns[col].distance < 0.0 || columns[col].latest < a->latest) {
         columns[col].distance = a->distance;
-        columns[col].latest = a->latest;
-        if (columns[col].category == 0) {
-          // a later unknown does not override an actual phone category
+        if (a->category != CATEGORY_UNKNOWN) {
+          // a later unknown does not override an actual phone category nor extend it
           columns[col].category = a->category;
+          columns[col].latest = a->latest;
         }
       }
    }
