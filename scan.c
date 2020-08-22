@@ -761,6 +761,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             else if (strcmp(name, "Apple TV") == 0) existing->category = CATEGORY_TV;
             else if (strncmp(name, "AprilBeacon", 11) == 0) existing->category = CATEGORY_BEACON;
             else if (strncmp(name, "abtemp", 6) == 0) existing->category = CATEGORY_BEACON;
+            else if (strncmp(name, "abeacon", 7) == 0) existing->category = CATEGORY_BEACON;
             else if (strncmp(name, "fenix", 5) == 0) existing->category = CATEGORY_WATCH;
             // TODO: Android device names
         }
