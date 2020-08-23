@@ -118,7 +118,7 @@ void pack_columns()
         bool haveDifferentNames = (strlen(a->name) > 0) && (strlen(b->name) > 0) && (g_strcmp0(a->name, b->name) != 0);
 
         // cannot be the same if they both have known categories and they are different
-        bool haveDifferentCategories = (a->category != b->category) && (a->category != 0) && (b->category != 0);
+        bool haveDifferentCategories = (a->category != b->category) && (a->category != CATEGORY_UNKNOWN) && (b->category != CATEGORY_UNKNOWN);
 
         if (over || haveDifferentAddressTypes || haveDifferentNames || haveDifferentCategories) {
           b->column++;
@@ -763,6 +763,10 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             else if (strncmp(name, "abtemp", 6) == 0) existing->category = CATEGORY_BEACON;
             else if (strncmp(name, "abeacon", 7) == 0) existing->category = CATEGORY_BEACON;
             else if (strncmp(name, "fenix", 5) == 0) existing->category = CATEGORY_WATCH;
+            else if (strncmp(name, "Audi", 4) == 0) existing->category = CATEGORY_CAR;
+            else if (strncmp(name, "BMW", 3) == 0) existing->category = CATEGORY_CAR;
+            else if (strncmp(name, "Subaru", 6) == 0) existing->category = CATEGORY_CAR;
+            else if (strncmp(name, "Land Rover", 10) == 0) existing->category = CATEGORY_CAR;
             // TODO: Android device names
         }
         else if (strcmp(property_name, "Alias") == 0)
@@ -1012,7 +1016,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             if (strcmp(icon, "computer") == 0) soft_set_category(&existing->category, CATEGORY_COMPUTER);
             else if (strcmp(icon, "phone") == 0) soft_set_category(&existing->category, CATEGORY_PHONE);
             else if (strcmp(icon, "multimedia-player") == 0) soft_set_category(&existing->category, CATEGORY_TV);
-
+            else if (strcmp(icon, "audio-card") == 0) soft_set_category(&existing->category, CATEGORY_CAR);
             g_free(icon);
         }
         else if (strcmp(property_name, "Appearance") == 0)
