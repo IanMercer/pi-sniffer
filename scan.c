@@ -1012,7 +1012,10 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         else if (strcmp(property_name, "Icon") == 0)
         {
             char *icon = g_variant_dup_string(prop_val, NULL);
-            g_print("  %s Icon: '%s'\n", address, icon);
+            if (&existing->category == CATEGORY_UNKNOWN) {
+              // Should track icon and test against that instead
+              g_print("  %s Icon: '%s'\n", address, icon);
+            }
             if (strcmp(icon, "computer") == 0) soft_set_category(&existing->category, CATEGORY_COMPUTER);
             else if (strcmp(icon, "phone") == 0) soft_set_category(&existing->category, CATEGORY_PHONE);
             else if (strcmp(icon, "multimedia-player") == 0) soft_set_category(&existing->category, CATEGORY_TV);
