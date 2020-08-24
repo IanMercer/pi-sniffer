@@ -8,7 +8,7 @@
 #include <sys/types.h>
 
 // These must be in same order as enum values
-char* categories[] = { "unknown", "phone", "watch", "tablet", "headphones", "computer", "tv", "fixed", "beacon" };
+char* categories[] = { "unknown", "phone", "watch", "tablet", "headphones", "computer", "tv", "fixed", "beacon", "car" };
 
 int category_to_int(char* category)
 {
