@@ -1586,11 +1586,13 @@ gboolean should_remove(struct Device* existing)
 
   double delta_time = difftime(now, existing->latest);
 
-  // 2 min for single hit, 160 min for regular ping
-  int max_time_ago_seconds = existing->count * 120;   // 1 after 1 min, 2 after 2 min, ...
-  // x5 if it's a public mac address, iBeacons etc.
-  if (existing->addressType == PUBLIC_ADDRESS_TYPE) { max_time_ago_seconds *= 5; }
+  // 10 min for a regular device
+  int max_time_ago_seconds = 10 * 60;
 
+  // 20 min for a beacon or other public mac address
+  if (existing->addressType == PUBLIC_ADDRESS_TYPE) { max_time_ago_seconds = 20 * 60; }
+
+  // 1 hour upper limit
   if (max_time_ago_seconds > 60 * MAX_TIME_AGO_CACHE) { max_time_ago_seconds = 60 * MAX_TIME_AGO_CACHE; }
 
   gboolean remove = delta_time > max_time_ago_seconds;
