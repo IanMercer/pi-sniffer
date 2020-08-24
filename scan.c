@@ -1193,11 +1193,12 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
           g_print("  **** Send distance %6.3f                        ", existing->distance);
           send_to_mqtt_single_float(address, "distance", existing->distance);
           time(&existing->last_sent);
+
+          // Broadcast what we know about the device to all other listeners
+          //send_device_mqtt(existing);
+          send_device_udp(existing);
         }
     }
-
-    //send_device_mqtt(existing);
-    send_device_udp(existing);
 
     report_devices_count();
 }
