@@ -1,5 +1,5 @@
 /*
- *  CROWDING INDICATOR
+ *  CROWD ALERT
  *
  *  Sends bluetooth information to MQTT with a separate topic per device and parameter
  *  BLE/<device mac>/parameter
@@ -28,13 +28,14 @@
 #include <sys/types.h>
 #include <string.h>
 #include <udp.h>
+#include <argp.h>
 
 #include "utility.h"
 #include "mqtt_send.h"
 #include "udp.h"
 #include "kalman.h"
 #include "device.h"
-
+#include "bluetooth.h"
 
 static struct OverallState state;
 // contains ... static struct Device devices[N];
@@ -44,17 +45,6 @@ static bool starting = TRUE;
 // Set only if you want to broadcast people to whole of LAN
 int udp_port = 0;
 
-// Enable or disable extra debugging
-
-void debug( const char *format , ... ){
-   (void)format; // when not debugging
-/*
-   va_list arglist;
-   va_start( arglist, format );
-   vprintf( format, arglist );
-   va_end( arglist );
-*/
-}
 
 // delta distance x delta time threshold for sending an update
 // e.g. 5m after 2s or 1m after 10s
@@ -201,7 +191,7 @@ float people_count = 0.0;
 
 
 void report_devices_count() {
-    debug("report_devices_count\n");
+    g_debug("report_devices_count\n");
 
     if (starting) return;   // not during first 30s startup time
 
@@ -306,134 +296,6 @@ void report_devices_count() {
 
 
 
-typedef void (*method_cb_t)(GObject *, GAsyncResult *, gpointer);
-
-
-static void print_and_free_error(GError *error) 
-{
-  if (error)
-  {
-       g_print("Error: %s\n", error->message);
-       g_error_free (error);
-  }
-}
-
-static int bluez_adapter_call_method(const char *method, GVariant *param, method_cb_t method_cb)
-{
-    //    g_print("bluez_adapter_call_method(%s)\n", method);
-    GError *error = NULL;
-
-    g_dbus_connection_call(conn,
-                           "org.bluez", /* TODO Find the adapter path runtime */
-                           "/org/bluez/hci0",
-                           "org.bluez.Adapter1",
-                           method,
-                           param,
-                           NULL,
-                           G_DBUS_CALL_FLAGS_NONE,
-                           -1,
-                           NULL,
-                           method_cb,
-                           &error);
-    if (error != NULL)
-    {
-       print_and_free_error(error);
-       return 1;
-    }
-    return 0;
-}
-
-static int bluez_device_call_method(const char *method, char* address, GVariant *param, method_cb_t method_cb)
-{
-    //    g_print("bluez_device_call_method(%s)\n", method);
-    GError *error = NULL;
-    char path[100];
-
-    // e.g. /org/bluez/hci0/dev_C1_B4_70_76_57_EE
-    get_path_from_address(address, path, sizeof(path));
-    //g_print("Path %s\n", path);
-
-    g_dbus_connection_call(conn,
-                           "org.bluez",
-                           path,
-                           "org.bluez.Device1",
-                           method,
-                           param,
-                           NULL,                       // the expected type of the reply (which will be a tuple), or null
-                           G_DBUS_CALL_FLAGS_NONE,
-                           20000,                      // timeout in millseconds or -1
-                           NULL,                       // cancellable or null
-                           method_cb,                  // callback or null
-                           &error);
-    if (error != NULL)
-    {
-       print_and_free_error(error);
-       return 1;
-    }
-    return 0;
-}
-
-
-/*
-      Get a single property from a Bluez device
-*/
-
-/*
-static int bluez_adapter_get_property(const char* path, const char *prop, method_cb_t method_cb)
-{
-	GError *error = NULL;
-
-	g_dbus_connection_call(conn,
-				     "org.bluez",
-                                     path,
-				     "org.freedesktop.DBus.Properties",
-				     "Get",
-                                     g_variant_new("(ss)", "org.bluez.Adapter1", prop),
-				     // For "set": g_variant_new("(ssv)", "org.bluez.Device1", prop, value),
-				     NULL,
-				     G_DBUS_CALL_FLAGS_NONE,
-				     20000,
-				     NULL,
-                                     method_cb,
-				     &error);
-	if(error != NULL)
-		return 1;
-
-	return 0;
-}
-*/
-
-
-static void bluez_get_discovery_filter_cb(GObject *con,
-                                          GAsyncResult *res,
-                                          gpointer data)
-{
-    (void)data;
-
-    debug("START bluez_get_discovery_filter_cb\n");
-
-    GVariant *result = NULL;
-    GError *error = NULL;
-
-    result = g_dbus_connection_call_finish((GDBusConnection *)con, res, &error);
-
-    if (result == NULL || error) 
-    {
-        g_print("Unable to get result for GetDiscoveryFilter\n");
-        print_and_free_error(error);
-    }
-
-    if (result)
-    {
-        GVariant *child = g_variant_get_child_value(result, 0);
-        pretty_print("GetDiscoveryFilter", child);
-        g_variant_unref(child);
-    }
-    g_variant_unref(result);
-    debug("DONE bluez_get_discovery_filter_cb\n");
-}
-
-
 /*
     REPORT DEVICE TO MQTT
 
@@ -447,25 +309,6 @@ static void report_device_disconnected_to_MQTT(char* address)
    // Not used
 }
 
-static int bluez_adapter_connect_device(char *address)
-{
-	int rc = bluez_device_call_method("Connect", address, NULL, NULL);
-	if(rc) {
-		g_print("Not able to call Connect\n");
-		return 1;
-	}
-	return 0;
-}
-
-static int bluez_adapter_disconnect_device(char *address)
-{
-	int rc = bluez_device_call_method("Disconnect", address, NULL, NULL);
-	if(rc) {
-		g_print("Not able to call Disconnect\n");
-		return 1;
-	}
-	return 0;
-}
 
 /*
    Read byte array from GVariant
@@ -478,7 +321,7 @@ unsigned char* read_byte_array(GVariant* s_value, int* actualLength, uint8_t* ha
     GVariantIter* iter_array;
     guchar str;
 
-    debug("START read_byte_array\n");
+    //g_debug("START read_byte_array\n");
 
     g_variant_get(s_value, "ay", &iter_array);
 
@@ -499,7 +342,7 @@ unsigned char* read_byte_array(GVariant* s_value, int* actualLength, uint8_t* ha
 
     *actualLength = len;
 
-    debug("END read_byte_array\n");
+    //g_debug("END read_byte_array\n");
     return allocdata;
 }
 
@@ -518,7 +361,7 @@ void soft_set_category(int8_t* category, int8_t category_new)
 */
 void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsigned char* allocdata)
 {
-    debug("START handle_manufacturer\n");
+    //g_debug("START handle_manufacturer\n");
     if (manufacturer == 0x004c) {   // Apple
         uint8_t apple_device_type = allocdata[00];
         if (apple_device_type == 0x02) {
@@ -615,7 +458,7 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
 */
 static void report_device_to_MQTT(GVariant *properties, char *known_address, bool isUpdate)
 {
-    debug("START report_device_to_MQTT\n");
+    //g_debug("START report_device_to_MQTT\n");
 
     logTable = TRUE;
     //       g_print("report_device_to_MQTT(%s)\n", address);
@@ -705,7 +548,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
     {
         if (!isUpdate) {
            // from get_all_devices which includes stale data
-           debug("Repeat device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
+           g_debug("Repeat device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
         } else {
            g_print("Existing device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
         }
@@ -754,15 +597,20 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             else if (strcmp(name, "MacBook pro") == 0) existing->category = CATEGORY_COMPUTER;
             else if (strcmp(name, "BOOTCAMP") == 0) existing->category = CATEGORY_COMPUTER;
             else if (strcmp(name, "BOOTCAMP2") == 0) existing->category = CATEGORY_COMPUTER;
-
+            // Watches
             else if (strcmp(name, "iWatch") == 0) existing->category = CATEGORY_WATCH;
             else if (strcmp(name, "Apple Watch") == 0) existing->category = CATEGORY_WATCH;
             else if (strcmp(name, "AppleTV") == 0) existing->category = CATEGORY_TV;
             else if (strcmp(name, "Apple TV") == 0) existing->category = CATEGORY_TV;
+            else if (strncmp(name, "fenix", 5) == 0) existing->category = CATEGORY_WATCH;
+            // Beacons
             else if (strncmp(name, "AprilBeacon", 11) == 0) existing->category = CATEGORY_BEACON;
             else if (strncmp(name, "abtemp", 6) == 0) existing->category = CATEGORY_BEACON;
             else if (strncmp(name, "abeacon", 7) == 0) existing->category = CATEGORY_BEACON;
-            else if (strncmp(name, "fenix", 5) == 0) existing->category = CATEGORY_WATCH;
+            else if (strncmp(name, "LYWSD03MMC", 10) == 0) existing->category = CATEGORY_BEACON;
+            // Headphones
+            else if (strncmp(name, "Sesh Evo-LE", 11) == 0) existing->category = CATEGORY_HEADPHONES;  // Skullcandy
+            // Cars
             else if (strncmp(name, "Audi", 4) == 0) existing->category = CATEGORY_CAR;
             else if (strncmp(name, "BMW", 3) == 0) existing->category = CATEGORY_CAR;
             else if (strncmp(name, "Subaru", 6) == 0) existing->category = CATEGORY_CAR;
@@ -1403,84 +1251,38 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
     return;
 }
 
-static int bluez_adapter_set_property(const char *prop, GVariant *value)
+
+// Every 10s we need to let MQTT send and receive messages
+int mqtt_refresh(void *parameters)
 {
-    GVariant *result;
-    GError *error = NULL;
-    GVariant *gvv = g_variant_new("(ssv)", "org.bluez.Adapter1", prop, value);
+    (void)parameters;
+    //GMainLoop *loop = (GMainLoop *)parameters;
+    // Send any MQTT messages
+    mqtt_sync();
 
-    result = g_dbus_connection_call_sync(conn,
-                                         "org.bluez",
-                                         "/org/bluez/hci0",
-                                         "org.freedesktop.DBus.Properties",
-                                         "Set",
-                                         gvv,
-                                         NULL,
-                                         G_DBUS_CALL_FLAGS_NONE,
-                                         -1,
-                                         NULL,
-                                         &error);
-    if (result != NULL)
-      g_variant_unref(result);
-
-    // not needed: g_variant_unref(gvv);
-
-    if (error != NULL)
-    {
-       print_and_free_error(error);
-       return 1;
-    }
-
-    return 0;
-}
-
-static int bluez_set_discovery_filter()
-{
-    int rc;
-    GVariantBuilder *b = g_variant_builder_new(G_VARIANT_TYPE_VARDICT);
-    g_variant_builder_add(b, "{sv}", "Transport", g_variant_new_string("le")); // or "auto"
-    //g_variant_builder_add(b, "{sv}", "RSSI", g_variant_new_int16(-150));
-    g_variant_builder_add(b, "{sv}", "DuplicateData", g_variant_new_boolean(TRUE));
-    g_variant_builder_add(b, "{sv}", "Discoverable", g_variant_new_boolean(TRUE));
-    g_variant_builder_add(b, "{sv}", "Pairable", g_variant_new_boolean(TRUE));
-    g_variant_builder_add(b, "{sv}", "DiscoveryTimeout", g_variant_new_uint32(0));
-
-    //GVariantBuilder *u = g_variant_builder_new(G_VARIANT_TYPE_STRING_ARRAY);
-    //g_variant_builder_add(u, "s", argv[3]);
-    //g_variant_builder_add(b, "{sv}", "UUIDs", g_variant_builder_end(u));
-
-    GVariant *device_dict = g_variant_builder_end(b);
-
-    //g_variant_builder_unref(u);
-    g_variant_builder_unref(b);
-
-    rc = bluez_adapter_call_method("SetDiscoveryFilter", g_variant_new_tuple(&device_dict, 1), NULL);
-
-    // no need to ... g_variant_unref(device_dict);
-
-    if (rc)
-    {
-        g_print("Not able to set discovery filter\n");
-        return 1;
-    }
-
-    rc = bluez_adapter_call_method("GetDiscoveryFilters",
-                                   NULL,
-                                   bluez_get_discovery_filter_cb);
-    if (rc)
-    {
-        g_print("Not able to get discovery filter\n");
-        return 1;
-    }
-    return 0;
+    return TRUE;
 }
 
 
+/*
+    BLUEZ_SERVICE_NAME =           'org.bluez'
+    DBUS_OM_IFACE =                'org.freedesktop.DBus.ObjectManager'
+    LE_ADVERTISING_MANAGER_IFACE = 'org.bluez.LEAdvertisingManager1'
+    GATT_MANAGER_IFACE =           'org.bluez.GattManager1'
+    GATT_CHRC_IFACE =              'org.bluez.GattCharacteristic1'
+    UART_SERVICE_UUID =            '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
+    UART_RX_CHARACTERISTIC_UUID =  '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
+    UART_TX_CHARACTERISTIC_UUID =  '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
+    LOCAL_NAME =                   'rpi-gatt-server'
+
+*/
 
 
-static void bluez_list_devices(GDBusConnection *con,
-                               GAsyncResult *res,
-                               gpointer data)
+
+/*
+    bluez_list_devices
+*/
+void bluez_list_devices(GDBusConnection *conn, GAsyncResult *res, gpointer data)
 {
     (void)data;
     GVariant *result = NULL;
@@ -1489,9 +1291,9 @@ static void bluez_list_devices(GDBusConnection *con,
     GVariant *ifaces_and_properties;
     GError *error = NULL;
 
-    debug("List devices call back\n");
+    g_debug("List devices call back\n");
 
-    result = g_dbus_connection_call_finish(con, res, &error);
+    result = g_dbus_connection_call_finish(conn, res, &error);
     if ((result == NULL) || error)
     {
         g_print("Unable to get result for GetManagedObjects\n");
@@ -1527,39 +1329,11 @@ static void bluez_list_devices(GDBusConnection *con,
     }
 }
 
-
-
-// Every 10s we need to let MQTT send and receive messages
-int mqtt_refresh(void *parameters)
-{
-    (void)parameters;
-    //GMainLoop *loop = (GMainLoop *)parameters;
-    // Send any MQTT messages
-    mqtt_sync();
-
-    return TRUE;
-}
-
-
-/*
-    BLUEZ_SERVICE_NAME =           'org.bluez'
-    DBUS_OM_IFACE =                'org.freedesktop.DBus.ObjectManager'
-    LE_ADVERTISING_MANAGER_IFACE = 'org.bluez.LEAdvertisingManager1'
-    GATT_MANAGER_IFACE =           'org.bluez.GattManager1'
-    GATT_CHRC_IFACE =              'org.bluez.GattCharacteristic1'
-    UART_SERVICE_UUID =            '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
-    UART_RX_CHARACTERISTIC_UUID =  '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
-    UART_TX_CHARACTERISTIC_UUID =  '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
-    LOCAL_NAME =                   'rpi-gatt-server'
-
-*/
-
-
 int get_managed_objects(void *parameters)
 {
     GMainLoop *loop = (GMainLoop *)parameters;
 
-    debug("Get managed objects\n");
+    g_debug("Get managed objects\n");
 
     g_dbus_connection_call(conn,
                            "org.bluez",
@@ -1608,11 +1382,11 @@ gboolean should_remove(struct Device* existing)
     vars[0] = g_variant_new_string(existing->mac);
     GVariant* param = g_variant_new_tuple(vars, 1);  // floating
 
-    int rc = bluez_adapter_call_method("RemoveDevice", param, NULL);
+    int rc = bluez_adapter_call_method(conn, "RemoveDevice", param, NULL);
     if (rc)
       g_print("Not able to remove %s\n", existing->mac);
     //else
-    //  debug("    ** Removed %s from BlueZ cache too\n", existing->mac);
+    //  g_debug("    ** Removed %s from BlueZ cache too\n", existing->mac);
   }
 
   return remove;  // 60 min of no activity = remove from cache
@@ -1708,12 +1482,12 @@ gboolean try_connect (struct Device* a)
     a->try_connect_state = 1;
     // Try forcing a connect to get a full dump from the device
     g_print(">>>>>> Connect to %s\n", a->mac);
-    bluez_adapter_connect_device(a->mac);
+    bluez_adapter_connect_device(conn, a->mac);
     return TRUE;  }
   else if (a->try_connect_state == 1 && a->connected) {
     a->try_connect_state = 2;
     g_print(">>>>>> Disconnect from %s\n", a->mac);
-    bluez_adapter_disconnect_device(a->mac);
+    bluez_adapter_disconnect_device(conn, a->mac);
     return TRUE;
   }
   // didn't change state, try next one
@@ -1888,21 +1662,21 @@ int main(int argc, char **argv)
                                                        loop,
                                                        NULL);
 
-    rc = bluez_adapter_set_property("Powered", g_variant_new("b", TRUE));
+    rc = bluez_adapter_set_property(conn, "Powered", g_variant_new("b", TRUE));
     if (rc)
     {
         g_print("Not able to enable the adapter\n");
         goto fail;
     }
 
-    rc = bluez_set_discovery_filter();
+    rc = bluez_set_discovery_filter(conn);
     if (rc)
     {
         g_print("Not able to set discovery filter\n");
         goto fail;
     }
 
-    rc = bluez_adapter_call_method("StartDiscovery", NULL, NULL);
+    rc = bluez_adapter_call_method(conn, "StartDiscovery", NULL, NULL);
     if (rc)
     {
         g_print("Not able to scan for new devices\n");
@@ -1938,17 +1712,17 @@ int main(int argc, char **argv)
 
     if (argc > 3)
     {
-        rc = bluez_adapter_call_method("SetDiscoveryFilter", NULL, NULL);
+        rc = bluez_adapter_call_method(conn, "SetDiscoveryFilter", NULL, NULL);
         if (rc)
             g_print("Not able to remove discovery filter\n");
     }
 
-    rc = bluez_adapter_call_method("StopDiscovery", NULL, NULL);
+    rc = bluez_adapter_call_method(conn, "StopDiscovery", NULL, NULL);
     if (rc)
         g_print("Not able to stop scanning\n");
     g_usleep(100);
 
-    rc = bluez_adapter_set_property("Powered", g_variant_new("b", FALSE));
+    rc = bluez_adapter_set_property(conn, "Powered", g_variant_new("b", FALSE));
     if (rc)
         g_print("Not able to disable the adapter\n");
 fail:

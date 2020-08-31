@@ -207,11 +207,13 @@ void get_mac_address(char* access_point_address)
     exit(-23);
 }
 
+/*
+   Mac address bytes to string
+*/
 void mac_address_to_string(char* output, int length, char* access_point_address)
 {
     snprintf(output, length, "%.2x%.2x%.2x%.2x%.2x%.2x", access_point_address[0], access_point_address[1],
         access_point_address[2], access_point_address[3], access_point_address[4], access_point_address[5]);
     output[12] = '\0';
 }
-
 

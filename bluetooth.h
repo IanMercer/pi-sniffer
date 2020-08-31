@@ -1,3 +1,11 @@
+#ifndef BLUETOOTH_H
+#define BLUETOOTH_H
+
+#include <glib.h>
+#include <gio/gio.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include "utility.h"
 
 #define 	BLE_APPEARANCE_UNKNOWN   0
 #define 	BLE_APPEARANCE_GENERIC_PHONE   64
@@ -56,3 +64,23 @@
 #define         BLE_GUID_DEVICE_INFORMATION_SERVICE 0x180a
 #define         BLE_GUID_MANUFACTURER_NAME_STRING 0x2a29
 
+typedef void (*method_cb_t)(GObject *, GAsyncResult *, gpointer);
+
+void print_and_free_error(GError *error);
+
+int bluez_set_discovery_filter(GDBusConnection *conn);
+
+int bluez_adapter_connect_device(GDBusConnection *conn, char *address);
+
+int bluez_adapter_disconnect_device(GDBusConnection *conn, char *address);
+
+int bluez_device_call_method(GDBusConnection *conn, const char *method, char* address, GVariant *param, method_cb_t method_cb);
+
+int bluez_adapter_call_method(GDBusConnection *conn, const char *method, GVariant *param, method_cb_t method_cb);
+
+void bluez_get_discovery_filter_cb(GObject *conn, GAsyncResult *res, gpointer data);
+
+int bluez_adapter_set_property(GDBusConnection *conn, const char *prop, GVariant *value);
+
+
+#endif

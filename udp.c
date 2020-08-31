@@ -15,6 +15,7 @@
 #define BLOCK_SIZE 1024
 
 #define MAXLINE 1024
+// This is the MESH PORT for communicating between devices (TODO: Make configurable)
 #define PORT 7779
 
 void udp_send(int port, const char* message, int message_length) {
