@@ -47,7 +47,13 @@ char* device_to_json (struct Device* device, const char* from)
     char *string = NULL;
     cJSON *j = cJSON_CreateObject();
 
+    // AccessPoint details
     cJSON_AddStringToObject(j, "from", from);
+    cJSON_AddNumberToObject(j, "from_x", 20.0);
+    cJSON_AddNumberToObject(j, "from_y", 10.0);
+    cJSON_AddNumberToObject(j, "from_z", 0.0);
+
+    // Device details
     cJSON_AddStringToObject(j, "mac", device->mac);
     cJSON_AddStringToObject(j, "name", device->name);
     cJSON_AddStringToObject(j, "alias", device->alias);
@@ -77,15 +83,34 @@ char* device_to_json (struct Device* device, const char* from)
     return string;
 }
 
-bool device_from_json(const char* json, struct Device* device, char* from, int from_length)
+bool device_from_json(const char* json, struct AccessPoint* access_point, struct Device* device)
 {
     cJSON *djson = cJSON_Parse(json);
+
+    cJSON *from_x = cJSON_GetObjectItemCaseSensitive(djson, "from_x");
+    if (cJSON_IsNumber(from_x))
+    {
+        access_point->x = (float)from_x->valuedouble;
+    }
+
+    cJSON *from_y = cJSON_GetObjectItemCaseSensitive(djson, "from_y");
+    if (cJSON_IsNumber(from_y))
+    {
+        access_point->y = (float)from_x->valuedouble;
+    }
+
+    cJSON *from_z = cJSON_GetObjectItemCaseSensitive(djson, "from_z");
+    if (cJSON_IsNumber(from_z))
+    {
+        access_point->z = (float)from_z->valuedouble;
+    }
 
     cJSON *fromj = cJSON_GetObjectItemCaseSensitive(djson, "from");
     if (cJSON_IsString(fromj) && (fromj->valuestring != NULL))
     {
-        strncpy(from, fromj->valuestring, from_length);
+        strncpy(access_point->client_id, fromj->valuestring, NAME_LENGTH);
     }
+
 
     cJSON *mac = cJSON_GetObjectItemCaseSensitive(djson, "mac");
     if (cJSON_IsString(mac) && (mac->valuestring != NULL))

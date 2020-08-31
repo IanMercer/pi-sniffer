@@ -45,7 +45,7 @@ void udp_send(int port, const char* message, int message_length) {
     int sent = sendto(sockfd, message, message_length, 0, (const struct sockaddr *) &servaddr, sizeof(struct sockaddr_in));
     if (sent < message_length)
     {
-      printf("    Incomplete message sent to port %i - %i bytes.\n", port, sent);
+      g_print("    Incomplete message sent to port %i - %i bytes.\n", port, sent);
     }
     close(sockfd);
 }
@@ -53,6 +53,47 @@ void udp_send(int port, const char* message, int message_length) {
 GCancellable *cancellable;
 pthread_t listen_thread;
 char* access_point_name;
+
+// All access points ever seen, in alphabetic order
+uint access_point_count = 0;
+struct AccessPoint accessPoints[256];
+
+void add_access_point(const char* name, float x, float y, float z) {
+  strcpy(accessPoints[access_point_count].client_id, name);
+  accessPoints[access_point_count].x = x;
+  accessPoints[access_point_count].y = y;
+  accessPoints[access_point_count].z = z;
+  access_point_count++;
+}
+
+void update_accessPoints(struct AccessPoint access_point)
+{
+  g_debug("Check for new access point '%s'\n", access_point.client_id);
+  uint found = access_point_count;
+  for (uint i = 0; i < access_point_count; i++){
+      if (strcmp(accessPoints[i].client_id, access_point.client_id) >= 0){
+          found = i;
+          break;
+      }
+  }
+
+  g_debug("Found %i in check for new access point\n", found);
+  if (found == access_point_count || strcmp(accessPoints[found].client_id, access_point.client_id) > 0) {
+      // insert access point here, shift others down, increase count
+      int to_move = access_point_count - found;
+      if (to_move > 0){
+          g_debug("Moving %i from %i x %lu up\n", to_move, found, sizeof(struct AccessPoint));
+          memmove(&accessPoints[found+1], &accessPoints[found], sizeof(struct AccessPoint) * to_move);
+      }
+      memcpy(&accessPoints[found], &access_point, sizeof(struct AccessPoint));
+      access_point_count++;
+
+      g_print("ACCESS POINTS\n");
+      for (uint k = 0; k < access_point_count; k++){
+          g_print("%i. %32s (%f,%f,%f)\n", k, accessPoints[k].client_id,accessPoints[k].x, accessPoints[k].y,accessPoints[k].z );
+      }
+  }
+}
 
 void *listen_loop(void *param)
 {
@@ -72,6 +113,16 @@ void *listen_loop(void *param)
   g_print("Local client id is %s\n", state->client_id);
   g_cancellable_reset(cancellable);
 
+  add_access_point("barn",  -1000, -1000,   2.0);
+  add_access_point("garage",  10.0,  0.5,   2.0);
+  add_access_point("kitchen", 46.0,-24.0, 2.0);
+  add_access_point("livingroom", 43.0,-4.0, 2.0);
+  add_access_point("pileft",  31,    8.0,  -6.0);
+  add_access_point("store",   32,    0.5,   2.0);
+  add_access_point("study",   51,    7.0,   2.0);
+  add_access_point("tiger",   53,   20.0,  -6.0);
+  add_access_point("ubuntu",  32,    7.0,  -6.0);
+ 
   while (!g_cancellable_is_cancelled(cancellable))
   {
     char buffer[2048];
@@ -83,11 +134,18 @@ void *listen_loop(void *param)
     }
 
     struct Device d;
-    char from[32];
-    if (device_from_json(buffer, &d, from, sizeof(from)))
+    struct AccessPoint a;
+    strncpy(a.client_id, "notset", 7);
+    a.x = -1;
+    a.y = -1;
+    a.z = -1;
+
+    if (device_from_json(buffer, &a, &d))
     {
+      update_accessPoints(a);
+
       // ignore messages from self
-      if (strcmp(from, access_point_name) == 0) continue;
+      if (strcmp(a.client_id, access_point_name) == 0) continue;
 
       time_t now;
       time(&now);
@@ -97,15 +155,15 @@ void *listen_loop(void *param)
       {
          if (strncmp(d.mac, state->devices[i].mac, 18) == 0)
          {
-             printf("%s '%s' dt=%3li", d.mac, d.name, now-d.latest);
+             g_print("%s '%s' dt=%3li", d.mac, d.name, now-d.latest);
              merge(&state->devices[i], &d);
              float ourdistance = state->devices[i].distance;
              if (d.distance < ourdistance)
              {
-               printf(" * closest to %s->%s %.1fm:%.1fm *\n", from, access_point_name, d.distance, ourdistance);
+               g_print(" * closest to %s->%s %.1fm:%.1fm *\n", a.client_id, access_point_name, d.distance, ourdistance);
              } else 
              {
-               printf(" * closest to %s<-%s %.1fm:%.1fm *\n", access_point_name, from, ourdistance, d.distance);
+               g_print(" * closest to %s<-%s %.1fm:%.1fm *\n", access_point_name, a.client_id, ourdistance, d.distance);
              }
              break;
          }

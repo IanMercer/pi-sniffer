@@ -67,6 +67,20 @@ struct Device
     int8_t try_connect_state;      // Zero = never tried, 1 = Try in progress, 2 = Done
     // TODO: Collect data, SVM or trilateration TBD
     char* closest;                 // Closest access point name
+    float x;                       // Calculated position, will be Kalman filtered
+    float y;
+    float z;
+};
+
+/*
+   AccessPoint is another instance of the app sending information to us
+*/
+struct AccessPoint
+{
+   char client_id[NAME_LENGTH];
+   float x;
+   float y;
+   float z;
 };
 
 int category_to_int(char* category);
@@ -75,7 +89,7 @@ char* category_from_int(uint i);
 
 char* device_to_json (struct Device* device, const char* from);
 
-bool device_from_json(const char* json, struct Device* device, char* from, int from_length);
+bool device_from_json(const char* json, struct AccessPoint* access_point, struct Device* device);
 
 void merge(struct Device* local, struct Device* remote);
 
@@ -87,5 +101,11 @@ struct OverallState
     struct Device devices[N];
     char client_id[256];         // linux allows more, truncated
 };
+
+// Access Points
+// - all the other seen access points in alpha order
+
+
+
 
 #endif
