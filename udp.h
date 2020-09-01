@@ -12,7 +12,7 @@ GCancellable* create_socket_service (struct OverallState* state);
 
 void close_socket_service();
 
-void send_device_udp(struct Device* device); 
+void send_device_udp(struct OverallState* state, struct Device* device); 
 
 struct AccessPoint* get_access_point(int id);
 

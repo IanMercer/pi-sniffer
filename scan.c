@@ -42,10 +42,6 @@ static struct OverallState state;
 
 static bool starting = TRUE;
 
-// Set only if you want to broadcast people to whole of LAN
-int udp_port = 0;
-
-
 // delta distance x delta time threshold for sending an update
 // e.g. 5m after 2s or 1m after 10s
 // prevents swamping MQTT with very small changes
@@ -58,11 +54,6 @@ void     int_handler(int);
 
 static int id_gen = 0;
 bool logTable = FALSE;  // set to true each time something changes
-
-/* ENVIRONMENT VARIABLES */
-
-int rssi_one_meter = -64;     // Put a device 1m away and measure the average RSSI
-float rssi_factor = 3.5;      // 2.0 to 4.0, lower for indoor or cluttered environments
 
 /*
       Connection to DBUS
@@ -278,7 +269,7 @@ void report_devices_count() {
     // 3.0 = red (but starts going red anywhere above 2.0)
 
     // Always send it in case display gets unplugged and then plugged back in
-    if (udp_port > 0)
+    if (state.udp_sign_port > 0)
     {
         char msg[4];
         msg[0] = people;       // old code
@@ -287,7 +278,7 @@ void report_devices_count() {
         msg[2] = 0;
         msg[3] = 0;
 
-        udp_send(udp_port, msg, sizeof(msg));
+        udp_send(state.udp_sign_port, msg, sizeof(msg));
         g_print("UDP Sent %i\n", msg[1]);
     }
 }
@@ -683,7 +674,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
 
             //float average_delta_time = kalman_update(&existing->kalman_interval, (float)delta_time_sent);
 
-            double exponent = ((rssi_one_meter - (double)rssi) / (10.0 * rssi_factor));
+            double exponent = ((state.rssi_one_meter - (double)rssi) / (10.0 * state.rssi_factor));
 
             double distance = pow(10.0, exponent);
 
@@ -1058,7 +1049,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         // TODO: Make this 'if send_distance or 30s has elapsed'
         // Broadcast what we know about the device to all other listeners
         //send_device_mqtt(existing);
-        send_device_udp(existing);
+        send_device_udp(&state, existing);
     }
 
     report_devices_count();
@@ -1585,6 +1576,74 @@ static void cmd_connect(int argc, char *address)
 */
 
 
+void initialize_state()
+{
+    // Default values if not set in environment variables
+    state.position_x = -1.0;
+    state.position_y = -1.0;
+    state.position_z = -1.0;
+    state.rssi_one_meter = -64;
+    state.rssi_factor = 3.5;
+    state.udp_mesh_port = 7779;
+    state.udp_sign_port = 0; // 7778;
+
+    // no devices yet
+    state.n = 0;
+    gethostname((char*)&state.client_id, 256);
+
+    const char* s_position_x = getenv("POSITION_X");
+    const char* s_position_y = getenv("POSITION_Y");
+    const char* s_position_z = getenv("POSITION_Z");
+
+    if (s_position_x != NULL) state.position_x = (float)atof(s_position_x);
+    if (s_position_y != NULL) state.position_y = (float)atof(s_position_y);
+    if (s_position_z != NULL) state.position_z = (float)atof(s_position_z);
+
+    const char* s_rssi_one_meter = getenv("RSSI_ONE_METER");
+    const char* s_rssi_factor = getenv("RSSI_FACTOR");
+
+    if (s_rssi_one_meter != NULL) state.rssi_one_meter = atoi(s_rssi_one_meter);
+    if (s_rssi_factor != NULL) state.rssi_factor = atof(s_rssi_factor);
+
+    // UDP Settings
+
+    const char* s_udp_mesh_port = getenv("UDP_MESH_PORT");
+    const char* s_udp_sign_port = getenv("UDP_SIGN_PORT");
+    const char* s_udp_scale_factor = getenv("UDP_SCALE_FACTOR");
+
+    if (s_udp_mesh_port != NULL) state.udp_mesh_port = atoi(s_udp_mesh_port);
+    if (s_udp_sign_port != NULL) state.udp_sign_port = atoi(s_udp_sign_port);
+    if (s_udp_scale_factor != NULL) state.udp_scale_factor = atoi(s_udp_scale_factor);
+
+    // MQTT Settings
+
+    state.mqtt_topic = getenv("MQTT_TOPIC");
+    if (state.mqtt_topic == NULL) state.mqtt_topic = "BLF";  // sorry, historic name
+    state.mqtt_server = getenv("MQTT_SERVER");
+    if (state.mqtt_server == NULL) state.mqtt_server = "192.168.0.52:1883";  // sorry, my old server
+    state.mqtt_username = getenv("MQTT_USERNAME");
+    state.mqtt_password = getenv("MQTT_PASSWORD");
+}
+
+void display_state()
+{
+    g_print("Hostname is %s\n", state.client_id);
+    g_print("Position: (%.1f,%.1f,%.1f)\n", state.position_x, state.position_y, state.position_z);
+
+    g_print("RSSI_ONE_METER Power at 1m : %i\n", state.rssi_one_meter);
+    g_print("RSSI_FACTOR to distance : %.1f   (typically 2.0 (indoor, cluttered) to 4.0 (outdoor, no obstacles)\n", state.rssi_factor);
+
+    g_print("UDP_MESH_PORT=%i\n", state.udp_mesh_port);
+    g_print("UDP_SIGN_PORT=%i\n", state.udp_sign_port);
+    g_print("UDP_SCALE_FACTOR=%.1f\n", state.udp_scale_factor);
+
+    g_print("MQTT_TOPIC='%s'\n", state.mqtt_topic);
+    g_print("MQTT_SERVER='%s'\n", state.mqtt_server);
+    g_print("MQTT_USERNAME='%s'\n", state.mqtt_username);
+    g_print("MQTT_PASSWORD='%s'\n", state.mqtt_password == NULL ? "(null)" : "*****");
+}
+
+
 guint prop_changed;
 guint iface_added;
 guint iface_removed;
@@ -1596,6 +1655,7 @@ GCancellable *socket_service;
 
 int main(int argc, char **argv)
 {
+    (void)argv;
     int rc;
 
     if (pthread_mutex_init(&state.lock, NULL) != 0)
@@ -1604,72 +1664,29 @@ int main(int argc, char **argv)
         exit(123);
     }
 
-    state.n = 0;     // no devices yet
+    initialize_state();
 
     signal(SIGINT, int_handler);
     signal(SIGTERM, int_handler);
 
-    if (argc < 2)
+    if (argc < 1)
     {
         g_print("Bluetooth scanner\n");
-        g_print("   scan <[ssl://]mqtt server:[port]> [topicRoot=BLF] [udpPort] [username] [password]\n");
+        g_print("   scan\n");
         g_print("   but first set all the environment variables according to README.md");
         g_print("For Azure you must use ssl:// and :8833\n");
         return -1;
     }
 
-    char* mqtt_uri = argv[1];
-    char* mqtt_topicRoot = argc > 2 ? argv[2] : "BLF";
-    char* udp_port_arg = argc > 3 ? argv[3] : "0";
-    char* username = argc > 4 ? argv[4] : NULL;
-    char* password = argc > 5 ? argv[5] : NULL;
-
-    udp_port = atoi(udp_port_arg);
-
-    gethostname((char*)&state.client_id, 256);
-
-    g_print("Hostname is %s\n", state.client_id);
-
     g_print("Get mac address\n");
-
     get_mac_address(mac_address);
-
     mac_address_to_string(mac_address_text, sizeof(mac_address_text), mac_address);
     g_print("Local MAC address is: %s\n", mac_address_text);
-
-    const char* s_rssi_one_meter = getenv("RSSI_ONE_METER");
-    const char* s_rssi_factor = getenv("RSSI_FACTOR");
-
-    if (s_rssi_one_meter != NULL) rssi_one_meter = atoi(s_rssi_one_meter);
-    if (s_rssi_factor != NULL) rssi_factor = atof(s_rssi_factor);
-
-    g_print("Using RSSI Power at 1m : %i\n", rssi_one_meter);
-    g_print("Using RSSI to distance factor : %.1f (typically 2.0 (indoor, cluttered) to 4.0 (outdoor, no obstacles)\n", rssi_factor);
-
-    const char* s_position_x = getenv("POSITION_X");
-    const char* s_position_y = getenv("POSITION_Y");
-    const char* s_position_z = getenv("POSITION_Z");
-
-    if (s_position_x != NULL) state.position_x = (float)atof(s_position_x); else state.position_x = 0.0;
-    if (s_position_y != NULL) state.position_y = (float)atof(s_position_y); else state.position_y = 0.0;
-    if (s_position_z != NULL) state.position_z = (float)atof(s_position_z); else state.position_z = 0.0;
-
-    const char* s_mqtt_topic = getenv("MQTT_TOPIC");
-    const char* s_mqtt_server = getenv("MQTT_SERVER");
-
-    if (s_mqtt_topic != NULL) {
-        g_print("MQTT_TOPIC='%s'\n", s_mqtt_topic);
-    }
-
-    if (s_mqtt_server != NULL) {
-        g_print("MQTT_SERVER='%s'\n", s_mqtt_server);
-    }
 
     // Create a UDP listener for mesh messages about devices connected to other access points in same LAN
     socket_service = create_socket_service(&state);
 
     g_print("\n\nStarting\n\n");
-    g_print("Position: (%.1f,%.1f,%.1f)\n", state.position_x, state.position_y, state.position_z);
 
     conn = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
     if (conn == NULL)
@@ -1738,7 +1755,7 @@ int main(int argc, char **argv)
     }
     g_print("Started discovery\n");
 
-    prepare_mqtt(mqtt_uri, mqtt_topicRoot, state.client_id, mac_address, username, password);
+    prepare_mqtt(state.mqtt_server, state.mqtt_topic, state.client_id, mac_address, state.mqtt_username, state.mqtt_password);
 
     // Periodically ask Bluez for every device including ones that are long departed
     // but only do updates to devices we have seen, do no not create a device for each
@@ -1757,6 +1774,8 @@ int main(int argc, char **argv)
 
     // Every 13s see if any unnamed device is ready to be connected
     g_timeout_add_seconds(13, try_connect_tick, loop);
+
+    display_state();
 
     g_print("Start main loop\n");
 

@@ -52,7 +52,6 @@ void udp_send(int port, const char* message, int message_length) {
 
 GCancellable *cancellable;
 pthread_t listen_thread;
-char* access_point_name;
 
 // All access points ever seen, in alphabetic order
 int access_point_count = 0;
@@ -261,7 +260,6 @@ void *listen_loop(void *param)
 GCancellable* create_socket_service (struct OverallState* state)
 {
   cancellable = g_cancellable_new();
-  access_point_name = state->client_id;
 
   if (pthread_create(&listen_thread, NULL, listen_loop, state)) {
     fprintf(stderr, "Error creating thread\n");
@@ -275,25 +273,13 @@ GCancellable* create_socket_service (struct OverallState* state)
 /*
     Send device update over UDP broadcast to all other access points
 */
-void send_device_udp(struct Device* device) 
+void send_device_udp(struct OverallState* state, struct Device* device) 
 {
     struct AccessPoint a;
-    strncpy(a.client_id, access_point_name, NAME_LENGTH);
-    a.x = -1;
-    a.y = -1;
-    a.z = -1;
-    // Hard coded (x,y,z) coordinates for testing
-    // Move all of these to configuration
-    if (strcmp(a.client_id, "barn")==0)   { a.x = -1000; a.y = -1000; a.z = 2.0; }
-    if (strcmp(a.client_id, "garage")==0) { a.x = 10.0; a.y = 0.5; a.z = 2.0; }
-    if (strcmp(a.client_id, "kitchen")==0) { a.x = 46.0; a.y = -24.0; a.z = 2.0; }
-    if (strcmp(a.client_id, "livingroom")==0) { a.x = 43.0; a.y = -4.0; a.z = 2.0; }
-    if (strcmp(a.client_id, "pileft")==0) { a.x = 31.0; a.y = 8.0; a.z = -6.0; }
-    if (strcmp(a.client_id, "store")==0) { a.x = 32.0; a.y = 0.5; a.z = 2.0; }
-    if (strcmp(a.client_id, "study")==0) { a.x = 51.0; a.y = 7.0; a.z = 2.0; }
-    if (strcmp(a.client_id, "pi3study")==0) { a.x = 51.0; a.y = 7.0; a.z = 2.0; }
-    if (strcmp(a.client_id, "tiger")==0) { a.x = 53.0; a.y = 20.0; a.z = -6.0; }
-    if (strcmp(a.client_id, "ubuntu")==0) { a.x = 32.0; a.y = 7.0; a.z = -6.0; }
+    strncpy(a.client_id, state->client_id, NAME_LENGTH);
+    a.x = state->position_x;
+    a.y = state->position_y;
+    a.z = state->position_z;
 
     //printf("    Send UDP %i device %s '%s'\n", PORT, device->mac, device->name);
     char* json = device_to_json(&a, device);

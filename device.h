@@ -127,15 +127,24 @@ struct OverallState
     pthread_mutex_t lock;
     struct Device devices[N];
     char client_id[256];         // linux allows more, truncated
+
     float position_x;
     float position_y;
     float position_z;
+
+    int rssi_one_meter; // = -64;     // Put a device 1m away and measure the average RSSI
+    float rssi_factor; // = 3.5;      // 2.0 to 4.0, lower for indoor or cluttered environments
+
+    // Set only if you want to broadcast people to whole of LAN
+    int udp_sign_port;                // The display for this group of sensors
+    int udp_mesh_port;                // The mesh port for this group of sensors
+    float udp_scale_factor;           // Scale factor to multiply people by to send to screen
+
+    char* mqtt_topic;
+    char* mqtt_server;
+    char* mqtt_username;
+    char* mqtt_password;
 };
-
-// Access Points
-// - all the other seen access points in alpha order
-
-
 
 
 #endif
