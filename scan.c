@@ -1472,23 +1472,32 @@ int dump_all_devices_tick(void *parameters)
 /*
     Try connecting to a device that isn't currently connected
     Rate limited to one connection attempt every 15s, followed by a disconnect
+    Always process disconnects first, and only if none active, start next connection
 */
+
+gboolean try_disconnect (struct Device* a)
+{
+  if (a->try_connect_state == 1 && a->connected) {
+    a->try_connect_state = 2;
+    g_print(">>>>>> Disconnect from %s\n", a->mac);
+    bluez_adapter_disconnect_device(conn, a->mac);
+    return TRUE;
+  }
+  // didn't change state, try next one
+  return FALSE;
+}
 
 gboolean try_connect (struct Device* a)
 {
-  if (strlen(a->name) > 0) return FALSE;    // already named
+  if (a->category != CATEGORY_UNKNOWN) return FALSE; // already has a category
+  //if (strlen(a->name) > 0) return FALSE;    // already named
 
   if (a->count > 1 && a->try_connect_state == 0) {
     a->try_connect_state = 1;
     // Try forcing a connect to get a full dump from the device
     g_print(">>>>>> Connect to %s\n", a->mac);
     bluez_adapter_connect_device(conn, a->mac);
-    return TRUE;  }
-  else if (a->try_connect_state == 1 && a->connected) {
-    a->try_connect_state = 2;
-    g_print(">>>>>> Disconnect from %s\n", a->mac);
-    bluez_adapter_disconnect_device(conn, a->mac);
-    return TRUE;
+    return TRUE;  
   }
   // didn't change state, try next one
   return FALSE;
@@ -1499,7 +1508,10 @@ int try_connect_tick(void *parameters)
     (void)parameters; // not used
     if (starting) return TRUE;   // not during first 30s startup time
     for (int i=0; i < state.n; i++) {
-      if (try_connect(&state.devices[i])) break;
+      if (try_disconnect(&state.devices[i])) return TRUE;
+    }
+    for (int i=0; i < state.n; i++) {
+      if (try_connect(&state.devices[i])) return TRUE;
     }
     return TRUE;
 }
