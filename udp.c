@@ -149,13 +149,13 @@ struct ClosestTo* get_closest(int device_id)
 
           if (delta_time < 60.0) {
             if (aptest && apbest){
-              g_print(" %% Closer to '%s' than '%s', %.1fm < %.1fm after %.1fs\n", aptest->client_id, apbest->client_id, test->distance, best->distance, delta_time);
+              //g_print(" %% Closer to '%s' than '%s', %.1fm < %.1fm after %.1fs\n", aptest->client_id, apbest->client_id, test->distance, best->distance, delta_time);
             }
             best = test;
           }
           else {
             if (aptest && apbest){
-              g_print(" %% IGNORED Closer to '%s' than '%s', %.1fm < %.1fm after %.1fs\n", aptest->client_id, apbest->client_id, test->distance, best->distance, delta_time);
+              //g_print(" %% IGNORED Closer to '%s' than '%s', %.1fm < %.1fm after %.1fs\n", aptest->client_id, apbest->client_id, test->distance, best->distance, delta_time);
             }
           }
         }
@@ -223,14 +223,14 @@ void *listen_loop(void *param)
          {
              g_print("%s '%s' dt=%3li", d.mac, d.name, now-d.latest);
              merge(&state->devices[i], &d);
-             float ourdistance = state->devices[i].distance;
-             if (d.distance < ourdistance)
-             {
-               g_print(" * closest to %s->%s %.1fm:%.1fm *\n", a.client_id, access_point_name, d.distance, ourdistance);
-             } else 
-             {
-               g_print(" * closest to %s<-%s %.1fm:%.1fm *\n", access_point_name, a.client_id, ourdistance, d.distance);
-             }
+            // float ourdistance = state->devices[i].distance;
+            //  if (d.distance < ourdistance)
+            //  {
+            //    g_print(" * closest to %s->%s %.1fm:%.1fm *\n", a.client_id, access_point_name, d.distance, ourdistance);
+            //  } else 
+            //  {
+            //    g_print(" * closest to %s<-%s %.1fm:%.1fm *\n", access_point_name, a.client_id, ourdistance, d.distance);
+            //  }
              // use the local id for the device not any remote id
              add_closest(state->devices[i].id, a.id, d.latest, d.distance);
 
@@ -239,7 +239,7 @@ void *listen_loop(void *param)
              if (closest) { // && (closest->distance < state->devices[i].distance)) {
                struct AccessPoint* ap = get_access_point(closest->access_id);
                if (ap) {
-                  g_print(" * Closest overall is '%s' at %.2f\n", ap->client_id, closest->distance);
+                  //g_print(" * Closest overall is '%s' at %.2f\n", ap->client_id, closest->distance);
                }
              }
 
