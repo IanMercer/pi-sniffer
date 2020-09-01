@@ -1427,16 +1427,18 @@ void dump_device (struct Device* a)
   char* addressType = a->addressType == PUBLIC_ADDRESS_TYPE ? "pub" : a->addressType == RANDOM_ADDRESS_TYPE ? "ran" : "---";
   char* category = category_from_int(a->category);
 
+  float closest_dist = NAN;
   char* closest_ap = "unknown";
   struct ClosestTo* closest = get_closest(a->id);
   if (closest){
+    closest_dist = closest->distance;
     struct AccessPoint* ap = get_access_point(closest->access_id);
     if (ap){
         closest_ap = ap->client_id;
     }
   }
 
-  g_print("%3i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %20s %s\n", a->id%1000, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, closest_ap, category);
+  g_print("%3i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %14s %5.1fm %s\n", a->id%1000, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, closest_ap, closest_dist, category);
 }
 
 
