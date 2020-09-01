@@ -100,10 +100,20 @@ Given delays in MQTT transmit, receive and re-transmit to the receiving applicat
 
     There is also a received power at 1.0m setting, place a device at 1.0m, tail the log and figure this out for your RPi.
 
+    You can also set an (x,y,z) coordinate in meters that will be used for trilateration (coming soon)
+
+    The MQTT_TOPIC and MQTT_SERVER address are also moving from the command line to the environment section.
+
     Your configuration file should look like this:
 
 ````
     [Service]
     Environment="RSSI_FACTOR=3.5"
     Environment="RSSI_ONE_METER=-64"
+    Environment="POSITION_X=53.0"
+    Environment="POSITION_Y=20.0"
+    Environment="POSITION_Z=-6.0"
+    Environment="MQTT_TOPIC=BLF"
+    Environment="MQTT_SERVER=192.168.0.52:1883"
+
 ````

@@ -127,6 +127,9 @@ struct OverallState
     pthread_mutex_t lock;
     struct Device devices[N];
     char client_id[256];         // linux allows more, truncated
+    float position_x;
+    float position_y;
+    float position_z;
 };
 
 // Access Points

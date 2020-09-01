@@ -1054,10 +1054,11 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
           send_to_mqtt_single_float(address, "distance", existing->distance);
           time(&existing->last_sent);
 
-          // Broadcast what we know about the device to all other listeners
-          //send_device_mqtt(existing);
-          send_device_udp(existing);
         }
+        // TODO: Make this 'if send_distance or 30s has elapsed'
+        // Broadcast what we know about the device to all other listeners
+        //send_device_mqtt(existing);
+        send_device_udp(existing);
     }
 
     report_devices_count();
@@ -1612,6 +1613,7 @@ int main(int argc, char **argv)
     {
         g_print("Bluetooth scanner\n");
         g_print("   scan <[ssl://]mqtt server:[port]> [topicRoot=BLF] [udpPort] [username] [password]\n");
+        g_print("   but first set all the environment variables according to README.md");
         g_print("For Azure you must use ssl:// and :8833\n");
         return -1;
     }
@@ -1644,10 +1646,30 @@ int main(int argc, char **argv)
     g_print("Using RSSI Power at 1m : %i\n", rssi_one_meter);
     g_print("Using RSSI to distance factor : %.1f (typically 2.0 (indoor, cluttered) to 4.0 (outdoor, no obstacles)\n", rssi_factor);
 
+    const char* s_position_x = getenv("POSITION_X");
+    const char* s_position_y = getenv("POSITION_Y");
+    const char* s_position_z = getenv("POSITION_Z");
+
+    if (s_position_x != NULL) state.position_x = (float)atof(s_position_x); else state.position_x = 0.0;
+    if (s_position_y != NULL) state.position_y = (float)atof(s_position_y); else state.position_y = 0.0;
+    if (s_position_z != NULL) state.position_z = (float)atof(s_position_z); else state.position_z = 0.0;
+
+    const char* s_mqtt_topic = getenv("MQTT_TOPIC");
+    const char* s_mqtt_server = getenv("MQTT_SERVER");
+
+    if (s_mqtt_topic != NULL) {
+        g_print("MQTT_TOPIC='%s'\n", s_mqtt_topic);
+    }
+
+    if (s_mqtt_server != NULL) {
+        g_print("MQTT_SERVER='%s'\n", s_mqtt_server);
+    }
+
     // Create a UDP listener for mesh messages about devices connected to other access points in same LAN
     socket_service = create_socket_service(&state);
 
     g_print("\n\nStarting\n\n");
+    g_print("Position: (%.1f,%.1f,%.1f)\n", state.position_x, state.position_y, state.position_z);
 
     conn = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
     if (conn == NULL)
