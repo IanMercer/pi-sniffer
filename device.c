@@ -42,16 +42,16 @@ void merge(struct Device* local, struct Device* remote)
    // TODO: Other fields that we can transfer over
 }
 
-char* device_to_json (struct Device* device, const char* from)
+char* device_to_json (struct AccessPoint* a, struct Device* device)
 {
     char *string = NULL;
     cJSON *j = cJSON_CreateObject();
 
     // AccessPoint details
-    cJSON_AddStringToObject(j, "from", from);
-    cJSON_AddNumberToObject(j, "from_x", 20.0);
-    cJSON_AddNumberToObject(j, "from_y", 10.0);
-    cJSON_AddNumberToObject(j, "from_z", 0.0);
+    cJSON_AddStringToObject(j, "from", a->client_id);
+    cJSON_AddNumberToObject(j, "from_x", a->x);
+    cJSON_AddNumberToObject(j, "from_y", a->y);
+    cJSON_AddNumberToObject(j, "from_z", a->z);
 
     // Device details
     cJSON_AddStringToObject(j, "mac", device->mac);
@@ -96,7 +96,7 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
     cJSON *from_y = cJSON_GetObjectItemCaseSensitive(djson, "from_y");
     if (cJSON_IsNumber(from_y))
     {
-        access_point->y = (float)from_x->valuedouble;
+        access_point->y = (float)from_y->valuedouble;
     }
 
     cJSON *from_z = cJSON_GetObjectItemCaseSensitive(djson, "from_z");
@@ -111,6 +111,7 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
         strncpy(access_point->client_id, fromj->valuestring, NAME_LENGTH);
     }
 
+    // Device
 
     cJSON *mac = cJSON_GetObjectItemCaseSensitive(djson, "mac");
     if (cJSON_IsString(mac) && (mac->valuestring != NULL))

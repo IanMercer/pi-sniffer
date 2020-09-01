@@ -77,6 +77,7 @@ struct Device
 */
 struct AccessPoint
 {
+   int id;   // sequential ID
    char client_id[NAME_LENGTH];
    float x;
    float y;
@@ -87,7 +88,7 @@ int category_to_int(char* category);
 
 char* category_from_int(uint i);
 
-char* device_to_json (struct Device* device, const char* from);
+char* device_to_json (struct AccessPoint* a, struct Device* device);
 
 bool device_from_json(const char* json, struct AccessPoint* access_point, struct Device* device);
 

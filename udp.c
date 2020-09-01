@@ -58,39 +58,27 @@ char* access_point_name;
 uint access_point_count = 0;
 struct AccessPoint accessPoints[256];
 
-void add_access_point(const char* name, float x, float y, float z) {
-  strcpy(accessPoints[access_point_count].client_id, name);
-  accessPoints[access_point_count].x = x;
-  accessPoints[access_point_count].y = y;
-  accessPoints[access_point_count].z = z;
-  access_point_count++;
-}
+static uint access_id_sequence = 0;
 
 void update_accessPoints(struct AccessPoint access_point)
 {
   g_debug("Check for new access point '%s'\n", access_point.client_id);
   uint found = access_point_count;
   for (uint i = 0; i < access_point_count; i++){
-      if (strcmp(accessPoints[i].client_id, access_point.client_id) >= 0){
+      if (strcmp(accessPoints[i].client_id, access_point.client_id) == 0){
           found = i;
           break;
       }
   }
 
-  g_debug("Found %i in check for new access point\n", found);
-  if (found == access_point_count || strcmp(accessPoints[found].client_id, access_point.client_id) > 0) {
-      // insert access point here, shift others down, increase count
-      int to_move = access_point_count - found;
-      if (to_move > 0){
-          g_debug("Moving %i from %i up\n", to_move, found);
-          memmove(&accessPoints[found+1], &accessPoints[found], sizeof(struct AccessPoint) * to_move);
-      }
+  if (found == access_point_count) {
+      access_point.id = access_id_sequence++;
       memcpy(&accessPoints[found], &access_point, sizeof(struct AccessPoint));
       access_point_count++;
 
       g_print("ACCESS POINTS\n");
       for (uint k = 0; k < access_point_count; k++){
-          g_print("%i. %32s (%f,%f,%f)\n", k, accessPoints[k].client_id,accessPoints[k].x, accessPoints[k].y,accessPoints[k].z );
+          g_print("%i. %20s (%f,%f,%f)\n", accessPoints[k].id, accessPoints[k].client_id,accessPoints[k].x, accessPoints[k].y,accessPoints[k].z );
       }
   }
 }
@@ -113,16 +101,6 @@ void *listen_loop(void *param)
   g_print("Local client id is %s\n", state->client_id);
   g_cancellable_reset(cancellable);
 
-  add_access_point("barn",  -1000, -1000,   2.0);
-  add_access_point("garage",  10.0,  0.5,   2.0);
-  add_access_point("kitchen", 46.0,-24.0, 2.0);
-  add_access_point("livingroom", 43.0,-4.0, 2.0);
-  add_access_point("pileft",  31,    8.0,  -6.0);
-  add_access_point("store",   32,    0.5,   2.0);
-  add_access_point("study",   51,    7.0,   2.0);
-  add_access_point("tiger",   53,   20.0,  -6.0);
-  add_access_point("ubuntu",  32,    7.0,  -6.0);
- 
   while (!g_cancellable_is_cancelled(cancellable))
   {
     char buffer[2048];
@@ -199,8 +177,25 @@ GCancellable* create_socket_service (struct OverallState* state)
 */
 void send_device_udp(struct Device* device) 
 {
+    struct AccessPoint a;
+    strncpy(a.client_id, access_point_name, NAME_LENGTH);
+    a.x = -1;
+    a.y = -1;
+    a.z = -1;
+    // Hard coded (x,y,z) coordinates for testing
+    // Move all of these to configuration
+    if (strcmp(a.client_id, "barn")==0)   { a.x = -1000; a.y = -1000; a.z = 2.0; }
+    if (strcmp(a.client_id, "garage")==0) { a.x = 10.0; a.y = 0.5; a.z = 2.0; }
+    if (strcmp(a.client_id, "kitchen")==0) { a.x = 46.0; a.y = -24.0; a.z = 2.0; }
+    if (strcmp(a.client_id, "livingroom")==0) { a.x = 43.0; a.y = -4.0; a.z = 2.0; }
+    if (strcmp(a.client_id, "pileft")==0) { a.x = 31.0; a.y = 8.0; a.z = -6.0; }
+    if (strcmp(a.client_id, "store")==0) { a.x = 32.0; a.y = 0.5; a.z = 2.0; }
+    if (strcmp(a.client_id, "study")==0) { a.x = 51.0; a.y = 7.0; a.z = 2.0; }
+    if (strcmp(a.client_id, "tiger")==0) { a.x = 53.0; a.y = 20.0; a.z = -6.0; }
+    if (strcmp(a.client_id, "ubuntu")==0) { a.x = 32.0; a.y = 7.0; a.z = -6.0; }
+
     //printf("    Send UDP %i device %s '%s'\n", PORT, device->mac, device->name);
-    char* json = device_to_json(device, access_point_name);
+    char* json = device_to_json(&a, device);
     //printf("    %s", json);
     udp_send(PORT, json, strlen(json)+1);
     free(json);
