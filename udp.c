@@ -82,7 +82,7 @@ void update_accessPoints(struct AccessPoint access_point)
       // insert access point here, shift others down, increase count
       int to_move = access_point_count - found;
       if (to_move > 0){
-          g_debug("Moving %i from %i x %lu up\n", to_move, found, sizeof(struct AccessPoint));
+          g_debug("Moving %i from %i up\n", to_move, found);
           memmove(&accessPoints[found+1], &accessPoints[found], sizeof(struct AccessPoint) * to_move);
       }
       memcpy(&accessPoints[found], &access_point, sizeof(struct AccessPoint));
