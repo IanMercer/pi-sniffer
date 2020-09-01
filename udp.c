@@ -55,16 +55,16 @@ pthread_t listen_thread;
 char* access_point_name;
 
 // All access points ever seen, in alphabetic order
-uint access_point_count = 0;
+int access_point_count = 0;
 struct AccessPoint accessPoints[256];
 
-static uint access_id_sequence = 0;
+static int access_id_sequence = 0;
 
 void update_accessPoints(struct AccessPoint access_point)
 {
   g_debug("Check for new access point '%s'\n", access_point.client_id);
-  uint found = access_point_count;
-  for (uint i = 0; i < access_point_count; i++){
+  int found = access_point_count;
+  for (int i = 0; i < access_point_count; i++){
       if (strcmp(accessPoints[i].client_id, access_point.client_id) == 0){
           found = i;
           break;
@@ -77,11 +77,58 @@ void update_accessPoints(struct AccessPoint access_point)
       access_point_count++;
 
       g_print("ACCESS POINTS\n");
-      for (uint k = 0; k < access_point_count; k++){
+      for (int k = 0; k < access_point_count; k++){
           g_print("%i. %20s (%f,%f,%f)\n", accessPoints[k].id, accessPoints[k].client_id,accessPoints[k].x, accessPoints[k].y,accessPoints[k].z );
       }
   }
 }
+
+
+#define CLOSEST_N 2048
+
+// Most recent 2048 closest to observations
+static uint closest_n = 0;
+static struct ClosestTo closest[CLOSEST_N];
+
+/*
+   Add a closest observation
+*/
+void add_closest(int device_id, int access_id, time_t time, float distance)
+{
+  if (closest_n == CLOSEST_N){
+    g_memmove(&closest[0], &closest[1], sizeof(struct ClosestTo)*(CLOSEST_N-1));
+    closest_n--;
+  }
+
+  closest[closest_n].access_id = access_id;
+  closest[closest_n].device_id = device_id;
+  closest[closest_n].distance = distance;
+  closest[closest_n].time = time;
+}
+
+/*
+    Get the closest recent observation for a device
+*/
+struct ClosestTo* get_closest(int device_id)
+{
+  struct ClosestTo* best = NULL;
+
+    for (int i = closest_n-1; i > 0; i--)
+    {
+      if (closest[i].device_id == device_id){
+        if (best == NULL){
+          best = &closest[i];
+        } else if (best->distance > closest[i].distance) {
+          // TODO: Check time too, only recent ones
+          best = &closest[i];
+        }
+      }
+    }
+
+    return best;
+}
+
+
 
 void *listen_loop(void *param)
 {
@@ -143,6 +190,19 @@ void *listen_loop(void *param)
              {
                g_print(" * closest to %s<-%s %.1fm:%.1fm *\n", access_point_name, a.client_id, ourdistance, d.distance);
              }
+             // use the local id for the device not any remote id
+             add_closest(state->devices[i].id, a.id, d.latest, d.distance);
+
+             struct ClosestTo* closest = get_closest(state->devices[i].id);
+
+             if (closest && (closest->distance < state->devices[i].distance)) {
+              for (int ap = 0; ap < access_point_count; ap++){
+                if (accessPoints[ap].id == closest->access_id){
+                  g_print(" * Closest overall is '%s'\n", accessPoints[ap].client_id);
+                }
+              }
+             }
+
              break;
          }
       }
@@ -191,6 +251,7 @@ void send_device_udp(struct Device* device)
     if (strcmp(a.client_id, "pileft")==0) { a.x = 31.0; a.y = 8.0; a.z = -6.0; }
     if (strcmp(a.client_id, "store")==0) { a.x = 32.0; a.y = 0.5; a.z = 2.0; }
     if (strcmp(a.client_id, "study")==0) { a.x = 51.0; a.y = 7.0; a.z = 2.0; }
+    if (strcmp(a.client_id, "pi3study")==0) { a.x = 51.0; a.y = 7.0; a.z = 2.0; }
     if (strcmp(a.client_id, "tiger")==0) { a.x = 53.0; a.y = 20.0; a.z = -6.0; }
     if (strcmp(a.client_id, "ubuntu")==0) { a.x = 32.0; a.y = 7.0; a.z = -6.0; }
 

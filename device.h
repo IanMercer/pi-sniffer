@@ -84,6 +84,32 @@ struct AccessPoint
    float z;
 };
 
+
+/*
+   A third 'join' table joins devices and access points together
+   We keep only recent observations
+     - can throw out any observation which is further away in both time and distance
+     - can throw out any observation which is more than 2 min older than most recent
+     - can throw out any observation which is more than an hour old
+     - MUST throw out any observation for a deleted device or access point
+   Calculation of location:
+     - ?
+*/
+
+struct ClosestTo
+{
+   // Which device
+   int device_id;
+   // Which access point
+   int access_id;
+   // How far from the access point was it
+   float distance;
+   // When was this observation received
+   time_t time;
+};
+
+
+
 int category_to_int(char* category);
 
 char* category_from_int(uint i);
