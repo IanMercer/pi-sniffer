@@ -257,8 +257,8 @@ void report_devices_count() {
        double delta_time = difftime(now, columns[col].latest);
        if (delta_time > MAX_TIME_AGO_COUNTING_MINUTES * 60) continue;
 
-       double score = 0.55 - atan(delta_time/20.0  - 4.0) / 3.0;
-       // A curve that stays a 1.0 for a while and then drops rapidly around 1 minute out
+       double score = 0.55 - atan(delta_time/40.0  - 4.0) / 3.0;
+       // A curve that stays a 1.0 for a while and then drops rapidly around 3 minutes out
        if (score > 0.9) score = 1.0;
        if (score < 0.0) score = 0.0;
 
