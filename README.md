@@ -92,7 +92,7 @@ Given delays in MQTT transmit, receive and re-transmit to the receiving applicat
 * [optional] open firewall so multiple instances can communicate
     `sudo ufw allow 7779/udp`
 
-* [optional] edit the configuration according to the environment
+* [optional] edit the configuration overrides according to the environment
     `sudo systemctl edit pi-sniffer.service`
 
     For outside use a lower divisor, say 2.5, for inside use a higher divisor, say 3.5

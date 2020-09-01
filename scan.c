@@ -689,6 +689,13 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
 
             float averaged = kalman_update(&existing->kalman, distance);
 
+            // TODO: Different devices have different signal strengths
+            // iPad seems to be particulary strong. Need to calibrate this and have
+            // a per-device. PowerLevel is supposed to do this but it's not reliably sent.
+            if (strcmp(existing->name, "iPad") == 0) {
+                averaged = averaged * 1.5;
+            }
+
             // 10s with distance change of 1m triggers send
             // 1s with distance change of 10m triggers send
 
