@@ -1427,7 +1427,16 @@ void dump_device (struct Device* a)
   char* addressType = a->addressType == PUBLIC_ADDRESS_TYPE ? "pub" : a->addressType == RANDOM_ADDRESS_TYPE ? "ran" : "---";
   char* category = category_from_int(a->category);
 
-  g_print("%3i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %20s %s\n", a->id%1000, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, a->alias, category);
+  char* closest_ap = "unknown";
+  struct ClosestTo* closest = get_closest(a->id);
+  if (closest){
+    struct AccessPoint* ap = get_access_point(closest->access_id);
+    if (ap){
+        closest_ap = ap->client_id;
+    }
+  }
+
+  g_print("%3i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %20s %s\n", a->id%1000, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, closest_ap, category);
 }
 
 
@@ -1442,7 +1451,7 @@ int dump_all_devices_tick(void *parameters)
     if (!logTable) return TRUE; // no changes since last time
     logTable = FALSE;
     g_print("--------------------------------------------------------------------------------------------------------------\n");
-    g_print("Id  Address          Count Typ   Dist  Col First   Last                   Name                Alias Category  \n");
+    g_print("Id  Address          Count Typ   Dist  Col First   Last                   Name              Closest Category  \n");
     g_print("--------------------------------------------------------------------------------------------------------------\n");
     time(&now);
     for (int i=0; i < state.n; i++) {

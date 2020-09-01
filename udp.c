@@ -132,15 +132,31 @@ struct ClosestTo* get_closest(int device_id)
 
     for (int i = closest_n-1; i > 0; i--)
     {
-      if (closest[i].device_id == device_id){
+      struct ClosestTo* test = &closest[i];
+
+      if (test->device_id == device_id){
         if (best == NULL){
-          best = &closest[i];
-        } else if (best->distance > closest[i].distance) {
+          best = test;
+        } else if (best->access_id == test->access_id) {
+          // continue, latest hit on access point is most relevant
+        } 
+        else if (best->distance > test->distance) {
           // TODO: Check time too, only recent ones
-          best = &closest[i];
-          struct AccessPoint* ap = get_access_point(best->access_id);
-          if (ap){
-            g_print(" %% Closer '%s' at %.2fm\n", ap->client_id, best->distance);
+          double delta_time = difftime(best->time, test->time);
+
+          struct AccessPoint* aptest = get_access_point(test->access_id);
+          struct AccessPoint* apbest = get_access_point(best->access_id);
+
+          if (delta_time < 60.0) {
+            if (aptest && apbest){
+              g_print(" %% Closer to '%s' than '%s', %.1fm < %.1fm after %.1fs\n", aptest->client_id, apbest->client_id, test->distance, best->distance, delta_time);
+            }
+            best = test;
+          }
+          else {
+            if (aptest && apbest){
+              g_print(" %% IGNORED Closer to '%s' than '%s', %.1fm < %.1fm after %.1fs\n", aptest->client_id, apbest->client_id, test->distance, best->distance, delta_time);
+            }
           }
         }
       }
