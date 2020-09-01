@@ -83,6 +83,18 @@ void update_accessPoints(struct AccessPoint access_point)
   }
 }
 
+/*
+    Get access point by id
+*/
+struct AccessPoint* get_access_point(int id)
+{
+  for (int ap = 0; ap < access_point_count; ap++){
+    if (accessPoints[ap].id == id){
+      return &accessPoints[ap];
+    }
+  }
+  return NULL;
+}
 
 #define CLOSEST_N 2048
 
@@ -124,6 +136,10 @@ struct ClosestTo* get_closest(int device_id)
         } else if (best->distance > closest[i].distance) {
           // TODO: Check time too, only recent ones
           best = &closest[i];
+          struct AccessPoint* ap = get_access_point(best->access_id);
+          if (ap){
+            g_print(" %% Closer '%s' at %.2fm\n", ap->client_id, best->distance);
+          }
         }
       }
     }
@@ -201,11 +217,10 @@ void *listen_loop(void *param)
              struct ClosestTo* closest = get_closest(state->devices[i].id);
 
              if (closest) { // && (closest->distance < state->devices[i].distance)) {
-              for (int ap = 0; ap < access_point_count; ap++){
-                if (accessPoints[ap].id == closest->access_id){
-                  g_print(" * Closest overall is '%s' at %.2f\n", accessPoints[ap].client_id, closest->distance);
-                }
-              }
+               struct AccessPoint* ap = get_access_point(closest->access_id);
+               if (ap) {
+                  g_print(" * Closest overall is '%s' at %.2f\n", ap->client_id, closest->distance);
+               }
              }
 
              break;

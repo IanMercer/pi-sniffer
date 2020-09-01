@@ -607,6 +607,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
             else if (strncmp(name, "AprilBeacon", 11) == 0) existing->category = CATEGORY_BEACON;
             else if (strncmp(name, "abtemp", 6) == 0) existing->category = CATEGORY_BEACON;
             else if (strncmp(name, "abeacon", 7) == 0) existing->category = CATEGORY_BEACON;
+            else if (strncmp(name, "estimote", 8) == 0) existing->category = CATEGORY_BEACON;
             else if (strncmp(name, "LYWSD03MMC", 10) == 0) existing->category = CATEGORY_BEACON;
             // Headphones
             else if (strncmp(name, "Sesh Evo-LE", 11) == 0) existing->category = CATEGORY_HEADPHONES;  // Skullcandy
