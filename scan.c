@@ -1438,7 +1438,7 @@ void dump_device (struct Device* a)
     }
   }
 
-  g_print("%3i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %14s %5.1fm %s\n", a->id%1000, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, closest_ap, closest_dist, category);
+  g_print("%3i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %13s %5.1fm %s\n", a->id%1000, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, closest_ap, closest_dist, category);
 }
 
 
@@ -1453,7 +1453,7 @@ int dump_all_devices_tick(void *parameters)
     if (!logTable) return TRUE; // no changes since last time
     logTable = FALSE;
     g_print("--------------------------------------------------------------------------------------------------------------\n");
-    g_print("Id  Address          Count Typ   Dist  Col First   Last                   Name              Closest Category  \n");
+    g_print("Id  Address          Count Typ   Dist  Col   First   Last                 Name              Closest Category  \n");
     g_print("--------------------------------------------------------------------------------------------------------------\n");
     time(&now);
     for (int i=0; i < state.n; i++) {
