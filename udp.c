@@ -170,7 +170,10 @@ void *listen_loop(void *param)
       update_accessPoints(a);
 
       // ignore messages from self
-      if (strcmp(a.client_id, access_point_name) == 0) continue;
+      if (strcmp(a.client_id, access_point_name) == 0) {
+        g_print("Ignoring message from self %s : %s\n", a.client_id, d.mac);
+        continue;
+      }
 
       time_t now;
       time(&now);
