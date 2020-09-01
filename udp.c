@@ -60,7 +60,7 @@ struct AccessPoint accessPoints[256];
 
 static int access_id_sequence = 0;
 
-void update_accessPoints(struct AccessPoint access_point)
+struct AccessPoint* update_accessPoints(struct AccessPoint access_point)
 {
   g_debug("Check for new access point '%s'\n", access_point.client_id);
   int found = access_point_count;
@@ -81,6 +81,8 @@ void update_accessPoints(struct AccessPoint access_point)
           g_print("%i. %20s (%f,%f,%f)\n", accessPoints[k].id, accessPoints[k].client_id,accessPoints[k].x, accessPoints[k].y,accessPoints[k].z );
       }
   }
+
+  return &accessPoints[found];
 }
 
 /*
@@ -185,9 +187,11 @@ void *listen_loop(void *param)
 
     if (device_from_json(buffer, &a, &d))
     {
-      update_accessPoints(a);
+      struct AccessPoint* actual = update_accessPoints(a);
+      // Replace with the local interned copy of ap
+      a = *actual;
 
-      // ignore messages from self
+// ignore messages from self
 //      if (strcmp(a.client_id, access_point_name) == 0) {
 //        g_print("Ignoring message from self %s : %s\n", a.client_id, d.mac);
 //        continue;
