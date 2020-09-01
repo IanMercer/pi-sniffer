@@ -95,6 +95,8 @@ static struct ClosestTo closest[CLOSEST_N];
 */
 void add_closest(int device_id, int access_id, time_t time, float distance)
 {
+  if (distance < 0.1) return;
+
   if (closest_n == CLOSEST_N){
     g_memmove(&closest[0], &closest[1], sizeof(struct ClosestTo)*(CLOSEST_N-1));
     closest_n--;
@@ -198,10 +200,10 @@ void *listen_loop(void *param)
 
              struct ClosestTo* closest = get_closest(state->devices[i].id);
 
-             if (closest && (closest->distance < state->devices[i].distance)) {
+             if (closest) { // && (closest->distance < state->devices[i].distance)) {
               for (int ap = 0; ap < access_point_count; ap++){
                 if (accessPoints[ap].id == closest->access_id){
-                  g_print(" * Closest overall is '%s'\n", accessPoints[ap].client_id);
+                  g_print(" * Closest overall is '%s' at %.2f\n", accessPoints[ap].client_id, closest->distance);
                 }
               }
              }
