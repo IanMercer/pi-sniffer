@@ -104,6 +104,7 @@ void add_closest(int device_id, int access_id, time_t time, float distance)
   closest[closest_n].device_id = device_id;
   closest[closest_n].distance = distance;
   closest[closest_n].time = time;
+  closest_n++;
 }
 
 /*
@@ -127,7 +128,6 @@ struct ClosestTo* get_closest(int device_id)
 
     return best;
 }
-
 
 
 void *listen_loop(void *param)
@@ -170,10 +170,10 @@ void *listen_loop(void *param)
       update_accessPoints(a);
 
       // ignore messages from self
-      if (strcmp(a.client_id, access_point_name) == 0) {
-        g_print("Ignoring message from self %s : %s\n", a.client_id, d.mac);
-        continue;
-      }
+//      if (strcmp(a.client_id, access_point_name) == 0) {
+//        g_print("Ignoring message from self %s : %s\n", a.client_id, d.mac);
+//        continue;
+//      }
 
       time_t now;
       time(&now);
