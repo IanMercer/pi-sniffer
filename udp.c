@@ -324,7 +324,7 @@ void send_device_udp(struct OverallState* state, struct Device* device)
 {
     //printf("    Send UDP %i device %s '%s'\n", PORT, device->mac, device->name);
     char* json = device_to_json(state->local, device);
-    printf("    %s\n", json);
+    //printf("    %s\n", json);
     udp_send(PORT, json, strlen(json)+1);
     free(json);
 
