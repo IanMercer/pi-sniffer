@@ -29,16 +29,26 @@ void optional_set(char* name, char* value) {
   g_strlcpy(name, value, NAME_LENGTH);
 }
 
-void soft_set(int8_t* category, int8_t category_new)
+void soft_set_8(int8_t* field, int8_t field_new)
 {
-    if (*category == CATEGORY_UNKNOWN) *category = category_new;
+    // CATEGORY_UNKNOWN, UNKNOWN_ADDRESS_TYPE = 0
+    if (*field == 0) *field = field_new;
+}
+
+void soft_set_u16(uint16_t* field, uint16_t field_new)
+{
+    // CATEGORY_UNKNOWN, UNKNOWN_ADDRESS_TYPE = 0
+    if (*field == 0) *field = field_new;
 }
 
 void merge(struct Device* local, struct Device* remote)
 {
    optional_set(local->name, remote->name);
    optional_set(local->alias, remote->alias);
-   soft_set(&local->category, remote->category);
+   soft_set_8(&local->addressType, remote->addressType);
+   soft_set_8(&local->category, remote->category);
+   soft_set_u16(&local->appearance, remote->appearance);  // not used ?
+   if (remote->try_connect_state == 2) local->try_connect_state = 2;  // already connected once
    // TODO: Other fields that we can transfer over
 }
 

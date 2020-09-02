@@ -113,7 +113,23 @@ Given delays in MQTT transmit, receive and re-transmit to the receiving applicat
     Environment="POSITION_X=53.0"
     Environment="POSITION_Y=20.0"
     Environment="POSITION_Z=-6.0"
-    Environment="MQTT_TOPIC=BLF"
+
+    # Server is formatted: [ssl://]mqtt server:[port]
+    # For Azure you MUST use ssl:// and :8833
+
     Environment="MQTT_SERVER=192.168.0.52:1883"
+    Environment="MQTT_TOPIC=BLF"
+    Environment="MQTT_USERNAME="
+    Environment="MQTT_PASSWORD="
+
+    # Port on which to communicate with sensors in the same group in mesh mode
+    Environment="UDP_MESH_PORT=7779"
+    # Port on which to broadcast a count of people present x 10
+    # If you have multiple sensors in a group, only one should send to the sign
+    Environment="UDP_SIGN_PORT=7778"
+    # How to map people to the value sent, e.g. 0.5 so that 4 people = 2.0 sent
+    # Means that the sign can be configured without deploying new code there
+    Environment="UDP_SCALE_FACTOR"
+
 
 ````

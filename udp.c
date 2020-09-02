@@ -75,10 +75,10 @@ struct AccessPoint* update_accessPoints(struct AccessPoint access_point)
       memcpy(&accessPoints[found], &access_point, sizeof(struct AccessPoint));
       access_point_count++;
 
-      g_print("ACCESS POINTS\n");
-      for (int k = 0; k < access_point_count; k++){
-          g_print("%i. %20s (%f,%f,%f)\n", accessPoints[k].id, accessPoints[k].client_id,accessPoints[k].x, accessPoints[k].y,accessPoints[k].z );
-      }
+      //g_print("ACCESS POINTS\n");
+      //for (int k = 0; k < access_point_count; k++){
+      //    g_print("%i. %20s (%f,%f,%f)\n", accessPoints[k].id, accessPoints[k].client_id,accessPoints[k].x, accessPoints[k].y,accessPoints[k].z );
+      //}
   }
 
   return &accessPoints[found];
@@ -215,7 +215,11 @@ void *listen_loop(void *param)
       time_t now;
       time(&now);
 
+      bool found = true;
+
       // TODO: Lock the structure
+      pthread_mutex_lock(&state->lock);
+
       for(int i = 0; i < state->n; i++)
       {
          if (strncmp(d.mac, state->devices[i].mac, 18) == 0)
@@ -245,6 +249,17 @@ void *listen_loop(void *param)
              break;
          }
       }
+
+      pthread_mutex_unlock(&state->lock);
+
+      if (!found){
+        g_print("Add foreign device %s\n", d.mac);
+        //struct Device added;
+        //added.id = -1;
+
+
+      }
+
       printf("\n");
 
     }

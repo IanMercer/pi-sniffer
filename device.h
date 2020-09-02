@@ -2,6 +2,7 @@
 #define DEVICE_H
 
 #include "kalman.h"
+#include <pthread.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -39,6 +40,7 @@ typedef uint64_t u_int64_t;
 struct Device
 {
     int id;
+    bool hidden;                  // not seen by this access point (yet)
     char mac[18];                 // mac address string
     char name[NAME_LENGTH];
     char alias[NAME_LENGTH];

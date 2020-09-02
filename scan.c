@@ -218,7 +218,7 @@ void report_devices_count() {
 
         int just_this_range = min - previous;
         if (reported_ranges[i] != just_this_range) {
-          g_print("Devices present at range %im %i    \n", range, just_this_range);
+          //g_print("Devices present at range %im %i    \n", range, just_this_range);
           reported_ranges[i] = just_this_range;
           made_changes = TRUE;
         }
@@ -445,17 +445,12 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
 
 /*
     Report a new or changed device to MQTT endpoint
-
     NOTE: Free's address when done
 */
-static void report_device_to_MQTT(GVariant *properties, char *known_address, bool isUpdate)
+static void report_device_internal(GVariant *properties, char *known_address, bool isUpdate)
 {
-    //g_debug("START report_device_to_MQTT\n");
-
     logTable = TRUE;
-    //       g_print("report_device_to_MQTT(%s)\n", address);
     //pretty_print("report_device", properties);
-
     char address[18];
 
     if (known_address) {
@@ -500,6 +495,7 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
         // Grab the next empty item in the array
         existing = &state.devices[state.n++];
         existing->id = id_gen++;                 // unique ID for each
+        existing->hidden = false;                // we own this one
         g_strlcpy(existing->mac, address, 18);   // address
 
         // dummy struct filled with unmatched values
@@ -1055,6 +1051,17 @@ static void report_device_to_MQTT(GVariant *properties, char *known_address, boo
     report_devices_count();
 }
 
+/*
+  Report device with lock on data structures
+  NOTE: Free's address when done
+*/
+static void report_device(struct OverallState* state, GVariant *properties, char *known_address, bool isUpdate)
+{
+    pthread_mutex_lock(&state->lock);
+    report_device_internal(properties, known_address, isUpdate);
+    pthread_mutex_unlock(&state->lock);
+}
+
 static void bluez_device_appeared(GDBusConnection *sig,
                                   const gchar *sender_name,
                                   const gchar *object_path,
@@ -1114,7 +1121,7 @@ static void bluez_device_appeared(GDBusConnection *sig,
         if (g_ascii_strcasecmp(interface_name, "org.bluez.Device1") == 0)
         {
             // Report device immediately, including RSSI
-            report_device_to_MQTT(properties, NULL, TRUE);
+            report_device(&state, properties, NULL, TRUE);
         }
         else if (g_ascii_strcasecmp(interface_name, "org.bluez.GattService1") == 0)
         {
@@ -1243,7 +1250,7 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
     {
         // interface_name is something like /org/bluez/hci0/dev_40_F8_A3_77_C5_2B
         // g_print("INTERFACE NAME: %s\n", path);
-        report_device_to_MQTT(p, address, TRUE);
+        report_device(&state, p, address, TRUE);
     }
 
     g_variant_unref(p);
@@ -1319,7 +1326,7 @@ void bluez_list_devices(GDBusConnection *conn, GAsyncResult *res, gpointer data)
             {
                 if (g_ascii_strcasecmp(interface_name, "org.bluez.Device1") == 0)
                 {
-                    report_device_to_MQTT(properties, NULL, FALSE);
+                    report_device(&state, properties, NULL, FALSE);
                 }
                 g_variant_unref(properties);
             }
