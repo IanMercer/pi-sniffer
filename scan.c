@@ -1790,6 +1790,8 @@ int main(int argc, char **argv)
     // Every 13s see if any unnamed device is ready to be connected
     g_timeout_add_seconds(13, try_connect_tick, loop);
 
+    g_print("\n\n\n\n\n\n");
+
     display_state();
 
     g_print("Start main loop\n");

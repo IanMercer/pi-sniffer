@@ -95,7 +95,7 @@ struct AccessPoint* add_access_point(char* client_id, float x, float y, float z,
   else {
     if (ap->people_distance != people_distance) { g_print("%s People distance changed from %.1f to %.1f\n", ap->client_id, ap->people_distance, people_distance); ap->people_distance = people_distance; }
     if (ap->rssi_factor != rssi_factor) { g_print("%s RSSI factor changed from %.1f to %.1f\n", ap->client_id, ap->rssi_factor, rssi_factor); ap->rssi_factor = rssi_factor; }
-    if (ap->rssi_one_meter != rssi_one_meter) { g_print("%s RSSI one meter changed from %if to %i\n", ap->client_id, ap->rssi_one_meter, rssi_one_meter); ap->rssi_one_meter = rssi_one_meter; }
+    if (ap->rssi_one_meter != rssi_one_meter) { g_print("%s RSSI one meter changed from %i to %i\n", ap->client_id, ap->rssi_one_meter, rssi_one_meter); ap->rssi_one_meter = rssi_one_meter; }
   }
   return ap;
 }
@@ -322,15 +322,9 @@ GCancellable* create_socket_service (struct OverallState* state)
 */
 void send_device_udp(struct OverallState* state, struct Device* device) 
 {
-    struct AccessPoint a;
-    strncpy(a.client_id, state->client_id, NAME_LENGTH);
-    a.x = state->position_x;
-    a.y = state->position_y;
-    a.z = state->position_z;
-
     //printf("    Send UDP %i device %s '%s'\n", PORT, device->mac, device->name);
-    char* json = device_to_json(&a, device);
-    //printf("    %s", json);
+    char* json = device_to_json(state->local, device);
+    printf("    %s\n", json);
     udp_send(PORT, json, strlen(json)+1);
     free(json);
 
