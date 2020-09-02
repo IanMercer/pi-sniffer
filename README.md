@@ -1,11 +1,21 @@
 # pi-sniffer aka Crowd Warning
-This project is a simple sniffer for Bluetooth LE on Raspberry Pi and sender to MQTT. It uses the built-in BlueZ libraries and Bluetooth antenna on a Raspberry Pi (W or 3+) to scan for nearby BLE devices. 
+This project counts people!  It can figure out how many people are present in a given area using a handful of very cheap sensors and the cellphone that most people are carrying with them all the time.
+
+Using the count of people present you can power displays that warn people when it's too crowded, hence the code name "Crowd Alert". The code here recently won first place in the global [BetterHealth Hackathon](https://tinyurl.com/crowdalert) organized by HCL and Microsoft. 
+
+But you can also use the data in many other ways: as an input to a smart home, as a feed to a marketing analysis system, ...
+
+Not only does this project count how many phones are present, it tracks every other device that comes into range and sends data back over MQTT about them. For devices other than cellphones with public mac addresses you can use this information to trigger actions. 
+
+It uses the built-in Linux BLUEZ libraries and the Bluetooth antenna on any Raspberry Pi (W, 3+, 4) to scan for nearby BLE devices.
+
 It reports all BLE devices found (Mac address, name, type, UUIDs, ...) and their approximate distance to an MQTT endpoint. It applies a simple Kalman filter to smooth the distance values. It also handles iPhones and other Apple devices that randomize their mac addresses periodically and can give a reliable count of how many phones/watches/... are in-range.
 
 ![image](https://user-images.githubusercontent.com/347540/85953280-1cb7f300-b924-11ea-96d5-07c217a57e24.png "Multiple Pis and many BLE devices in action")
 ![image](https://user-images.githubusercontent.com/347540/85953412-dd3dd680-b924-11ea-8eeb-a3b328f91d19.png "A single stationary device")
 
 # applications
+* Power displays that warn when a confined space is getting too crowded to encourage people to 'socially distance' by coming back later or picking a less crowded store / room / railway carriage / bus / ...
 * Detect cell phones entering your home, garden, barn, ...
 * Put the heating or air conditioning on when there are two or more cellphones in the house and off otherwise
 * Locate cars, dogs, ... using iBeacons attached to moving objects (reverse of iBeacon normal usage) 
@@ -13,7 +23,7 @@ It reports all BLE devices found (Mac address, name, type, UUIDs, ...) and their
 
 # goals
 * Scan for BLE devices nearby a Raspberry Pi using the built-in Bluetooth adapter
-* No external dependencies: no Python, no Node.js, no fragile package dependencies
+* No external dependencies: no Python, no Node.js, no fragile package dependencies, easy portability
 * Simplicity: do one thing well, no frills
 
 # iOS MAC address randomization
@@ -47,13 +57,14 @@ An `up` message is also sent on startup.
 Given delays in MQTT transmit, receive and re-transmit to the receiving application it's a good idea to use the timestamp passed in the packet. Make sure all your Pis are synchronized to the same time.
 
 # status
-* Recently updated to use the Eclipse PAHO MQTT C library which support SSL and Async code. This is the only dependency.
+* Recently updated to use the Eclipse PAHO MQTT C library which support SSL and Async code. This is now the only dependency.
 * This is a work in progress and is still changing fairly rapidly.
 * There is a `build.sh` file that builds and runs the code. 
-* The MQTT topic prefix is hard-coded but the MQTT server IP (or FQDN) and port are configurable.
-* Environment variables are used to configure the RSSI to distance conversion parameters for indoor/outdoor settings.
-* Multiple instances communicate over UDP on port 7779
-* An optional additional port can be supplied and the total person count (adjusted) is sent to that port
+* There is a `log.sh` file that tails the log while it's running.
+* The MQTT topic prefix, server IP (or FQDN) and port are configurable.
+* Environment variables are also used to configure the RSSI to distance conversion parameters for indoor/outdoor settings.
+* Multiple instances communicate over UDP on port 7779 (also configurable).
+* The total number of people present x 10.0 x a configurable scale factor is sent over UDP 7778 (also configurable).  (It's actually the expectation of the probability curve for the number of people present so after a period of inactivity it goes down to zero following a curve.)
 * A separate ESP8266 project is available that listens to the port and displays a crowd warning indication
 
 # plans
