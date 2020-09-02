@@ -59,7 +59,7 @@ struct AccessPoint accessPoints[256];
 
 static int access_id_sequence = 0;
 
-struct AccessPoint* add_access_point(char* client_id, float x, float y, float z, float rssi_one_meter, float rssi_factor, float people_distance)
+struct AccessPoint* add_access_point(char* client_id, float x, float y, float z, int rssi_one_meter, float rssi_factor, float people_distance)
 {
   g_debug("Check for new access point '%s'\n", client_id);
   int found = access_point_count;
@@ -91,6 +91,11 @@ struct AccessPoint* add_access_point(char* client_id, float x, float y, float z,
       //for (int k = 0; k < access_point_count; k++){
       //    g_print("%i. %20s (%f,%f,%f)\n", accessPoints[k].id, accessPoints[k].client_id,accessPoints[k].x, accessPoints[k].y,accessPoints[k].z );
       //}
+  }
+  else {
+    if (ap->people_distance != people_distance) { g_print("%s People distance changed from %.1f to %.1f\n", ap->client_id, ap->people_distance, people_distance); ap->people_distance = people_distance; }
+    if (ap->rssi_factor != rssi_factor) { g_print("%s RSSI factor changed from %.1f to %.1f\n", ap->client_id, ap->rssi_factor, rssi_factor); ap->rssi_factor = rssi_factor; }
+    if (ap->rssi_one_meter != rssi_one_meter) { g_print("%s RSSI one meter changed from %if to %i\n", ap->client_id, ap->rssi_one_meter, rssi_one_meter); ap->rssi_one_meter = rssi_one_meter; }
   }
   return ap;
 }
