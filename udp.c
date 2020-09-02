@@ -126,11 +126,29 @@ void add_closest(int device_id, int access_id, time_t time, float distance)
     closest_n--;
   }
 
-  closest[closest_n].access_id = access_id;
-  closest[closest_n].device_id = device_id;
-  closest[closest_n].distance = distance;
-  closest[closest_n].time = time;
-  closest_n++;
+  bool overwrite = FALSE;
+
+  // Update the last value if it's the same ap, same device and within a few seconds
+  // prevents array from being flooded with same value over and over
+  if (closest_n > 0) {
+    struct ClosestTo* last = &closest[closest_n-1];
+    if (last->access_id == access_id && last->device_id == device_id){
+       double delta_time = difftime(time, last->time);
+       if (delta_time < 10.0) {
+         last->time = time;
+         last->distance = distance;
+         overwrite = TRUE;
+       }
+    }
+  }
+
+  if (!overwrite){
+    closest[closest_n].access_id = access_id;
+    closest[closest_n].device_id = device_id;
+    closest[closest_n].distance = distance;
+    closest[closest_n].time = time;
+    closest_n++;
+  }
 }
 
 /*
