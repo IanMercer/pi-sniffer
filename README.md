@@ -1,11 +1,11 @@
-# pi-sniffer aka Crowd Warning
+# pi-sniffer aka Crowd Alert
 This project counts people!  It can figure out how many people are present in a given area using a handful of very cheap sensors and the cellphone that most people are carrying with them all the time.
 
 Using the count of people present you can power displays that warn people when it's too crowded, hence the code name "Crowd Alert". The code here recently won first place in the global [BetterHealth Hackathon](https://tinyurl.com/crowdalert) organized by HCL and Microsoft. 
 
 But you can also use the data in many other ways: as an input to a smart home, as a feed to a marketing analysis system, ...
 
-Not only does this project count how many phones are present, it tracks every other device that comes into range and sends data back over MQTT about them. For devices other than cellphones with public mac addresses you can use this information to trigger actions. 
+Not only does this project count how many phones are present, it tracks every other device that comes into range and sends data back over MQTT about them. For devices other than cellphones, i.e ones with either defined names or public (unchanging) mac addresses you can use this information to trigger actions. For example, put an iBeacon on your car and trigger an action when it comes home or after it's been gone for a set time.
 
 It uses the built-in Linux BLUEZ libraries and the Bluetooth antenna on any Raspberry Pi (W, 3+, 4) to scan for nearby BLE devices.
 
@@ -145,3 +145,8 @@ Given delays in MQTT transmit, receive and re-transmit to the receiving applicat
 
 
 ````
+
+# FAQ
+
+Please see the [FAQ](FAQ.md) for more information.
+
