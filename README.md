@@ -130,7 +130,7 @@ Given delays in MQTT transmit, receive and re-transmit to the receiving applicat
     Environment="UDP_SIGN_PORT=7778"
     # How to map people to the value sent, e.g. 0.5 so that 4 people = 2.0 sent
     # Means that the sign can be configured without deploying new code there
-    Environment="UDP_SCALE_FACTOR"
+    Environment="UDP_SCALE_FACTOR=0.5"
 
 
 ````

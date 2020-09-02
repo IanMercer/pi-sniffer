@@ -84,6 +84,11 @@ struct AccessPoint
    float x;
    float y;
    float z;
+   // Put a device 1m away and measure the average RSSI
+   int rssi_one_meter;           // RSSI at one meter for test device (-64 dbm typical)
+   // 2.0 to 4.0, lower for indoor or cluttered environments, default is 3.5
+   float rssi_factor;              // Factor for RSSI to distance calculation 2.0-4.0 see README.md
+   float people_distance;          // Counts as a person if under this range (meters)
 };
 
 
@@ -135,9 +140,6 @@ struct OverallState
     float position_z;
 
     struct AccessPoint* local;        // the local access point (in the access points struct)
-
-    int rssi_one_meter; // = -64;     // Put a device 1m away and measure the average RSSI
-    float rssi_factor; // = 3.5;      // 2.0 to 4.0, lower for indoor or cluttered environments
 
     // Set only if you want to broadcast people to whole of LAN
     int udp_sign_port;                // The display for this group of sensors

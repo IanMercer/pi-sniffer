@@ -59,7 +59,7 @@ struct AccessPoint accessPoints[256];
 
 static int access_id_sequence = 0;
 
-struct AccessPoint* add_access_point(char* client_id, float x, float y, float z)
+struct AccessPoint* add_access_point(char* client_id, float x, float y, float z, float rssi_one_meter, float rssi_factor, float person_distance)
 {
   g_debug("Check for new access point '%s'\n", client_id);
   int found = access_point_count;
@@ -80,7 +80,12 @@ struct AccessPoint* add_access_point(char* client_id, float x, float y, float z)
       ap->x = x;
       ap->y = y;
       ap->z = z;
+      ap->rssi_one_meter = rssi_one_meter;
+      ap->rssi_factor = rssi_factor;
+      ap->people_distance = person_distance;
       access_point_count++;
+
+      g_print("Access point: %i. %20s (%6.1f,%6.1f,%6.1f) RSSI(%3i, %.1f) Dist=%.1f\n", ap->id, ap->client_id, ap->x, ap->y,ap->z, ap->rssi_one_meter, ap->rssi_factor, ap->people_distance );
 
       //g_print("ACCESS POINTS\n");
       //for (int k = 0; k < access_point_count; k++){
@@ -92,7 +97,8 @@ struct AccessPoint* add_access_point(char* client_id, float x, float y, float z)
 
 struct AccessPoint* update_accessPoints(struct AccessPoint access_point)
 {
-  return add_access_point(access_point.client_id, access_point.x, access_point.y, access_point.z);
+  return add_access_point(access_point.client_id, access_point.x, access_point.y, access_point.z,
+      access_point.rssi_one_meter, access_point.rssi_factor, access_point.people_distance);
 }
 
 /*
@@ -135,6 +141,7 @@ void add_closest(int device_id, int access_id, time_t time, float distance)
     if (last->access_id == access_id && last->device_id == device_id){
        double delta_time = difftime(time, last->time);
        if (delta_time < 10.0) {
+         g_print("Overwriting %i %i", access_id, device_id);
          last->time = time;
          last->distance = distance;
          overwrite = TRUE;
@@ -235,18 +242,17 @@ void *listen_loop(void *param)
       // Replace with the local interned copy of ap
       a = *actual;
 
-// ignore messages from self
-//      if (strcmp(a.client_id, access_point_name) == 0) {
-//        g_print("Ignoring message from self %s : %s\n", a.client_id, d.mac);
-//        continue;
-//      }
+      // ignore messages from self
+      if (strcmp(a.client_id, state->client_id) == 0) {
+        //g_print("Ignoring message from self %s : %s\n", a.client_id, d.mac);
+        continue;
+      }
 
       time_t now;
       time(&now);
 
       bool found = true;
 
-      // TODO: Lock the structure
       pthread_mutex_lock(&state->lock);
 
       for(int i = 0; i < state->n; i++)
@@ -255,11 +261,9 @@ void *listen_loop(void *param)
          {
             //g_print("%s '%s' dt=%3li", d.mac, d.name, now-d.latest);
             merge(&state->devices[i], &d);
-            //pthread_mutex_lock(&state->lock);
             // use the local id for the device not any remote id
             add_closest(state->devices[i].id, a.id, d.latest, d.distance);
             struct ClosestTo* closest = get_closest(state->devices[i].id);
-            //pthread_mutex_unlock(&state->lock);
 
              if (closest) { // && (closest->distance < state->devices[i].distance)) {
                struct AccessPoint* ap = get_access_point(closest->access_id);

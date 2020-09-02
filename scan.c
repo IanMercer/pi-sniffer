@@ -670,7 +670,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
             //float average_delta_time = kalman_update(&existing->kalman_interval, (float)delta_time_sent);
 
-            double exponent = ((state.rssi_one_meter - (double)rssi) / (10.0 * state.rssi_factor));
+            double exponent = ((state.local->rssi_one_meter - (double)rssi) / (10.0 * state.local->rssi_factor));
 
             double distance = pow(10.0, exponent);
 
@@ -1589,8 +1589,9 @@ void initialize_state()
     state.position_x = -1.0;
     state.position_y = -1.0;
     state.position_z = -1.0;
-    state.rssi_one_meter = -64;
-    state.rssi_factor = 3.5;
+    int rssi_one_meter = -64;     // fairly typical RPI3 and iPhone
+    float rssi_factor = 3.5;        // fairly cluttered indoor default
+    float people_distance = 7.0;    // 7m default range
     state.udp_mesh_port = 7779;
     state.udp_sign_port = 0; // 7778;
 
@@ -1608,9 +1609,14 @@ void initialize_state()
 
     const char* s_rssi_one_meter = getenv("RSSI_ONE_METER");
     const char* s_rssi_factor = getenv("RSSI_FACTOR");
+    const char* s_people_distance = getenv("PEOPLE_DISTANCE");
 
-    if (s_rssi_one_meter != NULL) state.rssi_one_meter = atoi(s_rssi_one_meter);
-    if (s_rssi_factor != NULL) state.rssi_factor = atof(s_rssi_factor);
+    if (s_rssi_one_meter != NULL) rssi_one_meter = atoi(s_rssi_one_meter);
+    if (s_rssi_factor != NULL) rssi_factor = atof(s_rssi_factor);
+    if (s_people_distance != NULL) people_distance = atof(s_people_distance);
+
+    state.local = add_access_point(state.client_id, state.position_x, state.position_y, state.position_z,
+        rssi_one_meter, rssi_factor, people_distance);
 
     // UDP Settings
 
@@ -1631,7 +1637,6 @@ void initialize_state()
     state.mqtt_username = getenv("MQTT_USERNAME");
     state.mqtt_password = getenv("MQTT_PASSWORD");
 
-    state.local = add_access_point(state.client_id, state.position_x, state.position_y, state.position_z);
 }
 
 void display_state()
@@ -1639,8 +1644,9 @@ void display_state()
     g_print("Hostname is %s\n", state.client_id);
     g_print("Position: (%.1f,%.1f,%.1f)\n", state.position_x, state.position_y, state.position_z);
 
-    g_print("RSSI_ONE_METER Power at 1m : %i\n", state.rssi_one_meter);
-    g_print("RSSI_FACTOR to distance : %.1f   (typically 2.0 (indoor, cluttered) to 4.0 (outdoor, no obstacles)\n", state.rssi_factor);
+    g_print("RSSI_ONE_METER Power at 1m : %i\n", state.local->rssi_one_meter);
+    g_print("RSSI_FACTOR to distance : %.1f   (typically 2.0 (indoor, cluttered) to 4.0 (outdoor, no obstacles)\n", state.local->rssi_factor);
+    g_print("PEOPLE_DISTANCE : %.1fm (cutoff)\n", state.local->people_distance);
 
     g_print("UDP_MESH_PORT=%i\n", state.udp_mesh_port);
     g_print("UDP_SIGN_PORT=%i\n", state.udp_sign_port);
