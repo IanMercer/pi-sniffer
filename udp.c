@@ -59,7 +59,7 @@ struct AccessPoint accessPoints[256];
 
 static int access_id_sequence = 0;
 
-struct AccessPoint* add_access_point(char* client_id, float x, float y, float z, float rssi_one_meter, float rssi_factor, float person_distance)
+struct AccessPoint* add_access_point(char* client_id, float x, float y, float z, float rssi_one_meter, float rssi_factor, float people_distance)
 {
   g_debug("Check for new access point '%s'\n", client_id);
   int found = access_point_count;
@@ -82,7 +82,7 @@ struct AccessPoint* add_access_point(char* client_id, float x, float y, float z,
       ap->z = z;
       ap->rssi_one_meter = rssi_one_meter;
       ap->rssi_factor = rssi_factor;
-      ap->people_distance = person_distance;
+      ap->people_distance = people_distance;
       access_point_count++;
 
       g_print("Access point: %i. %20s (%6.1f,%6.1f,%6.1f) RSSI(%3i, %.1f) Dist=%.1f\n", ap->id, ap->client_id, ap->x, ap->y,ap->z, ap->rssi_one_meter, ap->rssi_factor, ap->people_distance );
@@ -235,6 +235,9 @@ void *listen_loop(void *param)
     a.x = -1;
     a.y = -1;
     a.z = -1;
+    a.people_distance = 0.0;
+    a.rssi_factor = 0.0;
+    a.rssi_one_meter = 0.0;
 
     if (device_from_json(buffer, &a, &d))
     {
