@@ -146,7 +146,7 @@ void add_closest(int device_id, int access_id, time_t time, float distance)
     if (last->access_id == access_id && last->device_id == device_id){
        double delta_time = difftime(time, last->time);
        if (delta_time < 10.0) {
-         g_print("Overwriting %i %i", access_id, device_id);
+         //g_print("Overwriting access=%i device=%i", access_id, device_id);
          last->time = time;
          last->distance = distance;
          overwrite = TRUE;
