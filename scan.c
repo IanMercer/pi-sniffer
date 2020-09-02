@@ -1630,6 +1630,8 @@ void initialize_state()
     if (state.mqtt_server == NULL) state.mqtt_server = "192.168.0.52:1883";  // sorry, my old server
     state.mqtt_username = getenv("MQTT_USERNAME");
     state.mqtt_password = getenv("MQTT_PASSWORD");
+
+    state.local = add_access_point(state.client_id, state.position_x, state.position_y, state.position_z);
 }
 
 void display_state()

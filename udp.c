@@ -59,20 +59,27 @@ struct AccessPoint accessPoints[256];
 
 static int access_id_sequence = 0;
 
-struct AccessPoint* update_accessPoints(struct AccessPoint access_point)
+struct AccessPoint* add_access_point(char* client_id, float x, float y, float z)
 {
-  g_debug("Check for new access point '%s'\n", access_point.client_id);
+  g_debug("Check for new access point '%s'\n", client_id);
   int found = access_point_count;
   for (int i = 0; i < access_point_count; i++){
-      if (strcmp(accessPoints[i].client_id, access_point.client_id) == 0){
+      if (strcmp(accessPoints[i].client_id, client_id) == 0){
           found = i;
           break;
       }
   }
 
+  struct AccessPoint* ap = &accessPoints[found];
+
   if (found == access_point_count) {
-      access_point.id = access_id_sequence++;
-      memcpy(&accessPoints[found], &access_point, sizeof(struct AccessPoint));
+      if (found == sizeof(accessPoints)) return NULL;    // FULL
+      // Add a new one
+      strncpy(ap->client_id, client_id, NAME_LENGTH);
+      ap->id = access_id_sequence++;
+      ap->x = x;
+      ap->y = y;
+      ap->z = z;
       access_point_count++;
 
       //g_print("ACCESS POINTS\n");
@@ -80,8 +87,12 @@ struct AccessPoint* update_accessPoints(struct AccessPoint access_point)
       //    g_print("%i. %20s (%f,%f,%f)\n", accessPoints[k].id, accessPoints[k].client_id,accessPoints[k].x, accessPoints[k].y,accessPoints[k].z );
       //}
   }
+  return ap;
+}
 
-  return &accessPoints[found];
+struct AccessPoint* update_accessPoints(struct AccessPoint access_point)
+{
+  return add_access_point(access_point.client_id, access_point.x, access_point.y, access_point.z);
 }
 
 /*
@@ -104,7 +115,7 @@ static uint closest_n = 0;
 static struct ClosestTo closest[CLOSEST_N];
 
 /*
-   Add a closest observation
+   Add a closest observation (get a lock before you call this)
 */
 void add_closest(int device_id, int access_id, time_t time, float distance)
 {
@@ -224,20 +235,13 @@ void *listen_loop(void *param)
       {
          if (strncmp(d.mac, state->devices[i].mac, 18) == 0)
          {
-             //g_print("%s '%s' dt=%3li", d.mac, d.name, now-d.latest);
-             merge(&state->devices[i], &d);
-            // float ourdistance = state->devices[i].distance;
-            //  if (d.distance < ourdistance)
-            //  {
-            //    g_print(" * closest to %s->%s %.1fm:%.1fm *\n", a.client_id, access_point_name, d.distance, ourdistance);
-            //  } else 
-            //  {
-            //    g_print(" * closest to %s<-%s %.1fm:%.1fm *\n", access_point_name, a.client_id, ourdistance, d.distance);
-            //  }
-             // use the local id for the device not any remote id
-             add_closest(state->devices[i].id, a.id, d.latest, d.distance);
-
-             struct ClosestTo* closest = get_closest(state->devices[i].id);
+            //g_print("%s '%s' dt=%3li", d.mac, d.name, now-d.latest);
+            merge(&state->devices[i], &d);
+            //pthread_mutex_lock(&state->lock);
+            // use the local id for the device not any remote id
+            add_closest(state->devices[i].id, a.id, d.latest, d.distance);
+            struct ClosestTo* closest = get_closest(state->devices[i].id);
+            //pthread_mutex_unlock(&state->lock);
 
              if (closest) { // && (closest->distance < state->devices[i].distance)) {
                struct AccessPoint* ap = get_access_point(closest->access_id);
@@ -256,8 +260,6 @@ void *listen_loop(void *param)
         g_print("Add foreign device %s\n", d.mac);
         //struct Device added;
         //added.id = -1;
-
-
       }
 
       printf("\n");
@@ -301,6 +303,9 @@ void send_device_udp(struct OverallState* state, struct Device* device)
     //printf("    %s", json);
     udp_send(PORT, json, strlen(json)+1);
     free(json);
+
+    // Add local observations into the same structure
+    add_closest(device->id, state->local->id, device->latest, device->distance);
 }
 
 /*

@@ -134,6 +134,8 @@ struct OverallState
     float position_y;
     float position_z;
 
+    struct AccessPoint* local;        // the local access point (in the access points struct)
+
     int rssi_one_meter; // = -64;     // Put a device 1m away and measure the average RSSI
     float rssi_factor; // = 3.5;      // 2.0 to 4.0, lower for indoor or cluttered environments
 

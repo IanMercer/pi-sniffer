@@ -92,17 +92,18 @@ Given delays in MQTT transmit, receive and re-transmit to the receiving applicat
 * [optional] open firewall so multiple instances can communicate
     `sudo ufw allow 7779/udp`
 
-* [optional] edit the configuration overrides according to the environment
+* edit the systemd configuration overrides according to the environment
     `sudo systemctl edit pi-sniffer.service`
 
     For outside use a lower divisor, say 2.5, for inside use a higher divisor, say 3.5
-    Keep this value in the range 2.0 - 4.0.
+    Keep this value in the range 2.0 - 4.0 and adjust it to get distances reported within range.
 
-    There is also a received power at 1.0m setting, place a device at 1.0m, tail the log and figure this out for your RPi.
+    There is also a received power at 1.0m setting, place a device at 1.0m, tail the log and figure this out for your RPi.  Note: not all devices transmit with the same power. There's a correction
+    factor for iPads in there but not for all devices yet. The received TXPOWER appears to be fairly useless for most BLE devices.
 
     You can also set an (x,y,z) coordinate in meters that will be used for trilateration (coming soon)
 
-    The MQTT_TOPIC and MQTT_SERVER address are also moving from the command line to the environment section.
+    (2020-09-02) The MQTT_TOPIC and MQTT_SERVER address have moved from the command line to the environment section.
 
     Your configuration file should look like this:
 
