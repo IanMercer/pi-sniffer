@@ -142,7 +142,8 @@ time_t now;
 struct ColumnInfo {
     time_t latest;        // latest observation in this column
     float distance;       // distance of latest observation in this column
-    int8_t category;       // category of device in this column (phone, computer, ...)
+    int8_t category;      // category of device in this column (phone, computer, ...)
+    bool isClosest;         // is this device closest to us not some other sensor
 };
 
 struct ColumnInfo columns[N_COLUMNS];
@@ -162,8 +163,13 @@ void find_latest_observations () {
         columns[col].distance = a->distance;
         if (a->category != CATEGORY_UNKNOWN) {
           // a later unknown does not override an actual phone category nor extend it
+          // This if is probably not necessary now as overlap tests for this
           columns[col].category = a->category;
           columns[col].latest = a->latest;
+          // Do we 'own' this device or does someone else
+          columns[col].isClosest = true;
+          struct ClosestTo* closest = get_closest(a->id);
+          columns[col].isClosest = closest != NULL && closest->access_id == state.local->id;
         }
       }
    }
@@ -173,7 +179,8 @@ void find_latest_observations () {
 #define N_RANGES 10
 static int32_t ranges[N_RANGES] = {1, 2, 5, 10, 15, 20, 25, 30, 35, 100};
 static int8_t reported_ranges[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
-float people_count = 0.0;
+float people_in_view_count = 0.0;
+float people_closest_count = 0.0;
 
 /*
     Find best packing of device time ranges into columns
@@ -238,7 +245,8 @@ void report_devices_count() {
     int range = ranges[range_limit];
 
     // Expected value of number of people here (decays if not detected recently)
-    float people = 0.0;
+    float people_in_view = 0.0;
+    float people_closest = 0.0;
 
     for (int col=0; col < N_COLUMNS; col++)
     {
@@ -255,12 +263,14 @@ void report_devices_count() {
        if (score < 0.0) score = 0.0;
 
        // Expected value E[x] = i x p(i) so sum p(i) for each column which is one person
-       people = people + score;
+       people_in_view += score;
+       if (columns[col].isClosest) people_closest += score;
     }
 
-    if (fabs(people - people_count) > 0.001) {
-      people_count = people;
-      g_print("People count = %.2f\n", people);
+    if (fabs(people_in_view - people_in_view_count) > 0.001 || fabs(people_closest - people_closest_count) > 0.001) {
+      people_in_view_count = people_in_view;
+      people_closest_count = people_closest_count;
+      g_print("People count = %.2f (%.2f in range)\n", people_closest, people_in_view);
     }
 
     double scale_factor = 0.5;  // This adjusts how people map to lights which are on a 0.0-3.0 range
@@ -272,11 +282,13 @@ void report_devices_count() {
     if (state.udp_sign_port > 0)
     {
         char msg[4];
-        msg[0] = people;       // old code
-        // send as int for ease of consumption on ESP8266
-        msg[1] = (int)(people * scale_factor * 10.0);  // new code
-        msg[2] = 0;
+        msg[0] = 0;
+        // send as ints for ease of consumption on ESP8266
+        msg[1] = (int)(people_closest * scale_factor * 10.0);
+        msg[2] = (int)(people_in_view * scale_factor * 10.0);
         msg[3] = 0;
+
+        // TODO: Move to JSON for more flexibility sending names too
 
         udp_send(state.udp_sign_port, msg, sizeof(msg));
         g_print("UDP Sent %i\n", msg[1]);
@@ -1474,12 +1486,11 @@ int dump_all_devices_tick(void *parameters)
     unsigned int days = (total_minutes) / 60 / 24;
 
     if (days > 1)
-      g_print("Uptime: %i days %02i:%02i  People %.2f\n", days, hours, minutes, people_count);
+      g_print("Uptime: %i days %02i:%02i  People %.2f (%.2f in range)\n", days, hours, minutes, people_closest_count, people_in_view_count);
     else if (days == 1)
-      g_print("Uptime: 1 day %02i:%02i  People %.2f\n", hours, minutes, people_count);
+      g_print("Uptime: 1 day %02i:%02i  People %.2f (%.2f in range)\n", hours, minutes, people_closest_count, people_in_view_count);
     else
-      g_print("Uptime: %02i:%02i  People %.2f\n", hours, minutes, people_count);
-
+      g_print("Uptime: %02i:%02i  People %.2f (%.2f in range)\n", hours, minutes, people_closest_count, people_in_view_count);
 
     // Bluez eventually seems to stop sending us data, so for now, just restart every few hours
     if (hours > 2) int_handler(0);

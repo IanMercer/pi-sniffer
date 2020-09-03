@@ -280,9 +280,9 @@ void *listen_loop(void *param)
     {
         char buffer[2048];
         int bytes_read = g_socket_receive_from(broadcast_socket, NULL, buffer, sizeof(buffer), cancellable, &error);
-        if (bytes_read < 10)
+        if (bytes_read < 50)
         {
-            g_print("Received bytes on listen thread %i < %i\n", bytes_read, 10);
+            //g_print("Received bytes on listen thread %i < %i\n", bytes_read, 10);
             continue; // not enough to be a device message
         }
 
