@@ -59,7 +59,9 @@ struct AccessPoint accessPoints[256];
 
 static int access_id_sequence = 0;
 
-struct AccessPoint* add_access_point(char* client_id, float x, float y, float z, int rssi_one_meter, float rssi_factor, float people_distance)
+struct AccessPoint* add_access_point(char* client_id,
+  char* description, char* platform,
+  float x, float y, float z, int rssi_one_meter, float rssi_factor, float people_distance)
 {
   g_debug("Check for new access point '%s'\n", client_id);
   int found = access_point_count;
@@ -75,7 +77,9 @@ struct AccessPoint* add_access_point(char* client_id, float x, float y, float z,
   if (found == access_point_count) {
       if (found == sizeof(accessPoints)) return NULL;    // FULL
       // Add a new one
-      strncpy(ap->client_id, client_id, NAME_LENGTH);
+      strncpy(ap->client_id, client_id, META_LENGTH);
+      strncpy(ap->description, description, META_LENGTH);
+      strncpy(ap->platform, platform, META_LENGTH);
       ap->id = access_id_sequence++;
       ap->x = x;
       ap->y = y;
@@ -85,7 +89,9 @@ struct AccessPoint* add_access_point(char* client_id, float x, float y, float z,
       ap->people_distance = people_distance;
       access_point_count++;
 
-      g_print("Access point: %i. %20s (%6.1f,%6.1f,%6.1f) RSSI(%3i, %.1f) Dist=%.1f\n", ap->id, ap->client_id, ap->x, ap->y,ap->z, ap->rssi_one_meter, ap->rssi_factor, ap->people_distance );
+      g_print("Access point: %i. %20s (%6.1f,%6.1f,%6.1f) RSSI(%3i, %.1f) Dist=%.1f\n", ap->id, ap->client_id, ap->x, ap->y,ap->z, ap->rssi_one_meter, ap->rssi_factor, ap->people_distance);
+      g_print("              %s", ap->description);
+      g_print("              %s", ap->platform);
 
       //g_print("ACCESS POINTS\n");
       //for (int k = 0; k < access_point_count; k++){
@@ -102,7 +108,9 @@ struct AccessPoint* add_access_point(char* client_id, float x, float y, float z,
 
 struct AccessPoint* update_accessPoints(struct AccessPoint access_point)
 {
-  return add_access_point(access_point.client_id, access_point.x, access_point.y, access_point.z,
+  return add_access_point(access_point.client_id,
+      access_point.description, access_point.platform,
+      access_point.x, access_point.y, access_point.z,
       access_point.rssi_one_meter, access_point.rssi_factor, access_point.people_distance);
 }
 
@@ -221,7 +229,7 @@ void *listen_loop(void *param)
   g_assert_no_error (error);
 
   g_print("Starting listen thread for mesh operation on port %i\n", PORT);
-  g_print("Local client id is %s\n", state->client_id);
+  g_print("Local client id is %s\n", state->local->client_id);
   g_cancellable_reset(cancellable);
 
   while (!g_cancellable_is_cancelled(cancellable))
@@ -237,6 +245,8 @@ void *listen_loop(void *param)
     struct Device d;
     struct AccessPoint a;
     strncpy(a.client_id, "notset", 7);
+    strncpy(a.description, "notset", 7);
+    strncpy(a.platform, "notset", 7);
     a.x = -1;
     a.y = -1;
     a.z = -1;
@@ -251,7 +261,7 @@ void *listen_loop(void *param)
       a = *actual;
 
       // ignore messages from self
-      if (strcmp(a.client_id, state->client_id) == 0) {
+      if (strcmp(a.client_id, state->local->client_id) == 0) {
         //g_print("Ignoring message from self %s : %s\n", a.client_id, d.mac);
         continue;
       }

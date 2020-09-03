@@ -59,6 +59,8 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
 
     // AccessPoint details
     cJSON_AddStringToObject(j, "from", a->client_id);
+    cJSON_AddStringToObject(j, "description", a->description);
+    cJSON_AddStringToObject(j, "platform", a->platform);
     cJSON_AddNumberToObject(j, "from_x", a->x);
     cJSON_AddNumberToObject(j, "from_y", a->y);
     cJSON_AddNumberToObject(j, "from_z", a->z);
@@ -121,7 +123,19 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
     cJSON *fromj = cJSON_GetObjectItemCaseSensitive(djson, "from");
     if (cJSON_IsString(fromj) && (fromj->valuestring != NULL))
     {
-        strncpy(access_point->client_id, fromj->valuestring, NAME_LENGTH);
+        strncpy(access_point->client_id, fromj->valuestring, META_LENGTH);
+    }
+
+    cJSON *descriptionj = cJSON_GetObjectItemCaseSensitive(djson, "description");
+    if (cJSON_IsString(descriptionj) && (descriptionj->valuestring != NULL))
+    {
+        strncpy(access_point->description, descriptionj->valuestring, META_LENGTH);
+    }
+
+    cJSON *platformj = cJSON_GetObjectItemCaseSensitive(djson, "platform");
+    if (cJSON_IsString(platformj) && (platformj->valuestring != NULL))
+    {
+        strncpy(access_point->platform, platformj->valuestring, META_LENGTH);
     }
 
     cJSON *rssi_one_meter = cJSON_GetObjectItemCaseSensitive(djson, "rssi_one_meter");

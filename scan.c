@@ -1582,13 +1582,16 @@ static void cmd_connect(int argc, char *address)
 
 */
 
+static char client_id[META_LENGTH];
 
 void initialize_state()
 {
     // Default values if not set in environment variables
-    state.position_x = -1.0;
-    state.position_y = -1.0;
-    state.position_z = -1.0;
+    char* description = "Please set a HOST_DESCRIPTION in the environment variables";
+    char* platform = "Please set a HOST_PLATFORM in the environment variables";
+    float position_x = -1.0;
+    float position_y = -1.0;
+    float position_z = -1.0;
     int rssi_one_meter = -64;     // fairly typical RPI3 and iPhone
     float rssi_factor = 3.5;        // fairly cluttered indoor default
     float people_distance = 7.0;    // 7m default range
@@ -1597,15 +1600,26 @@ void initialize_state()
 
     // no devices yet
     state.n = 0;
-    gethostname((char*)&state.client_id, 256);
+
+    gethostname(client_id, META_LENGTH);
+
+    // Optional metadata about the access point for dashboard
+    const char* s_client_id = getenv("HOST_NAME");
+    const char* s_client_description = getenv("HOST_DESCRIPTION");
+    const char* s_client_platform = getenv("HOST_PLATFORM");
+
+    if (s_client_id != NULL) strncpy(client_id, s_client_id, META_LENGTH);
+    // These two can just be pointers to the constant strings or the supplied metadata
+    if (s_client_description != NULL) description = s_client_description;
+    if (s_client_platform != NULL) platform = s_client_platform;
 
     const char* s_position_x = getenv("POSITION_X");
     const char* s_position_y = getenv("POSITION_Y");
     const char* s_position_z = getenv("POSITION_Z");
 
-    if (s_position_x != NULL) state.position_x = (float)atof(s_position_x);
-    if (s_position_y != NULL) state.position_y = (float)atof(s_position_y);
-    if (s_position_z != NULL) state.position_z = (float)atof(s_position_z);
+    if (s_position_x != NULL) position_x = (float)atof(s_position_x);
+    if (s_position_y != NULL) position_y = (float)atof(s_position_y);
+    if (s_position_z != NULL) position_z = (float)atof(s_position_z);
 
     const char* s_rssi_one_meter = getenv("RSSI_ONE_METER");
     const char* s_rssi_factor = getenv("RSSI_FACTOR");
@@ -1615,7 +1629,8 @@ void initialize_state()
     if (s_rssi_factor != NULL) rssi_factor = atof(s_rssi_factor);
     if (s_people_distance != NULL) people_distance = atof(s_people_distance);
 
-    state.local = add_access_point(state.client_id, state.position_x, state.position_y, state.position_z,
+    state.local = add_access_point(client_id, description, platform, 
+        position_x, position_y, position_z,
         rssi_one_meter, rssi_factor, people_distance);
 
     // UDP Settings
@@ -1641,8 +1656,10 @@ void initialize_state()
 
 void display_state()
 {
-    g_print("Hostname is %s\n", state.client_id);
-    g_print("Position: (%.1f,%.1f,%.1f)\n", state.position_x, state.position_y, state.position_z);
+    g_print("Hostname is %s\n", state.local->client_id);
+    g_print("Description is %s\n", state.local->description);
+    g_print("Platform is %s\n", state.local->platform);
+    g_print("Position: (%.1f,%.1f,%.1f)\n", state.local->x, state.local->y, state.local->z);
 
     g_print("RSSI_ONE_METER Power at 1m : %i\n", state.local->rssi_one_meter);
     g_print("RSSI_FACTOR to distance : %.1f   (typically 2.0 (indoor, cluttered) to 4.0 (outdoor, no obstacles)\n", state.local->rssi_factor);
@@ -1770,7 +1787,7 @@ int main(int argc, char **argv)
     }
     g_print("Started discovery\n");
 
-    prepare_mqtt(state.mqtt_server, state.mqtt_topic, state.client_id, mac_address, state.mqtt_username, state.mqtt_password);
+    prepare_mqtt(state.mqtt_server, state.mqtt_topic, state.local->client_id, mac_address, state.mqtt_username, state.mqtt_password);
 
     // Periodically ask Bluez for every device including ones that are long departed
     // but only do updates to devices we have seen, do no not create a device for each

@@ -32,7 +32,9 @@ typedef uint64_t u_int64_t;
 #define CATEGORY_CAR 9
 
 // Max allowed length of names and aliases (plus 1 for null)
-#define NAME_LENGTH         21
+#define NAME_LENGTH 21
+// Max allowed length of metadata (client_id, description, platform, ..)
+#define META_LENGTH 256
 
 /*
    Structure for tracking BLE devices in range
@@ -80,7 +82,10 @@ struct Device
 struct AccessPoint
 {
    int id;   // sequential ID
-   char client_id[NAME_LENGTH];
+   char client_id[META_LENGTH];    // linux allows more, truncated
+   char description[META_LENGTH];  // optional description for dashboard
+   char platform[META_LENGTH];     // optional platform (e.g. Pi3, Pi4, ...) for dashboard
+
    float x;
    float y;
    float z;
@@ -130,14 +135,9 @@ void merge(struct Device* local, struct Device* remote);
 // Shared device state object (one globally for app, thread safe access needed)
 struct OverallState 
 {
-    int n;                       // current devices
+    int n;                         // current devices
     pthread_mutex_t lock;
     struct Device devices[N];
-    char client_id[256];         // linux allows more, truncated
-
-    float position_x;
-    float position_y;
-    float position_z;
 
     struct AccessPoint* local;        // the local access point (in the access points struct)
 
