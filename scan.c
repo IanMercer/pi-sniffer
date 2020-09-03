@@ -267,9 +267,9 @@ void report_devices_count() {
        if (columns[col].isClosest) people_closest += score;
     }
 
-    if (fabs(people_in_view - people_in_view_count) > 0.001 || fabs(people_closest - people_closest_count) > 0.001) {
+    if (fabs(people_in_view - people_in_view_count) > 0.01 || fabs(people_closest - people_closest_count) > 0.01) {
+      people_closest_count = people_closest;
       people_in_view_count = people_in_view;
-      people_closest_count = people_closest_count;
       g_print("People count = %.2f (%.2f in range)\n", people_closest, people_in_view);
     }
 
