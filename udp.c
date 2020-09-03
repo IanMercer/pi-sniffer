@@ -60,7 +60,7 @@ struct AccessPoint accessPoints[256];
 static int access_id_sequence = 0;
 
 struct AccessPoint* add_access_point(char* client_id,
-  char* description, char* platform,
+  const char* description, const char* platform,
   float x, float y, float z, int rssi_one_meter, float rssi_factor, float people_distance)
 {
   g_debug("Check for new access point '%s'\n", client_id);

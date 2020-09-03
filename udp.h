@@ -14,7 +14,7 @@ void close_socket_service();
 
 void send_device_udp(struct OverallState* state, struct Device* device); 
 
-struct AccessPoint* add_access_point(char* client_id, char* description, char* platform, 
+struct AccessPoint* add_access_point(char* client_id, const char* description, const char* platform, 
     float x, float y, float z, int rssi_one_meter, float rssi_factor, float people_distance);
 
 struct AccessPoint* get_access_point(int id);

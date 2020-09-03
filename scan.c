@@ -1587,8 +1587,8 @@ static char client_id[META_LENGTH];
 void initialize_state()
 {
     // Default values if not set in environment variables
-    char* description = "Please set a HOST_DESCRIPTION in the environment variables";
-    char* platform = "Please set a HOST_PLATFORM in the environment variables";
+    const char* description = "Please set a HOST_DESCRIPTION in the environment variables";
+    const char* platform = "Please set a HOST_PLATFORM in the environment variables";
     float position_x = -1.0;
     float position_y = -1.0;
     float position_z = -1.0;
@@ -1651,14 +1651,13 @@ void initialize_state()
     if (state.mqtt_server == NULL) state.mqtt_server = "192.168.0.52:1883";  // sorry, my old server
     state.mqtt_username = getenv("MQTT_USERNAME");
     state.mqtt_password = getenv("MQTT_PASSWORD");
-
 }
 
 void display_state()
 {
-    g_print("Hostname is %s\n", state.local->client_id);
-    g_print("Description is %s\n", state.local->description);
-    g_print("Platform is %s\n", state.local->platform);
+    g_print("HOST_NAME = %s\n", state.local->client_id);
+    g_print("HOST_DESCRIPTION = %s\n", state.local->description);
+    g_print("HOST_PLATFORM = %s\n", state.local->platform);
     g_print("Position: (%.1f,%.1f,%.1f)\n", state.local->x, state.local->y, state.local->z);
 
     g_print("RSSI_ONE_METER Power at 1m : %i\n", state.local->rssi_one_meter);
