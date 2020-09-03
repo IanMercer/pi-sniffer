@@ -179,8 +179,8 @@ void find_latest_observations () {
 #define N_RANGES 10
 static int32_t ranges[N_RANGES] = {1, 2, 5, 10, 15, 20, 25, 30, 35, 100};
 static int8_t reported_ranges[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
-float people_in_view_count = 0.0;
-float people_closest_count = 0.0;
+//float people_in_view_count = 0.0;
+//float people_closest_count = 0.0;
 
 /*
     Find best packing of device time ranges into columns
@@ -245,7 +245,7 @@ void report_devices_count() {
     int range = ranges[range_limit];
 
     // Expected value of number of people here (decays if not detected recently)
-    float people_in_view = 0.0;
+    float people_in_range = 0.0;
     float people_closest = 0.0;
 
     for (int col=0; col < N_COLUMNS; col++)
@@ -263,14 +263,14 @@ void report_devices_count() {
        if (score < 0.0) score = 0.0;
 
        // Expected value E[x] = i x p(i) so sum p(i) for each column which is one person
-       people_in_view += score;
+       people_in_range += score;
        if (columns[col].isClosest) people_closest += score;
     }
 
-    if (fabs(people_in_view - people_in_view_count) > 0.01 || fabs(people_closest - people_closest_count) > 0.01) {
-      people_closest_count = people_closest;
-      people_in_view_count = people_in_view;
-      g_print("People count = %.2f (%.2f in range)\n", people_closest, people_in_view);
+    if (fabs(people_in_range - state.local->people_in_range_count) > 0.01 || fabs(people_closest - state.local->people_closest_count) > 0.01) {
+      state.local->people_closest_count = people_closest;
+      state.local->people_in_range_count = people_in_range;
+      g_print("People count = %.2f (%.2f in range)\n", people_closest, people_in_range);
     }
 
     double scale_factor = 0.5;  // This adjusts how people map to lights which are on a 0.0-3.0 range
@@ -285,7 +285,7 @@ void report_devices_count() {
         msg[0] = 0;
         // send as ints for ease of consumption on ESP8266
         msg[1] = (int)(people_closest * scale_factor * 10.0);
-        msg[2] = (int)(people_in_view * scale_factor * 10.0);
+        msg[2] = (int)(people_in_range * scale_factor * 10.0);
         msg[3] = 0;
 
         // TODO: Move to JSON for more flexibility sending names too
@@ -1485,12 +1485,17 @@ int dump_all_devices_tick(void *parameters)
     unsigned int hours = (total_minutes / 60) % 24;
     unsigned int days = (total_minutes) / 60 / 24;
 
+    float people_closest = state.local->people_closest_count;
+    float people_in_range = state.local->people_in_range_count;
+
     if (days > 1)
-      g_print("Uptime: %i days %02i:%02i  People %.2f (%.2f in range)\n", days, hours, minutes, people_closest_count, people_in_view_count);
+      g_print("Uptime: %i days %02i:%02i  People %.2f (%.2f in range)\n", days, hours, minutes, people_closest, people_in_range);
     else if (days == 1)
-      g_print("Uptime: 1 day %02i:%02i  People %.2f (%.2f in range)\n", hours, minutes, people_closest_count, people_in_view_count);
+      g_print("Uptime: 1 day %02i:%02i  People %.2f (%.2f in range)\n", hours, minutes, people_closest, people_in_range);
     else
-      g_print("Uptime: %02i:%02i  People %.2f (%.2f in range)\n", hours, minutes, people_closest_count, people_in_view_count);
+      g_print("Uptime: %02i:%02i  People %.2f (%.2f in range)\n", hours, minutes, people_closest, people_in_range);
+
+    print_access_points();
 
     // Bluez eventually seems to stop sending us data, so for now, just restart every few hours
     if (hours > 2) int_handler(0);

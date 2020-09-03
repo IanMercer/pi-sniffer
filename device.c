@@ -67,6 +67,8 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     cJSON_AddNumberToObject(j, "rssi_one_meter", a->rssi_one_meter);
     cJSON_AddNumberToObject(j, "rssi_factor", a->rssi_factor);
     cJSON_AddNumberToObject(j, "people_distance", a->people_distance);
+    cJSON_AddNumberToObject(j, "people_closest_count", a->people_closest_count);
+    cJSON_AddNumberToObject(j, "people_in_range_count", a->people_in_range_count);
 
     // Device details
     cJSON_AddStringToObject(j, "mac", device->mac);
@@ -154,6 +156,18 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
     if (cJSON_IsNumber(people_distance))
     {
         access_point->people_distance = (float)people_distance->valuedouble;
+    }
+
+    cJSON *people_closest_count = cJSON_GetObjectItemCaseSensitive(djson, "people_closest_count");
+    if (cJSON_IsNumber(people_closest_count))
+    {
+        access_point->people_closest_count = (float)people_closest_count->valuedouble;
+    }
+
+    cJSON *people_in_range_count = cJSON_GetObjectItemCaseSensitive(djson, "people_in_range_count");
+    if (cJSON_IsNumber(people_in_range_count))
+    {
+        access_point->people_in_range_count = (float)people_in_range_count->valuedouble;
     }
 
     // Device

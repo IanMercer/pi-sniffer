@@ -19,6 +19,8 @@ struct AccessPoint* add_access_point(char* client_id, const char* description, c
 
 struct AccessPoint* get_access_point(int id);
 
+void print_access_points();
+
 struct ClosestTo* get_closest(int device_id);
 
 #endif

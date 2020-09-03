@@ -94,6 +94,9 @@ struct AccessPoint
    // 2.0 to 4.0, lower for indoor or cluttered environments, default is 3.5
    float rssi_factor;              // Factor for RSSI to distance calculation 2.0-4.0 see README.md
    float people_distance;          // Counts as a person if under this range (meters)
+
+   float people_closest_count;     // E[x] of count of people closest
+   float people_in_range_count;    // E[x] of count of people in range
 };
 
 

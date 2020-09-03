@@ -94,11 +94,14 @@ struct AccessPoint *add_access_point(char *client_id,
         ap->rssi_one_meter = rssi_one_meter;
         ap->rssi_factor = rssi_factor;
         ap->people_distance = people_distance;
+        ap->people_closest_count = 0.0;
+        ap->people_in_range_count = 0.0;
         access_point_count++;
 
-        g_print("Access point: %i. %20s (%6.1f,%6.1f,%6.1f) RSSI(%3i, %.1f) Dist=%.1f\n", ap->id, ap->client_id, ap->x, ap->y, ap->z, ap->rssi_one_meter, ap->rssi_factor, ap->people_distance);
-        g_print("              %s\n", ap->description);
-        g_print("              %s\n", ap->platform);
+        g_print("%20s p=(closest=%.1f,range=%.1f) (%6.1f,%6.1f,%6.1f) RSSI(%3i, %.1f) Dist=%.1f\n", ap->client_id,
+          ap->people_closest_count, ap->people_in_range_count,
+          ap->x, ap->y, ap->z, ap->rssi_one_meter, ap->rssi_factor, ap->people_distance);
+        g_print("              %16s %s\n", ap->platform, ap->description);
 
         //g_print("ACCESS POINTS\n");
         //for (int k = 0; k < access_point_count; k++){
@@ -126,12 +129,29 @@ struct AccessPoint *add_access_point(char *client_id,
     return ap;
 }
 
+void print_access_points()
+{
+  g_print("ACCESS POINTS        Platform            Close InRange (x,y,z)             Parameters\n");
+  for (int k = 0; k < access_point_count; k++)
+  {
+    struct AccessPoint ap = accessPoints[k];
+    g_print("%20s %16s %4.1f %4.1f) (%6.1f,%6.1f,%6.1f) (%3i, %.1f, %.1fm)\n",
+    ap.client_id, ap.platform,
+    ap.people_closest_count, ap.people_in_range_count,
+    ap.x, ap.y, ap.z, ap.rssi_one_meter, ap.rssi_factor, ap.people_distance);
+    //g_print("              %16s %s\n", ap->platform, ap->description);
+  }
+}
+
 struct AccessPoint *update_accessPoints(struct AccessPoint access_point)
 {
-    return add_access_point(access_point.client_id,
+    struct AccessPoint* ap = add_access_point(access_point.client_id,
                             access_point.description, access_point.platform,
                             access_point.x, access_point.y, access_point.z,
                             access_point.rssi_one_meter, access_point.rssi_factor, access_point.people_distance);
+    ap->people_closest_count = access_point.people_closest_count;
+    ap->people_in_range_count = access_point.people_in_range_count;
+    return ap;
 }
 
 /*
@@ -295,6 +315,8 @@ void *listen_loop(void *param)
         a.y = -1;
         a.z = -1;
         a.people_distance = 0.0;
+        a.people_closest_count = 0.0;
+        a.people_in_range_count = 0.0;
         a.rssi_factor = 0.0;
         a.rssi_one_meter = 0.0;
 
