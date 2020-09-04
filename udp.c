@@ -131,11 +131,11 @@ struct AccessPoint *add_access_point(char *client_id,
 
 void print_access_points()
 {
-  g_print("ACCESS POINTS        Platform            Close InRange (x,y,z)             Parameters\n");
+  g_print("ACCESS POINTS          Platform       Close Range (x,y,z)                 Parameters\n");
   for (int k = 0; k < access_point_count; k++)
   {
     struct AccessPoint ap = accessPoints[k];
-    g_print("%20s %16s %4.1f %4.1f) (%6.1f,%6.1f,%6.1f) (%3i, %.1f, %.1fm)\n",
+    g_print("%20s %16s (%4.1f %4.1f) (%6.1f,%6.1f,%6.1f) (%3i, %.1f, %.1fm)\n",
     ap.client_id, ap.platform,
     ap.people_closest_count, ap.people_in_range_count,
     ap.x, ap.y, ap.z, ap.rssi_one_meter, ap.rssi_factor, ap.people_distance);
