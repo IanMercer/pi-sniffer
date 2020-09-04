@@ -74,6 +74,7 @@ Given delays in MQTT transmit, receive and re-transmit to the receiving applicat
 
 # getting started
 
+* Set up your Raspberry Pi following the instructions [here](RaspberrySetup.md) if you haven't already.
 * update package lists: `sudo apt-get update`
 * install GIT if you don't already have it `sudo apt-get install git-core`
 * install dependencies: `sudo apt-get install libglib2.0-dev` and `libssl-dev`
@@ -145,6 +146,8 @@ Given delays in MQTT transmit, receive and re-transmit to the receiving applicat
 
 
 ````
+ * Now setup one or more displays. The first display code is in [this repo](https://github.com/IanMercer/CrowdAlertM5StackMatrix).
+
 
 # FAQ
 
