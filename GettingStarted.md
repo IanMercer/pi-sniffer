@@ -11,26 +11,9 @@ following the instructions [here](RaspberrySetup.md).
 * build and install it
     `sudo make install`
 * clone this repository
-* edit your Mosquitto connection details into the last line of build.sh that launches the sniffer
-* build the code:   `sudo ./build/sh`
-* try the sniffer: ./scan <mqtt server ip> [<port>]
 * edit the .service file to point to the scan executable location:
     `nano pi-sniffer.service`
-
-* copy the service file to systemd:
-    `sudo cp pi-sniffer.service /etc/systemd/system/pi-sniffer.service`
-
-* enable the service to restart after a reboot:
-    `sudo systemctl enable pi-sniffer.service`
-
-* start the service:
-    `sudo systemctl start pi-sniffer.service`
-
-* check it's running:
-    `sudo systemctl status pi-sniffer.service`
-
-* [optional] open firewall so multiple instances can communicate
-    `sudo ufw allow 7779/udp`
+* build and deploy the code:   `sudo ./build/sh`
 
 * edit the systemd configuration overrides according to the environment
     `sudo systemctl edit pi-sniffer.service`
@@ -43,40 +26,55 @@ following the instructions [here](RaspberrySetup.md).
 
     You can also set an (x,y,z) coordinate in meters that will be used for trilateration (coming soon)
 
-    (2020-09-02) The MQTT_TOPIC and MQTT_SERVER address have moved from the command line to the environment section.
-
     Your configuration file should look like this:
 
 ````
-    [Service]
-    Environment="RSSI_FACTOR=3.5"
-    Environment="RSSI_ONE_METER=-64"
-    Environment="POSITION_X=53.0"
-    Environment="POSITION_Y=20.0"
-    Environment="POSITION_Z=-6.0"
+[Service]
+Environment="RSSI_FACTOR=3.5"
+Environment="RSSI_ONE_METER=-64"
+Environment="POSITION_X=53.0"
+Environment="POSITION_Y=20.0"
+Environment="POSITION_Z=-6.0"
+Environment="HOST_NAME=<room name>"
+Environment="HOST_DESCRIPTION=<description>"
+Environment="HOST_PLATFORM=Pi3b+"
 
-    # Server is formatted: [ssl://]mqtt server:[port]
-    # For Azure you MUST use ssl:// and :8833
+# Server is formatted: [ssl://]mqtt server:[port]
+# For Azure you MUST use ssl:// and :8833
 
-    Environment="MQTT_SERVER=192.168.0.52:1883"
-    Environment="MQTT_TOPIC=BLF"
-    Environment="MQTT_USERNAME="
-    Environment="MQTT_PASSWORD="
+Environment="MQTT_SERVER=192.168.0.52:1883"
+Environment="MQTT_TOPIC=BLF"
+Environment="MQTT_USERNAME="
+Environment="MQTT_PASSWORD="
 
-    # Port on which to communicate with sensors in the same group in mesh mode
-    Environment="UDP_MESH_PORT=7779"
+# Port on which to communicate with sensors in the same group in mesh mode
+Environment="UDP_MESH_PORT=7779"
 
-    # Port on which to broadcast a count of people present x 10
-    # If you have multiple sensors in a group, only one should send to the sign
-    Environment="UDP_SIGN_PORT=7778"
+# Port on which to broadcast a count of people present x 10
+# If you have multiple sensors in a group, only one should send to the sign
+Environment="UDP_SIGN_PORT=7778"
 
-    # How to map people to the value sent, e.g. 0.5 so that 4 people = 2.0 sent
-    # Means that the sign can be configured without deploying new code there
-    Environment="UDP_SCALE_FACTOR=0.5"
-
+# How to map people to the value sent, e.g. 0.5 so that 4 people = 2.0 sent
+# Means that the sign can be configured without deploying new code there
+Environment="UDP_SCALE_FACTOR=0.5"
 
 ````
- * Now setup one or more displays. There are several display options depending on your needs.
+
+* Alternatively, instead of using `build.sh` you can run the following steps manually:
+* Run `make`
+* copy the service file to systemd:
+    `sudo cp pi-sniffer.service /etc/systemd/system/pi-sniffer.service`
+* enable the service to restart after a reboot:
+    `sudo systemctl enable pi-sniffer.service`
+* start the service:
+    `sudo systemctl start pi-sniffer.service`
+* check it's running:
+    `sudo systemctl status pi-sniffer.service`
+
+* [optional, on Ubuntu in particular] open firewall so multiple instances can communicate
+    `sudo ufw allow 7779/udp`
+
+* Now setup one or more displays. There are several display options depending on your needs.
  
  * A display based on the $20 M5Stack Matrix requiring no hardware skills [this repo](https://github.com/IanMercer/CrowdAlertM5StackMatrix).
  * A display using high-brightness 3W LEDs requiring mechanical and electrical fabrication skills [instructions coming soon](GettingStarted.md).
@@ -85,10 +83,6 @@ following the instructions [here](RaspberrySetup.md).
  * A browser-based display [instructions coming soon](GettingStarted.md).
 
 A comparison of the costs and benefits of these different display approaches will be added shortly. Some displays may display details of crowding in different areas, some may display only an aggregate, some may show detailed numbers, some may display based on a single aggregate cut off number. Displays may also apply blending, hysteresis, transitions and other effects to improve their overall impact.
-
-
-
-
 
 
 
