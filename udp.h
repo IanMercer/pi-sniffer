@@ -2,9 +2,10 @@
 #define UDP_H
 
 // Client side implementation of UDP client-server model 
+#include "device.h"
+
 #include <glib.h>
 #include <gio/gio.h>
-#include "device.h"
 
 void udp_send(int port, const char* message, int message_length);
 

@@ -12,6 +12,14 @@
  *  See Makefile and Github
  *
  */
+#include "utility.h"
+#include "mqtt_send.h"
+#include "udp.h"
+#include "kalman.h"
+#include "device.h"
+#include "bluetooth.h"
+
+#define G_LOG_USE_STRUCTURED 1
 #include <glib.h>
 #include <gio/gio.h>
 #include <stdbool.h>
@@ -30,12 +38,6 @@
 #include <udp.h>
 #include <argp.h>
 
-#include "utility.h"
-#include "mqtt_send.h"
-#include "udp.h"
-#include "kalman.h"
-#include "device.h"
-#include "bluetooth.h"
 
 static struct OverallState state;
 // contains ... static struct Device devices[N];
@@ -930,14 +932,14 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                       int brightness = allocdata[18];
                       int motionCount = allocdata[19] + allocdata[20] * 256;
                       int moving = allocdata[21];
-                      g_print("Sensoro battery=%i, p14=%i, p15=%i, temp=%i, brightness=%i, motionCount=%i, moving=%i\n", battery, p14, p15, temp, brightness, motionCount, moving);
-                      g_print("  ");
+                      g_debug("Sensoro battery=%i, p14=%i, p15=%i, temp=%i, brightness=%i, motionCount=%i, moving=%i\n", battery, p14, p15, temp, brightness, motionCount, moving);
+                      g_debug("  ");
                       send_to_mqtt_single_value(address, "temperature", temp);
-                      g_print("  ");
+                      g_debug("  ");
                       send_to_mqtt_single_value(address, "brightness", brightness);
-                      g_print("  ");
+                      g_debug("  ");
                       send_to_mqtt_single_value(address, "motionCount", motionCount);
-                      g_print("  ");
+                      g_debug("  ");
                       send_to_mqtt_single_value(address, "moving", moving);
                     }
                 }
@@ -1036,7 +1038,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         else
         {
             const char *type = g_variant_get_type_string(prop_val);
-            g_print("ERROR Unknown property: '%s' %s\n", property_name, type);
+            g_debug("ERROR Unknown property: '%s' %s\n", property_name, type);
         }
 
         //g_print("un_ref prop_val\n");
@@ -1044,12 +1046,12 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
     }
 
     if (starting && send_distance) {
-      g_print("Skip sending, starting\n");
+      g_debug("Skip sending, starting\n");
     }
     else
     {
         if (send_distance) {
-          g_print("  **** Send distance %6.3f                        ", existing->distance);
+          g_debug("  **** Send distance %6.3f                        ", existing->distance);
           send_to_mqtt_single_float(address, "distance", existing->distance);
           time(&existing->last_sent);
 
@@ -1393,7 +1395,7 @@ gboolean should_remove(struct Device* existing)
 
   if (remove) {
 
-    g_print("  Cache remove %s '%s' count=%i dt=%.1fs dist=%.1fm\n", existing->mac, existing->name, existing->count, delta_time, existing->distance);
+    g_debug("  Cache remove %s '%s' count=%i dt=%.1fs dist=%.1fm\n", existing->mac, existing->name, existing->count, delta_time, existing->distance);
 
     // And so when this device reconnects we get a proper reconnect message and so that BlueZ doesn't fill up a huge
     // cache of iOS devices that have passed by or changed mac address
@@ -1404,7 +1406,7 @@ gboolean should_remove(struct Device* existing)
 
     int rc = bluez_adapter_call_method(conn, "RemoveDevice", param, NULL);
     if (rc)
-      g_print("Not able to remove %s\n", existing->mac);
+      g_warning("Not able to remove %s\n", existing->mac);
     //else
     //  g_debug("    ** Removed %s from BlueZ cache too\n", existing->mac);
   }
@@ -1457,7 +1459,7 @@ void dump_device (struct Device* a)
     }
   }
 
-  g_print("%3i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %13s %5.1fm %s\n", a->id%1000, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, closest_ap, closest_dist, category);
+  g_info("%3i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %13s %5.1fm %s\n", a->id%1000, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, closest_ap, closest_dist, category);
 }
 
 
@@ -1471,14 +1473,14 @@ int dump_all_devices_tick(void *parameters)
     if (starting) return TRUE;   // not during first 30s startup time
     if (!logTable) return TRUE; // no changes since last time
     logTable = FALSE;
-    g_print("--------------------------------------------------------------------------------------------------------------\n");
-    g_print("Id  Address          Count Typ   Dist  Col   First   Last                 Name              Closest Category  \n");
-    g_print("--------------------------------------------------------------------------------------------------------------\n");
+    g_info("--------------------------------------------------------------------------------------------------------------\n");
+    g_info("Id  Address          Count Typ   Dist  Col   First   Last                 Name              Closest Category  \n");
+    g_info("--------------------------------------------------------------------------------------------------------------\n");
     time(&now);
     for (int i=0; i < state.n; i++) {
       dump_device(&state.devices[i]);
     }
-    g_print("--------------------------------------------------------------------------------------------------------------\n");
+    g_info("--------------------------------------------------------------------------------------------------------------\n");
 
     unsigned long total_minutes = (now - started) / 60;  // minutes
     unsigned int minutes = total_minutes % 60;
@@ -1489,11 +1491,11 @@ int dump_all_devices_tick(void *parameters)
     float people_in_range = state.local->people_in_range_count;
 
     if (days > 1)
-      g_print("Uptime: %i days %02i:%02i  People %.2f (%.2f in range)\n", days, hours, minutes, people_closest, people_in_range);
+      g_info("Uptime: %i days %02i:%02i  People %.2f (%.2f in range)\n", days, hours, minutes, people_closest, people_in_range);
     else if (days == 1)
-      g_print("Uptime: 1 day %02i:%02i  People %.2f (%.2f in range)\n", hours, minutes, people_closest, people_in_range);
+      g_info("Uptime: 1 day %02i:%02i  People %.2f (%.2f in range)\n", hours, minutes, people_closest, people_in_range);
     else
-      g_print("Uptime: %02i:%02i  People %.2f (%.2f in range)\n", hours, minutes, people_closest, people_in_range);
+      g_info("Uptime: %02i:%02i  People %.2f (%.2f in range)\n", hours, minutes, people_closest, people_in_range);
 
     print_access_points();
 
@@ -1514,7 +1516,7 @@ gboolean try_disconnect (struct Device* a)
 {
   if (a->try_connect_state == 1 && a->connected) {
     a->try_connect_state = 2;
-    g_print(">>>>>> Disconnect from %s\n", a->mac);
+    g_info("Disconnect from %s\n", a->mac);
     bluez_adapter_disconnect_device(conn, a->mac);
     return TRUE;
   }
@@ -1671,23 +1673,23 @@ void initialize_state()
 
 void display_state()
 {
-    g_print("HOST_NAME = %s\n", state.local->client_id);
-    g_print("HOST_DESCRIPTION = %s\n", state.local->description);
-    g_print("HOST_PLATFORM = %s\n", state.local->platform);
-    g_print("Position: (%.1f,%.1f,%.1f)\n", state.local->x, state.local->y, state.local->z);
+    g_info("HOST_NAME = %s\n", state.local->client_id);
+    g_info("HOST_DESCRIPTION = %s\n", state.local->description);
+    g_info("HOST_PLATFORM = %s\n", state.local->platform);
+    g_info("Position: (%.1f,%.1f,%.1f)\n", state.local->x, state.local->y, state.local->z);
 
-    g_print("RSSI_ONE_METER Power at 1m : %i\n", state.local->rssi_one_meter);
-    g_print("RSSI_FACTOR to distance : %.1f   (typically 2.0 (indoor, cluttered) to 4.0 (outdoor, no obstacles)\n", state.local->rssi_factor);
-    g_print("PEOPLE_DISTANCE : %.1fm (cutoff)\n", state.local->people_distance);
+    g_info("RSSI_ONE_METER Power at 1m : %i\n", state.local->rssi_one_meter);
+    g_info("RSSI_FACTOR to distance : %.1f   (typically 2.0 (indoor, cluttered) to 4.0 (outdoor, no obstacles)\n", state.local->rssi_factor);
+    g_info("PEOPLE_DISTANCE : %.1fm (cutoff)\n", state.local->people_distance);
 
-    g_print("UDP_MESH_PORT=%i\n", state.udp_mesh_port);
-    g_print("UDP_SIGN_PORT=%i\n", state.udp_sign_port);
-    g_print("UDP_SCALE_FACTOR=%.1f\n", state.udp_scale_factor);
+    g_info("UDP_MESH_PORT=%i\n", state.udp_mesh_port);
+    g_info("UDP_SIGN_PORT=%i\n", state.udp_sign_port);
+    g_info("UDP_SCALE_FACTOR=%.1f\n", state.udp_scale_factor);
 
-    g_print("MQTT_TOPIC='%s'\n", state.mqtt_topic);
-    g_print("MQTT_SERVER='%s'\n", state.mqtt_server);
-    g_print("MQTT_USERNAME='%s'\n", state.mqtt_username);
-    g_print("MQTT_PASSWORD='%s'\n", state.mqtt_password == NULL ? "(null)" : "*****");
+    g_info("MQTT_TOPIC='%s'\n", state.mqtt_topic);
+    g_info("MQTT_SERVER='%s'\n", state.mqtt_server);
+    g_info("MQTT_USERNAME='%s'\n", state.mqtt_username);
+    g_info("MQTT_PASSWORD='%s'\n", state.mqtt_password == NULL ? "(null)" : "*****");
 }
 
 
@@ -1725,20 +1727,20 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    g_print("Get mac address\n");
+    g_debug("Get mac address\n");
     get_mac_address(mac_address);
     mac_address_to_string(mac_address_text, sizeof(mac_address_text), mac_address);
-    g_print("Local MAC address is: %s\n", mac_address_text);
+    g_info("Local MAC address is: %s\n", mac_address_text);
 
     // Create a UDP listener for mesh messages about devices connected to other access points in same LAN
     socket_service = create_socket_service(&state);
 
-    g_print("\n\nStarting\n\n");
+    g_info("\n\nStarting\n\n");
 
     conn = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
     if (conn == NULL)
     {
-        g_print("Not able to get connection to system bus\n");
+        g_warning("Not able to get connection to system bus\n");
         return 1;
     }
 
@@ -1783,24 +1785,24 @@ int main(int argc, char **argv)
     rc = bluez_adapter_set_property(conn, "Powered", g_variant_new("b", TRUE));
     if (rc)
     {
-        g_print("Not able to enable the adapter\n");
+        g_warning("Not able to enable the adapter\n");
         goto fail;
     }
 
     rc = bluez_set_discovery_filter(conn);
     if (rc)
     {
-        g_print("Not able to set discovery filter\n");
+        g_warning("Not able to set discovery filter\n");
         goto fail;
     }
 
     rc = bluez_adapter_call_method(conn, "StartDiscovery", NULL, NULL);
     if (rc)
     {
-        g_print("Not able to scan for new devices\n");
+        g_warning("Not able to scan for new devices\n");
         goto fail;
     }
-    g_print("Started discovery\n");
+    g_info("Started discovery\n");
 
     prepare_mqtt(state.mqtt_server, state.mqtt_topic, state.local->client_id, mac_address, state.mqtt_username, state.mqtt_password);
 
@@ -1826,11 +1828,11 @@ int main(int argc, char **argv)
 
     display_state();
 
-    g_print("Start main loop\n");
+    g_info("Start main loop\n");
 
     g_main_loop_run(loop);
 
-    g_print("END OF MAIN LOOP RUN\n");
+    g_info("END OF MAIN LOOP RUN\n");
 
     if (argc > 3)
     {
@@ -1874,7 +1876,7 @@ void int_handler(int dummy) {
 
     pthread_mutex_destroy(&state.lock);
 
-    g_print("Clean exit\n");
+    g_info("Clean exit\n");
 
     exit(0);
 }

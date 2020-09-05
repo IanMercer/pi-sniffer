@@ -5,15 +5,6 @@
 
 #include "mqtt_send.h"
 
-#include <glib.h>
-#include <gio/gio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/ioctl.h>
-#include <stdint.h>
-#include <sys/types.h>
-#include <string.h>
 #include <sys/socket.h>
 #include <net/if.h>
 #include <time.h>
@@ -438,7 +429,7 @@ void json_array_no_mac(char*message, int length, char* field, unsigned char* val
 
 void send_to_mqtt(char* topic, char *json, int qos, int retained)
 {
-    printf("\n    MQTT %s %s\n", topic, json);
+    g_debug("\n    MQTT %s %s\n", topic, json);
     int length = strlen(json);
 
     MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
@@ -453,10 +444,10 @@ void send_to_mqtt(char* topic, char *json, int qos, int retained)
     int rc = 0;
     if ((rc = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
     {
-        printf("Failed to start sendMessage, return code %d\n", rc);
+        g_warning("Failed to start sendMessage, return code %d\n", rc);
         send_errors ++;
         if (send_errors > 10) {
-            g_print("\n\nToo many send errors, restarting\n\n");
+            g_warning("\n\nToo many send errors, restarting\n\n");
             exit(-1);
         }
     }

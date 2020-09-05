@@ -1,6 +1,8 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
+#define G_LOG_USE_STRUCTURED 1
+
 #include "kalman.h"
 #include <pthread.h>
 #include <string.h>

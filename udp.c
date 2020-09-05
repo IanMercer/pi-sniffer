@@ -1,6 +1,5 @@
 // Client side implementation of UDP client-server model
 #include "udp.h"
-#include "device.h"
 
 // internal
 #include <stdio.h>
@@ -66,7 +65,7 @@ struct AccessPoint *add_access_point(char *client_id,
                                      const char *description, const char *platform,
                                      float x, float y, float z, int rssi_one_meter, float rssi_factor, float people_distance)
 {
-    g_debug("Check for new access point '%s'\n", client_id);
+    //g_debug("Check for new access point '%s'\n", client_id);
     int found = access_point_count;
     for (int i = 0; i < access_point_count; i++)
     {
@@ -131,6 +130,7 @@ struct AccessPoint *add_access_point(char *client_id,
 
 void print_access_points()
 {
+  float people_total = 0.0;
   g_print("ACCESS POINTS          Platform       Close Range (x,y,z)                 Parameters\n");
   for (int k = 0; k < access_point_count; k++)
   {
@@ -140,7 +140,9 @@ void print_access_points()
     ap.people_closest_count, ap.people_in_range_count,
     ap.x, ap.y, ap.z, ap.rssi_one_meter, ap.rssi_factor, ap.people_distance);
     //g_print("              %16s %s\n", ap->platform, ap->description);
+    people_total += ap.people_closest_count;
   }
+  g_print("Total people = %.1f\n", people_total);
 }
 
 struct AccessPoint *update_accessPoints(struct AccessPoint access_point)
@@ -151,6 +153,8 @@ struct AccessPoint *update_accessPoints(struct AccessPoint access_point)
                             access_point.rssi_one_meter, access_point.rssi_factor, access_point.people_distance);
     ap->people_closest_count = access_point.people_closest_count;
     ap->people_in_range_count = access_point.people_in_range_count;
+    strncpy(ap->description, access_point.description, META_LENGTH);
+    strncpy(ap->platform, access_point.platform, META_LENGTH);
     return ap;
 }
 
@@ -320,6 +324,8 @@ void *listen_loop(void *param)
         a.rssi_factor = 0.0;
         a.rssi_one_meter = 0.0;
 
+        strncpy(d.mac, "notset", 7);  // access point only messages have no device mac address
+
         if (device_from_json(buffer, &a, &d))
         {
             struct AccessPoint *actual = update_accessPoints(a);
@@ -348,16 +354,16 @@ void *listen_loop(void *param)
                     merge(&state->devices[i], &d);
                     // use the local id for the device not any remote id
                     add_closest(state->devices[i].id, a.id, d.latest, d.distance);
-                    struct ClosestTo *closest = get_closest(state->devices[i].id);
-
-                    if (closest)
-                    { // && (closest->distance < state->devices[i].distance)) {
-                        struct AccessPoint *ap = get_access_point(closest->access_id);
-                        if (ap)
-                        {
-                            //g_print(" * Closest overall is '%s' at %.2f\n", ap->client_id, closest->distance);
-                        }
-                    }
+                   
+                    // // struct ClosestTo *closest = get_closest(state->devices[i].id);
+                    // // if (closest)
+                    // // { // && (closest->distance < state->devices[i].distance)) {
+                    // //     struct AccessPoint *ap = get_access_point(closest->access_id);
+                    // //     if (ap)
+                    // //     {
+                    // //         //g_print(" * Closest overall is '%s' at %.2f\n", ap->client_id, closest->distance);
+                    // //     }
+                    // // }
 
                     break;
                 }

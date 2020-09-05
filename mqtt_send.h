@@ -5,7 +5,17 @@
     And utility functions
 */
 
-#include <device.h>
+#include "device.h"
+
+#include <glib.h>
+#include <gio/gio.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <sys/ioctl.h>
+#include <stdint.h>
+#include <sys/types.h>
+#include <string.h>
 
 void exit_mqtt();
 

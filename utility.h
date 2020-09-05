@@ -4,9 +4,10 @@
     Utility functions
 */
 
+#define G_LOG_USE_STRUCTURED 1
 #include <glib.h>
+#include <stdbool.h>
 //#include <gio/gio.h>
-//#include <stdbool.h>
 //#include <stdio.h>
 //#include <sys/ioctl.h>
 //#include <sys/types.h>
