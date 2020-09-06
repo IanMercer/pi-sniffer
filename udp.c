@@ -340,7 +340,7 @@ void *listen_loop(void *param)
             }
 
             // TODO: Ignore messages with no device
-            if (d.mac == NULL){
+            if (d.mac == NULL || strlen(d.mac) == 0){
                 g_info("Ignoring access point only message\n");
                 continue;
             }
