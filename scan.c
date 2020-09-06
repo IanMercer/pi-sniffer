@@ -236,11 +236,12 @@ void report_devices_count() {
     }
 
     if (made_changes) {
-      g_info("Devices by range: ");
+      char line[128];
+      snprintf(line, sizeof(line), "Devices by range:");
       for (int i = 0; i < N_RANGES; i++) {
-         g_info(" %i", reported_ranges[i]);
+        snprintf(line+strlen(line), sizeof(line)-strlen(line), " %i", reported_ranges[i]);
       }
-      g_info("  ");
+      g_info("%s", line);
       send_to_mqtt_distances((unsigned char*)reported_ranges, N_RANGES * sizeof(int8_t));
     }
 
