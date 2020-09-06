@@ -137,7 +137,7 @@ char* access_point_to_json (struct AccessPoint* a);
 
 bool device_from_json(const char* json, struct AccessPoint* access_point, struct Device* device);
 
-void merge(struct Device* local, struct Device* remote);
+void merge(struct Device* local, struct Device* remote, char* access_name);
 
 // Shared device state object (one globally for app, thread safe access needed)
 struct OverallState 

@@ -357,7 +357,7 @@ void *listen_loop(void *param)
                 if (strncmp(d.mac, state->devices[i].mac, 18) == 0)
                 {
                     //g_print("%s '%s' dt=%3li", d.mac, d.name, now-d.latest);
-                    merge(&state->devices[i], &d);
+                    merge(&state->devices[i], &d, a.client_id);
                     // use the local id for the device not any remote id
                     add_closest(state->devices[i].id, a.id, d.latest, d.distance);
                    

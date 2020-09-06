@@ -43,12 +43,12 @@ void soft_set_u16(uint16_t* field, uint16_t field_new)
     if (*field == 0) *field = field_new;
 }
 
-void merge(struct Device* local, struct Device* remote)
+void merge(struct Device* local, struct Device* remote, char* access_name)
 {
    optional_set(local->name, remote->name);
    optional_set(local->alias, remote->alias);
    soft_set_8(&local->addressType, remote->addressType);
-   if (local->category == 0 && remote->category != 0) g_info("Changed category from remote %s", category_from_int(remote->category));
+   if (local->category == 0 && remote->category != 0) g_info("  %s Changed category from %s to '%s'", local->mac, access_name, category_from_int(remote->category));
    soft_set_8(&local->category, remote->category);
    soft_set_u16(&local->appearance, remote->appearance);  // not used ?
    if (remote->try_connect_state == 2) local->try_connect_state = 2;  // already connected once
