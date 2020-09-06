@@ -980,7 +980,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
                 if (existing->manufacturer != manufacturer)
                 {
-                    g_print("  %s Manufacturer has changed ", address);
+                    g_info("  %s Manufacturer has changed ", address);
                     send_to_mqtt_single_value(address, "manufacturer", manufacturer);
                     existing->manufacturer = manufacturer;
                 }
@@ -992,7 +992,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 if (existing->manufacturer_data_hash != hash)
                 {
                     pretty_print2("  ManufacturerData", prop_val, TRUE);  // a{qv}
-                    g_print("  ManufData has changed ");
+                    g_debug("  ManufData has changed ");
                     send_to_mqtt_array(address, "manufacturerdata", allocdata, actualLength);
                     existing->manufacturer_data_hash = hash;
 
