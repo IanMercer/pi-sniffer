@@ -9,11 +9,13 @@
 
 // These must be in same order as enum values
 char* categories[] = { "unknown", "phone", "watch", "tablet", "headphones", "computer", "tv", "fixed", "beacon", "car" };
+int category_values[] = { CATEGORY_UNKNOWN, CATEGORY_PHONE, CATEGORY_WATCH, CATEGORY_TABLET, CATEGORY_HEADPHONES, CATEGORY_COMPUTER, CATEGORY_TV, CATEGORY_FIXED, CATEGORY_BEACON, CATEGORY_CAR };
 
 int category_to_int(char* category)
 {
     for (uint i = 0; i < sizeof(categories); i++) {
-      if (strcmp(category, categories[i]) == 0) return i;
+       if (category_values[i] != (int)i) g_warning("Category does not match %i %i", i, category_values[i]);
+       if (strcmp(category, categories[i]) == 0) return category_values[i];
     }
     return 0;
 }
@@ -46,6 +48,7 @@ void merge(struct Device* local, struct Device* remote)
    optional_set(local->name, remote->name);
    optional_set(local->alias, remote->alias);
    soft_set_8(&local->addressType, remote->addressType);
+   if (local->category == 0 && remote->category != 0) g_info("Changed category from remote %s", category_from_int(remote->category));
    soft_set_8(&local->category, remote->category);
    soft_set_u16(&local->appearance, remote->appearance);  // not used ?
    if (remote->try_connect_state == 2) local->try_connect_state = 2;  // already connected once
