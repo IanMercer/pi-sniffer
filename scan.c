@@ -193,7 +193,7 @@ static int8_t reported_ranges[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -
 static char udp_last_sent = -1;
 
 void report_devices_count() {
-    g_debug("report_devices_count\n");
+    //g_debug("report_devices_count\n");
 
     if (starting) return;   // not during first 30s startup time
 
