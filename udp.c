@@ -97,10 +97,10 @@ struct AccessPoint *add_access_point(char *client_id,
         ap->people_in_range_count = 0.0;
         access_point_count++;
 
-        g_print("%20s p=(closest=%.1f,range=%.1f) (%6.1f,%6.1f,%6.1f) RSSI(%3i, %.1f) Dist=%.1f\n", ap->client_id,
+        g_debug("Added access point %s %s %s p=(closest=%.1f,range=%.1f) (%6.1f,%6.1f,%6.1f) RSSI(%3i, %.1f) Dist=%.1f\n", 
+          ap->client_id, ap->platform, ap->description,
           ap->people_closest_count, ap->people_in_range_count,
           ap->x, ap->y, ap->z, ap->rssi_one_meter, ap->rssi_factor, ap->people_distance);
-        g_print("              %16s %s\n", ap->platform, ap->description);
 
         //g_print("ACCESS POINTS\n");
         //for (int k = 0; k < access_point_count; k++){
