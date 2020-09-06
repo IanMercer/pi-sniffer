@@ -69,5 +69,25 @@ See https://lintut.com/how-to-setup-ssh-passwordless-login-on-centos-7-rhel-7-rh
     sudo apt-get upgrade
 ````
 
-13. Now return to the main instructions [README.md](README.md)
+13. Set you local time zone and check it
+````
+    sudo timedatectl set-timezone America/Los_Angeles
+    timedatectl status
+````
+
+14. Optionally allow `journalctl` to persist logs between boots:
+````
+   sudo nano /etc/systemd/journald.conf
+````
+
+Under the `[Journal]` section, set the Storage= option to "persistent" to enable persistent logging:
+
+````
+[Journal]
+Storage=persistent
+````
+
+This allows you to `journalctl --list-boots` and to display the journal for a specific boot, e.g. `-b -1`.
+
+15. Now return to the main instructions [README.md](README.md)
 
