@@ -419,13 +419,14 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
 
           uint8_t lower_bits = device_status & 0x3f;
 
-          if (lower_bits == 0x07) { g_print(" Lock screen (0x07) "); soft_set_category(&existing->category, CATEGORY_PHONE); }
-          else if (lower_bits == 0x17) { g_print(" Lock screen   (0x17) "); soft_set_category(&existing->category, CATEGORY_PHONE); }
-          else if (lower_bits == 0x1b) { g_print(" Home screen   (0x1b) "); soft_set_category(&existing->category, CATEGORY_PHONE); }
-          else if (lower_bits == 0x1c) { g_print(" Home screen   (0x1c) "); soft_set_category(&existing->category, CATEGORY_PHONE); }
-          else if (lower_bits == 0x10) { g_print(" Home screen   (0x10) "); soft_set_category(&existing->category, CATEGORY_PHONE); }
-          else if (lower_bits == 0x0e) { g_print(" Outgoing call (0x0e) "); soft_set_category(&existing->category, CATEGORY_PHONE); }
-          else if (lower_bits == 0x1e) { g_print(" Incoming call (0x1e) "); soft_set_category(&existing->category, CATEGORY_PHONE); }
+          // These could be iPad or iWatch too, not certain it's a phone at this point
+          if (lower_bits == 0x07) { g_print(" Lock screen (0x07) "); /* soft_set_category(&existing->category, CATEGORY_PHONE); */ }
+          else if (lower_bits == 0x17) { g_print(" Lock screen   (0x17) ");/*  soft_set_category(&existing->category, CATEGORY_PHONE);*/  }
+          else if (lower_bits == 0x1b) { g_print(" Home screen   (0x1b) ");/*  soft_set_category(&existing->category, CATEGORY_PHONE);*/  }
+          else if (lower_bits == 0x1c) { g_print(" Home screen   (0x1c) ");/*  soft_set_category(&existing->category, CATEGORY_PHONE);*/  }
+          else if (lower_bits == 0x10) { g_print(" Home screen   (0x10) ");/*  soft_set_category(&existing->category, CATEGORY_PHONE);*/  }
+          else if (lower_bits == 0x0e) { g_print(" Outgoing call (0x0e) ");/*  soft_set_category(&existing->category, CATEGORY_PHONE);*/  }
+          else if (lower_bits == 0x1e) { g_print(" Incoming call (0x1e) ");/*  soft_set_category(&existing->category, CATEGORY_PHONE);*/  }
           else g_debug(" Unknown (0x%.2x) ", lower_bits);
 
           if (allocdata[03] &0x10) g_print("1"); else g_print("0");
