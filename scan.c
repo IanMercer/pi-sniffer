@@ -392,7 +392,7 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         else if (apple_device_type == 0x03) g_print("  Airprint \n");
         else if (apple_device_type == 0x05) g_print("  Airdrop \n");
         else if (apple_device_type == 0x07) {
-          optional(existing->alias, "Airpods");
+          optional(existing->name, "Airpods");
           g_debug("  Airpods \n");
           existing->category = CATEGORY_HEADPHONES;
         }
@@ -400,7 +400,7 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         else if (apple_device_type == 0x09) { optional(existing->alias, "Airplay"); g_print("  Airplay \n"); }
         else if (apple_device_type == 0x0a) { optional(existing->alias, "Apple 0a"); g_print("  Apple 0a \n"); }
         else if (apple_device_type == 0x0b) {
-          optional(existing->alias, "iWatch?");
+          optional(existing->name, "iWatch?");
           g_debug("  Watch_c \n");
           existing->category = CATEGORY_WATCH;
         }
@@ -410,7 +410,7 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         else if (apple_device_type == 0x0f) g_print("  WifiJoin \n");
         else if (apple_device_type == 0x10) {
           g_debug("  Nearby ");
-          optional(existing->alias, "iPhone?");
+          optional(existing->name, "iPhone or iPad or iWatch?");
           // Not right, MacBook Pro seems to send this too
 
           uint8_t device_status = allocdata[02];
@@ -448,20 +448,24 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
           g_debug("Did not recognize apple device type %.2x", apple_device_type);
         }
     } else if (manufacturer == 0x0087) {
-        optional(existing->alias, "Garmin");
+        optional(existing->name, "Garmin");
         existing->category = CATEGORY_WATCH; // could be fitness tracker
-    } else if (manufacturer == 0xb4c1) {
-        optional(existing->alias, "Dycoo");   // not on official Bluetooth website
+    } else if (manufacturer == 0x05A7) {
+        optional(existing->name, "Sonos");
+        existing->category = CATEGORY_FIXED;
+    }
+    else if (manufacturer == 0xb4c1) {
+        optional(existing->name, "Dycoo");   // not on official Bluetooth website
     } else if (manufacturer == 0x0310) {
-        optional(existing->alias, "SGL Italia S.r.l.");
+        optional(existing->name, "SGL Italia S.r.l.");
         existing->category = CATEGORY_HEADPHONES;
     } else if (manufacturer == 0x00d2) {
-        optional(existing->alias, "AbTemp");
+        optional(existing->name, "AbTemp");
         g_debug("Ignoring manufdata\n");
     } else {
         // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
-        g_debug("  Did not recognize manufacturer 0x%.4x\n", manufacturer);
-        optional(existing->alias, "Not an Apple");
+        g_info("  Did not recognize manufacturer 0x%.4x\n", manufacturer);
+        optional(existing->name, "Not an Apple");
     }
 }
 
