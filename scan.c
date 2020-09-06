@@ -190,6 +190,7 @@ static int8_t reported_ranges[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -
     While there is any overlap, find the overlapping pair, move the second one to the next column
 */
 
+static char udp_last_sent = -1;
 
 void report_devices_count() {
     g_debug("report_devices_count\n");
@@ -235,11 +236,11 @@ void report_devices_count() {
     }
 
     if (made_changes) {
-      g_print("Devices by range: ");
+      g_info("Devices by range: ");
       for (int i = 0; i < N_RANGES; i++) {
-         g_print(" %i", reported_ranges[i]);
+         g_info(" %i", reported_ranges[i]);
       }
-      g_print("  ");
+      g_info("  ");
       send_to_mqtt_distances((unsigned char*)reported_ranges, N_RANGES * sizeof(int8_t));
     }
 
@@ -272,7 +273,7 @@ void report_devices_count() {
     if (fabs(people_in_range - state.local->people_in_range_count) > 0.01 || fabs(people_closest - state.local->people_closest_count) > 0.01) {
       state.local->people_closest_count = people_closest;
       state.local->people_in_range_count = people_in_range;
-      g_print("People count = %.2f (%.2f in range)\n", people_closest, people_in_range);
+      g_info("People count = %.2f (%.2f in range)\n", people_closest, people_in_range);
     }
 
     double scale_factor = 0.5;  // This adjusts how people map to lights which are on a 0.0-3.0 range
@@ -293,7 +294,10 @@ void report_devices_count() {
         // TODO: Move to JSON for more flexibility sending names too
 
         udp_send(state.udp_sign_port, msg, sizeof(msg));
-        g_print("UDP Sent %i\n", msg[1]);
+        if (udp_last_sent != msg[1]){
+            g_info("UDP Sent %i\n", msg[1]);
+            udp_last_sent = msg[1];
+        }
     }
 }
 
