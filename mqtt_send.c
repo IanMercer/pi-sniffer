@@ -245,6 +245,12 @@ void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* client_id, char* m
     password = pass;
     topicRoot = mqtt_topicRoot;
 
+    if (mqtt_uri == NULL || strlen(mqtt_uri) == 0) {
+      g_info("MQTT Uri must be set, running with no MQTT");
+      isMQTTEnabled = false;
+      return;
+    }
+
     if (strcmp(topicRoot, AZURE_TOPIC_PREFIX) == 0) {
       isAzure = true;
       topicSuffix = AZURE_TOPIC_SUFFIX;
@@ -253,18 +259,13 @@ void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* client_id, char* m
       topicSuffix = "";
     }
 
-    if (mqtt_uri == NULL) {
-      printf("MQTT Uri must be set");
-      return;
-    }
-
     if (mqtt_topicRoot == NULL) {
-      printf("MQTT Topic Root must be set");
+      g_warning("MQTT Topic Root must be set");
       exit(-24);
     }
 
     if (client_id == NULL) {
-      printf("Client ID must be set");
+      g_warning("Client ID must be set");
       exit(-24);
     }
 
@@ -278,18 +279,18 @@ void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* client_id, char* m
 
     isMQTTEnabled = true;
 
-    printf("Starting MQTT `%s` topic root=`%s` client_id=`%s`\n", mqtt_uri, mqtt_topicRoot, client_id);
-    printf("Username '%s'\n", username);
-    printf("Password '%s'\n", password);
+    g_info("Starting MQTT `%s` topic root=`%s` client_id=`%s`\n", mqtt_uri, mqtt_topicRoot, client_id);
+    g_info("Username '%s'\n", username);
+    g_info("Password '%s'\n", password);
     if (isAzure) {
-      printf("Sending only limited messages to Azure");
+      g_info("Sending only limited messages to Azure");
     }
 
     MQTTAsync_init_options inits = MQTTAsync_init_options_initializer;
     inits.do_openssl_init = 1;
     MQTTAsync_global_init(&inits);
 
-    g_print("Create\n");
+    g_info("Create MQTT Async\n");
     MQTTAsync_create(&client, mqtt_uri, client_id, MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);  // MQTTASYNC_SUCCESS
 
     //MQTTAsync_connectOptions opts = get_opts();
@@ -323,7 +324,7 @@ void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* client_id, char* m
     }
     */
 
-    g_print("connect async\n");
+    g_info("MQTT connect async\n");
 
     connect_async(client);
 
