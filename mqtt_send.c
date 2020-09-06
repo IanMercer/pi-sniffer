@@ -236,7 +236,7 @@ int connect_async(MQTTAsync client)
 uint8_t sendbuf[4 * 1024 * 1024]; /* 4MByte sendbuf should be large enough to hold multiple whole mqtt messages */
 uint8_t recvbuf[2048];            /* recvbuf should be large enough any whole mqtt message expected to be received */
 
-
+static bool isMQTTEnabled = false;
 
 void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* client_id, char* mac_address,
                   char* user, char* pass)
@@ -255,7 +255,7 @@ void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* client_id, char* m
 
     if (mqtt_uri == NULL) {
       printf("MQTT Uri must be set");
-      exit(-24);
+      return;
     }
 
     if (mqtt_topicRoot == NULL) {
@@ -275,6 +275,8 @@ void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* client_id, char* m
     //snprintf(will_topic, sizeof(will_topic), "%s/%s/%s", topicRoot, access_point_name, "state");
 
     //const char* will_message = "down";
+
+    isMQTTEnabled = true;
 
     printf("Starting MQTT `%s` topic root=`%s` client_id=`%s`\n", mqtt_uri, mqtt_topicRoot, client_id);
     printf("Username '%s'\n", username);
@@ -429,6 +431,8 @@ void json_array_no_mac(char*message, int length, char* field, unsigned char* val
 
 void send_to_mqtt(char* topic, char *json, int qos, int retained)
 {
+    if (!isMQTTEnabled) return;
+
     g_debug("MQTT %s %s\n", topic, json);
     int length = strlen(json);
 
@@ -459,6 +463,8 @@ void send_to_mqtt(char* topic, char *json, int qos, int retained)
 */
 void send_device_mqtt(struct Device* device)
 {
+    if (!isMQTTEnabled) return;
+
     printf("    MQTT %s device %s '%s'\n", MESH_TOPIC, device->mac, device->name);
 
     char buffer[2048];
@@ -491,6 +497,8 @@ void send_device_mqtt(struct Device* device)
 
 void send_to_mqtt_single(char *mac_address, char *key, char *value)
 {
+    if (!isMQTTEnabled) return;
+
     char topic[256];
     get_topic(topic, sizeof(topic), mac_address, key);
 
@@ -501,6 +509,8 @@ void send_to_mqtt_single(char *mac_address, char *key, char *value)
 
 void send_to_mqtt_array(char *mac_address, char *key, unsigned char *value, int length)
 {
+    if (!isMQTTEnabled) return;
+
     char topic[256];
     get_topic(topic, sizeof(topic), mac_address, key);
     char packet[2048];
@@ -510,6 +520,8 @@ void send_to_mqtt_array(char *mac_address, char *key, unsigned char *value, int 
 
 void send_to_mqtt_distances(unsigned char *value, int length)
 {
+    if (!isMQTTEnabled) return;
+
     char topic[256];
     get_topic(topic, sizeof(topic), "no-mac", "summary");
     char packet[2048];
@@ -519,6 +531,7 @@ void send_to_mqtt_distances(unsigned char *value, int length)
 
 void send_to_mqtt_uuids(char *mac_address, char *key, char **uuids, int length)
 {
+    if (!isMQTTEnabled) return;
 // TODO    if (isAzure) { printf("\n"); return; }
     char topic[256];
     get_topic(topic, sizeof(topic), mac_address, key);
@@ -530,6 +543,7 @@ void send_to_mqtt_uuids(char *mac_address, char *key, char **uuids, int length)
 
 void send_to_mqtt_single_value(char *mac_address, char *key, int32_t value)
 {
+    if (!isMQTTEnabled) return;
     char topic[256];
     get_topic(topic, sizeof(topic), mac_address, key);
 
@@ -540,6 +554,7 @@ void send_to_mqtt_single_value(char *mac_address, char *key, int32_t value)
 
 void send_to_mqtt_single_value_keep(char *mac_address, char *key, int32_t value)
 {
+    if (!isMQTTEnabled) return;
     char topic[256];
     get_topic(topic, sizeof(topic), mac_address, key);
 
@@ -551,6 +566,7 @@ void send_to_mqtt_single_value_keep(char *mac_address, char *key, int32_t value)
 
 void send_to_mqtt_single_float(char *mac_address, char *key, float value)
 {
+    if (!isMQTTEnabled) return;
     char topic[256];
     get_topic(topic, sizeof(topic), mac_address, key);
 
@@ -562,6 +578,7 @@ void send_to_mqtt_single_float(char *mac_address, char *key, float value)
 
 void mqtt_sync()
 {
+  if (!isMQTTEnabled) return;
   //g_print("Sync\n");
 
   if (!connected) {

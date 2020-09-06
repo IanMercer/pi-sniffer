@@ -1525,7 +1525,7 @@ gboolean try_disconnect (struct Device* a)
 {
   if (a->try_connect_state == 1 && a->connected) {
     a->try_connect_state = 2;
-    g_info("Disconnect from %s\n", a->mac);
+    g_info(">>>>> Disconnect from %s\n", a->mac);
     bluez_adapter_disconnect_device(conn, a->mac);
     return TRUE;
   }
@@ -1541,7 +1541,7 @@ gboolean try_connect (struct Device* a)
   if (a->count > 1 && a->try_connect_state == 0) {
     a->try_connect_state = 1;
     // Try forcing a connect to get a full dump from the device
-    g_print(">>>>>> Connect to %s\n", a->mac);
+    g_info(">>>>>> Connect to %s\n", a->mac);
     bluez_adapter_connect_device(conn, a->mac);
     return TRUE;  
   }
@@ -1675,7 +1675,7 @@ void initialize_state()
     state.mqtt_topic = getenv("MQTT_TOPIC");
     if (state.mqtt_topic == NULL) state.mqtt_topic = "BLF";  // sorry, historic name
     state.mqtt_server = getenv("MQTT_SERVER");
-    if (state.mqtt_server == NULL) state.mqtt_server = "192.168.0.52:1883";  // sorry, my old server
+    if (state.mqtt_server == NULL) state.mqtt_server = "";
     state.mqtt_username = getenv("MQTT_USERNAME");
     state.mqtt_password = getenv("MQTT_PASSWORD");
 }

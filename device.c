@@ -48,7 +48,7 @@ void merge(struct Device* local, struct Device* remote, char* access_name)
    optional_set(local->name, remote->name);
    optional_set(local->alias, remote->alias);
    soft_set_8(&local->addressType, remote->addressType);
-   if (local->category == 0 && remote->category != 0) g_info("  %s Changed category from %s to '%s'", local->mac, access_name, category_from_int(remote->category));
+   if (local->category == 0 && remote->category != 0) g_info("  %s Changed category to '%s', message from %s", local->mac, category_from_int(remote->category), access_name);
    soft_set_8(&local->category, remote->category);
    soft_set_u16(&local->appearance, remote->appearance);  // not used ?
    if (remote->try_connect_state == 2) local->try_connect_state = 2;  // already connected once
