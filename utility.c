@@ -165,14 +165,14 @@ bool get_address_from_path(char *address, int length, const char *path)
 void pretty_print2(const char *field_name, GVariant *value, gboolean types)
 {
     gchar *pretty = g_variant_print(value, types);
-    g_print("%s: %s\n", field_name, pretty);
+    g_debug("%s: %s\n", field_name, pretty);
     g_free(pretty);
 }
 
 void pretty_print(const char *field_name, GVariant *value)
 {
     gchar *pretty = g_variant_print(value, FALSE);
-    g_print("%s: %s\n", field_name, pretty);
+    g_debug("%s: %s\n", field_name, pretty);
     g_free(pretty);
 }
 

@@ -372,7 +372,7 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         uint8_t apple_device_type = allocdata[00];
         if (apple_device_type == 0x02) {
           optional(existing->alias, "Beacon");
-          g_print("  Beacon\n") ;
+          g_debug("  Beacon\n") ;
           existing->category = CATEGORY_BEACON;
 
           // Aprilbeacon temperature sensor
@@ -385,7 +385,7 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         else if (apple_device_type == 0x05) g_print("  Airdrop \n");
         else if (apple_device_type == 0x07) {
           optional(existing->alias, "Airpods");
-          g_print("  Airpods \n");
+          g_debug("  Airpods \n");
           existing->category = CATEGORY_HEADPHONES;
         }
         else if (apple_device_type == 0x08) { optional(existing->alias, "Siri"); g_print("  Siri \n"); }
@@ -393,7 +393,7 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         else if (apple_device_type == 0x0a) { optional(existing->alias, "Apple 0a"); g_print("  Apple 0a \n"); }
         else if (apple_device_type == 0x0b) {
           optional(existing->alias, "iWatch?");
-          g_print("  Watch_c \n");
+          g_debug("  Watch_c \n");
           existing->category = CATEGORY_WATCH;
         }
         else if (apple_device_type == 0x0c) g_print("  Handoff \n");
@@ -401,7 +401,7 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         else if (apple_device_type == 0x0e) g_print("  Hotspot \n");
         else if (apple_device_type == 0x0f) g_print("  WifiJoin \n");
         else if (apple_device_type == 0x10) {
-          g_print("  Nearby ");
+          g_debug("  Nearby ");
           optional(existing->alias, "iPhone?");
           // Not right, MacBook Pro seems to send this too
 
@@ -418,7 +418,7 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
           else if (lower_bits == 0x10) { g_print(" Home screen   (0x10) "); soft_set_category(&existing->category, CATEGORY_PHONE); }
           else if (lower_bits == 0x0e) { g_print(" Outgoing call (0x0e) "); soft_set_category(&existing->category, CATEGORY_PHONE); }
           else if (lower_bits == 0x1e) { g_print(" Incoming call (0x1e) "); soft_set_category(&existing->category, CATEGORY_PHONE); }
-          else g_print(" Unknown (0x%.2x) ", lower_bits);
+          else g_debug(" Unknown (0x%.2x) ", lower_bits);
 
           if (allocdata[03] &0x10) g_print("1"); else g_print("0");
           if (allocdata[03] &0x08) g_print("1"); else g_print("0");
@@ -432,11 +432,11 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
           if (allocdata[03] == 0x1e) g_print(" iPhone?  (0x1e)"); else
           if (allocdata[03] == 0x1a) g_print(" iWatch?  (0x1a)"); else
           if (allocdata[03] == 0x00) g_print(" TBD "); else
-            g_print (" Device type (%.2x)", allocdata[03]);
+            g_debug (" Device type (%.2x)", allocdata[03]);
 
-          g_print("\n");
+          g_debug("\n");
         } else {
-          g_print("Did not recognize apple device type %.2x", apple_device_type);
+          g_debug("Did not recognize apple device type %.2x", apple_device_type);
         }
     } else if (manufacturer == 0x0087) {
         optional(existing->alias, "Garmin");
@@ -448,10 +448,10 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         existing->category = CATEGORY_HEADPHONES;
     } else if (manufacturer == 0x00d2) {
         optional(existing->alias, "AbTemp");
-        g_print("Ignoring manufdata\n");
+        g_debug("Ignoring manufdata\n");
     } else {
         // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
-        g_print("  Did not recognize manufacturer 0x%.4x\n", manufacturer);
+        g_debug("  Did not recognize manufacturer 0x%.4x\n", manufacturer);
         optional(existing->alias, "Not an Apple");
     }
 }
@@ -479,7 +479,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
           g_variant_unref(address_from_dict);
       }
       else {
-        g_print("ERROR address is null");
+        g_warning("ERROR address is null");
         return;
       }
     }
@@ -502,7 +502,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         }
 
         if (state.n == N) {
-          g_print("Error, array of devices is full\n");
+          g_warning("Error, array of devices is full\n");
           return;
         }
 
@@ -544,7 +544,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
         kalman_initialize(&existing->kalman_interval);
 
-        g_print("Added device %i. %s\n", existing->id, address);
+        g_info("Added device %i. %s\n", existing->id, address);
     }
     else
     {
@@ -552,7 +552,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
            // from get_all_devices which includes stale data
            g_debug("Repeat device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
         } else {
-           g_print("Existing device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
+           g_debug("Existing device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
         }
     }
 
@@ -587,7 +587,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
             if (strncmp(name, existing->name, NAME_LENGTH) != 0)
             {
-                g_print("  %s Name has changed '%s' -> '%s'  ", address, existing->name, name);
+                g_info("  %s Name has changed '%s' -> '%s'\n", address, existing->name, name);
                 send_to_mqtt_single(address, "name", name);
                 g_strlcpy(existing->name, name, NAME_LENGTH);
             }
@@ -627,7 +627,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
             if (strncmp(alias, existing->alias, NAME_LENGTH) != 0)  // has_prefix because we may have truncated it
             {
-                g_print("  %s Alias has changed '%s' -> '%s'  \n", address, existing->alias, alias);
+                g_debug("  %s Alias has changed '%s' -> '%s'\n", address, existing->alias, alias);
                 // NOT CURRENTLY USED: send_to_mqtt_single(address, "alias", alias);
                 g_strlcpy(existing->alias, alias, NAME_LENGTH);
             }
@@ -643,7 +643,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             // Compare values and send
             if (existing->addressType != newAddressType) {
                 existing->addressType = newAddressType;
-                g_print("  %s Address type has changed -> '%s'  ", address, addressType);
+                g_debug("  %s Address type has changed -> '%s'\n", address, addressType);
                 send_to_mqtt_single(address, "type", addressType);
             }
             else {
@@ -660,14 +660,14 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         {
             if (!isUpdate)
             {
-               g_print("$$$$$$$$$$$$ RSSI is unreliable for get all devices\n");
+               //g_print("$$$$$$$$$$$$ RSSI is unreliable for get all devices\n");
                continue;
             }
 
             int16_t rssi = g_variant_get_int16(prop_val);
             //send_to_mqtt_single_value(address, "rssi", rssi);
 
-            g_print("  %s RSSI %i\n", address, rssi);
+            g_info("  %s RSSI %i\n", address, rssi);
 
             time_t now;
             time(&now);
@@ -710,7 +710,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
               send_distance = TRUE;
             }
             else {
-	      g_print("  %s Skip sending rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
+	          g_debug("  %s Skip sending rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
             }
         }
         else if (strcmp(property_name, "TxPower") == 0)
@@ -718,7 +718,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             int16_t p = g_variant_get_int16(prop_val);
             if (p != existing->txpower)
             {
-                g_print("  %s TXPOWER has changed %i\n", address, p);
+                g_debug("  %s TXPOWER has changed %i\n", address, p);
                 // NOT CURRENTLY USED ... send_to_mqtt_single_value(address, "txpower", p);
                 existing->txpower = p;
             }
@@ -729,7 +729,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             bool paired = g_variant_get_boolean(prop_val);
             if (existing->paired != paired)
             {
-                g_print("  %s Paired has changed        ", address);
+                g_debug("  %s Paired has changed        ", address);
                 send_to_mqtt_single_value(address, "paired", paired ? 1 : 0);
                 existing->paired = paired;
             }
@@ -739,7 +739,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             bool connected = g_variant_get_boolean(prop_val);
             if (existing->connected != connected)
             {
-                g_print("  %s Connected has changed     ", address);
+                g_debug("  %s Connected has changed     ", address);
                 send_to_mqtt_single_value(address, "connected", connected ? 1 : 0);
                 existing->connected = connected;
             }
@@ -749,7 +749,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             bool trusted = g_variant_get_boolean(prop_val);
             if (existing->trusted != trusted)
             {
-                g_print("  %s Trusted has changed       ", address);
+                g_debug("  %s Trusted has changed       ", address);
                 send_to_mqtt_single_value(address, "trusted", trusted ? 1 : 0);
                 existing->trusted = trusted;
             }
@@ -830,10 +830,10 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                         else g_print("Unknown(%s), ", strCopy);
                         g_free(strCopy);
                     }
-                    g_print("\n");
+                    g_debug("\n");
                     char **allocdata = g_malloc(actualLength * sizeof(char *));  // array of pointers to strings
                     memcpy(allocdata, uuidArray, actualLength * sizeof(char *));
-                    g_print("  %s UUIDs has changed      ", address);
+                    g_debug("  %s UUIDs has changed      ", address);
                     send_to_mqtt_uuids(address, "uuids", allocdata, actualLength);
                     existing->uuids_length = actualLength;
                     g_free(allocdata); // no need to free the actual strings, that happens below
@@ -862,7 +862,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             uint32_t deviceclass = g_variant_get_uint32(prop_val);
             if (existing->deviceclass != deviceclass)
             {
-                g_print("  %s Class has changed         ", address);
+                g_debug("  %s Class has changed         ", address);
                 send_to_mqtt_single_value(address, "class", deviceclass);
                 existing->deviceclass = deviceclass;
             }
@@ -872,7 +872,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             char *icon = g_variant_dup_string(prop_val, NULL);
             if (&existing->category == CATEGORY_UNKNOWN) {
               // Should track icon and test against that instead
-              g_print("  %s Icon: '%s'\n", address, icon);
+              g_debug("  %s Icon: '%s'\n", address, icon);
             }
             if (strcmp(icon, "computer") == 0) soft_set_category(&existing->category, CATEGORY_COMPUTER);
             else if (strcmp(icon, "phone") == 0) soft_set_category(&existing->category, CATEGORY_PHONE);
@@ -916,7 +916,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
                 if (existing->service_data_hash != hash)
                 {
-                    g_print("  ServiceData has changed ");
+                    g_debug("  ServiceData has changed ");
                     pretty_print2("  ServiceData", prop_val, TRUE);  // a{qv}
                     send_to_mqtt_array(address, "servicedata", allocdata, actualLength);
                     existing->service_data_hash = hash;

@@ -429,7 +429,7 @@ void json_array_no_mac(char*message, int length, char* field, unsigned char* val
 
 void send_to_mqtt(char* topic, char *json, int qos, int retained)
 {
-    g_debug("\n    MQTT %s %s\n", topic, json);
+    g_debug("MQTT %s %s\n", topic, json);
     int length = strlen(json);
 
     MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
