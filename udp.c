@@ -339,6 +339,12 @@ void *listen_loop(void *param)
                 continue;
             }
 
+            // TODO: Ignore messages with no device
+            if (d.mac == NULL){
+                g_info("Ignoring access point only message\n");
+                continue;
+            }
+
             time_t now;
             time(&now);
 
@@ -416,6 +422,18 @@ void send_device_udp(struct OverallState *state, struct Device *device)
 
     // Add local observations into the same structure
     add_closest(device->id, state->local->id, device->latest, device->distance);
+}
+
+/*
+    Send access point over UDP broadcast to all other access points
+*/
+void send_access_point_udp(struct OverallState *state)
+{
+    //printf("    Send UDP %i device %s '%s'\n", PORT, device->mac, device->name);
+    char *json = access_point_to_json(state->local);
+    //printf("    %s\n", json);
+    udp_send(PORT, json, strlen(json) + 1);
+    free(json);
 }
 
 /*

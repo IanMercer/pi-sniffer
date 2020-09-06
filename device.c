@@ -52,6 +52,29 @@ void merge(struct Device* local, struct Device* remote)
    // TODO: Other fields that we can transfer over
 }
 
+char* access_point_to_json (struct AccessPoint* a)
+{
+    char *string = NULL;
+    cJSON *j = cJSON_CreateObject();
+
+    // AccessPoint details
+    cJSON_AddStringToObject(j, "from", a->client_id);
+    cJSON_AddStringToObject(j, "description", a->description);
+    cJSON_AddStringToObject(j, "platform", a->platform);
+    cJSON_AddNumberToObject(j, "from_x", a->x);
+    cJSON_AddNumberToObject(j, "from_y", a->y);
+    cJSON_AddNumberToObject(j, "from_z", a->z);
+    cJSON_AddNumberToObject(j, "rssi_one_meter", a->rssi_one_meter);
+    cJSON_AddNumberToObject(j, "rssi_factor", a->rssi_factor);
+    cJSON_AddNumberToObject(j, "people_distance", a->people_distance);
+    cJSON_AddNumberToObject(j, "people_closest_count", a->people_closest_count);
+    cJSON_AddNumberToObject(j, "people_in_range_count", a->people_in_range_count);
+
+    string = cJSON_Print(j);
+    cJSON_Delete(j);
+    return string;
+}
+
 char* device_to_json (struct AccessPoint* a, struct Device* device)
 {
     char *string = NULL;

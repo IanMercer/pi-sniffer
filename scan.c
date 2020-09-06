@@ -275,6 +275,9 @@ void report_devices_count() {
       state.local->people_closest_count = people_closest;
       state.local->people_in_range_count = people_in_range;
       g_info("People count = %.2f (%.2f in range)\n", people_closest, people_in_range);
+
+      // And send access point to everyone over UDP
+      send_access_point_udp(&state);
     }
 
     double scale_factor = 0.5;  // This adjusts how people map to lights which are on a 0.0-3.0 range

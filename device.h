@@ -133,6 +133,8 @@ char* category_from_int(uint i);
 
 char* device_to_json (struct AccessPoint* a, struct Device* device);
 
+char* access_point_to_json (struct AccessPoint* a);
+
 bool device_from_json(const char* json, struct AccessPoint* access_point, struct Device* device);
 
 void merge(struct Device* local, struct Device* remote);
