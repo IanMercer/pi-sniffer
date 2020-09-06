@@ -3,7 +3,18 @@ Description=Pi Sniffer
 After=network.target
 
 [Service]
-ExecStart=/home/ian/pi-sniffer/scan 192.168.0.52:1883 BLF 7778
+# Env Vars - set these using sudo systemctl edit pi-sniffer.service and NOT here
+#
+# Environment="HOST_NAME=<name of Pi, optional will use system hostname if not set>"
+# Environment="HOST_DESCRIPTION=<explain where the sensor is located (for dashboard)>"
+# Environment="HOST_PLATFORM=<Pi3b+ or some other platform id (for dashboard)>"
+# Environment="POSITION_X=53"
+# Environment="POSITION_Y=20"
+# Environment="POSITION_Z=-6"
+# Environment="MQTT_TOPIC=BLF"
+# Environment="MQTT_SERVER=192.168.0.52:1883"
+#
+ExecStart=/home/ian/pi-sniffer/scan 192.168.0.52:1883 BLF
 WorkingDirectory=/home/ian/pi-sniffer
 StandardOutput=inherit
 StandardError=inherit

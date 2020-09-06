@@ -58,6 +58,11 @@ Environment="UDP_SIGN_PORT=7778"
 # Means that the sign can be configured without deploying new code there
 Environment="UDP_SCALE_FACTOR=0.5"
 
+# You can turn logging off entirely by replacing 'all' with specific log domains
+# or by removing this line entirely
+# And you can adjust the logging level in `build.sh` to exclude debug logging
+Environment="G_MESSAGES_DEBUG=all"
+
 ````
 
 * Alternatively, instead of using `build.sh` you can run the following steps manually:

@@ -38,4 +38,5 @@ echo starting service
 sudo systemctl start pi-sniffer.service
 
 echo now tailing log, ctrl-c to stop but leave service running
-sudo journalctl -u pi-sniffer.service -f
+echo log level is set to info, for debug change -p 6 to -p 7 or remove it
+sudo journalctl -u pi-sniffer.service -f -p 6
