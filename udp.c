@@ -430,7 +430,7 @@ void send_device_udp(struct OverallState *state, struct Device *device)
 void send_access_point_udp(struct OverallState *state)
 {
     char *json = access_point_to_json(state->local);
-    g_info("    Send UDP %i access point %s\n", PORT, json);
+    //g_info("    Send UDP %i access point %s\n", PORT, json);
     //printf("    %s\n", json);
     udp_send(PORT, json, strlen(json) + 1);
     free(json);
