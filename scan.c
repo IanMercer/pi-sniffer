@@ -672,7 +672,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             int16_t rssi = g_variant_get_int16(prop_val);
             //send_to_mqtt_single_value(address, "rssi", rssi);
 
-            g_info("  %s RSSI %i\n", address, rssi);
+            g_debug("  %s RSSI %i\n", address, rssi);
 
             time_t now;
             time(&now);
