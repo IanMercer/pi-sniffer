@@ -410,7 +410,7 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         else if (apple_device_type == 0x0f) g_print("  WifiJoin \n");
         else if (apple_device_type == 0x10) {
           g_debug("  Nearby ");
-          optional(existing->name, "iPhone or iPad or iWatch?");
+          optional(existing->name, "Apple Device");
           // Not right, MacBook Pro seems to send this too
 
           uint8_t device_status = allocdata[02];
