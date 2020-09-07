@@ -1616,7 +1616,7 @@ int try_connect_tick(void *parameters)
         if (simultaneus_connections > SIMULTANEOUS_CONNECTIONS) break;
     }
     if (simultaneus_connections > 0) {
-        g_debug("Started %i connection attempts", simultaneus_connections);
+        g_debug(">>>>>> Started %i connection attempts", simultaneus_connections);
     }
     return TRUE;
 }
