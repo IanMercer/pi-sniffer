@@ -32,6 +32,7 @@ typedef uint64_t u_int64_t;
 #define CATEGORY_FIXED 7
 #define CATEGORY_BEACON 8
 #define CATEGORY_CAR 9
+#define CATEGORY_AUDIO_CARD 10
 
 // Max allowed length of names and aliases (plus 1 for null)
 #define NAME_LENGTH 21

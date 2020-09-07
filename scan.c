@@ -455,13 +455,25 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0xb4c1) {
-        optional(existing->name, "Dycoo");   // not on official Bluetooth website
+        optional(existing->name, "Dycoo");   // not on official Bluetooth website??
+    } else if (manufacturer == 0x0101) {
+        optional(existing->name, "Fugoo, Inc.");
+        existing->category = CATEGORY_HEADPHONES;
     } else if (manufacturer == 0x0310) {
         optional(existing->name, "SGL Italia S.r.l.");
         existing->category = CATEGORY_HEADPHONES;
+    } else if (manufacturer == 0x3042) {   // 12354 = someone didn't register
+        optional(existing->name, "Unknown Manuf");
+        existing->category = CATEGORY_HEADPHONES;
+    } else if (manufacturer == 0x0075) {
+        optional(existing->name, "Samsung");
+        g_debug("  Manufacturer is Samsung 0x0075\n");
+    } else if (manufacturer == 0xff19) {
+        optional(existing->name, "Samsung");
+        g_debug("  Manufacturer is Samsung? 0xff19\n");
     } else if (manufacturer == 0x00d2) {
         optional(existing->name, "AbTemp");
-        g_debug("Ignoring manufdata\n");
+        g_debug("  Ignoring manufdata\n");
     } else {
         // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
         g_info("  Did not recognize manufacturer 0x%.4x\n", manufacturer);
@@ -598,7 +610,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             // Trim whitespace (Bad Tracker device keeps flipping name)
             trim(name);
 
-            if (strncmp(name, existing->name, NAME_LENGTH) != 0)
+            if (strncmp(name, existing->name, NAME_LENGTH-1) != 0)
             {
                 g_info("  %s Name has changed '%s' -> '%s'\n", address, existing->name, name);
                 send_to_mqtt_single(address, "name", name);
@@ -618,14 +630,21 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             else if (strcmp(name, "AppleTV") == 0) existing->category = CATEGORY_TV;
             else if (strcmp(name, "Apple TV") == 0) existing->category = CATEGORY_TV;
             else if (strncmp(name, "fenix", 5) == 0) existing->category = CATEGORY_WATCH;
+            else if (strncmp(name, "Versa", 5) == 0) existing->category = CATEGORY_WATCH; // FITBIT
             // Beacons
             else if (strncmp(name, "AprilBeacon", 11) == 0) existing->category = CATEGORY_BEACON;
             else if (strncmp(name, "abtemp", 6) == 0) existing->category = CATEGORY_BEACON;
             else if (strncmp(name, "abeacon", 7) == 0) existing->category = CATEGORY_BEACON;
             else if (strncmp(name, "estimote", 8) == 0) existing->category = CATEGORY_BEACON;
             else if (strncmp(name, "LYWSD03MMC", 10) == 0) existing->category = CATEGORY_BEACON;
-            // Headphones
+            // Headphones or speakers
             else if (strncmp(name, "Sesh Evo-LE", 11) == 0) existing->category = CATEGORY_HEADPHONES;  // Skullcandy
+            else if (strncmp(name, "F2", 2) == 0) existing->category = CATEGORY_HEADPHONES;  // Soundpal F2 spakers
+            // TVs
+            // e.g. "[TV] Samsung Q70 Series (65)" icon is audio_card
+            else if (strncmp(name, "[TV] Samsung", 12) == 0) existing->category = CATEGORY_TV;
+            // Printers
+            else if (strncmp(name, "ENVY Photo", 10) == 0) existing->category = CATEGORY_FIXED; // printer
             // Cars
             else if (strncmp(name, "Audi", 4) == 0) existing->category = CATEGORY_CAR;
             else if (strncmp(name, "BMW", 3) == 0) existing->category = CATEGORY_CAR;
@@ -890,7 +909,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             if (strcmp(icon, "computer") == 0) soft_set_category(&existing->category, CATEGORY_COMPUTER);
             else if (strcmp(icon, "phone") == 0) soft_set_category(&existing->category, CATEGORY_PHONE);
             else if (strcmp(icon, "multimedia-player") == 0) soft_set_category(&existing->category, CATEGORY_TV);
-            else if (strcmp(icon, "audio-card") == 0) soft_set_category(&existing->category, CATEGORY_CAR);
+            else if (strcmp(icon, "audio-card") == 0) soft_set_category(&existing->category, CATEGORY_AUDIO_CARD);
             g_free(icon);
         }
         else if (strcmp(property_name, "Appearance") == 0)
