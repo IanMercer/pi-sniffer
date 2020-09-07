@@ -1,4 +1,5 @@
 #include "device.h"
+#include "utility.h"
 #include "cJSON.h"
 #include <glib.h>
 #include <string.h>
@@ -99,6 +100,11 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     // Device details
     cJSON_AddStringToObject(j, "mac", device->mac);
     cJSON_AddStringToObject(j, "name", device->name);
+
+    char mac_super[18];
+    mac_64_to_string(mac_super, 18, device->superceeds);
+    cJSON_AddStringToObject(j, "superceeds", mac_super);
+
     cJSON_AddStringToObject(j, "alias", device->alias);
     cJSON_AddNumberToObject(j, "addressType", device->addressType);
     cJSON_AddStringToObject(j, "category", category_from_int(device->category));
@@ -129,6 +135,8 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
 bool device_from_json(const char* json, struct AccessPoint* access_point, struct Device* device)
 {
     cJSON *djson = cJSON_Parse(json);
+
+    // ACCESS POINT
 
     cJSON *from_x = cJSON_GetObjectItemCaseSensitive(djson, "from_x");
     if (cJSON_IsNumber(from_x))
@@ -196,7 +204,7 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
         access_point->people_in_range_count = (float)people_in_range_count->valuedouble;
     }
 
-    // Device
+    // DEVICE
 
     cJSON *mac = cJSON_GetObjectItemCaseSensitive(djson, "mac");
     if (cJSON_IsString(mac) && (mac->valuestring != NULL))
@@ -208,6 +216,13 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
     if (cJSON_IsString(name) && (name->valuestring != NULL))
     {
         strncpy(device->name, name->valuestring, NAME_LENGTH);
+    }
+
+    cJSON *supercedes = cJSON_GetObjectItemCaseSensitive(djson, "supercedes");
+    if (cJSON_IsString(supercedes))
+    {
+        // TODO: ulong serialization with cJSON
+        device->superceeds = mac_string_to_int_64(supercedes->valuestring);
     }
 
     cJSON *latest = cJSON_GetObjectItemCaseSensitive(djson, "latest");

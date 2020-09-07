@@ -16,8 +16,11 @@ typedef uint16_t u_int16_t;
 typedef uint32_t u_int32_t;
 typedef uint64_t u_int64_t;
 
-// Max allowed devices
+// Max allowed devices on this sensor
 #define N 2048
+
+// Max allowed devices across group of sensors
+#define NMAC 8192
 
 #define PUBLIC_ADDRESS_TYPE 1
 #define RANDOM_ADDRESS_TYPE 2
@@ -47,6 +50,7 @@ struct Device
     int id;
     bool hidden;                  // not seen by this access point (yet)
     char mac[18];                 // mac address string
+    int64_t superceeds;           // mac address of previous mac in same column
     char name[NAME_LENGTH];
     char alias[NAME_LENGTH];
     int8_t addressType;           // 0, 1, 2
@@ -104,6 +108,15 @@ struct AccessPoint
 
 
 /*
+   Mapping from a mac address string to an integer value
+*/
+struct MacAddress
+{
+   char mac[18];                 // mac address string
+   int id;                       // local id
+};
+
+/*
    A third 'join' table joins devices and access points together
    We keep only recent observations
      - can throw out any observation which is further away in both time and distance
@@ -117,15 +130,19 @@ struct AccessPoint
 struct ClosestTo
 {
    // Which device
-   int device_id;
+   int64_t device_64;
    // Which access point
    int access_id;
    // How far from the access point was it
    float distance;
+   // category of the device
+   int8_t category;
    // When was this observation received
    time_t time;
+   // Superceeds: i.e. access_id has seen this mac address
+   // in a column more recently than this one that it superceeds
+   int64_t superceeds;
 };
-
 
 
 int category_to_int(char* category);
@@ -146,6 +163,7 @@ struct OverallState
     int n;                         // current devices
     pthread_mutex_t lock;
     struct Device devices[N];
+    struct MacAddress mac_addresses[NMAC];
 
     struct AccessPoint* local;        // the local access point (in the access points struct)
 

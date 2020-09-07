@@ -1,5 +1,6 @@
 // Client side implementation of UDP client-server model
 #include "udp.h"
+#include "utility.h"
 
 // internal
 #include <stdio.h>
@@ -47,7 +48,8 @@ void udp_send(int port, const char *message, int message_length)
     int sent = sendto(sockfd, message, message_length, 0, (const struct sockaddr *)&servaddr, sizeof(struct sockaddr_in));
     if (sent < message_length)
     {
-        g_print("    Incomplete message sent to port %i - %i bytes.\n", port, sent);
+        // Need some way to detect network is not connected
+        //g_print("    Incomplete message sent to port %i - %i bytes.\n", port, sent);
     }
     close(sockfd);
 }
@@ -182,7 +184,7 @@ static struct ClosestTo closest[CLOSEST_N];
 /*
    Add a closest observation (get a lock before you call this)
 */
-void add_closest(int device_id, int access_id, time_t time, float distance)
+void add_closest(int64_t device_64, int access_id, time_t time, float distance, int8_t category, int64_t superseeds)
 {
     if (distance < 0.1)
         return;
@@ -190,6 +192,7 @@ void add_closest(int device_id, int access_id, time_t time, float distance)
     // If the array is full, shuffle it down one
     if (closest_n == CLOSEST_N)
     {
+        //g_debug("Trimming closest array");
         g_memmove(&closest[0], &closest[1], sizeof(struct ClosestTo) * (CLOSEST_N - 1));
         closest_n--;
     }
@@ -201,7 +204,7 @@ void add_closest(int device_id, int access_id, time_t time, float distance)
     if (closest_n > 0)
     {
         struct ClosestTo *last = &closest[closest_n - 1];
-        if (last->access_id == access_id && last->device_id == device_id)
+        if (last->access_id == access_id && last->device_64 == device_64)
         {
             double delta_time = difftime(time, last->time);
             if (delta_time < 10.0)
@@ -209,6 +212,8 @@ void add_closest(int device_id, int access_id, time_t time, float distance)
                 //g_print("Overwriting access=%i device=%i", access_id, device_id);
                 last->time = time;
                 last->distance = distance;
+                last->category = category;
+                last->superceeds = superseeds;
                 overwrite = TRUE;
             }
         }
@@ -217,8 +222,10 @@ void add_closest(int device_id, int access_id, time_t time, float distance)
     if (!overwrite)
     {
         closest[closest_n].access_id = access_id;
-        closest[closest_n].device_id = device_id;
+        closest[closest_n].device_64 = device_64;
         closest[closest_n].distance = distance;
+        closest[closest_n].category = category;
+        closest[closest_n].superceeds = superseeds;
         closest[closest_n].time = time;
         closest_n++;
     }
@@ -227,7 +234,15 @@ void add_closest(int device_id, int access_id, time_t time, float distance)
 /*
     Get the closest recent observation for a device
 */
-struct ClosestTo *get_closest(int device_id)
+struct ClosestTo *get_closest(struct Device* device)
+{
+    return get_closest_64(mac_string_to_int_64(device->mac));
+}
+
+/*
+    Get the closest recent observation for a device
+*/
+struct ClosestTo *get_closest_64(int64_t device_64)
 {
     struct ClosestTo *best = NULL;
 
@@ -236,7 +251,7 @@ struct ClosestTo *get_closest(int device_id)
     {
         struct ClosestTo *test = &closest[i];
 
-        if (test->device_id == device_id)
+        if (test->device_64 == device_64)
         {
             if (best == NULL)
             {
@@ -282,6 +297,9 @@ struct ClosestTo *get_closest(int device_id)
     return best;
 }
 
+
+
+
 void *listen_loop(void *param)
 {
     struct OverallState *state = (struct OverallState *)param;
@@ -296,8 +314,8 @@ void *listen_loop(void *param)
     g_socket_bind(broadcast_socket, addr, TRUE, &error);
     g_assert_no_error(error);
 
-    g_print("Starting listen thread for mesh operation on port %i\n", PORT);
-    g_print("Local client id is %s\n", state->local->client_id);
+    g_info("Starting listen thread for mesh operation on port %i\n", PORT);
+    g_info("Local client id is %s\n", state->local->client_id);
     g_cancellable_reset(cancellable);
 
     while (!g_cancellable_is_cancelled(cancellable))
@@ -339,7 +357,7 @@ void *listen_loop(void *param)
                 continue;
             }
 
-            // TODO: Ignore messages with no device
+            // TODO: Ignore messages with no device, access point matrix already updated
             if (d.mac == NULL || strlen(d.mac) == 0){
                 g_info("Ignoring access point only message\n");
                 continue;
@@ -348,7 +366,7 @@ void *listen_loop(void *param)
             time_t now;
             time(&now);
 
-            bool found = true;
+            bool found = false;
 
             pthread_mutex_lock(&state->lock);
 
@@ -356,10 +374,17 @@ void *listen_loop(void *param)
             {
                 if (strncmp(d.mac, state->devices[i].mac, 18) == 0)
                 {
-                    //g_print("%s '%s' dt=%3li", d.mac, d.name, now-d.latest);
+                    found = true;
+
+                    // If the delta time between our clock and theirs is > 50, log it
+                    if (now - d.latest > 10){
+                      g_debug("%s '%s' %s dt=%3li", d.mac, d.name, a.client_id, now-d.latest);
+                    }
                     merge(&state->devices[i], &d, a.client_id);
-                    // use the local id for the device not any remote id
-                    add_closest(state->devices[i].id, a.id, d.latest, d.distance);
+
+                    // Use an int64 version of the mac address
+                    int64_t id_64 = mac_string_to_int_64(d.mac);
+                    add_closest(id_64, a.id, d.latest, d.distance, d.category, d.superceeds);
                    
                     // // struct ClosestTo *closest = get_closest(state->devices[i].id);
                     // // if (closest)
@@ -375,25 +400,25 @@ void *listen_loop(void *param)
                 }
             }
 
-            pthread_mutex_unlock(&state->lock);
-
-            if (!found)
+            if (!found && strncmp(d.mac, "notset", 6) != 0)
             {
-                g_print("Add foreign device %s\n", d.mac);
-                //struct Device added;
-                //added.id = -1;
+                char* cat = category_from_int(d.category);
+                g_debug("Add foreign device %s %s\n", d.mac, cat);
+
+                int64_t id_64 = mac_string_to_int_64(d.mac);
+                add_closest(id_64, a.id, d.latest, d.distance, d.category, d.superceeds);
             }
 
-            printf("\n");
+            pthread_mutex_unlock(&state->lock);
         }
     }
-    printf("Listen thread finished\n");
+    g_info("Listen thread finished\n");
     return NULL;
 }
 
 /*
     Create Socket Service
-    TEST:  sudo nc -l -u -b -k -4 -D -p 7779
+    You can monitor the socket output using:  sudo nc -l -u -b -k -4 -D -p 7779
 */
 GCancellable *create_socket_service(struct OverallState *state)
 {
@@ -405,12 +430,15 @@ GCancellable *create_socket_service(struct OverallState *state)
         return NULL;
     }
 
-    g_print("Created UDP listener on port %i", PORT);
+    g_info("Created UDP listener on port %i", PORT);
     return cancellable;
 }
 
 /*
     Send device update over UDP broadcast to all other access points
+    This allows them to update their information about a device sooner
+    without having to wait for it to send it to them directly.
+    It is also used to track the closest access point to any device.
 */
 void send_device_udp(struct OverallState *state, struct Device *device)
 {
@@ -421,7 +449,8 @@ void send_device_udp(struct OverallState *state, struct Device *device)
     free(json);
 
     // Add local observations into the same structure
-    add_closest(device->id, state->local->id, device->latest, device->distance);
+    int64_t id_64 = mac_string_to_int_64(device->mac);
+    add_closest(id_64, state->local->id, device->latest, device->distance, device->category, device->superceeds);
 }
 
 /*

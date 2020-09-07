@@ -217,3 +217,38 @@ void mac_address_to_string(char* output, int length, char* access_point_address)
     output[12] = '\0';
 }
 
+/*
+   Mac address 64 bit to string
+*/
+void mac_64_to_string(char* output, int length, int64_t access_64)
+{
+    snprintf(output, length, "%.2x%.2x%.2x%.2x%.2x%.2x", 
+        (int8_t)(access_64 >> 40) & 0xff,
+        (int8_t)(access_64 >> 32) & 0xff,
+        (int8_t)(access_64 >> 24) & 0xff,
+        (int8_t)(access_64 >> 16) & 0xff,
+        (int8_t)(access_64 >> 8) & 0xff,
+        (int8_t)(access_64 >> 0) & 0xff);
+    output[12] = '\0';
+}
+
+/*
+   Mac address string to 64 bit integer (top two bytes zero)
+*/
+int64_t mac_string_to_int_64 (char* mac){
+    int64_t r=0;
+    int len = strlen(mac);  // Should be 5 + 6*2 = 17
+    if (len != 17) g_warning("Incorrect length mac address %s", mac);
+    // Very lazy, assumes format is right: 00:00:00:00:00:00
+    for(int i = 0; i < len; i++) {
+        char let = mac[i];
+        if (let >= '0' && let <= '9') { 
+            r = (r << 4) + (let - '0');
+        } else if (let >= 'a' && let <= 'f') { 
+            r = (r << 4) + (let - 'a' + 10);
+        } else if (let >= 'A' && let <= 'F') { 
+            r = (r << 4) + (let - 'A' + 10);
+        }
+    } 
+    return r;
+}

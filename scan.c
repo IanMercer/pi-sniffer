@@ -170,7 +170,7 @@ void find_latest_observations () {
           columns[col].latest = a->latest;
           // Do we 'own' this device or does someone else
           columns[col].isClosest = true;
-          struct ClosestTo* closest = get_closest(a->id);
+          struct ClosestTo* closest = get_closest(a);
           columns[col].isClosest = closest != NULL && closest->access_id == state.local->id;
         }
       }
@@ -278,6 +278,13 @@ void report_devices_count() {
 
       // And send access point to everyone over UDP
       send_access_point_udp(&state);
+
+      GVariant* parameters = g_variant_new ("(ds)", people_closest, "people");   // floating ref
+      GError* error = NULL;
+      gboolean ret = g_dbus_connection_emit_signal (conn, NULL, "/com/signswift/sniffer", "com.signswift.sniffer", "PeopleClosest", parameters, &error);
+      if (ret){
+          print_and_free_error(error);
+      }
     }
 
     double scale_factor = 0.5;  // This adjusts how people map to lights which are on a 0.0-3.0 range
@@ -536,6 +543,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         existing->id = id_gen++;                 // unique ID for each
         existing->hidden = false;                // we own this one
         g_strlcpy(existing->mac, address, 18);   // address
+        existing->superceeds = 0;                // will be filled in when calculating columns
 
         // dummy struct filled with unmatched values
         existing->name[0] = '\0';
@@ -575,7 +583,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
     {
         if (!isUpdate) {
            // from get_all_devices which includes stale data
-           g_debug("Repeat device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
+           //g_debug("Repeat device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
         } else {
            g_debug("Existing device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
         }
@@ -627,26 +635,38 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             // Watches
             else if (strcmp(name, "iWatch") == 0) existing->category = CATEGORY_WATCH;
             else if (strcmp(name, "Apple Watch") == 0) existing->category = CATEGORY_WATCH;
-            else if (strcmp(name, "AppleTV") == 0) existing->category = CATEGORY_TV;
-            else if (strcmp(name, "Apple TV") == 0) existing->category = CATEGORY_TV;
+            else if (strncmp(name, "Galaxy Watch", 12) == 0) existing->category = CATEGORY_WATCH;
+            else if (strncmp(name, "Gear S3", 7) == 0) existing->category = CATEGORY_WATCH;
             else if (strncmp(name, "fenix", 5) == 0) existing->category = CATEGORY_WATCH;
             else if (strncmp(name, "Versa", 5) == 0) existing->category = CATEGORY_WATCH; // FITBIT
+            else if (strncmp(name, "Mi Smart Band", 13) == 0) existing->category = CATEGORY_WATCH; // Fitness
+            // TVs
+            else if (strcmp(name, "AppleTV") == 0) existing->category = CATEGORY_TV;
+            else if (strcmp(name, "Apple TV") == 0) existing->category = CATEGORY_TV;
             // Beacons
             else if (strncmp(name, "AprilBeacon", 11) == 0) existing->category = CATEGORY_BEACON;
             else if (strncmp(name, "abtemp", 6) == 0) existing->category = CATEGORY_BEACON;
             else if (strncmp(name, "abeacon", 7) == 0) existing->category = CATEGORY_BEACON;
             else if (strncmp(name, "estimote", 8) == 0) existing->category = CATEGORY_BEACON;
+            else if (strncmp(name, "Tile", 4) == 0) existing->category = CATEGORY_BEACON;
             else if (strncmp(name, "LYWSD03MMC", 10) == 0) existing->category = CATEGORY_BEACON;
             // Headphones or speakers
             else if (strncmp(name, "Sesh Evo-LE", 11) == 0) existing->category = CATEGORY_HEADPHONES;  // Skullcandy
             else if (strncmp(name, "F2", 2) == 0) existing->category = CATEGORY_HEADPHONES;  // Soundpal F2 spakers
+            else if (strncmp(name, "Jabra", 5) == 0) existing->category = CATEGORY_HEADPHONES;
+            else if (strncmp(name, "LE-Bose", 7) == 0) existing->category = CATEGORY_HEADPHONES;
+            else if (strncmp(name, "LE-reserved_C", 13) == 0) existing->category = CATEGORY_HEADPHONES;
+            else if (strncmp(name, "Blaze", 5) == 0) existing->category = CATEGORY_HEADPHONES;
+            else if (strncmp(name, "Charge 3", 8) == 0) existing->category = CATEGORY_HEADPHONES; // Speakers
             // TVs
             // e.g. "[TV] Samsung Q70 Series (65)" icon is audio_card
             else if (strncmp(name, "[TV] Samsung", 12) == 0) existing->category = CATEGORY_TV;
+            else if (strncmp(name, "[Signage] Samsung", 17) == 0) existing->category = CATEGORY_TV;
             // Printers
             else if (strncmp(name, "ENVY Photo", 10) == 0) existing->category = CATEGORY_FIXED; // printer
             // Cars
             else if (strncmp(name, "Audi", 4) == 0) existing->category = CATEGORY_CAR;
+            else if (strncmp(name, "VW ", 3) == 0) existing->category = CATEGORY_CAR;
             else if (strncmp(name, "BMW", 3) == 0) existing->category = CATEGORY_CAR;
             else if (strncmp(name, "Subaru", 6) == 0) existing->category = CATEGORY_CAR;
             else if (strncmp(name, "Land Rover", 10) == 0) existing->category = CATEGORY_CAR;
@@ -657,9 +677,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             char *alias = g_variant_dup_string(prop_val, NULL);
             trim(alias);
 
-            if (strncmp(alias, existing->alias, NAME_LENGTH) != 0)  // has_prefix because we may have truncated it
+            if (strncmp(alias, existing->alias, NAME_LENGTH-1) != 0)  // has_prefix because we may have truncated it
             {
-                g_debug("  %s Alias has changed '%s' -> '%s'\n", address, existing->alias, alias);
+                //g_debug("  %s Alias has changed '%s' -> '%s'\n", address, existing->alias, alias);
                 // NOT CURRENTLY USED: send_to_mqtt_single(address, "alias", alias);
                 g_strlcpy(existing->alias, alias, NAME_LENGTH);
             }
@@ -675,7 +695,10 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             // Compare values and send
             if (existing->addressType != newAddressType) {
                 existing->addressType = newAddressType;
-                g_debug("  %s Address type has changed -> '%s'\n", address, addressType);
+                if (newAddressType == PUBLIC_ADDRESS_TYPE){
+                  g_debug("  %s Address type has changed -> '%s'\n", address, addressType);
+                  // Not interested in random as most devices are random
+                }
                 send_to_mqtt_single(address, "type", addressType);
             }
             else {
@@ -1387,7 +1410,7 @@ int get_managed_objects(void *parameters)
 {
     GMainLoop *loop = (GMainLoop *)parameters;
 
-    g_debug("Get managed objects\n");
+    //g_debug("Get managed objects\n");
 
     g_dbus_connection_call(conn,
                            "org.bluez",
@@ -1471,18 +1494,18 @@ int clear_cache(void *parameters)
 // Time when service started running (used to print a delta time)
 static time_t started;
 
-void dump_device (struct Device* a)
+void dump_device (struct Device* d)
 {
   // Ignore any that have not been seen recently
   //double delta_time = difftime(now, a->latest);
   //if (delta_time > MAX_TIME_AGO_LOGGING_MINUTES * 60) return;
 
-  char* addressType = a->addressType == PUBLIC_ADDRESS_TYPE ? "pub" : a->addressType == RANDOM_ADDRESS_TYPE ? "ran" : "---";
-  char* category = category_from_int(a->category);
+  char* addressType = d->addressType == PUBLIC_ADDRESS_TYPE ? "pub" : d->addressType == RANDOM_ADDRESS_TYPE ? "ran" : "---";
+  char* category = category_from_int(d->category);
 
   float closest_dist = NAN;
   char* closest_ap = "unknown";
-  struct ClosestTo* closest = get_closest(a->id);
+  struct ClosestTo* closest = get_closest(d);
   if (closest){
     closest_dist = closest->distance;
     struct AccessPoint* ap = get_access_point(closest->access_id);
@@ -1491,7 +1514,7 @@ void dump_device (struct Device* a)
     }
   }
 
-  g_info("%3i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %13s %5.1fm %s\n", a->id%1000, a->mac, a->count, addressType, a->distance, a->column, (a->earliest - started), (a->latest - started), a->name, closest_ap, closest_dist, category);
+  g_info("%3i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %13s %5.1fm %s\n", d->id%1000, d->mac, d->count, addressType, d->distance, d->column, (d->earliest - started), (d->latest - started), d->name, closest_ap, closest_dist, category);
 }
 
 
@@ -1723,6 +1746,8 @@ void display_state()
     g_info("MQTT_USERNAME='%s'\n", state.mqtt_username);
     g_info("MQTT_PASSWORD='%s'\n", state.mqtt_password == NULL ? "(null)" : "*****");
 }
+
+
 
 
 guint prop_changed;

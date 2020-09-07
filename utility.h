@@ -42,4 +42,14 @@ void get_mac_address(char* access_point_address);
 
 void mac_address_to_string(char* output, int length, char* access_point_address);
 
+/*
+   Mac address 64 bit to string
+*/
+void mac_64_to_string(char* output, int length, int64_t access_64);
+
+/*
+   Mac address string to 64 bit integer (top two bytes zero)
+*/
+int64_t mac_string_to_int_64 (char* mac);
+
 #endif
