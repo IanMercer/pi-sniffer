@@ -1569,14 +1569,18 @@ int dump_all_devices_tick(void *parameters)
 
 gboolean try_disconnect (struct Device* a)
 {
-  if (a->try_connect_state == 1 && a->connected) {
-    a->try_connect_state = 2;
-    g_info(">>>>> Disconnect from %s\n", a->mac);
-    bluez_adapter_disconnect_device(conn, a->mac);
-    return TRUE;
-  }
-  // didn't change state, try next one
-  return FALSE;
+    if (a->try_connect_state == 1){
+        if (a->connected){
+            g_info(">>>>> Disconnect from %s\n", a->mac);
+            bluez_adapter_disconnect_device(conn, a->mac);
+        } else {
+            g_info(">>>>> Failed to connect to %s\n", a->mac);
+        }
+        a->try_connect_state = 2;
+        return TRUE;
+    }
+    // didn't change state, try next one
+    return FALSE;
 }
 
 gboolean try_connect (struct Device* a)
