@@ -1595,15 +1595,20 @@ gboolean try_connect (struct Device* a)
   return FALSE;
 }
 
+#define SIMULTANEOUS_CONNECTIONS 5
+
 int try_connect_tick(void *parameters)
 {
+    int simultaneus_connections = 0;  // assumes none left from previous tick
     (void)parameters; // not used
     if (starting) return TRUE;   // not during first 30s startup time
     for (int i=0; i < state.n; i++) {
       if (try_disconnect(&state.devices[i])) return TRUE;
     }
     for (int i=0; i < state.n; i++) {
-      if (try_connect(&state.devices[i])) return TRUE;
+        // Connect up to SIMULTANEOUS_CONNECTIONS devices at once
+        if (try_connect(&state.devices[i])) simultaneus_connections++;
+        if (simultaneus_connections > SIMULTANEOUS_CONNECTIONS) return true;
     }
     return TRUE;
 }

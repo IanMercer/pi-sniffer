@@ -403,7 +403,7 @@ void *listen_loop(void *param)
             if (!found && strncmp(d.mac, "notset", 6) != 0)
             {
                 char* cat = category_from_int(d.category);
-                g_debug("Add foreign device %s %s\n", d.mac, cat);
+                //g_debug("Add foreign device %s %s\n", d.mac, cat);
 
                 int64_t id_64 = mac_string_to_int_64(d.mac);
                 add_closest(id_64, a.id, d.latest, d.distance, d.category, d.superceeds);
