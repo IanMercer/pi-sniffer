@@ -1368,7 +1368,7 @@ void bluez_list_devices(GDBusConnection *conn, GAsyncResult *res, gpointer data)
     GVariant *ifaces_and_properties;
     GError *error = NULL;
 
-    g_debug("List devices call back\n");
+    //g_debug("List devices call back\n");
 
     result = g_dbus_connection_call_finish(conn, res, &error);
     if ((result == NULL) || error)
@@ -1603,12 +1603,16 @@ int try_connect_tick(void *parameters)
     (void)parameters; // not used
     if (starting) return TRUE;   // not during first 30s startup time
     for (int i=0; i < state.n; i++) {
-      if (try_disconnect(&state.devices[i])) return TRUE;
+        // Disconnect all devices that are in a try connect state
+        try_disconnect(&state.devices[i]);
     }
     for (int i=0; i < state.n; i++) {
         // Connect up to SIMULTANEOUS_CONNECTIONS devices at once
         if (try_connect(&state.devices[i])) simultaneus_connections++;
-        if (simultaneus_connections > SIMULTANEOUS_CONNECTIONS) return true;
+        if (simultaneus_connections > SIMULTANEOUS_CONNECTIONS) break;
+    }
+    if (simultaneus_connections > 0) {
+        g_debug("Started %i connection attempts", simultaneus_connections);
     }
     return TRUE;
 }
