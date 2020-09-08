@@ -852,7 +852,11 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             bool connected = g_variant_get_boolean(prop_val);
             if (existing->connected != connected)
             {
-                g_debug("  %s Connected has changed     ", address);
+                if (connected)
+                    g_debug("  %s Connected      ", address);
+                else
+                    g_debug("  %s Disconnected   ", address);
+                    
                 send_to_mqtt_single_value(address, "connected", connected ? 1 : 0);
                 existing->connected = connected;
             }
@@ -1632,7 +1636,8 @@ gboolean try_disconnect (struct Device* a)
             if (a->connected){
                 g_info(">>>>> Disconnect from %i. %s\n", a->id, a->mac);
                 bluez_adapter_disconnect_device(conn, a->mac);
-            } else {
+            } else if (a->category == CATEGORY_UNKNOWN) {
+                // Failed to get enough data from connection or did not connect
                 g_info(">>>>> Failed to connect to %i. %s\n", a->id, a->mac);
             }
             return TRUE;
