@@ -478,13 +478,70 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
     } else if (manufacturer == 0xff19) {
         optional(existing->name, "Samsung");
         g_debug("  Manufacturer is Samsung? 0xff19\n");
+    } else if (manufacturer == 0x0131) {
+        optional(existing->name, "Cypress Semiconductor");
+        g_debug("  Manufacturer is Cypress Semiconductor\n");
+    } else if (manufacturer == 0x0110) {
+        optional(existing->name, "Nippon Seiki Co., Ltd.");
+        g_debug("  Manufacturer is Nippon Seiki Co., Ltd.\n");
+    } else if (manufacturer == 0x0399) {
+        optional(existing->name, "Nikon");
+        g_debug("  Manufacturer is Nikon Corporation\n");
+        existing->category = CATEGORY_FIXED;
+    } else if (manufacturer == 0x0003) {
+        optional(existing->name, "IBM");
+        g_debug("  IBM\n");
+        existing->category = CATEGORY_FIXED;
+    } else if (manufacturer == 0x0501) {
+        optional(existing->name, "Polaris ND");
+        g_debug("  Polaris ND\n");
+        existing->category = CATEGORY_FIXED;
+    } else if (manufacturer == 0x014f) {
+        optional(existing->name, "B&W Group Ltd.");
+        g_debug("  B&W Group Ltd.\n");
+        existing->category = CATEGORY_FIXED;
+    } else if (manufacturer == 0x00c4) {
+        optional(existing->name, "LG Electronics");
+        g_debug("  LG Electronics\n");
+        existing->category = CATEGORY_TV;
+    } else if (manufacturer == 0x03ee) {
+        optional(existing->name, "CUBE Technolgies");
+        g_debug("  CUBE Technolgies\n");
+        existing->category = CATEGORY_FIXED;
+    } else if (manufacturer == 0x00e0) {
+        optional(existing->name, "Google");
+        g_debug("  Google\n");
+    } else if (manufacturer == 0x0085) {
+        optional(existing->name, "BlueRadios ODM");
+        g_debug("  BlueRadios, Inc. (ODM)\n");
+    } else if (manufacturer == 0x0434) {
+        optional(existing->name, "Hatch Baby, Inc.");
+        g_debug("  Hatch Baby, Inc.\n");
+        existing->category = CATEGORY_FIXED;
+    } else if (manufacturer == 0x0157) {
+        optional(existing->name, "Anhui Huami Information Technology");
+        g_debug("  Anhui Huami Information Technology\n");
+        existing->category = CATEGORY_FIXED;
+    } else if (manufacturer == 0x001d) {
+        optional(existing->name, "Qualcomm");
+        g_debug("  Qualcomm\n");
+    } else if (manufacturer == 0x015e) {
+        optional(existing->name, "Unikey Technologies, Inc");
+        g_debug("  Unikey Technologies, Inc\n");
+        existing->category = CATEGORY_FIXED;
+    } else if (manufacturer == 0x01a5) {
+        optional(existing->name, "Icon Health and Fitness");
+        g_debug("  Icon Health and Fitness\n");
+        existing->category = CATEGORY_FIXED;
     } else if (manufacturer == 0x00d2) {
         optional(existing->name, "AbTemp");
         g_debug("  Ignoring manufdata\n");
     } else {
         // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
-        g_info("  Did not recognize manufacturer 0x%.4x\n", manufacturer);
-        optional(existing->name, "Not an Apple");
+        char manuf [32];
+        snprintf(manuf, sizeof(manuf), "Manufacturer 0x%04x", manufacturer);
+        g_info("  Did not recognize %s\n", manuf);
+        optional(existing->name, manuf);
     }
 }
 
@@ -1514,7 +1571,7 @@ void dump_device (struct Device* d)
     }
   }
 
-  g_info("%3i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %13s %5.1fm %s\n", d->id%1000, d->mac, d->count, addressType, d->distance, d->column, (d->earliest - started), (d->latest - started), d->name, closest_ap, closest_dist, category);
+  g_info("%4i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %13s %5.1fm %s\n", d->id%10000, d->mac, d->count, addressType, d->distance, d->column, (d->earliest - started), (d->latest - started), d->name, closest_ap, closest_dist, category);
 }
 
 
@@ -1528,14 +1585,14 @@ int dump_all_devices_tick(void *parameters)
     if (starting) return TRUE;   // not during first 30s startup time
     if (!logTable) return TRUE; // no changes since last time
     logTable = FALSE;
-    g_info("--------------------------------------------------------------------------------------------------------------\n");
-    g_info("Id  Address          Count Typ   Dist  Col   First   Last                 Name              Closest Category  \n");
-    g_info("--------------------------------------------------------------------------------------------------------------\n");
+    g_info("---------------------------------------------------------------------------------------------------------------\n");
+    g_info("Id   Address          Count Typ   Dist  Col   First   Last                 Name              Closest Category  \n");
+    g_info("---------------------------------------------------------------------------------------------------------------\n");
     time(&now);
     for (int i=0; i < state.n; i++) {
       dump_device(&state.devices[i]);
     }
-    g_info("--------------------------------------------------------------------------------------------------------------\n");
+    g_info("---------------------------------------------------------------------------------------------------------------\n");
 
     unsigned long total_minutes = (now - started) / 60;  // minutes
     unsigned int minutes = total_minutes % 60;
@@ -1571,10 +1628,10 @@ gboolean try_disconnect (struct Device* a)
 {
     if (a->try_connect_state == 1){
         if (a->connected){
-            g_info(">>>>> Disconnect from %s\n", a->mac);
+            g_info(">>>>> Disconnect from %i. %s\n", a->id, a->mac);
             bluez_adapter_disconnect_device(conn, a->mac);
         } else {
-            g_info(">>>>> Failed to connect to %s\n", a->mac);
+            g_info(">>>>> Failed to connect to %i. %s\n", a->id, a->mac);
         }
         a->try_connect_state = 2;
         return TRUE;
@@ -1591,7 +1648,7 @@ gboolean try_connect (struct Device* a)
   if (a->count > 1 && a->try_connect_state == 0) {
     a->try_connect_state = 1;
     // Try forcing a connect to get a full dump from the device
-    g_info(">>>>>> Connect to %s\n", a->mac);
+    g_info(">>>>>> Connect to %i. %s\n", a->id, a->mac);
     bluez_adapter_connect_device(conn, a->mac);
     return TRUE;  
   }
