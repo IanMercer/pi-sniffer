@@ -46,7 +46,8 @@ void soft_set_u16(uint16_t* field, uint16_t field_new)
 
 void merge(struct Device* local, struct Device* remote, char* access_name)
 {
-    if (strlen(local->name)>0 && strlen(remote->name)>0){
+    if (strcmp(local->name, remote->name) != 0 && strlen(local->name)>0 && strlen(remote->name)>0)
+    {
         g_info("Replace local '%s' by remote '%s'?", local->name, remote->name);
     }
     optional_set(local->name, remote->name);

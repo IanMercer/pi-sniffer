@@ -385,7 +385,10 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
     //g_debug("START handle_manufacturer\n");
     if (manufacturer == 0x004c) {   // Apple
         uint8_t apple_device_type = allocdata[00];
-        if (apple_device_type == 0x02) {
+        if (apple_device_type == 0x01) {
+          g_info(" **** Apple Device type 0x01 - what is this?") ;
+        }
+        else if (apple_device_type == 0x02) {
           optional(existing->alias, "Beacon");
           g_debug("  Beacon\n") ;
           existing->category = CATEGORY_BEACON;
@@ -408,7 +411,7 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         else if (apple_device_type == 0x0a) { optional(existing->alias, "Apple 0a"); g_print("  Apple 0a \n"); }
         else if (apple_device_type == 0x0b) {
           optional(existing->name, "iWatch?");
-          g_debug("  Watch_c \n");
+          g_debug("  Watch_c");
           existing->category = CATEGORY_WATCH;
         }
         else if (apple_device_type == 0x0c) g_print("  Handoff \n");
@@ -417,7 +420,7 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         else if (apple_device_type == 0x0f) g_print("  WifiJoin \n");
         else if (apple_device_type == 0x10) {
           g_debug("  Nearby ");
-          optional(existing->name, "Apple Device");
+          // too soon ... name comes later ... optional(existing->name, "Apple Device");
           // Not right, MacBook Pro seems to send this too
 
           uint8_t device_status = allocdata[02];
