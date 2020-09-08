@@ -46,14 +46,17 @@ void soft_set_u16(uint16_t* field, uint16_t field_new)
 
 void merge(struct Device* local, struct Device* remote, char* access_name)
 {
-   optional_set(local->name, remote->name);
-   optional_set(local->alias, remote->alias);
-   soft_set_8(&local->addressType, remote->addressType);
-   if (local->category == 0 && remote->category != 0) g_info("  %s Changed category to '%s', message from %s", local->mac, category_from_int(remote->category), access_name);
-   soft_set_8(&local->category, remote->category);
-   soft_set_u16(&local->appearance, remote->appearance);  // not used ?
-   if (remote->try_connect_state >= TRY_CONNECT_COMPLETE) local->try_connect_state = TRY_CONNECT_COMPLETE;  // already connected once
-   // TODO: Other fields that we can transfer over
+    if (strlen(local->name)>0 && strlen(remote->name)>0){
+        g_info("Replace local '%s' by remote '%s'?", local->name, remote->name);
+    }
+    optional_set(local->name, remote->name);
+    optional_set(local->alias, remote->alias);
+    soft_set_8(&local->addressType, remote->addressType);
+    if (local->category == 0 && remote->category != 0) g_info("  %s Changed category to '%s', message from %s", local->mac, category_from_int(remote->category), access_name);
+    soft_set_8(&local->category, remote->category);
+    soft_set_u16(&local->appearance, remote->appearance);  // not used ?
+    if (remote->try_connect_state >= TRY_CONNECT_COMPLETE) local->try_connect_state = TRY_CONNECT_COMPLETE;  // already connected once
+    // TODO: Other fields that we can transfer over
 }
 
 char* access_point_to_json (struct AccessPoint* a)
