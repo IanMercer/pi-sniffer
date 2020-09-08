@@ -15,8 +15,6 @@
 #define BLOCK_SIZE 1024
 
 #define MAXLINE 1024
-// This is the MESH PORT for communicating between devices (TODO: Make configurable)
-#define PORT 7779
 
 void udp_send(int port, const char *message, int message_length)
 {
@@ -306,7 +304,7 @@ void *listen_loop(void *param)
     GError *error = NULL;
 
     GInetAddress *iaddr = g_inet_address_new_any(G_SOCKET_FAMILY_IPV4);
-    GSocketAddress *addr = g_inet_socket_address_new(iaddr, PORT);
+    GSocketAddress *addr = g_inet_socket_address_new(iaddr, state->udp_mesh_port);
 
     GSocket *broadcast_socket = g_socket_new(G_SOCKET_FAMILY_IPV4, G_SOCKET_TYPE_DATAGRAM, G_SOCKET_PROTOCOL_UDP, &error);
     g_assert_no_error(error);
@@ -314,7 +312,7 @@ void *listen_loop(void *param)
     g_socket_bind(broadcast_socket, addr, TRUE, &error);
     g_assert_no_error(error);
 
-    g_info("Starting listen thread for mesh operation on port %i\n", PORT);
+    g_info("Starting listen thread for mesh operation on port %i\n", state->udp_mesh_port);
     g_info("Local client id is %s\n", state->local->client_id);
     g_cancellable_reset(cancellable);
 
@@ -430,7 +428,7 @@ GCancellable *create_socket_service(struct OverallState *state)
         return NULL;
     }
 
-    g_info("Created UDP listener on port %i", PORT);
+    g_info("Created UDP listener on port %i", state->udp_mesh_port);
     return cancellable;
 }
 
@@ -445,7 +443,7 @@ void send_device_udp(struct OverallState *state, struct Device *device)
     //printf("    Send UDP %i device %s '%s'\n", PORT, device->mac, device->name);
     char *json = device_to_json(state->local, device);
     //printf("    %s\n", json);
-    udp_send(PORT, json, strlen(json) + 1);
+    udp_send(state->udp_mesh_port, json, strlen(json) + 1);
     free(json);
 
     // Add local observations into the same structure
@@ -461,7 +459,7 @@ void send_access_point_udp(struct OverallState *state)
     char *json = access_point_to_json(state->local);
     //g_info("    Send UDP %i access point %s\n", PORT, json);
     //printf("    %s\n", json);
-    udp_send(PORT, json, strlen(json) + 1);
+    udp_send(state->udp_mesh_port, json, strlen(json) + 1);
     free(json);
 }
 
