@@ -621,7 +621,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         time(&existing->earliest);
         existing->column = 0;
         existing->count = 0;
-        existing->try_connect_state = 0;
+        existing->try_connect_state = TRY_CONNECT_ZERO;
 
         // RSSI values are stored with kalman filtering
         kalman_initialize(&existing->kalman);
@@ -1623,15 +1623,20 @@ int dump_all_devices_tick(void *parameters)
 
 gboolean try_disconnect (struct Device* a)
 {
-    if (a->try_connect_state == 1){
-        if (a->connected){
-            g_info(">>>>> Disconnect from %i. %s\n", a->id, a->mac);
-            bluez_adapter_disconnect_device(conn, a->mac);
-        } else {
-            g_info(">>>>> Failed to connect to %i. %s\n", a->id, a->mac);
+    if (a->try_connect_state > TRY_CONNECT_ZERO && a->try_connect_state < TRY_CONNECT_COMPLETE) {
+
+        a->try_connect_state = a->try_connect_state + 1;
+
+        if (a->try_connect_state == TRY_CONNECT_COMPLETE)
+        {
+            if (a->connected){
+                g_info(">>>>> Disconnect from %i. %s\n", a->id, a->mac);
+                bluez_adapter_disconnect_device(conn, a->mac);
+            } else {
+                g_info(">>>>> Failed to connect to %i. %s\n", a->id, a->mac);
+            }
+            return TRUE;
         }
-        a->try_connect_state = 2;
-        return TRUE;
     }
     // didn't change state, try next one
     return FALSE;
@@ -1946,7 +1951,7 @@ int main(int argc, char **argv)
     g_timeout_add_seconds(15, dump_all_devices_tick, loop);
 
     // Every 13s see if any unnamed device is ready to be connected
-    g_timeout_add_seconds(13, try_connect_tick, loop);
+    g_timeout_add_seconds(10, try_connect_tick, loop);
 
     g_print("\n\n\n\n\n\n");
 

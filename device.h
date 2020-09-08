@@ -42,6 +42,10 @@ typedef uint64_t u_int64_t;
 // Max allowed length of metadata (client_id, description, platform, ..)
 #define META_LENGTH 256
 
+#define TRY_CONNECT_ZERO 0
+// some steps between 10s for each
+#define TRY_CONNECT_COMPLETE 3
+
 /*
    Structure for tracking BLE devices in range
 */
