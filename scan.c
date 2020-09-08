@@ -925,7 +925,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 	                strCopy[8] = '\0';
 	                int64_t ble_uuid = (int)strtol(strCopy, NULL, 16);
 
-                        // EST Unknown(b9401000), Unknown(b9403000), Unknown(b9404000), Unknown(b9406000),
+                    // EST Unknown(b9401000), Unknown(b9403000), Unknown(b9404000), Unknown(b9406000),
 
 	                // https://www.bluetooth.com/specifications/gatt/characteristics/
 	                if (ble_uuid == 0x2a29) g_print("Manufacturer, ");
@@ -947,10 +947,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 	                else if (ble_uuid == 0xd0611e78) g_print("Continuity ");
 	                else if (ble_uuid == 0xffa0) g_print("Accelerometer ");
 	                else if (ble_uuid == 0xffe0) g_print("Temperature ");
-                        else g_print("Unknown(%s), ", strCopy);
+                        else g_info("Unknown(%s), ", strCopy);
                         g_free(strCopy);
                     }
-                    g_debug("\n");
                     char **allocdata = g_malloc(actualLength * sizeof(char *));  // array of pointers to strings
                     memcpy(allocdata, uuidArray, actualLength * sizeof(char *));
                     g_debug("  %s UUIDs has changed      ", address);
