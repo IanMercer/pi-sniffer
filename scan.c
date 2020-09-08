@@ -1249,6 +1249,10 @@ static void bluez_device_appeared(GDBusConnection *sig,
         else if (g_ascii_strcasecmp(interface_name, "org.bluez.GattService1") == 0)
         {
            pretty_print("  Gatt service = ", properties);
+           // Gatt service = : {'UUID': <'00001805-0000-1000-8000-00805f9b34fb'>, 
+           //   'Device': <objectpath '/org/bluez/hci0/dev_4F_87_E1_13_66_A5'>, 
+           //   'Primary': <true>, 
+           //   'Includes': <@ao []>}
         }
         else if (g_ascii_strcasecmp(interface_name, "org.bluez.GattCharacteristic1") == 0)
         {
@@ -1265,10 +1269,6 @@ static void bluez_device_appeared(GDBusConnection *sig,
         else if (g_ascii_strcasecmp(interface_name, "org.freedesktop.DBus.Properties") == 0)
         {
            //pretty_print("  DBus properties = ", properties);
-        }
-        else if (g_ascii_strcasecmp(interface_name, "org.bluez.GattService1") == 0)
-        {
-           pretty_print("  Gatt service = ", properties);
         }
         else if (g_ascii_strcasecmp(interface_name, "org.bluez.MediaTransport1") == 0)
         {
@@ -1647,7 +1647,8 @@ gboolean try_connect (struct Device* a)
   if (a->category != CATEGORY_UNKNOWN) return FALSE; // already has a category
   //if (strlen(a->name) > 0) return FALSE;    // already named
 
-  if (a->count > 1 && a->try_connect_state == 0) {
+  // Used to wait until second observation to connect, now trying immediate
+  if (a->count > 0 && a->try_connect_state == 0) {
     a->try_connect_state = 1;
     // Try forcing a connect to get a full dump from the device
     g_info(">>>>>> Connect to %i. %s\n", a->id, a->mac);
