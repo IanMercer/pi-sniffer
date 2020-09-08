@@ -725,6 +725,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             else if (strncmp(name, "Audi", 4) == 0) existing->category = CATEGORY_CAR;
             else if (strncmp(name, "VW ", 3) == 0) existing->category = CATEGORY_CAR;
             else if (strncmp(name, "BMW", 3) == 0) existing->category = CATEGORY_CAR;
+            else if (strncmp(name, "GM_PEPS_", 8) == 0) existing->category = CATEGORY_CAR;  // maybe the key fob
             else if (strncmp(name, "Subaru", 6) == 0) existing->category = CATEGORY_CAR;
             else if (strncmp(name, "Land Rover", 10) == 0) existing->category = CATEGORY_CAR;
             // TODO: Android device names
@@ -974,7 +975,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             uint32_t deviceclass = g_variant_get_uint32(prop_val);
             if (existing->deviceclass != deviceclass)
             {
-                g_debug("  %s Class has changed         ", address);
+                g_debug("  %s Class has changed to %i        ", address, deviceclass);
                 send_to_mqtt_single_value(address, "class", deviceclass);
                 existing->deviceclass = deviceclass;
             }
@@ -1045,13 +1046,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                       int motionCount = allocdata[19] + allocdata[20] * 256;
                       int moving = allocdata[21];
                       g_debug("Sensoro battery=%i, p14=%i, p15=%i, temp=%i, brightness=%i, motionCount=%i, moving=%i\n", battery, p14, p15, temp, brightness, motionCount, moving);
-                      g_debug("  ");
                       send_to_mqtt_single_value(address, "temperature", temp);
-                      g_debug("  ");
                       send_to_mqtt_single_value(address, "brightness", brightness);
-                      g_debug("  ");
                       send_to_mqtt_single_value(address, "motionCount", motionCount);
-                      g_debug("  ");
                       send_to_mqtt_single_value(address, "moving", moving);
                     }
                 }
@@ -1087,7 +1084,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
                 if (existing->manufacturer != manufacturer)
                 {
-                    g_info("  %s Manufacturer has changed ", address);
+                    g_info("  %s Manufacturer 0x%4x  ", address, manufacturer);
                     send_to_mqtt_single_value(address, "manufacturer", manufacturer);
                     existing->manufacturer = manufacturer;
                 }
@@ -1099,7 +1096,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 if (existing->manufacturer_data_hash != hash)
                 {
                     pretty_print2("  ManufacturerData", prop_val, TRUE);  // a{qv}
-                    g_debug("  ManufData has changed ");
+                    //g_debug("  ManufData has changed ");
                     send_to_mqtt_array(address, "manufacturerdata", allocdata, actualLength);
                     existing->manufacturer_data_hash = hash;
 
