@@ -1160,52 +1160,67 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                         strCopy[8] = '\0';
                         int64_t ble_uuid = (int)strtol(strCopy, NULL, 16);
 
-                        // EST Unknown(b9401000), Unknown(b9403000), Unknown(b9404000), Unknown(b9406000),
+                        char gatts[1024];
+                        gatts[0] = '\0';
 
                         // https://www.bluetooth.com/specifications/gatt/characteristics/
                         if (ble_uuid == 0x2a29)
-                            g_print("Manufacturer, ");
+                            append_text(gatts, sizeof(gatts), "Manufacturer, ");
                         else if (ble_uuid == 0x1800L)
-                            g_print("Generic access, ");
+                            append_text(gatts, sizeof(gatts), "Generic access, ");
                         else if (ble_uuid == 0x1801L)
-                            g_print("Generic attribute, ");
+                            append_text(gatts, sizeof(gatts), "Generic attribute, ");
                         else if (ble_uuid == 0x1802L)
-                            g_print("Immediate Alert, ");
+                            append_text(gatts, sizeof(gatts), "Immediate Alert, ");
                         else if (ble_uuid == 0x1803L)
-                            g_print("Link loss, ");
+                            append_text(gatts, sizeof(gatts), "Link loss, ");
                         else if (ble_uuid == 0x1804L)
-                            g_print("Tx Power level, ");
+                            append_text(gatts, sizeof(gatts), "Tx Power level, ");
                         else if (ble_uuid == 0x1805L)
-                            g_print("Current time, ");
+                            append_text(gatts, sizeof(gatts), "Current time, ");
                         else if (ble_uuid == 0x180fL)
-                            g_print("Battery, ");
+                            append_text(gatts, sizeof(gatts), "Battery, ");
                         else if (ble_uuid == 0x111eL)
-                            g_print("HandsFree, ");
+                            append_text(gatts, sizeof(gatts), "HandsFree, ");
                         else if (ble_uuid == 0x180aL)
-                            g_print("Device information, ");
+                            append_text(gatts, sizeof(gatts), "Device information, ");
                         else if (ble_uuid == 0x180dL)
-                            g_print("Heart rate service, ");
+                            append_text(gatts, sizeof(gatts), "Heart rate service, ");
                         else if (ble_uuid == 0x2A37L)
-                            g_print("Heart rate measurement ");
+                            append_text(gatts, sizeof(gatts), "Heart rate measurement ");
                         else if (ble_uuid == 0xFEAAL)
-                            g_print("Eddystone ");
+                            append_text(gatts, sizeof(gatts), "Eddystone ");
+                        else if (ble_uuid == 0xb9401000)
+                            append_text(gatts, sizeof(gatts), "Estimote 1, ");
+                        else if (ble_uuid == 0xb9402000)
+                            append_text(gatts, sizeof(gatts), "Estimote 2,");
+                        else if (ble_uuid == 0xb9403000)
+                            append_text(gatts, sizeof(gatts), "Estimote 3, ");
+                        else if (ble_uuid == 0xb9404000)
+                            append_text(gatts, sizeof(gatts), "Estimote 4, ");
+                        else if (ble_uuid == 0xb9405000)
+                            append_text(gatts, sizeof(gatts), "Estimote 5, ");
+                        else if (ble_uuid == 0xb9406000)
+                            append_text(gatts, sizeof(gatts), "Estimote 6, ");
                         // Apple Media Service 89d3502b
                         else if (ble_uuid == 0x89d3502bL)
-                            g_print("Apple MS ");
+                            append_text(gatts, sizeof(gatts), "Apple MS, ");
                         else if (ble_uuid == 0x7905f431L)
-                            g_print("Apple NCS ");
+                            append_text(gatts, sizeof(gatts), "Apple NCS, ");
                         else if (ble_uuid == 0xd0611e78L)
-                            g_print("Apple CS ");
+                            append_text(gatts, sizeof(gatts), "Apple CS, ");
                         else if (ble_uuid == 0x9fa480e0L)
-                            g_print("Apple XX ");
+                            append_text(gatts, sizeof(gatts), "Apple XX, ");
                         else if (ble_uuid == 0xd0611e78L)
-                            g_print("Continuity ");
+                            append_text(gatts, sizeof(gatts), "Continuity, ");
                         else if (ble_uuid == 0xffa0L)
-                            g_print("Accelerometer ");
+                            append_text(gatts, sizeof(gatts), "Accelerometer, ");
                         else if (ble_uuid == 0xffe0L)
-                            g_print("Temperature ");
+                            append_text(gatts, sizeof(gatts), "Temperature, ");
                         else
-                            g_info("Unknown(%s), ", strCopy);
+                            append_text(gatts, sizeof(gatts), "Unknown(%s), ", strCopy);
+
+                        g_info("    %s %s", address, gatts);
                         g_free(strCopy);
                     }
                     char **allocdata = g_malloc(actualLength * sizeof(char *)); // array of pointers to strings

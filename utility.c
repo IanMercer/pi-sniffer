@@ -252,3 +252,21 @@ int64_t mac_string_to_int_64 (char* mac){
     } 
     return r;
 }
+
+/*
+    Append text to buffer (assumes buffer is valid string at start)
+*/
+void append_text(char* buffer, int length, char* format, ...)
+{
+    char* pos = buffer;
+    int count = 0;
+    while (*pos != '\0' && count++<length) pos++;
+    if (count < length)
+    {
+        va_list argptr;
+        va_start(argptr, format);
+        vsnprintf(pos, length-count, format, argptr);
+        va_end(argptr);
+    }
+}
+
