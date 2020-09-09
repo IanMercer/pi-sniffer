@@ -181,16 +181,50 @@ void find_latest_observations () {
 #define N_RANGES 10
 static int32_t ranges[N_RANGES] = {1, 2, 5, 10, 15, 20, 25, 30, 35, 100};
 static int8_t reported_ranges[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
-//float people_in_view_count = 0.0;
-//float people_closest_count = 0.0;
+
+/*
+    COMMUNICATION WITH DISPLAYS OVER UDP
+*/
+
+static char udp_last_sent = -1;
+
+void send_to_udp_display(struct OverallState* state, float people_closest, float people_in_range)
+{
+    // This adjusts how people map to lights which are on a 0.0-3.0 range
+    double scale_factor = state->udp_scale_factor;
+    // 0.0 = green
+    // 1.5 = blue
+    // 3.0 = red (but starts going red anywhere above 2.0)
+
+    // NB This sends constantly even if value is unchanged because UDP is unreliable
+    // and because a display may become unplugged and then reconnected
+    if (state->udp_sign_port > 0)
+    {
+        char msg[4];
+        msg[0] = 0;
+        // send as ints for ease of consumption on ESP8266
+        msg[1] = (int)(people_closest * scale_factor * 10.0);
+        msg[2] = (int)(people_in_range * scale_factor * 10.0);
+        msg[3] = 0;
+
+        // TODO: Move to JSON for more flexibility sending names too
+
+        udp_send(state->udp_sign_port, msg, sizeof(msg));
+
+        // Log only when it changes
+        if (udp_last_sent != msg[1]){
+            g_info("UDP Sent %i", msg[1]);
+            udp_last_sent = msg[1];
+        }
+    }
+}
+
 
 /*
     Find best packing of device time ranges into columns
     //Set every device to column zero
     While there is any overlap, find the overlapping pair, move the second one to the next column
 */
-
-static char udp_last_sent = -1;
 
 void report_devices_count() {
     //g_debug("report_devices_count\n");
@@ -288,29 +322,7 @@ void report_devices_count() {
       }
     }
 
-    double scale_factor = 0.5;  // This adjusts how people map to lights which are on a 0.0-3.0 range
-    // 0.0 = green
-    // 1.5 = blue
-    // 3.0 = red (but starts going red anywhere above 2.0)
-
-    // Always send it in case display gets unplugged and then plugged back in
-    if (state.udp_sign_port > 0)
-    {
-        char msg[4];
-        msg[0] = 0;
-        // send as ints for ease of consumption on ESP8266
-        msg[1] = (int)(people_closest * scale_factor * 10.0);
-        msg[2] = (int)(people_in_range * scale_factor * 10.0);
-        msg[3] = 0;
-
-        // TODO: Move to JSON for more flexibility sending names too
-
-        udp_send(state.udp_sign_port, msg, sizeof(msg));
-        if (udp_last_sent != msg[1]){
-            g_info("UDP Sent %i\n", msg[1]);
-            udp_last_sent = msg[1];
-        }
-    }
+    send_to_udp_display(&state, people_closest, people_in_range);
 }
 
 
@@ -945,6 +957,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 	                else if (ble_uuid == 0x180a) g_print("Device information, ");
 	                else if (ble_uuid == 0x180d) g_print("Heart rate service, ");
 	                else if (ble_uuid == 0x2A37) g_print("Heart rate measurement ");
+	                else if (ble_uuid == 0xFEAA) g_print("Eddystone ");
 	                else if (ble_uuid == 0x89d3502b) g_print("Apple MS ");
 	                else if (ble_uuid == 0x7905f431) g_print("Apple NCS ");
 	                else if (ble_uuid == 0xd0611e78) g_print("Apple CS ");
@@ -1545,7 +1558,7 @@ int clear_cache(void *parameters)
     // Remove any item in cache that hasn't been seen for a long time
     for (int i=0; i < state.n; i++) {
       while (i < state.n && should_remove(&state.devices[i])) {
-        remove_device(i);              // changes n, but brings a new device to position i
+        remove_device(i);    // changes n, but brings a new device to position i
       }
     }
 
@@ -1654,12 +1667,19 @@ gboolean try_disconnect (struct Device* a)
     return FALSE;
 }
 
+/* 
+  Attempts to connect to a device IF if we don't already know what category it is
+  returns true if a connection was initiated so that outer loop can limit how many
+  simultaneous connections are attempted.
+*/
 gboolean try_connect (struct Device* a)
 {
   if (a->category != CATEGORY_UNKNOWN) return FALSE; // already has a category
   //if (strlen(a->name) > 0) return FALSE;    // already named
 
-  // Used to wait until second observation to connect, now trying immediate
+  // Count will always be > 0 but optionally can change '0' to '1' to only attempt
+  // connecting when a device has been seen more than once. Useful in situations where
+  // there may be too many transient devices to attempt connection to all of them
   if (a->count > 0 && a->try_connect_state == 0) {
     a->try_connect_state = 1;
     // Try forcing a connect to get a full dump from the device
@@ -1692,53 +1712,6 @@ int try_connect_tick(void *parameters)
     }
     return TRUE;
 }
-
-/*
-static void connect_reply(DBusMessage *message, void *user_data)
-{
-	GDBusProxy *proxy = user_data;
-	DBusError error;
-
-	dbus_error_init(&error);
-
-	if (dbus_set_error_from_message(&error, message) == TRUE) {
-		bt_shell_printf("Failed to connect: %s\n", error.name);
-		dbus_error_free(&error);
-		return;
-	}
-
-	g_print("Connection successful\n");
-
-	set_default_device(proxy, NULL);
-        return;
-}
-
-
-static void cmd_connect(int argc, char *address)
-{
-	GDBusProxy *proxy;
-
-	if (check_default_ctrl() == FALSE) {
-            g_print("No default controller");
-            return;
-        }
-
-	proxy = find_proxy_by_address(default_ctrl->devices, address);
-	if (!proxy) {
-		g_print("Device %s not available\n", address);
-                return;
-	}
-
-	if (g_dbus_proxy_method_call(proxy, "Connect", NULL, connect_reply,
-							proxy, NULL) == FALSE) {
-		g_print("Failed to connect\n");
-                return;
-	}
-
-	g_print("Attempting to connect to %s\n", address);
-}
-
-*/
 
 static char client_id[META_LENGTH];
 
@@ -1966,7 +1939,9 @@ int main(int argc, char **argv)
     // Every 13s see if any unnamed device is ready to be connected
     g_timeout_add_seconds(10, try_connect_tick, loop);
 
-    g_print("\n\n\n\n\n\n");
+    g_info(" ");
+    g_info(" ");
+    g_info(" ");
 
     display_state();
 
@@ -1980,17 +1955,17 @@ int main(int argc, char **argv)
     {
         rc = bluez_adapter_call_method(conn, "SetDiscoveryFilter", NULL, NULL);
         if (rc)
-            g_print("Not able to remove discovery filter\n");
+            g_warning("Not able to remove discovery filter\n");
     }
 
     rc = bluez_adapter_call_method(conn, "StopDiscovery", NULL, NULL);
     if (rc)
-        g_print("Not able to stop scanning\n");
+        g_warning("Not able to stop scanning\n");
     g_usleep(100);
 
     rc = bluez_adapter_set_property(conn, "Powered", g_variant_new("b", FALSE));
     if (rc)
-        g_print("Not able to disable the adapter\n");
+        g_warning("Not able to disable the adapter\n");
 fail:
     g_dbus_connection_signal_unsubscribe(conn, prop_changed);
     g_dbus_connection_signal_unsubscribe(conn, iface_added);
