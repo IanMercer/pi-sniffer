@@ -38,7 +38,6 @@
 #include <udp.h>
 #include <argp.h>
 
-
 static struct OverallState state;
 // contains ... static struct Device devices[N];
 
@@ -52,10 +51,10 @@ static bool starting = TRUE;
 #define THRESHOLD 10.0
 
 // Handle Ctrl-c
-void     int_handler(int);
+void int_handler(int);
 
 static int id_gen = 0;
-bool logTable = FALSE;  // set to true each time something changes
+bool logTable = FALSE; // set to true each time something changes
 
 /*
       Connection to DBUS
@@ -65,10 +64,13 @@ GDBusConnection *conn;
 /*
   Do these two devices overlap in time? If so they cannot be the same device
 */
-bool overlaps (struct Device* a, struct Device* b) {
-  if (a->earliest > b->latest) return FALSE; // a is entirely after b
-  if (b->earliest > a->latest) return FALSE; // b is entirely after a
-  return TRUE; // must overlap if not entirely after or before
+bool overlaps(struct Device *a, struct Device *b)
+{
+    if (a->earliest > b->latest)
+        return FALSE; // a is entirely after b
+    if (b->earliest > a->latest)
+        return FALSE; // b is entirely after a
+    return TRUE;      // must overlap if not entirely after or before
 }
 
 /*
@@ -76,59 +78,67 @@ bool overlaps (struct Device* a, struct Device* b) {
 */
 void pack_columns()
 {
-  // Push every device back to column zero as category may have changed
-  for (int i = 0; i < state.n; i++) {
-    struct Device* a = &state.devices[i];
-    a->column = 0;
-  }
-
-  for (int k = 0; k < state.n; k++) {
-    bool changed = false;
-
-    for (int i = 0; i < state.n; i++) {
-      for (int j = i+1; j < state.n; j++) {
-        struct Device* a = &state.devices[i];
-        struct Device* b = &state.devices[j];
-
-        if (a->column != b-> column) continue;
-
-        bool over = overlaps(a, b);
-
-        // cannot be the same device if either has a public address (or we don't have an address type yet)
-        bool haveDifferentAddressTypes = (a->addressType>0 && b->addressType>0 && a->addressType != b->addressType);
-
-        // cannot be the same if they both have names and the names are different
-        bool haveDifferentNames = (strlen(a->name) > 0) && (strlen(b->name) > 0) && (g_strcmp0(a->name, b->name) != 0);
-
-        // cannot be the same if they both have known categories and they are different
-        // Used to try to blend unknowns in with knowns but now we get category right 99.9% of the time, no longer necessary
-        bool haveDifferentCategories = (a->category != b->category);// && (a->category != CATEGORY_UNKNOWN) && (b->category != CATEGORY_UNKNOWN);
-
-        if (over || haveDifferentAddressTypes || haveDifferentNames || haveDifferentCategories) {
-          b->column++;
-          changed = true;
-          // g_print("Compare %i to %i and bump %4i %s to %i, %i %i %i\n", i, j, b->id, b->mac, b->column, over, haveDifferentAddressTypes, haveDifferentNames);
-        }
-      }
+    // Push every device back to column zero as category may have changed
+    for (int i = 0; i < state.n; i++)
+    {
+        struct Device *a = &state.devices[i];
+        a->column = 0;
     }
-    if (!changed) break;
-  }
+
+    for (int k = 0; k < state.n; k++)
+    {
+        bool changed = false;
+
+        for (int i = 0; i < state.n; i++)
+        {
+            for (int j = i + 1; j < state.n; j++)
+            {
+                struct Device *a = &state.devices[i];
+                struct Device *b = &state.devices[j];
+
+                if (a->column != b->column)
+                    continue;
+
+                bool over = overlaps(a, b);
+
+                // cannot be the same device if either has a public address (or we don't have an address type yet)
+                bool haveDifferentAddressTypes = (a->addressType > 0 && b->addressType > 0 && a->addressType != b->addressType);
+
+                // cannot be the same if they both have names and the names are different
+                bool haveDifferentNames = (strlen(a->name) > 0) && (strlen(b->name) > 0) && (g_strcmp0(a->name, b->name) != 0);
+
+                // cannot be the same if they both have known categories and they are different
+                // Used to try to blend unknowns in with knowns but now we get category right 99.9% of the time, no longer necessary
+                bool haveDifferentCategories = (a->category != b->category); // && (a->category != CATEGORY_UNKNOWN) && (b->category != CATEGORY_UNKNOWN);
+
+                if (over || haveDifferentAddressTypes || haveDifferentNames || haveDifferentCategories)
+                {
+                    b->column++;
+                    changed = true;
+                    // g_print("Compare %i to %i and bump %4i %s to %i, %i %i %i\n", i, j, b->id, b->mac, b->column, over, haveDifferentAddressTypes, haveDifferentNames);
+                }
+            }
+        }
+        if (!changed)
+            break;
+    }
 }
 
 /*
    Remove a device from array and move all later devices up one spot
 */
-void remove_device(int index) {
-  for (int i = index; i < state.n-1; i++) {
-    state.devices[i] = state.devices[i+1];
-    struct Device* dev = &state.devices[i];
-    // decrease column count, may create clashes, will fix these up next
-    dev->column = dev->column > 0 ? dev->column - 1 : 0;
-  }
-  state.n--;
-  pack_columns();
+void remove_device(int index)
+{
+    for (int i = index; i < state.n - 1; i++)
+    {
+        state.devices[i] = state.devices[i + 1];
+        struct Device *dev = &state.devices[i];
+        // decrease column count, may create clashes, will fix these up next
+        dev->column = dev->column > 0 ? dev->column - 1 : 0;
+    }
+    state.n--;
+    pack_columns();
 }
-
 
 #define MAX_TIME_AGO_COUNTING_MINUTES 5
 #define MAX_TIME_AGO_LOGGING_MINUTES 10
@@ -137,15 +147,15 @@ void remove_device(int index) {
 // Updated before any function that needs to calculate relative time
 time_t now;
 
-
 // Largest number of devices that can be tracked at once
 #define N_COLUMNS 500
 
-struct ColumnInfo {
-    time_t latest;        // latest observation in this column
-    float distance;       // distance of latest observation in this column
-    int8_t category;      // category of device in this column (phone, computer, ...)
-    bool isClosest;         // is this device closest to us not some other sensor
+struct ColumnInfo
+{
+    time_t latest;   // latest observation in this column
+    float distance;  // distance of latest observation in this column
+    int8_t category; // category of device in this column (phone, computer, ...)
+    bool isClosest;  // is this device closest to us not some other sensor
 };
 
 struct ColumnInfo columns[N_COLUMNS];
@@ -153,30 +163,34 @@ struct ColumnInfo columns[N_COLUMNS];
 /*
     Find latest observation in each column and the distance for that
 */
-void find_latest_observations () {
-   for (uint i=0; i < N_COLUMNS; i++){
-      columns[i].distance = -1.0;
-      columns[i].category = CATEGORY_UNKNOWN;
-   }
-   for (int i = 0; i < state.n; i++) {
-      struct Device* a = &state.devices[i];
-      int col = a->column;
-      if (columns[col].distance < 0.0 || columns[col].latest < a->latest) {
-        columns[col].distance = a->distance;
-        if (a->category != CATEGORY_UNKNOWN) {
-          // a later unknown does not override an actual phone category nor extend it
-          // This if is probably not necessary now as overlap tests for this
-          columns[col].category = a->category;
-          columns[col].latest = a->latest;
-          // Do we 'own' this device or does someone else
-          columns[col].isClosest = true;
-          struct ClosestTo* closest = get_closest(a);
-          columns[col].isClosest = closest != NULL && closest->access_id == state.local->id;
+void find_latest_observations()
+{
+    for (uint i = 0; i < N_COLUMNS; i++)
+    {
+        columns[i].distance = -1.0;
+        columns[i].category = CATEGORY_UNKNOWN;
+    }
+    for (int i = 0; i < state.n; i++)
+    {
+        struct Device *a = &state.devices[i];
+        int col = a->column;
+        if (columns[col].distance < 0.0 || columns[col].latest < a->latest)
+        {
+            columns[col].distance = a->distance;
+            if (a->category != CATEGORY_UNKNOWN)
+            {
+                // a later unknown does not override an actual phone category nor extend it
+                // This if is probably not necessary now as overlap tests for this
+                columns[col].category = a->category;
+                columns[col].latest = a->latest;
+                // Do we 'own' this device or does someone else
+                columns[col].isClosest = true;
+                struct ClosestTo *closest = get_closest(a);
+                columns[col].isClosest = closest != NULL && closest->access_id == state.local->id;
+            }
         }
-      }
-   }
+    }
 }
-
 
 #define N_RANGES 10
 static int32_t ranges[N_RANGES] = {1, 2, 5, 10, 15, 20, 25, 30, 35, 100};
@@ -188,7 +202,7 @@ static int8_t reported_ranges[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -
 
 static char udp_last_sent = -1;
 
-void send_to_udp_display(struct OverallState* state, float people_closest, float people_in_range)
+void send_to_udp_display(struct OverallState *state, float people_closest, float people_in_range)
 {
     // This adjusts how people map to lights which are on a 0.0-3.0 range
     double scale_factor = state->udp_scale_factor;
@@ -212,13 +226,13 @@ void send_to_udp_display(struct OverallState* state, float people_closest, float
         udp_send(state->udp_sign_port, msg, sizeof(msg));
 
         // Log only when it changes
-        if (udp_last_sent != msg[1]){
+        if (udp_last_sent != msg[1])
+        {
             g_info("UDP Sent %i", msg[1]);
             udp_last_sent = msg[1];
         }
     }
 }
-
 
 /*
     Find best packing of device time ranges into columns
@@ -226,10 +240,12 @@ void send_to_udp_display(struct OverallState* state, float people_closest, float
     While there is any overlap, find the overlapping pair, move the second one to the next column
 */
 
-void report_devices_count() {
+void report_devices_count()
+{
     //g_debug("report_devices_count\n");
 
-    if (starting) return;   // not during first 30s startup time
+    if (starting)
+        return; // not during first 30s startup time
 
     // Initialize time and columns
     time(&now);
@@ -244,39 +260,47 @@ void report_devices_count() {
     // Ignoring any that are potential MAC address randomizations of others
     int previous = 0;
     bool made_changes = FALSE;
-    for (int i = 0; i < N_RANGES; i++) {
+    for (int i = 0; i < N_RANGES; i++)
+    {
         int range = ranges[i];
 
         int min = 0;
 
-        for (int col=0; col < N_COLUMNS; col++)
+        for (int col = 0; col < N_COLUMNS; col++)
         {
-           if (columns[col].category != CATEGORY_PHONE) continue;   // only counting phones now not beacons, laptops, ...
-           if (columns[col].distance < 0.01) continue;   // not allocated
+            if (columns[col].category != CATEGORY_PHONE)
+                continue; // only counting phones now not beacons, laptops, ...
+            if (columns[col].distance < 0.01)
+                continue; // not allocated
 
-           double delta_time = difftime(now, columns[col].latest);
-           if (delta_time > MAX_TIME_AGO_COUNTING_MINUTES * 60) continue;
+            double delta_time = difftime(now, columns[col].latest);
+            if (delta_time > MAX_TIME_AGO_COUNTING_MINUTES * 60)
+                continue;
 
-           if (columns[col].distance < range) min++;
+            if (columns[col].distance < range)
+                min++;
         }
 
         int just_this_range = min - previous;
-        if (reported_ranges[i] != just_this_range) {
-          //g_print("Devices present at range %im %i    \n", range, just_this_range);
-          reported_ranges[i] = just_this_range;
-          made_changes = TRUE;
+        if (reported_ranges[i] != just_this_range)
+        {
+            //g_print("Devices present at range %im %i    \n", range, just_this_range);
+            reported_ranges[i] = just_this_range;
+            made_changes = TRUE;
         }
         previous = min;
     }
 
-    if (made_changes) {
-      char line[128];
-      snprintf(line, sizeof(line), "Devices by range:");
-      for (int i = 0; i < N_RANGES; i++) {
-        snprintf(line+strlen(line), sizeof(line)-strlen(line), " %i", reported_ranges[i]);
-      }
-      g_info("%s", line);
-      send_to_mqtt_distances((unsigned char*)reported_ranges, N_RANGES * sizeof(int8_t));
+    if (made_changes)
+    {
+        char line[128];
+        snprintf(line, sizeof(line), "Devices by range:");
+        for (int i = 0; i < N_RANGES; i++)
+        {
+            snprintf(line + strlen(line), sizeof(line) - strlen(line), " %i", reported_ranges[i]);
+        }
+        g_info("%s", line);
+        send_to_mqtt_distances((unsigned char *)reported_ranges, N_RANGES * sizeof(int8_t));
     }
 
     int range_limit = 5;
@@ -286,49 +310,55 @@ void report_devices_count() {
     float people_in_range = 0.0;
     float people_closest = 0.0;
 
-    for (int col=0; col < N_COLUMNS; col++)
+    for (int col = 0; col < N_COLUMNS; col++)
     {
-       if (columns[col].distance >= range) continue;
-       if (columns[col].category != CATEGORY_PHONE) continue;   // only counting phones now not beacons, laptops, ...
-       if (columns[col].distance < 0.01) continue;   // not allocated
+        if (columns[col].distance >= range)
+            continue;
+        if (columns[col].category != CATEGORY_PHONE)
+            continue; // only counting phones now not beacons, laptops, ...
+        if (columns[col].distance < 0.01)
+            continue; // not allocated
 
-       double delta_time = difftime(now, columns[col].latest);
-       if (delta_time > MAX_TIME_AGO_COUNTING_MINUTES * 60) continue;
+        double delta_time = difftime(now, columns[col].latest);
+        if (delta_time > MAX_TIME_AGO_COUNTING_MINUTES * 60)
+            continue;
 
-       // double score = 0.55 - atan(delta_time/40.0  - 4.0) / 3.0; -- left some spikes in the graph, dropped too quickly
-       double score = 0.55 - atan(delta_time/45.0  - 4.0) / 3.0;
-       // A curve that stays a 1.0 for a while and then drops rapidly around 3 minutes out
-       if (score > 0.9) score = 1.0;
-       if (score < 0.0) score = 0.0;
+        // double score = 0.55 - atan(delta_time/40.0  - 4.0) / 3.0; -- left some spikes in the graph, dropped too quickly
+        double score = 0.55 - atan(delta_time / 45.0 - 4.0) / 3.0;
+        // A curve that stays a 1.0 for a while and then drops rapidly around 3 minutes out
+        if (score > 0.9)
+            score = 1.0;
+        if (score < 0.0)
+            score = 0.0;
 
-       // Expected value E[x] = i x p(i) so sum p(i) for each column which is one person
-       people_in_range += score;
-       if (columns[col].isClosest) people_closest += score;
+        // Expected value E[x] = i x p(i) so sum p(i) for each column which is one person
+        people_in_range += score;
+        if (columns[col].isClosest)
+            people_closest += score;
     }
 
-    if (fabs(people_in_range - state.local->people_in_range_count) > 0.01 || fabs(people_closest - state.local->people_closest_count) > 0.01) {
-      state.local->people_closest_count = people_closest;
-      state.local->people_in_range_count = people_in_range;
-      g_info("People count = %.2f (%.2f in range)\n", people_closest, people_in_range);
+    if (fabs(people_in_range - state.local->people_in_range_count) > 0.01 || fabs(people_closest - state.local->people_closest_count) > 0.01)
+    {
+        state.local->people_closest_count = people_closest;
+        state.local->people_in_range_count = people_in_range;
+        g_info("People count = %.2f (%.2f in range)\n", people_closest, people_in_range);
 
-      // And send access point to everyone over UDP
-      send_access_point_udp(&state);
+        // And send access point to everyone over UDP
+        send_access_point_udp(&state);
 
-      GVariant* parameters = g_variant_new ("(ds)", people_closest, "people");   // floating ref
-      GError* error = NULL;
-      gboolean ret = g_dbus_connection_emit_signal (conn, NULL, "/com/signswift/sniffer", "com.signswift.sniffer", "PeopleClosest", parameters, &error);
-      if (ret){
-          print_and_free_error(error);
-      }
+        GVariant *parameters = g_variant_new("(ds)", people_closest, "people"); // floating ref
+        GError *error = NULL;
+        gboolean ret = g_dbus_connection_emit_signal(conn, NULL, "/com/signswift/sniffer", "com.signswift.sniffer", "PeopleClosest", parameters, &error);
+        if (ret)
+        {
+            print_and_free_error(error);
+        }
     }
 
     send_to_udp_display(&state, people_closest, people_in_range);
 }
 
-
 /* SEND TO MQTT WITH ACCESS POINT MAC ADDRESS AND TIME STAMP */
-
-
 
 /*
     REPORT DEVICE TO MQTT
@@ -337,22 +367,21 @@ void report_devices_count() {
     appeared = we know this is fresh data so send RSSI and TxPower with timestamp
 */
 
-static void report_device_disconnected_to_MQTT(char* address)
+static void report_device_disconnected_to_MQTT(char *address)
 {
     (void)address;
-   // Not used
+    // Not used
 }
-
 
 /*
    Read byte array from GVariant
 */
-unsigned char* read_byte_array(GVariant* s_value, int* actualLength, uint8_t* hash)
+unsigned char *read_byte_array(GVariant *s_value, int *actualLength, uint8_t *hash)
 {
     unsigned char byteArray[2048];
     int len = 0;
 
-    GVariantIter* iter_array;
+    GVariantIter *iter_array;
     guchar str;
 
     //g_debug("START read_byte_array\n");
@@ -366,12 +395,13 @@ unsigned char* read_byte_array(GVariant* s_value, int* actualLength, uint8_t* ha
 
     g_variant_iter_free(iter_array);
 
-    unsigned char* allocdata = g_malloc(len);
+    unsigned char *allocdata = g_malloc(len);
     memcpy(allocdata, byteArray, len);
 
     *hash = 0;
-    for (int i = 0; i < len; i++) {
-      *hash += allocdata[i];
+    for (int i = 0; i < len; i++)
+    {
+        *hash += allocdata[i];
     }
 
     *actualLength = len;
@@ -380,190 +410,317 @@ unsigned char* read_byte_array(GVariant* s_value, int* actualLength, uint8_t* ha
     return allocdata;
 }
 
-void optional(char* name, char* value) {
-  if (strlen(name)) return;
-  g_strlcpy(name, value, NAME_LENGTH);
+void optional(char *name, char *value)
+{
+    if (strlen(name))
+        return;
+    g_strlcpy(name, value, NAME_LENGTH);
 }
 
-void soft_set_category(int8_t* category, int8_t category_new)
+void soft_set_category(int8_t *category, int8_t category_new)
 {
-    if (*category == CATEGORY_UNKNOWN) *category = category_new;
+    if (*category == CATEGORY_UNKNOWN)
+        *category = category_new;
 }
 
 /*
      handle the manufacturer data
 */
-void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsigned char* allocdata)
+void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigned char *allocdata)
 {
     //g_debug("START handle_manufacturer\n");
-    if (manufacturer == 0x004c) {   // Apple
+    if (manufacturer == 0x004c)
+    { // Apple
         uint8_t apple_device_type = allocdata[00];
-        if (apple_device_type == 0x01) {
-          g_info(" **** Apple Device type 0x01 - what is this?") ;
+        if (apple_device_type == 0x01)
+        {
+            g_info(" **** Apple Device type 0x01 - what is this?");
         }
-        else if (apple_device_type == 0x02) {
-          optional(existing->alias, "Beacon");
-          g_debug("  Beacon\n") ;
-          existing->category = CATEGORY_BEACON;
+        else if (apple_device_type == 0x02)
+        {
+            optional(existing->alias, "Beacon");
+            g_debug("  Beacon\n");
+            existing->category = CATEGORY_BEACON;
 
-          // Aprilbeacon temperature sensor
-          if (strncmp(existing->name, "abtemp", 6) == 0) {
-             uint8_t temperature = allocdata[21];
-             send_to_mqtt_single_value(existing->mac, "temperature", temperature);
-          }
+            // Aprilbeacon temperature sensor
+            if (strncmp(existing->name, "abtemp", 6) == 0)
+            {
+                uint8_t temperature = allocdata[21];
+                send_to_mqtt_single_value(existing->mac, "temperature", temperature);
+            }
         }
-        else if (apple_device_type == 0x03) g_print("  Airprint \n");
-        else if (apple_device_type == 0x05) g_print("  Airdrop \n");
-        else if (apple_device_type == 0x07) {
-          optional(existing->name, "Airpods");
-          g_debug("  Airpods \n");
-          existing->category = CATEGORY_HEADPHONES;
+        else if (apple_device_type == 0x03)
+            g_print("  Airprint \n");
+        else if (apple_device_type == 0x05)
+            g_print("  Airdrop \n");
+        else if (apple_device_type == 0x07)
+        {
+            optional(existing->name, "Airpods");
+            g_debug("  Airpods \n");
+            existing->category = CATEGORY_HEADPHONES;
         }
-        else if (apple_device_type == 0x08) { optional(existing->alias, "Siri"); g_print("  Siri \n"); }
-        else if (apple_device_type == 0x09) { optional(existing->alias, "Airplay"); g_print("  Airplay \n"); }
-        else if (apple_device_type == 0x0a) { optional(existing->alias, "Apple 0a"); g_print("  Apple 0a \n"); }
-        else if (apple_device_type == 0x0b) {
-          optional(existing->name, "iWatch?");
-          g_debug("  Watch_c");
-          existing->category = CATEGORY_WEARABLE;
+        else if (apple_device_type == 0x08)
+        {
+            optional(existing->alias, "Siri");
+            g_print("  Siri \n");
         }
-        else if (apple_device_type == 0x0c) g_print("  Handoff \n");
-        else if (apple_device_type == 0x0d) g_print("  WifiSet \n");
-        else if (apple_device_type == 0x0e) g_print("  Hotspot \n");
-        else if (apple_device_type == 0x0f) g_print("  WifiJoin \n");
-        else if (apple_device_type == 0x10) {
-          g_debug("  Nearby ");
-
-          // e.g. phone: <[byte 0x10, 0x06, 0x51, 0x1e, 0xc1, 0x36, 0x99, 0xe1]>}
-
-          // too soon ... name comes later ... optional(existing->name, "Apple Device");
-          // Not right, MacBook Pro seems to send this too
-
-          uint8_t device_status = allocdata[02];
-          if (device_status & 0x80) g_print("0x80 "); else g_print(" ");
-          if (device_status & 0x40) g_print(" ON +"); else g_print("OFF +");
-
-          uint8_t lower_bits = device_status & 0x3f;
-
-          // These could be iPad or iWatch too, not certain it's a phone at this point
-          if (lower_bits == 0x07) { g_print(" Lock screen (0x07) "); /* soft_set_category(&existing->category, CATEGORY_PHONE); */ }
-          else if (lower_bits == 0x17) { g_print(" Lock screen   (0x17) ");/*  soft_set_category(&existing->category, CATEGORY_PHONE);*/  }
-          else if (lower_bits == 0x1b) { g_print(" Home screen   (0x1b) ");/*  soft_set_category(&existing->category, CATEGORY_PHONE);*/  }
-          else if (lower_bits == 0x1c) { g_print(" Home screen   (0x1c) ");/*  soft_set_category(&existing->category, CATEGORY_PHONE);*/  }
-          else if (lower_bits == 0x10) { g_print(" Home screen   (0x10) ");/*  soft_set_category(&existing->category, CATEGORY_PHONE);*/  }
-          else if (lower_bits == 0x0e) { g_print(" Outgoing call (0x0e) ");/*  soft_set_category(&existing->category, CATEGORY_PHONE);*/  }
-          else if (lower_bits == 0x1e) { g_print(" Incoming call (0x1e) ");/*  soft_set_category(&existing->category, CATEGORY_PHONE);*/  }
-          else g_debug(" Unknown (0x%.2x) ", lower_bits);
-
-          if (allocdata[03] &0x10) g_print("1"); else g_print("0");
-          if (allocdata[03] &0x08) g_print("1"); else g_print("0");
-          if (allocdata[03] &0x04) g_print("1"); else g_print("0");
-          if (allocdata[03] &0x02) g_print("1"); else g_print("0");
-          if (allocdata[03] &0x01) g_print("1"); else g_print("0");
-
-          // These do not seem to be quite right
-          if (allocdata[03] == 0x18) g_print(" Apple? (0x18)"); else
-          if (allocdata[03] == 0x1c) g_print(" Apple? (0x1c)"); else
-          if (allocdata[03] == 0x1e) g_print(" iPhone?  (0x1e)"); else
-          if (allocdata[03] == 0x1a) g_print(" iWatch?  (0x1a)"); else
-          if (allocdata[03] == 0x00) g_print(" TBD "); else
-            g_debug (" Device type (%.2x)", allocdata[03]);
-
-          g_debug("\n");
-        } else {
-          g_debug("Did not recognize apple device type %.2x", apple_device_type);
+        else if (apple_device_type == 0x09)
+        {
+            optional(existing->alias, "Airplay");
+            g_print("  Airplay \n");
         }
-    } else if (manufacturer == 0x0087) {
+        else if (apple_device_type == 0x0a)
+        {
+            optional(existing->alias, "Apple 0a");
+            g_print("  Apple 0a \n");
+        }
+        else if (apple_device_type == 0x0b)
+        {
+            optional(existing->name, "iWatch?");
+            g_debug("  Watch_c");
+            existing->category = CATEGORY_WEARABLE;
+        }
+        else if (apple_device_type == 0x0c)
+            g_print("  Handoff \n");
+        else if (apple_device_type == 0x0d)
+            g_print("  WifiSet \n");
+        else if (apple_device_type == 0x0e)
+            g_print("  Hotspot \n");
+        else if (apple_device_type == 0x0f)
+            g_print("  WifiJoin \n");
+        else if (apple_device_type == 0x10)
+        {
+            g_debug("  Nearby ");
+
+            // e.g. phone: <[byte 0x10, 0x06, 0x51, 0x1e, 0xc1, 0x36, 0x99, 0xe1]>}
+
+            // too soon ... name comes later ... optional(existing->name, "Apple Device");
+            // Not right, MacBook Pro seems to send this too
+
+            uint8_t device_status = allocdata[02];
+            if (device_status & 0x80)
+                g_print("0x80 ");
+            else
+                g_print(" ");
+            if (device_status & 0x40)
+                g_print(" ON +");
+            else
+                g_print("OFF +");
+
+            uint8_t lower_bits = device_status & 0x3f;
+
+            // These could be iPad or iWatch too, not certain it's a phone at this point
+            if (lower_bits == 0x07)
+            {
+                g_print(" Lock screen (0x07) "); /* soft_set_category(&existing->category, CATEGORY_PHONE); */
+            }
+            else if (lower_bits == 0x17)
+            {
+                g_print(" Lock screen   (0x17) "); /*  soft_set_category(&existing->category, CATEGORY_PHONE);*/
+            }
+            else if (lower_bits == 0x1b)
+            {
+                g_print(" Home screen   (0x1b) "); /*  soft_set_category(&existing->category, CATEGORY_PHONE);*/
+            }
+            else if (lower_bits == 0x1c)
+            {
+                g_print(" Home screen   (0x1c) "); /*  soft_set_category(&existing->category, CATEGORY_PHONE);*/
+            }
+            else if (lower_bits == 0x10)
+            {
+                g_print(" Home screen   (0x10) "); /*  soft_set_category(&existing->category, CATEGORY_PHONE);*/
+            }
+            else if (lower_bits == 0x0e)
+            {
+                g_print(" Outgoing call (0x0e) "); /*  soft_set_category(&existing->category, CATEGORY_PHONE);*/
+            }
+            else if (lower_bits == 0x1e)
+            {
+                g_print(" Incoming call (0x1e) "); /*  soft_set_category(&existing->category, CATEGORY_PHONE);*/
+            }
+            else
+                g_debug(" Unknown (0x%.2x) ", lower_bits);
+
+            if (allocdata[03] & 0x10)
+                g_print("1");
+            else
+                g_print("0");
+            if (allocdata[03] & 0x08)
+                g_print("1");
+            else
+                g_print("0");
+            if (allocdata[03] & 0x04)
+                g_print("1");
+            else
+                g_print("0");
+            if (allocdata[03] & 0x02)
+                g_print("1");
+            else
+                g_print("0");
+            if (allocdata[03] & 0x01)
+                g_print("1");
+            else
+                g_print("0");
+
+            // These do not seem to be quite right
+            if (allocdata[03] == 0x18)
+                g_print(" Apple? (0x18)");
+            else if (allocdata[03] == 0x1c)
+                g_print(" Apple? (0x1c)");
+            else if (allocdata[03] == 0x1e)
+                g_print(" iPhone?  (0x1e)");
+            else if (allocdata[03] == 0x1a)
+                g_print(" iWatch?  (0x1a)");
+            else if (allocdata[03] == 0x00)
+                g_print(" TBD ");
+            else
+                g_debug(" Device type (%.2x)", allocdata[03]);
+
+            g_debug("\n");
+        }
+        else
+        {
+            g_debug("Did not recognize apple device type %.2x", apple_device_type);
+        }
+    }
+    else if (manufacturer == 0x0087)
+    {
         optional(existing->name, "Garmin");
         existing->category = CATEGORY_WEARABLE; // could be fitness tracker
-    } else if (manufacturer == 0x05A7) {
+    }
+    else if (manufacturer == 0x05A7)
+    {
         optional(existing->name, "Sonos");
         existing->category = CATEGORY_FIXED;
     }
-    else if (manufacturer == 0xb4c1) {
-        optional(existing->name, "Dycoo");   // not on official Bluetooth website??
-    } else if (manufacturer == 0x0101) {
+    else if (manufacturer == 0xb4c1)
+    {
+        optional(existing->name, "Dycoo"); // not on official Bluetooth website??
+    }
+    else if (manufacturer == 0x0101)
+    {
         optional(existing->name, "Fugoo, Inc.");
         existing->category = CATEGORY_HEADPHONES;
-    } else if (manufacturer == 0x0310) {
+    }
+    else if (manufacturer == 0x0310)
+    {
         optional(existing->name, "SGL Italia S.r.l.");
         existing->category = CATEGORY_HEADPHONES;
-    } else if (manufacturer == 0x3042) {   // 12354 = someone didn't register
+    }
+    else if (manufacturer == 0x3042)
+    { // 12354 = someone didn't register
         optional(existing->name, "Unknown Manuf");
         existing->category = CATEGORY_HEADPHONES;
-    } else if (manufacturer == 0x0075) {
+    }
+    else if (manufacturer == 0x0075)
+    {
         optional(existing->name, "Samsung");
         g_debug("  Manufacturer is Samsung 0x0075\n");
-    } else if (manufacturer == 0xff19) {
+    }
+    else if (manufacturer == 0xff19)
+    {
         optional(existing->name, "Samsung");
         g_debug("  Manufacturer is Samsung? 0xff19\n");
-    } else if (manufacturer == 0x0131) {
+    }
+    else if (manufacturer == 0x0131)
+    {
         optional(existing->name, "Cypress Semiconductor");
         g_debug("  Manufacturer is Cypress Semiconductor\n");
-    } else if (manufacturer == 0x0110) {
+    }
+    else if (manufacturer == 0x0110)
+    {
         optional(existing->name, "Nippon Seiki Co., Ltd.");
         g_debug("  Manufacturer is Nippon Seiki Co., Ltd.\n");
-    } else if (manufacturer == 0x0399) {
+    }
+    else if (manufacturer == 0x0399)
+    {
         optional(existing->name, "Nikon");
         g_debug("  Manufacturer is Nikon Corporation\n");
         existing->category = CATEGORY_FIXED;
-    } else if (manufacturer == 0x0003) {
+    }
+    else if (manufacturer == 0x0003)
+    {
         optional(existing->name, "IBM");
         g_debug("  IBM\n");
         existing->category = CATEGORY_FIXED;
-    } else if (manufacturer == 0x0501) {
+    }
+    else if (manufacturer == 0x0501)
+    {
         optional(existing->name, "Polaris ND");
         g_debug("  Polaris ND\n");
         existing->category = CATEGORY_FIXED;
-    } else if (manufacturer == 0x014f) {
+    }
+    else if (manufacturer == 0x014f)
+    {
         optional(existing->name, "B&W Group Ltd.");
         g_debug("  B&W Group Ltd.\n");
         existing->category = CATEGORY_FIXED;
-    } else if (manufacturer == 0x00c4) {
+    }
+    else if (manufacturer == 0x00c4)
+    {
         optional(existing->name, "LG Electronics");
         g_debug("  LG Electronics\n");
         existing->category = CATEGORY_TV;
-    } else if (manufacturer == 0x03ee) {
+    }
+    else if (manufacturer == 0x03ee)
+    {
         optional(existing->name, "CUBE Technolgies");
         g_debug("  CUBE Technolgies\n");
         existing->category = CATEGORY_FIXED;
-    } else if (manufacturer == 0x00e0) {
+    }
+    else if (manufacturer == 0x00e0)
+    {
         optional(existing->name, "Google");
         g_debug("  Google\n");
-    } else if (manufacturer == 0x0085) {
+    }
+    else if (manufacturer == 0x0085)
+    {
         optional(existing->name, "BlueRadios ODM");
         g_debug("  BlueRadios, Inc. (ODM)\n");
-    } else if (manufacturer == 0x0434) {
+    }
+    else if (manufacturer == 0x0434)
+    {
         optional(existing->name, "Hatch Baby, Inc.");
         g_debug("  Hatch Baby, Inc.\n");
         existing->category = CATEGORY_FIXED;
-    } else if (manufacturer == 0x0157) {
+    }
+    else if (manufacturer == 0x0157)
+    {
         optional(existing->name, "Anhui Huami Information Technology");
         g_debug("  Anhui Huami Information Technology\n");
         existing->category = CATEGORY_FIXED;
-    } else if (manufacturer == 0x001d) {
+    }
+    else if (manufacturer == 0x001d)
+    {
         optional(existing->name, "Qualcomm");
         g_debug("  Qualcomm\n");
-    } else if (manufacturer == 0x015e) {
+    }
+    else if (manufacturer == 0x015e)
+    {
         optional(existing->name, "Unikey Technologies, Inc");
         g_debug("  Unikey Technologies, Inc\n");
         existing->category = CATEGORY_FIXED;
-    } else if (manufacturer == 0x01a5) {
+    }
+    else if (manufacturer == 0x01a5)
+    {
         optional(existing->name, "Icon Health and Fitness");
         g_debug("  Icon Health and Fitness\n");
         existing->category = CATEGORY_FIXED;
-    } else if (manufacturer == 0x00d2) {
+    }
+    else if (manufacturer == 0x00d2)
+    {
         optional(existing->name, "AbTemp");
         g_debug("  Ignoring manufdata\n");
-    } else {
+    }
+    else
+    {
         // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
-        char manuf [32];
+        char manuf[32];
         snprintf(manuf, sizeof(manuf), "Manufacturer 0x%04x", manufacturer);
         g_info("  Did not recognize %s\n", manuf);
         optional(existing->name, manuf);
     }
 }
-
 
 /*
     Report a new or changed device to MQTT endpoint
@@ -575,51 +732,58 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
     //pretty_print("report_device", properties);
     char address[18];
 
-    if (known_address) {
-       g_strlcpy(address, known_address, 18);
-    } else {
-      // Get address from properies dictionary if not already present
-      GVariant *address_from_dict = g_variant_lookup_value(properties, "Address", G_VARIANT_TYPE_STRING);
-      if (address_from_dict)
-      {
-          const char* addr = g_variant_get_string(address_from_dict, NULL);
-          g_strlcpy(address, addr, 18);
-          g_variant_unref(address_from_dict);
-      }
-      else {
-        g_warning("ERROR address is null");
-        return;
-      }
+    if (known_address)
+    {
+        g_strlcpy(address, known_address, 18);
+    }
+    else
+    {
+        // Get address from properies dictionary if not already present
+        GVariant *address_from_dict = g_variant_lookup_value(properties, "Address", G_VARIANT_TYPE_STRING);
+        if (address_from_dict)
+        {
+            const char *addr = g_variant_get_string(address_from_dict, NULL);
+            g_strlcpy(address, addr, 18);
+            g_variant_unref(address_from_dict);
+        }
+        else
+        {
+            g_warning("ERROR address is null");
+            return;
+        }
     }
 
     struct Device *existing = NULL;
 
     // Get existing device report
-    for (int i = 0; i < state.n; i++) {
-      if (memcmp(state.devices[i].mac, address, 18) == 0) {
-         existing = &state.devices[i];
-      }
+    for (int i = 0; i < state.n; i++)
+    {
+        if (memcmp(state.devices[i].mac, address, 18) == 0)
+        {
+            existing = &state.devices[i];
+        }
     }
 
     if (existing == NULL)
     {
         if (!isUpdate)
         {
-           // DEBUG g_print("Skip %s, bluez get_devices call and not seen yet\n", address);
-           return;
+            // DEBUG g_print("Skip %s, bluez get_devices call and not seen yet\n", address);
+            return;
         }
 
-        if (state.n == N) {
-          g_warning("Error, array of devices is full\n");
-          return;
+        if (state.n == N)
+        {
+            g_warning("Error, array of devices is full\n");
+            return;
         }
 
         // Grab the next empty item in the array
         existing = &state.devices[state.n++];
-        existing->id = id_gen++;                 // unique ID for each
-        existing->hidden = false;                // we own this one
-        g_strlcpy(existing->mac, address, 18);   // address
-        existing->superceeds = 0;                // will be filled in when calculating columns
+        existing->id = id_gen++;               // unique ID for each
+        existing->hidden = false;              // we own this one
+        g_strlcpy(existing->mac, address, 18); // address
+        existing->superceeds = 0;              // will be filled in when calculating columns
 
         // dummy struct filled with unmatched values
         existing->name[0] = '\0';
@@ -648,7 +812,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         time(&existing->last_sent);
         time(&existing->last_rssi);
 
-        existing->last_sent = existing->last_sent - 1000;  //1s back so first RSSI goes through
+        existing->last_sent = existing->last_sent - 1000; //1s back so first RSSI goes through
         existing->last_rssi = existing->last_rssi - 1000;
 
         kalman_initialize(&existing->kalman_interval);
@@ -657,11 +821,14 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
     }
     else
     {
-        if (!isUpdate) {
-           // from get_all_devices which includes stale data
-           //g_debug("Repeat device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
-        } else {
-           g_debug("Existing device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
+        if (!isUpdate)
+        {
+            // from get_all_devices which includes stale data
+            //g_debug("Repeat device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
+        }
+        else
+        {
+            g_debug("Existing device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
         }
     }
 
@@ -694,60 +861,98 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             // Trim whitespace (Bad Tracker device keeps flipping name)
             trim(name);
 
-            if (strncmp(name, existing->name, NAME_LENGTH-1) != 0)
+            if (strncmp(name, existing->name, NAME_LENGTH - 1) != 0)
             {
                 g_info("  %s Name has changed '%s' -> '%s'\n", address, existing->name, name);
                 send_to_mqtt_single(address, "name", name);
                 g_strlcpy(existing->name, name, NAME_LENGTH);
             }
-            else {
+            else
+            {
                 // g_print("  Name unchanged '%s'=='%s'\n", name, existing->name);
             }
-            if (strcmp(name, "iPhone") == 0) existing->category = CATEGORY_PHONE;
-            else if (strcmp(name, "iPad") == 0) existing->category = CATEGORY_TABLET;
-            else if (strcmp(name, "MacBook pro") == 0) existing->category = CATEGORY_COMPUTER;
-            else if (strcmp(name, "BOOTCAMP") == 0) existing->category = CATEGORY_COMPUTER;
-            else if (strcmp(name, "BOOTCAMP2") == 0) existing->category = CATEGORY_COMPUTER;
+            if (strcmp(name, "iPhone") == 0)
+                existing->category = CATEGORY_PHONE;
+            else if (strcmp(name, "iPad") == 0)
+                existing->category = CATEGORY_TABLET;
+            else if (strcmp(name, "MacBook pro") == 0)
+                existing->category = CATEGORY_COMPUTER;
+            else if (strcmp(name, "BOOTCAMP") == 0)
+                existing->category = CATEGORY_COMPUTER;
+            else if (strcmp(name, "BOOTCAMP2") == 0)
+                existing->category = CATEGORY_COMPUTER;
             // Watches
-            else if (strcmp(name, "iWatch") == 0) existing->category = CATEGORY_WEARABLE;
-            else if (strcmp(name, "Apple Watch") == 0) existing->category = CATEGORY_WEARABLE;
-            else if (strncmp(name, "Galaxy Watch", 12) == 0) existing->category = CATEGORY_WEARABLE;
-            else if (strncmp(name, "Gear S3", 7) == 0) existing->category = CATEGORY_WEARABLE;
-            else if (strncmp(name, "fenix", 5) == 0) existing->category = CATEGORY_WEARABLE;
-            else if (strncmp(name, "Versa", 5) == 0) existing->category = CATEGORY_WEARABLE; // FITBIT
-            else if (strncmp(name, "Mi Smart Band", 13) == 0) existing->category = CATEGORY_WEARABLE; // Fitness
-            else if (strncmp(name, "TICKR X", 7) == 0) existing->category = CATEGORY_WEARABLE; // Heartrate
+            else if (strcmp(name, "iWatch") == 0)
+                existing->category = CATEGORY_WEARABLE;
+            else if (strcmp(name, "Apple Watch") == 0)
+                existing->category = CATEGORY_WEARABLE;
+            else if (strncmp(name, "Galaxy Watch", 12) == 0)
+                existing->category = CATEGORY_WEARABLE;
+            else if (strncmp(name, "Gear S3", 7) == 0)
+                existing->category = CATEGORY_WEARABLE;
+            else if (strncmp(name, "fenix", 5) == 0)
+                existing->category = CATEGORY_WEARABLE;
+            else if (strncmp(name, "Versa", 5) == 0)
+                existing->category = CATEGORY_WEARABLE; // FITBIT
+            else if (strncmp(name, "Mi Smart Band", 13) == 0)
+                existing->category = CATEGORY_WEARABLE; // Fitness
+            else if (strncmp(name, "TICKR X", 7) == 0)
+                existing->category = CATEGORY_WEARABLE; // Heartrate
             // TVs
-            else if (strcmp(name, "AppleTV") == 0) existing->category = CATEGORY_TV;
-            else if (strcmp(name, "Apple TV") == 0) existing->category = CATEGORY_TV;
+            else if (strcmp(name, "AppleTV") == 0)
+                existing->category = CATEGORY_TV;
+            else if (strcmp(name, "Apple TV") == 0)
+                existing->category = CATEGORY_TV;
             // Beacons
-            else if (strncmp(name, "AprilBeacon", 11) == 0) existing->category = CATEGORY_BEACON;
-            else if (strncmp(name, "abtemp", 6) == 0) existing->category = CATEGORY_BEACON;
-            else if (strncmp(name, "abeacon", 7) == 0) existing->category = CATEGORY_BEACON;
-            else if (strncmp(name, "estimote", 8) == 0) existing->category = CATEGORY_BEACON;
-            else if (strncmp(name, "Tile", 4) == 0) existing->category = CATEGORY_BEACON;
-            else if (strncmp(name, "LYWSD03MMC", 10) == 0) existing->category = CATEGORY_BEACON;
+            else if (strncmp(name, "AprilBeacon", 11) == 0)
+                existing->category = CATEGORY_BEACON;
+            else if (strncmp(name, "abtemp", 6) == 0)
+                existing->category = CATEGORY_BEACON;
+            else if (strncmp(name, "abeacon", 7) == 0)
+                existing->category = CATEGORY_BEACON;
+            else if (strncmp(name, "estimote", 8) == 0)
+                existing->category = CATEGORY_BEACON;
+            else if (strncmp(name, "Tile", 4) == 0)
+                existing->category = CATEGORY_BEACON;
+            else if (strncmp(name, "LYWSD03MMC", 10) == 0)
+                existing->category = CATEGORY_BEACON;
             // Headphones or speakers
-            else if (strncmp(name, "Sesh Evo-LE", 11) == 0) existing->category = CATEGORY_HEADPHONES;  // Skullcandy
-            else if (strncmp(name, "F2", 2) == 0) existing->category = CATEGORY_HEADPHONES;  // Soundpal F2 spakers
-            else if (strncmp(name, "Jabra", 5) == 0) existing->category = CATEGORY_HEADPHONES;
-            else if (strncmp(name, "LE-Bose", 7) == 0) existing->category = CATEGORY_HEADPHONES;
-            else if (strncmp(name, "LE-reserved_C", 13) == 0) existing->category = CATEGORY_HEADPHONES;
-            else if (strncmp(name, "Blaze", 5) == 0) existing->category = CATEGORY_HEADPHONES;
-            else if (strncmp(name, "Charge 3", 8) == 0) existing->category = CATEGORY_HEADPHONES; // Speakers
+            else if (strncmp(name, "Sesh Evo-LE", 11) == 0)
+                existing->category = CATEGORY_HEADPHONES; // Skullcandy
+            else if (strncmp(name, "F2", 2) == 0)
+                existing->category = CATEGORY_HEADPHONES; // Soundpal F2 spakers
+            else if (strncmp(name, "Jabra", 5) == 0)
+                existing->category = CATEGORY_HEADPHONES;
+            else if (strncmp(name, "LE-Bose", 7) == 0)
+                existing->category = CATEGORY_HEADPHONES;
+            else if (strncmp(name, "LE-reserved_C", 13) == 0)
+                existing->category = CATEGORY_HEADPHONES;
+            else if (strncmp(name, "Blaze", 5) == 0)
+                existing->category = CATEGORY_HEADPHONES;
+            else if (strncmp(name, "Charge 3", 8) == 0)
+                existing->category = CATEGORY_HEADPHONES; // Speakers
             // TVs
             // e.g. "[TV] Samsung Q70 Series (65)" icon is audio_card
-            else if (strncmp(name, "[TV] Samsung", 12) == 0) existing->category = CATEGORY_TV;
-            else if (strncmp(name, "[Signage] Samsung", 17) == 0) existing->category = CATEGORY_TV;
+            else if (strncmp(name, "[TV] Samsung", 12) == 0)
+                existing->category = CATEGORY_TV;
+            else if (strncmp(name, "[Signage] Samsung", 17) == 0)
+                existing->category = CATEGORY_TV;
             // Printers
-            else if (strncmp(name, "ENVY Photo", 10) == 0) existing->category = CATEGORY_FIXED; // printer
+            else if (strncmp(name, "ENVY Photo", 10) == 0)
+                existing->category = CATEGORY_FIXED; // printer
             // Cars
-            else if (strncmp(name, "Audi", 4) == 0) existing->category = CATEGORY_CAR;
-            else if (strncmp(name, "VW ", 3) == 0) existing->category = CATEGORY_CAR;
-            else if (strncmp(name, "BMW", 3) == 0) existing->category = CATEGORY_CAR;
-            else if (strncmp(name, "GM_PEPS_", 8) == 0) existing->category = CATEGORY_CAR;  // maybe the key fob
-            else if (strncmp(name, "Subaru", 6) == 0) existing->category = CATEGORY_CAR;
-            else if (strncmp(name, "Land Rover", 10) == 0) existing->category = CATEGORY_CAR;
+            else if (strncmp(name, "Audi", 4) == 0)
+                existing->category = CATEGORY_CAR;
+            else if (strncmp(name, "VW ", 3) == 0)
+                existing->category = CATEGORY_CAR;
+            else if (strncmp(name, "BMW", 3) == 0)
+                existing->category = CATEGORY_CAR;
+            else if (strncmp(name, "GM_PEPS_", 8) == 0)
+                existing->category = CATEGORY_CAR; // maybe the key fob
+            else if (strncmp(name, "Subaru", 6) == 0)
+                existing->category = CATEGORY_CAR;
+            else if (strncmp(name, "Land Rover", 10) == 0)
+                existing->category = CATEGORY_CAR;
             // TODO: Android device names
         }
         else if (strcmp(property_name, "Alias") == 0)
@@ -755,13 +960,14 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             char *alias = g_variant_dup_string(prop_val, NULL);
             trim(alias);
 
-            if (strncmp(alias, existing->alias, NAME_LENGTH-1) != 0)  // has_prefix because we may have truncated it
+            if (strncmp(alias, existing->alias, NAME_LENGTH - 1) != 0) // has_prefix because we may have truncated it
             {
                 //g_debug("  %s Alias has changed '%s' -> '%s'\n", address, existing->alias, alias);
                 // NOT CURRENTLY USED: send_to_mqtt_single(address, "alias", alias);
                 g_strlcpy(existing->alias, alias, NAME_LENGTH);
             }
-            else {
+            else
+            {
                 // g_print("  Alias unchanged '%s'=='%s'\n", alias, existing->alias);
             }
         }
@@ -771,20 +977,24 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             int newAddressType = (g_strcmp0("public", addressType) == 0) ? PUBLIC_ADDRESS_TYPE : RANDOM_ADDRESS_TYPE;
 
             // Compare values and send
-            if (existing->addressType != newAddressType) {
+            if (existing->addressType != newAddressType)
+            {
                 existing->addressType = newAddressType;
-                if (newAddressType == PUBLIC_ADDRESS_TYPE){
-                  g_debug("  %s Address type has changed -> '%s'\n", address, addressType);
-                  // Not interested in random as most devices are random
+                if (newAddressType == PUBLIC_ADDRESS_TYPE)
+                {
+                    g_debug("  %s Address type has changed -> '%s'\n", address, addressType);
+                    // Not interested in random as most devices are random
                 }
                 send_to_mqtt_single(address, "type", addressType);
             }
-            else {
+            else
+            {
                 // DEBUG g_print("  Address type unchanged\n");
             }
             g_free(addressType);
         }
-        else if (strcmp(property_name, "RSSI") == 0 && (isUpdate == FALSE)) {
+        else if (strcmp(property_name, "RSSI") == 0 && (isUpdate == FALSE))
+        {
             // Ignore this, it isn't helpful
             // int16_t rssi = g_variant_get_int16(prop_val);
             // g_print("  %s RSSI repeat %i\n", address, rssi);
@@ -793,8 +1003,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         {
             if (!isUpdate)
             {
-               //g_print("$$$$$$$$$$$$ RSSI is unreliable for get all devices\n");
-               continue;
+                //g_print("$$$$$$$$$$$$ RSSI is unreliable for get all devices\n");
+                continue;
             }
 
             int16_t rssi = g_variant_get_int16(prop_val);
@@ -808,7 +1018,6 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             // track gap between RSSI received events
             //double delta_time_received = difftime(now, existing->last_rssi);
             time(&existing->last_rssi);
-
 
             // Smoothed delta time, interval between RSSI events
             //float current_time_estimate = (&existing->kalman_interval)->current_estimate;
@@ -824,7 +1033,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             // TODO: Different devices have different signal strengths
             // iPad seems to be particulary strong. Need to calibrate this and have
             // a per-device. PowerLevel is supposed to do this but it's not reliably sent.
-            if (strcmp(existing->name, "iPad") == 0) {
+            if (strcmp(existing->name, "iPad") == 0)
+            {
                 distance = distance * 2.1;
             }
 
@@ -835,15 +1045,17 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
             double delta_time_sent = difftime(now, existing->last_sent);
             double delta_v = fabs(existing->distance - averaged);
-            double score =  delta_v * delta_time_sent;
+            double score = delta_v * delta_time_sent;
 
-            if (score > 10.0 || delta_time_sent > 30) {
-	      //g_print("  %s Will send rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
-              existing->distance = averaged;
-              send_distance = TRUE;
+            if (score > 10.0 || delta_time_sent > 30)
+            {
+                //g_print("  %s Will send rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
+                existing->distance = averaged;
+                send_distance = TRUE;
             }
-            else {
-	          g_debug("  %s Skip sending rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
+            else
+            {
+                g_debug("  %s Skip sending rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
             }
         }
         else if (strcmp(property_name, "TxPower") == 0)
@@ -876,7 +1088,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                     g_debug("  %s Connected      ", address);
                 else
                     g_debug("  %s Disconnected   ", address);
-                    
+
                 send_to_mqtt_single_value(address, "connected", connected ? 1 : 0);
                 existing->connected = connected;
             }
@@ -907,7 +1119,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             char *uuidArray[2048];
             int actualLength = 0;
 
-            GVariantIter* iter_array;
+            GVariantIter *iter_array;
             char *str;
 
             int uuid_hash = 0;
@@ -916,17 +1128,20 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
             while (g_variant_iter_loop(iter_array, "s", &str))
             {
-                if (strlen(str) < 36) continue;  // invalid GUID
+                if (strlen(str) < 36)
+                    continue; // invalid GUID
 
                 uuidArray[actualLength++] = strdup(str);
 
-                for (uint32_t i = 0; i < strlen(str); i++) {
-                   uuid_hash += (i+1) * str[i];  // sensitive to position in UUID but not to order of UUIDs
+                for (uint32_t i = 0; i < strlen(str); i++)
+                {
+                    uuid_hash += (i + 1) * str[i]; // sensitive to position in UUID but not to order of UUIDs
                 }
             }
             g_variant_iter_free(iter_array);
 
-            if (actualLength > 0) {
+            if (actualLength > 0)
+            {
                 existing->uuid_hash = uuid_hash & 0xffffffff;
             }
 
@@ -935,40 +1150,65 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 if (actualLength > 0)
                 {
                     // Print off the UUIDs here
-                    for (int i = 0; i < actualLength; i++) {
-                        char* strCopy = strdup(uuidArray[i]);
+                    for (int i = 0; i < actualLength; i++)
+                    {
+                        char *strCopy = strdup(uuidArray[i]);
 
-	                // All BLE UUIDs are of the form: so we only need four hex nibbles: 0000XXXX-0000-1000-8000-00805f9b34fb
-	                strCopy[8] = '\0';
-	                int64_t ble_uuid = (int)strtol(strCopy, NULL, 16);
+                        // All common BLE UUIDs are of the form: 0000XXXX-0000-1000-8000-00805f9b34fb
+                        // so we only need two hex bytes. But Apple and others use complete GUIDs
+                        // for their own services, so let's take the first four hex bytes
+                        strCopy[8] = '\0';
+                        int64_t ble_uuid = (int)strtol(strCopy, NULL, 16);
 
-                    // EST Unknown(b9401000), Unknown(b9403000), Unknown(b9404000), Unknown(b9406000),
+                        // EST Unknown(b9401000), Unknown(b9403000), Unknown(b9404000), Unknown(b9406000),
 
-	                // https://www.bluetooth.com/specifications/gatt/characteristics/
-	                if (ble_uuid == 0x2a29) g_print("Manufacturer, ");
-	                else if (ble_uuid == 0x1800) g_print("Generic access, ");
-	                else if (ble_uuid == 0x1801) g_print("Generic attribute, ");
-	                else if (ble_uuid == 0x1802) g_print("Immediate Alert, ");
-	                else if (ble_uuid == 0x1803) g_print("Link loss, ");
-	                else if (ble_uuid == 0x1804) g_print("Tx Power level, ");
-	                else if (ble_uuid == 0x1805) g_print("Current time, ");
-	                else if (ble_uuid == 0x180f) g_print("Battery, ");
-	                else if (ble_uuid == 0x111e) g_print("HandsFree, ");
-	                else if (ble_uuid == 0x180a) g_print("Device information, ");
-	                else if (ble_uuid == 0x180d) g_print("Heart rate service, ");
-	                else if (ble_uuid == 0x2A37) g_print("Heart rate measurement ");
-	                else if (ble_uuid == 0xFEAA) g_print("Eddystone ");
-	                else if (ble_uuid == 0x89d3502b) g_print("Apple MS ");
-	                else if (ble_uuid == 0x7905f431) g_print("Apple NCS ");
-	                else if (ble_uuid == 0xd0611e78) g_print("Apple CS ");
-	                else if (ble_uuid == 0x9fa480e0) g_print("Apple XX ");
-	                else if (ble_uuid == 0xd0611e78) g_print("Continuity ");
-	                else if (ble_uuid == 0xffa0) g_print("Accelerometer ");
-	                else if (ble_uuid == 0xffe0) g_print("Temperature ");
-                        else g_info("Unknown(%s), ", strCopy);
+                        // https://www.bluetooth.com/specifications/gatt/characteristics/
+                        if (ble_uuid == 0x2a29)
+                            g_print("Manufacturer, ");
+                        else if (ble_uuid == 0x1800L)
+                            g_print("Generic access, ");
+                        else if (ble_uuid == 0x1801L)
+                            g_print("Generic attribute, ");
+                        else if (ble_uuid == 0x1802L)
+                            g_print("Immediate Alert, ");
+                        else if (ble_uuid == 0x1803L)
+                            g_print("Link loss, ");
+                        else if (ble_uuid == 0x1804L)
+                            g_print("Tx Power level, ");
+                        else if (ble_uuid == 0x1805L)
+                            g_print("Current time, ");
+                        else if (ble_uuid == 0x180fL)
+                            g_print("Battery, ");
+                        else if (ble_uuid == 0x111eL)
+                            g_print("HandsFree, ");
+                        else if (ble_uuid == 0x180aL)
+                            g_print("Device information, ");
+                        else if (ble_uuid == 0x180dL)
+                            g_print("Heart rate service, ");
+                        else if (ble_uuid == 0x2A37L)
+                            g_print("Heart rate measurement ");
+                        else if (ble_uuid == 0xFEAAL)
+                            g_print("Eddystone ");
+                        // Apple Media Service 89d3502b
+                        else if (ble_uuid == 0x89d3502bL)
+                            g_print("Apple MS ");
+                        else if (ble_uuid == 0x7905f431L)
+                            g_print("Apple NCS ");
+                        else if (ble_uuid == 0xd0611e78L)
+                            g_print("Apple CS ");
+                        else if (ble_uuid == 0x9fa480e0L)
+                            g_print("Apple XX ");
+                        else if (ble_uuid == 0xd0611e78L)
+                            g_print("Continuity ");
+                        else if (ble_uuid == 0xffa0L)
+                            g_print("Accelerometer ");
+                        else if (ble_uuid == 0xffe0L)
+                            g_print("Temperature ");
+                        else
+                            g_info("Unknown(%s), ", strCopy);
                         g_free(strCopy);
                     }
-                    char **allocdata = g_malloc(actualLength * sizeof(char *));  // array of pointers to strings
+                    char **allocdata = g_malloc(actualLength * sizeof(char *)); // array of pointers to strings
                     memcpy(allocdata, uuidArray, actualLength * sizeof(char *));
                     g_debug("  %s UUIDs has changed      ", address);
                     send_to_mqtt_uuids(address, "uuids", allocdata, actualLength);
@@ -1007,14 +1247,19 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         else if (strcmp(property_name, "Icon") == 0)
         {
             char *icon = g_variant_dup_string(prop_val, NULL);
-            if (&existing->category == CATEGORY_UNKNOWN) {
-              // Should track icon and test against that instead
-              g_debug("  %s Icon: '%s'\n", address, icon);
+            if (&existing->category == CATEGORY_UNKNOWN)
+            {
+                // Should track icon and test against that instead
+                g_debug("  %s Icon: '%s'\n", address, icon);
             }
-            if (strcmp(icon, "computer") == 0) soft_set_category(&existing->category, CATEGORY_COMPUTER);
-            else if (strcmp(icon, "phone") == 0) soft_set_category(&existing->category, CATEGORY_PHONE);
-            else if (strcmp(icon, "multimedia-player") == 0) soft_set_category(&existing->category, CATEGORY_TV);
-            else if (strcmp(icon, "audio-card") == 0) soft_set_category(&existing->category, CATEGORY_AUDIO_CARD);
+            if (strcmp(icon, "computer") == 0)
+                soft_set_category(&existing->category, CATEGORY_COMPUTER);
+            else if (strcmp(icon, "phone") == 0)
+                soft_set_category(&existing->category, CATEGORY_PHONE);
+            else if (strcmp(icon, "multimedia-player") == 0)
+                soft_set_category(&existing->category, CATEGORY_TV);
+            else if (strcmp(icon, "audio-card") == 0)
+                soft_set_category(&existing->category, CATEGORY_AUDIO_CARD);
             g_free(icon);
         }
         else if (strcmp(property_name, "Appearance") == 0)
@@ -1029,8 +1274,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         }
         else if (strcmp(property_name, "ServiceData") == 0)
         {
-            if (isUpdate == FALSE) {
-               continue;    // ignore this, it's stale
+            if (isUpdate == FALSE)
+            {
+                continue; // ignore this, it's stale
             }
             // A a{sv} value
             // {'000080e7-0000-1000-8000-00805f9b34fb':
@@ -1041,7 +1287,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
             GVariant *s_value;
             GVariantIter i;
-            char* service_guid;
+            char *service_guid;
 
             g_variant_iter_init(&i, prop_val);
             while (g_variant_iter_next(&i, "{sv}", &service_guid, &s_value))
@@ -1049,31 +1295,32 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
                 uint8_t hash;
                 int actualLength;
-                unsigned char* allocdata = read_byte_array(s_value, &actualLength, &hash);
+                unsigned char *allocdata = read_byte_array(s_value, &actualLength, &hash);
 
                 if (existing->service_data_hash != hash)
                 {
                     g_debug("  ServiceData has changed ");
-                    pretty_print2("  ServiceData", prop_val, TRUE);  // a{qv}
+                    pretty_print2("  ServiceData", prop_val, TRUE); // a{qv}
                     send_to_mqtt_array(address, "servicedata", allocdata, actualLength);
                     existing->service_data_hash = hash;
 
                     // temp={p[16] - 10} brightness={p[17]} motioncount={p[19] + p[20] * 256} moving={p[22]}");
-                    if (strcmp(service_guid, "000080e7-0000-1000-8000-00805f9b34fb") == 0) {  // Sensoro
-                      existing->category = CATEGORY_BEACON;
+                    if (strcmp(service_guid, "000080e7-0000-1000-8000-00805f9b34fb") == 0)
+                    { // Sensoro
+                        existing->category = CATEGORY_BEACON;
 
-                      int battery = allocdata[14] + 256 * allocdata[15]; // ???
-                      int p14 = allocdata[14];
-                      int p15 = allocdata[15];
-                      int temp = allocdata[16] - 10;
-                      int brightness = allocdata[18];
-                      int motionCount = allocdata[19] + allocdata[20] * 256;
-                      int moving = allocdata[21];
-                      g_debug("Sensoro battery=%i, p14=%i, p15=%i, temp=%i, brightness=%i, motionCount=%i, moving=%i\n", battery, p14, p15, temp, brightness, motionCount, moving);
-                      send_to_mqtt_single_value(address, "temperature", temp);
-                      send_to_mqtt_single_value(address, "brightness", brightness);
-                      send_to_mqtt_single_value(address, "motionCount", motionCount);
-                      send_to_mqtt_single_value(address, "moving", moving);
+                        int battery = allocdata[14] + 256 * allocdata[15]; // ???
+                        int p14 = allocdata[14];
+                        int p15 = allocdata[15];
+                        int temp = allocdata[16] - 10;
+                        int brightness = allocdata[18];
+                        int motionCount = allocdata[19] + allocdata[20] * 256;
+                        int moving = allocdata[21];
+                        g_debug("Sensoro battery=%i, p14=%i, p15=%i, temp=%i, brightness=%i, motionCount=%i, moving=%i\n", battery, p14, p15, temp, brightness, motionCount, moving);
+                        send_to_mqtt_single_value(address, "temperature", temp);
+                        send_to_mqtt_single_value(address, "brightness", brightness);
+                        send_to_mqtt_single_value(address, "motionCount", motionCount);
+                        send_to_mqtt_single_value(address, "moving", moving);
                     }
                 }
 
@@ -1082,7 +1329,6 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 g_variant_unref(s_value);
                 g_free(allocdata);
             }
-
         }
         else if (strcmp(property_name, "Adapter") == 0)
         {
@@ -1092,8 +1338,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         }
         else if (strcmp(property_name, "ManufacturerData") == 0)
         {
-            if (isUpdate == FALSE) {
-               continue;    // ignore this, it's stale
+            if (isUpdate == FALSE)
+            {
+                continue; // ignore this, it's stale
             }
             // ManufacturerData {uint16 76: <[byte 0x10, 0x06, 0x10, 0x1a, 0x52, 0xe9, 0xc8, 0x08]>}
             // {a(sv)}
@@ -1115,20 +1362,21 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
                 uint8_t hash;
                 int actualLength;
-                unsigned char* allocdata = read_byte_array(s_value, &actualLength, &hash);
+                unsigned char *allocdata = read_byte_array(s_value, &actualLength, &hash);
 
                 if (existing->manufacturer_data_hash != hash)
                 {
-                    pretty_print2("  ManufacturerData", prop_val, TRUE);  // a{qv}
+                    pretty_print2("  ManufacturerData", prop_val, TRUE); // a{qv}
                     //g_debug("  ManufData has changed ");
                     send_to_mqtt_array(address, "manufacturerdata", allocdata, actualLength);
                     existing->manufacturer_data_hash = hash;
 
-                    if (existing->distance > 0) {
-                      // And repeat the RSSI value every time someone locks or unlocks their phone
-                      // Even if the change notification did not include an updated RSSI
-                      //g_print("  %s Will resend distance\n", address);
-                      send_distance = TRUE;
+                    if (existing->distance > 0)
+                    {
+                        // And repeat the RSSI value every time someone locks or unlocks their phone
+                        // Even if the change notification did not include an updated RSSI
+                        //g_print("  %s Will resend distance\n", address);
+                        send_distance = TRUE;
                     }
                 }
 
@@ -1178,16 +1426,17 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         g_variant_unref(prop_val);
     }
 
-    if (starting && send_distance) {
-      g_debug("Skip sending, starting\n");
+    if (starting && send_distance)
+    {
+        g_debug("Skip sending, starting\n");
     }
     else
     {
-        if (send_distance) {
-          g_debug("  **** Send distance %6.3f                        ", existing->distance);
-          send_to_mqtt_single_float(address, "distance", existing->distance);
-          time(&existing->last_sent);
-
+        if (send_distance)
+        {
+            g_debug("  **** Send distance %6.3f                        ", existing->distance);
+            send_to_mqtt_single_float(address, "distance", existing->distance);
+            time(&existing->last_sent);
         }
         // TODO: Make this 'if send_distance or 30s has elapsed'
         // Broadcast what we know about the device to all other listeners
@@ -1202,7 +1451,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
   Report device with lock on data structures
   NOTE: Free's address when done
 */
-static void report_device(struct OverallState* state, GVariant *properties, char *known_address, bool isUpdate)
+static void report_device(struct OverallState *state, GVariant *properties, char *known_address, bool isUpdate)
 {
     pthread_mutex_lock(&state->lock);
     report_device_internal(properties, known_address, isUpdate);
@@ -1224,7 +1473,7 @@ static void bluez_device_appeared(GDBusConnection *sig,
     (void)signal_name;
     (void)user_data;
 
-    GVariantIter* interfaces;
+    GVariantIter *interfaces;
     const char *object;
     const gchar *interface_name;
     GVariant *properties;
@@ -1272,42 +1521,43 @@ static void bluez_device_appeared(GDBusConnection *sig,
         }
         else if (g_ascii_strcasecmp(interface_name, "org.bluez.GattService1") == 0)
         {
-           pretty_print("  Gatt service = ", properties);
-           // Gatt service = : {'UUID': <'00001805-0000-1000-8000-00805f9b34fb'>, 
-           //   'Device': <objectpath '/org/bluez/hci0/dev_4F_87_E1_13_66_A5'>, 
-           //   'Primary': <true>, 
-           //   'Includes': <@ao []>}
+            pretty_print("  Gatt service = ", properties);
+            // Gatt service = : {'UUID': <'00001805-0000-1000-8000-00805f9b34fb'>,
+            //   'Device': <objectpath '/org/bluez/hci0/dev_4F_87_E1_13_66_A5'>,
+            //   'Primary': <true>,
+            //   'Includes': <@ao []>}
         }
         else if (g_ascii_strcasecmp(interface_name, "org.bluez.GattCharacteristic1") == 0)
         {
-           //pretty_print("  Gatt characteristic = ", properties);
+            //pretty_print("  Gatt characteristic = ", properties);
         }
         else if (g_ascii_strcasecmp(interface_name, "org.bluez.GattDescriptor1") == 0)
         {
-           //pretty_print("  Gatt descriptor = ", properties);
+            //pretty_print("  Gatt descriptor = ", properties);
         }
         else if (g_ascii_strcasecmp(interface_name, "org.freedesktop.DBus.Introspectable") == 0)
         {
-           //pretty_print("  DBus Introspectable = ", properties);
+            //pretty_print("  DBus Introspectable = ", properties);
         }
         else if (g_ascii_strcasecmp(interface_name, "org.freedesktop.DBus.Properties") == 0)
         {
-           //pretty_print("  DBus properties = ", properties);
+            //pretty_print("  DBus properties = ", properties);
         }
         else if (g_ascii_strcasecmp(interface_name, "org.bluez.MediaTransport1") == 0)
         {
-           pretty_print("  Media transport = ", properties);
+            pretty_print("  Media transport = ", properties);
         }
         else if (g_ascii_strcasecmp(interface_name, "org.bluez.MediaPlayer1") == 0)
         {
-           pretty_print("  Media player = ", properties);
+            pretty_print("  Media player = ", properties);
         }
         else if (g_ascii_strcasecmp(interface_name, "org.bluez.Battery1") == 0)
         {
-           pretty_print("  Battery = ", properties);
+            pretty_print("  Battery = ", properties);
         }
-        else {
-           g_print("Device appeared, unknown interface: %s\n", interface_name);
+        else
+        {
+            g_print("Device appeared, unknown interface: %s\n", interface_name);
         }
 
         g_variant_unref(properties);
@@ -1333,7 +1583,7 @@ static void bluez_device_disappeared(GDBusConnection *sig,
     (void)signal_name;
     (void)user_data;
 
-    GVariantIter *interface_iter;  // heap allocated
+    GVariantIter *interface_iter; // heap allocated
     const char *object;
     gchar *interface_name;
 
@@ -1406,7 +1656,6 @@ static void bluez_signal_adapter_changed(GDBusConnection *conn,
     return;
 }
 
-
 // Every 10s we need to let MQTT send and receive messages
 int mqtt_refresh(void *parameters)
 {
@@ -1417,7 +1666,6 @@ int mqtt_refresh(void *parameters)
 
     return TRUE;
 }
-
 
 /*
     BLUEZ_SERVICE_NAME =           'org.bluez'
@@ -1431,8 +1679,6 @@ int mqtt_refresh(void *parameters)
     LOCAL_NAME =                   'rpi-gatt-server'
 
 */
-
-
 
 /*
     bluez_list_devices
@@ -1506,60 +1752,67 @@ int get_managed_objects(void *parameters)
     return TRUE;
 }
 
-
 // Remove old items from cache
-gboolean should_remove(struct Device* existing)
+gboolean should_remove(struct Device *existing)
 {
-  time_t now;
-  time(&now);
+    time_t now;
+    time(&now);
 
-  double delta_time = difftime(now, existing->latest);
+    double delta_time = difftime(now, existing->latest);
 
-  // 10 min for a regular device
-  int max_time_ago_seconds = 10 * 60;
+    // 10 min for a regular device
+    int max_time_ago_seconds = 10 * 60;
 
-  // 20 min for a beacon or other public mac address
-  if (existing->addressType == PUBLIC_ADDRESS_TYPE) { max_time_ago_seconds = 20 * 60; }
+    // 20 min for a beacon or other public mac address
+    if (existing->addressType == PUBLIC_ADDRESS_TYPE)
+    {
+        max_time_ago_seconds = 20 * 60;
+    }
 
-  // 1 hour upper limit
-  if (max_time_ago_seconds > 60 * MAX_TIME_AGO_CACHE) { max_time_ago_seconds = 60 * MAX_TIME_AGO_CACHE; }
+    // 1 hour upper limit
+    if (max_time_ago_seconds > 60 * MAX_TIME_AGO_CACHE)
+    {
+        max_time_ago_seconds = 60 * MAX_TIME_AGO_CACHE;
+    }
 
-  gboolean remove = delta_time > max_time_ago_seconds;
+    gboolean remove = delta_time > max_time_ago_seconds;
 
-  if (remove) {
+    if (remove)
+    {
 
-    g_debug("  Cache remove %s '%s' count=%i dt=%.1fs dist=%.1fm\n", existing->mac, existing->name, existing->count, delta_time, existing->distance);
+        g_debug("  Cache remove %s '%s' count=%i dt=%.1fs dist=%.1fm\n", existing->mac, existing->name, existing->count, delta_time, existing->distance);
 
-    // And so when this device reconnects we get a proper reconnect message and so that BlueZ doesn't fill up a huge
-    // cache of iOS devices that have passed by or changed mac address
+        // And so when this device reconnects we get a proper reconnect message and so that BlueZ doesn't fill up a huge
+        // cache of iOS devices that have passed by or changed mac address
 
-    GVariant* vars[1];
-    vars[0] = g_variant_new_string(existing->mac);
-    GVariant* param = g_variant_new_tuple(vars, 1);  // floating
+        GVariant *vars[1];
+        vars[0] = g_variant_new_string(existing->mac);
+        GVariant *param = g_variant_new_tuple(vars, 1); // floating
 
-    int rc = bluez_adapter_call_method(conn, "RemoveDevice", param, NULL);
-    if (rc)
-      g_warning("Not able to remove %s\n", existing->mac);
-    //else
-    //  g_debug("    ** Removed %s from BlueZ cache too\n", existing->mac);
-  }
+        int rc = bluez_adapter_call_method(conn, "RemoveDevice", param, NULL);
+        if (rc)
+            g_warning("Not able to remove %s\n", existing->mac);
+        //else
+        //  g_debug("    ** Removed %s from BlueZ cache too\n", existing->mac);
+    }
 
-  return remove;  // 60 min of no activity = remove from cache
+    return remove; // 60 min of no activity = remove from cache
 }
-
 
 int clear_cache(void *parameters)
 {
     starting = FALSE;
 
-//    g_print("Clearing cache\n");
+    //    g_print("Clearing cache\n");
     (void)parameters; // not used
 
     // Remove any item in cache that hasn't been seen for a long time
-    for (int i=0; i < state.n; i++) {
-      while (i < state.n && should_remove(&state.devices[i])) {
-        remove_device(i);    // changes n, but brings a new device to position i
-      }
+    for (int i = 0; i < state.n; i++)
+    {
+        while (i < state.n && should_remove(&state.devices[i]))
+        {
+            remove_device(i); // changes n, but brings a new device to position i
+        }
     }
 
     // And report the updated count of devices present
@@ -1568,33 +1821,33 @@ int clear_cache(void *parameters)
     return TRUE;
 }
 
-
 // Time when service started running (used to print a delta time)
 static time_t started;
 
-void dump_device (struct Device* d)
+void dump_device(struct Device *d)
 {
-  // Ignore any that have not been seen recently
-  //double delta_time = difftime(now, a->latest);
-  //if (delta_time > MAX_TIME_AGO_LOGGING_MINUTES * 60) return;
+    // Ignore any that have not been seen recently
+    //double delta_time = difftime(now, a->latest);
+    //if (delta_time > MAX_TIME_AGO_LOGGING_MINUTES * 60) return;
 
-  char* addressType = d->addressType == PUBLIC_ADDRESS_TYPE ? "pub" : d->addressType == RANDOM_ADDRESS_TYPE ? "ran" : "---";
-  char* category = category_from_int(d->category);
+    char *addressType = d->addressType == PUBLIC_ADDRESS_TYPE ? "pub" : d->addressType == RANDOM_ADDRESS_TYPE ? "ran" : "---";
+    char *category = category_from_int(d->category);
 
-  float closest_dist = NAN;
-  char* closest_ap = "unknown";
-  struct ClosestTo* closest = get_closest(d);
-  if (closest){
-    closest_dist = closest->distance;
-    struct AccessPoint* ap = get_access_point(closest->access_id);
-    if (ap){
-        closest_ap = ap->client_id;
+    float closest_dist = NAN;
+    char *closest_ap = "unknown";
+    struct ClosestTo *closest = get_closest(d);
+    if (closest)
+    {
+        closest_dist = closest->distance;
+        struct AccessPoint *ap = get_access_point(closest->access_id);
+        if (ap)
+        {
+            closest_ap = ap->client_id;
+        }
     }
-  }
 
-  g_info("%4i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %13s %5.1fm %s\n", d->id%10000, d->mac, d->count, addressType, d->distance, d->column, (d->earliest - started), (d->latest - started), d->name, closest_ap, closest_dist, category);
+    g_info("%4i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %13s %5.1fm %s\n", d->id % 10000, d->mac, d->count, addressType, d->distance, d->column, (d->earliest - started), (d->latest - started), d->name, closest_ap, closest_dist, category);
 }
-
 
 /*
     Dump all devices present
@@ -1603,19 +1856,22 @@ void dump_device (struct Device* d)
 int dump_all_devices_tick(void *parameters)
 {
     (void)parameters; // not used
-    if (starting) return TRUE;   // not during first 30s startup time
-    if (!logTable) return TRUE; // no changes since last time
+    if (starting)
+        return TRUE; // not during first 30s startup time
+    if (!logTable)
+        return TRUE; // no changes since last time
     logTable = FALSE;
     g_info("---------------------------------------------------------------------------------------------------------------\n");
     g_info("Id   Address          Count Typ   Dist  Col   First   Last                 Name              Closest Category  \n");
     g_info("---------------------------------------------------------------------------------------------------------------\n");
     time(&now);
-    for (int i=0; i < state.n; i++) {
-      dump_device(&state.devices[i]);
+    for (int i = 0; i < state.n; i++)
+    {
+        dump_device(&state.devices[i]);
     }
     g_info("---------------------------------------------------------------------------------------------------------------\n");
 
-    unsigned long total_minutes = (now - started) / 60;  // minutes
+    unsigned long total_minutes = (now - started) / 60; // minutes
     unsigned int minutes = total_minutes % 60;
     unsigned int hours = (total_minutes / 60) % 24;
     unsigned int days = (total_minutes) / 60 / 24;
@@ -1624,20 +1880,20 @@ int dump_all_devices_tick(void *parameters)
     float people_in_range = state.local->people_in_range_count;
 
     if (days > 1)
-      g_info("Uptime: %i days %02i:%02i  People %.2f (%.2f in range)\n", days, hours, minutes, people_closest, people_in_range);
+        g_info("Uptime: %i days %02i:%02i  People %.2f (%.2f in range)\n", days, hours, minutes, people_closest, people_in_range);
     else if (days == 1)
-      g_info("Uptime: 1 day %02i:%02i  People %.2f (%.2f in range)\n", hours, minutes, people_closest, people_in_range);
+        g_info("Uptime: 1 day %02i:%02i  People %.2f (%.2f in range)\n", hours, minutes, people_closest, people_in_range);
     else
-      g_info("Uptime: %02i:%02i  People %.2f (%.2f in range)\n", hours, minutes, people_closest, people_in_range);
+        g_info("Uptime: %02i:%02i  People %.2f (%.2f in range)\n", hours, minutes, people_closest, people_in_range);
 
     print_access_points();
 
     // Bluez eventually seems to stop sending us data, so for now, just restart every few hours
-    if (hours > 2) int_handler(0);
+    if (hours > 2)
+        int_handler(0);
 
     return TRUE;
 }
-
 
 /*
     Try connecting to a device that isn't currently connected
@@ -1645,18 +1901,22 @@ int dump_all_devices_tick(void *parameters)
     Always process disconnects first, and only if none active, start next connection
 */
 
-gboolean try_disconnect (struct Device* a)
+gboolean try_disconnect(struct Device *a)
 {
-    if (a->try_connect_state > TRY_CONNECT_ZERO && a->try_connect_state < TRY_CONNECT_COMPLETE) {
+    if (a->try_connect_state > TRY_CONNECT_ZERO && a->try_connect_state < TRY_CONNECT_COMPLETE)
+    {
 
         a->try_connect_state = a->try_connect_state + 1;
 
         if (a->try_connect_state == TRY_CONNECT_COMPLETE)
         {
-            if (a->connected){
+            if (a->connected)
+            {
                 g_info(">>>>> Disconnect from %i. %s\n", a->id, a->mac);
                 bluez_adapter_disconnect_device(conn, a->mac);
-            } else if (a->category == CATEGORY_UNKNOWN) {
+            }
+            else if (a->category == CATEGORY_UNKNOWN)
+            {
                 // Failed to get enough data from connection or did not connect
                 g_info(">>>>> Failed to connect to %i. %s\n", a->id, a->mac);
             }
@@ -1672,42 +1932,50 @@ gboolean try_disconnect (struct Device* a)
   returns true if a connection was initiated so that outer loop can limit how many
   simultaneous connections are attempted.
 */
-gboolean try_connect (struct Device* a)
+gboolean try_connect(struct Device *a)
 {
-  if (a->category != CATEGORY_UNKNOWN) return FALSE; // already has a category
-  //if (strlen(a->name) > 0) return FALSE;    // already named
+    if (a->category != CATEGORY_UNKNOWN)
+        return FALSE; // already has a category
+    //if (strlen(a->name) > 0) return FALSE;    // already named
 
-  // Count will always be > 0 but optionally can change '0' to '1' to only attempt
-  // connecting when a device has been seen more than once. Useful in situations where
-  // there may be too many transient devices to attempt connection to all of them
-  if (a->count > 0 && a->try_connect_state == 0) {
-    a->try_connect_state = 1;
-    // Try forcing a connect to get a full dump from the device
-    g_info(">>>>>> Connect to %i. %s\n", a->id, a->mac);
-    bluez_adapter_connect_device(conn, a->mac);
-    return TRUE;  
-  }
-  // didn't change state, try next one
-  return FALSE;
+    // Count will always be > 0 but optionally can change '0' to '1' to only attempt
+    // connecting when a device has been seen more than once. Useful in situations where
+    // there may be too many transient devices to attempt connection to all of them
+    if (a->count > 0 && a->try_connect_state == 0)
+    {
+        a->try_connect_state = 1;
+        // Try forcing a connect to get a full dump from the device
+        g_info(">>>>>> Connect to %i. %s\n", a->id, a->mac);
+        bluez_adapter_connect_device(conn, a->mac);
+        return TRUE;
+    }
+    // didn't change state, try next one
+    return FALSE;
 }
 
 #define SIMULTANEOUS_CONNECTIONS 5
 
 int try_connect_tick(void *parameters)
 {
-    int simultaneus_connections = 0;  // assumes none left from previous tick
-    (void)parameters; // not used
-    if (starting) return TRUE;   // not during first 30s startup time
-    for (int i=0; i < state.n; i++) {
+    int simultaneus_connections = 0; // assumes none left from previous tick
+    (void)parameters;                // not used
+    if (starting)
+        return TRUE; // not during first 30s startup time
+    for (int i = 0; i < state.n; i++)
+    {
         // Disconnect all devices that are in a try connect state
         try_disconnect(&state.devices[i]);
     }
-    for (int i=0; i < state.n; i++) {
+    for (int i = 0; i < state.n; i++)
+    {
         // Connect up to SIMULTANEOUS_CONNECTIONS devices at once
-        if (try_connect(&state.devices[i])) simultaneus_connections++;
-        if (simultaneus_connections > SIMULTANEOUS_CONNECTIONS) break;
+        if (try_connect(&state.devices[i]))
+            simultaneus_connections++;
+        if (simultaneus_connections > SIMULTANEOUS_CONNECTIONS)
+            break;
     }
-    if (simultaneus_connections > 0) {
+    if (simultaneus_connections > 0)
+    {
         g_debug(">>>>>> Started %i connection attempts", simultaneus_connections);
     }
     return TRUE;
@@ -1718,14 +1986,14 @@ static char client_id[META_LENGTH];
 void initialize_state()
 {
     // Default values if not set in environment variables
-    const char* description = "Please set a HOST_DESCRIPTION in the environment variables";
-    const char* platform = "Please set a HOST_PLATFORM in the environment variables";
+    const char *description = "Please set a HOST_DESCRIPTION in the environment variables";
+    const char *platform = "Please set a HOST_PLATFORM in the environment variables";
     float position_x = -1.0;
     float position_y = -1.0;
     float position_z = -1.0;
-    int rssi_one_meter = -64;     // fairly typical RPI3 and iPhone
-    float rssi_factor = 3.5;        // fairly cluttered indoor default
-    float people_distance = 7.0;    // 7m default range
+    int rssi_one_meter = -64;    // fairly typical RPI3 and iPhone
+    float rssi_factor = 3.5;     // fairly cluttered indoor default
+    float people_distance = 7.0; // 7m default range
     state.udp_mesh_port = 7779;
     state.udp_sign_port = 0; // 7778;
 
@@ -1735,51 +2003,65 @@ void initialize_state()
     gethostname(client_id, META_LENGTH);
 
     // Optional metadata about the access point for dashboard
-    const char* s_client_id = getenv("HOST_NAME");
-    const char* s_client_description = getenv("HOST_DESCRIPTION");
-    const char* s_client_platform = getenv("HOST_PLATFORM");
+    const char *s_client_id = getenv("HOST_NAME");
+    const char *s_client_description = getenv("HOST_DESCRIPTION");
+    const char *s_client_platform = getenv("HOST_PLATFORM");
 
-    if (s_client_id != NULL) strncpy(client_id, s_client_id, META_LENGTH);
+    if (s_client_id != NULL)
+        strncpy(client_id, s_client_id, META_LENGTH);
     // These two can just be pointers to the constant strings or the supplied metadata
-    if (s_client_description != NULL) description = s_client_description;
-    if (s_client_platform != NULL) platform = s_client_platform;
+    if (s_client_description != NULL)
+        description = s_client_description;
+    if (s_client_platform != NULL)
+        platform = s_client_platform;
 
-    const char* s_position_x = getenv("POSITION_X");
-    const char* s_position_y = getenv("POSITION_Y");
-    const char* s_position_z = getenv("POSITION_Z");
+    const char *s_position_x = getenv("POSITION_X");
+    const char *s_position_y = getenv("POSITION_Y");
+    const char *s_position_z = getenv("POSITION_Z");
 
-    if (s_position_x != NULL) position_x = (float)atof(s_position_x);
-    if (s_position_y != NULL) position_y = (float)atof(s_position_y);
-    if (s_position_z != NULL) position_z = (float)atof(s_position_z);
+    if (s_position_x != NULL)
+        position_x = (float)atof(s_position_x);
+    if (s_position_y != NULL)
+        position_y = (float)atof(s_position_y);
+    if (s_position_z != NULL)
+        position_z = (float)atof(s_position_z);
 
-    const char* s_rssi_one_meter = getenv("RSSI_ONE_METER");
-    const char* s_rssi_factor = getenv("RSSI_FACTOR");
-    const char* s_people_distance = getenv("PEOPLE_DISTANCE");
+    const char *s_rssi_one_meter = getenv("RSSI_ONE_METER");
+    const char *s_rssi_factor = getenv("RSSI_FACTOR");
+    const char *s_people_distance = getenv("PEOPLE_DISTANCE");
 
-    if (s_rssi_one_meter != NULL) rssi_one_meter = atoi(s_rssi_one_meter);
-    if (s_rssi_factor != NULL) rssi_factor = atof(s_rssi_factor);
-    if (s_people_distance != NULL) people_distance = atof(s_people_distance);
+    if (s_rssi_one_meter != NULL)
+        rssi_one_meter = atoi(s_rssi_one_meter);
+    if (s_rssi_factor != NULL)
+        rssi_factor = atof(s_rssi_factor);
+    if (s_people_distance != NULL)
+        people_distance = atof(s_people_distance);
 
-    state.local = add_access_point(client_id, description, platform, 
-        position_x, position_y, position_z,
-        rssi_one_meter, rssi_factor, people_distance);
+    state.local = add_access_point(client_id, description, platform,
+                                   position_x, position_y, position_z,
+                                   rssi_one_meter, rssi_factor, people_distance);
 
     // UDP Settings
 
-    const char* s_udp_mesh_port = getenv("UDP_MESH_PORT");
-    const char* s_udp_sign_port = getenv("UDP_SIGN_PORT");
-    const char* s_udp_scale_factor = getenv("UDP_SCALE_FACTOR");
+    const char *s_udp_mesh_port = getenv("UDP_MESH_PORT");
+    const char *s_udp_sign_port = getenv("UDP_SIGN_PORT");
+    const char *s_udp_scale_factor = getenv("UDP_SCALE_FACTOR");
 
-    if (s_udp_mesh_port != NULL) state.udp_mesh_port = atoi(s_udp_mesh_port);
-    if (s_udp_sign_port != NULL) state.udp_sign_port = atoi(s_udp_sign_port);
-    if (s_udp_scale_factor != NULL) state.udp_scale_factor = atoi(s_udp_scale_factor);
+    if (s_udp_mesh_port != NULL)
+        state.udp_mesh_port = atoi(s_udp_mesh_port);
+    if (s_udp_sign_port != NULL)
+        state.udp_sign_port = atoi(s_udp_sign_port);
+    if (s_udp_scale_factor != NULL)
+        state.udp_scale_factor = atoi(s_udp_scale_factor);
 
     // MQTT Settings
 
     state.mqtt_topic = getenv("MQTT_TOPIC");
-    if (state.mqtt_topic == NULL) state.mqtt_topic = "BLF";  // sorry, historic name
+    if (state.mqtt_topic == NULL)
+        state.mqtt_topic = "BLF"; // sorry, historic name
     state.mqtt_server = getenv("MQTT_SERVER");
-    if (state.mqtt_server == NULL) state.mqtt_server = "";
+    if (state.mqtt_server == NULL)
+        state.mqtt_server = "";
     state.mqtt_username = getenv("MQTT_USERNAME");
     state.mqtt_password = getenv("MQTT_PASSWORD");
 }
@@ -1805,15 +2087,12 @@ void display_state()
     g_info("MQTT_PASSWORD='%s'\n", state.mqtt_password == NULL ? "(null)" : "*****");
 }
 
-
-
-
 guint prop_changed;
 guint iface_added;
 guint iface_removed;
 GMainLoop *loop;
-static char mac_address[6];        // bytes
-static char mac_address_text[13];  // string
+static char mac_address[6];       // bytes
+static char mac_address_text[13]; // string
 
 GCancellable *socket_service;
 
@@ -1970,13 +2249,14 @@ fail:
     g_dbus_connection_signal_unsubscribe(conn, prop_changed);
     g_dbus_connection_signal_unsubscribe(conn, iface_added);
     g_dbus_connection_signal_unsubscribe(conn, iface_removed);
-    g_dbus_connection_close_sync (conn, NULL, NULL);
+    g_dbus_connection_close_sync(conn, NULL, NULL);
     g_object_unref(conn);
     return 0;
 }
 
-void int_handler(int dummy) {
-    (void) dummy;
+void int_handler(int dummy)
+{
+    (void)dummy;
 
     g_main_loop_quit(loop);
     g_main_loop_unref(loop);
@@ -1984,7 +2264,7 @@ void int_handler(int dummy) {
     g_dbus_connection_signal_unsubscribe(conn, prop_changed);
     g_dbus_connection_signal_unsubscribe(conn, iface_added);
     g_dbus_connection_signal_unsubscribe(conn, iface_removed);
-    g_dbus_connection_close_sync (conn, NULL, NULL);
+    g_dbus_connection_close_sync(conn, NULL, NULL);
     g_object_unref(conn);
 
     exit_mqtt();
