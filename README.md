@@ -1,18 +1,24 @@
 # pi-sniffer aka Crowd Alert
-This project counts people!  It can figure out how many people are present in a given area using a handful of very cheap sensors and the cellphone that most people are carrying with them all the time.
+This project counts people!  It can figure out how many people are present in a given area using a handful of very cheap sensors. It achieves this by counting cellphones. Since most people carry one these days, and since iPhones automatically turn Bluetooth back on every day, there are enough people in most populations with active Bluetooth signals that we can calculate a total number of people with a high statistical significance.
 
-Using the count of people present you can power displays that warn people when it's too crowded, hence the code name "Crowd Alert". The code here recently won first place in the global [BetterHealth Hackathon](https://tinyurl.com/crowdalert) organized by HCL and Microsoft. 
+This is not without challenges as cell phones randomize their mac address and a single person may have multiple bluetooth devices on them.
 
-But you can also use the data in many other ways: as an input to a smart home, as a feed to a marketing analysis system, ...
+Using the count of people present you can power displays that warn people when it's too crowded. This capability can be used to reduce crowding to help prevent the spread of COVID-19. It also gives people confidence that the store, restroom, railway carriage or other enclosed space they are about to enter is not crowded, helping us all feel confident again going about our daily lives.
 
-Not only does this project count how many phones are present, it tracks every other device that comes into range and sends data back over MQTT about them. For devices other than cellphones, i.e ones with either defined names or public (unchanging) mac addresses you can use this information to trigger actions. For example, put an iBeacon on your car and trigger an action when it comes home or after it's been gone for a set time.
+The code here recently won first place in the global [BetterHealth Hackathon](https://tinyurl.com/crowdalert) organized by HCL and Microsoft. 
 
-It uses the built-in Linux BLUEZ libraries and the Bluetooth antenna on any Raspberry Pi (W, 3+, 4) to scan for nearby BLE devices.
+But this system isn't limited to crowding signs. You can use the data it collects in many other ways: as an input to a smart home controlling lighting and heating based on how many people are home and which areas of the home are occupied, or as a feed to a marketing analysis system, ...
+
+Not only does this project count how many phones are present, it tracks every other device that comes into range and can send data back over MQTT about them. For devices other than cellphones, i.e ones with either defined names or public (unchanging) mac addresses you can use this information to trigger actions. For example, put an iBeacon on your car and trigger an action when it comes home or after it's been gone for a set time.
+
+It uses the built-in Linux BLUEZ libraries and the Bluetooth antenna on any Raspberry Pi (W, 3+, 4) to scan for nearby BLE devices. But it's also written to be as portable as possible using only the C language and avoiding dependencies unless absolutely necessary.
 
 It reports all BLE devices found (Mac address, name, type, UUIDs, ...) and their approximate distance to an MQTT endpoint. It applies a simple Kalman filter to smooth the distance values. It also handles iPhones and other Apple devices that randomize their mac addresses periodically and can give a reliable count of how many phones/watches/... are in-range.
 
 ![image](https://user-images.githubusercontent.com/347540/85953280-1cb7f300-b924-11ea-96d5-07c217a57e24.png "Multiple Pis and many BLE devices in action")
 ![image](https://user-images.githubusercontent.com/347540/85953412-dd3dd680-b924-11ea-8eeb-a3b328f91d19.png "A single stationary device")
+
+The system is also designed to be fault-tolerant. It runs just fine even when the internet is down. In a system with multiple sensors and multiple displays the loss of any one component should have minimal impact on the whole system.
 
 # applications
 * Power displays that warn when a confined space is getting too crowded to encourage people to 'socially distance' by coming back later or picking a less crowded store / room / railway carriage / bus / ...

@@ -27,7 +27,7 @@ typedef uint64_t u_int64_t;
 
 #define CATEGORY_UNKNOWN 0
 #define CATEGORY_PHONE 1
-#define CATEGORY_WATCH 2
+#define CATEGORY_WEARABLE 2
 #define CATEGORY_TABLET 3
 #define CATEGORY_HEADPHONES 4
 #define CATEGORY_COMPUTER 5

@@ -261,7 +261,8 @@ void report_devices_count() {
        double delta_time = difftime(now, columns[col].latest);
        if (delta_time > MAX_TIME_AGO_COUNTING_MINUTES * 60) continue;
 
-       double score = 0.55 - atan(delta_time/40.0  - 4.0) / 3.0;
+       // double score = 0.55 - atan(delta_time/40.0  - 4.0) / 3.0; -- left some spikes in the graph, dropped too quickly
+       double score = 0.55 - atan(delta_time/45.0  - 4.0) / 3.0;
        // A curve that stays a 1.0 for a while and then drops rapidly around 3 minutes out
        if (score > 0.9) score = 1.0;
        if (score < 0.0) score = 0.0;
@@ -412,7 +413,7 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         else if (apple_device_type == 0x0b) {
           optional(existing->name, "iWatch?");
           g_debug("  Watch_c");
-          existing->category = CATEGORY_WATCH;
+          existing->category = CATEGORY_WEARABLE;
         }
         else if (apple_device_type == 0x0c) g_print("  Handoff \n");
         else if (apple_device_type == 0x0d) g_print("  WifiSet \n");
@@ -420,6 +421,9 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         else if (apple_device_type == 0x0f) g_print("  WifiJoin \n");
         else if (apple_device_type == 0x10) {
           g_debug("  Nearby ");
+
+          // e.g. phone: <[byte 0x10, 0x06, 0x51, 0x1e, 0xc1, 0x36, 0x99, 0xe1]>}
+
           // too soon ... name comes later ... optional(existing->name, "Apple Device");
           // Not right, MacBook Pro seems to send this too
 
@@ -459,7 +463,7 @@ void handle_manufacturer(struct Device * existing, uint16_t manufacturer, unsign
         }
     } else if (manufacturer == 0x0087) {
         optional(existing->name, "Garmin");
-        existing->category = CATEGORY_WATCH; // could be fitness tracker
+        existing->category = CATEGORY_WEARABLE; // could be fitness tracker
     } else if (manufacturer == 0x05A7) {
         optional(existing->name, "Sonos");
         existing->category = CATEGORY_FIXED;
@@ -693,13 +697,14 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             else if (strcmp(name, "BOOTCAMP") == 0) existing->category = CATEGORY_COMPUTER;
             else if (strcmp(name, "BOOTCAMP2") == 0) existing->category = CATEGORY_COMPUTER;
             // Watches
-            else if (strcmp(name, "iWatch") == 0) existing->category = CATEGORY_WATCH;
-            else if (strcmp(name, "Apple Watch") == 0) existing->category = CATEGORY_WATCH;
-            else if (strncmp(name, "Galaxy Watch", 12) == 0) existing->category = CATEGORY_WATCH;
-            else if (strncmp(name, "Gear S3", 7) == 0) existing->category = CATEGORY_WATCH;
-            else if (strncmp(name, "fenix", 5) == 0) existing->category = CATEGORY_WATCH;
-            else if (strncmp(name, "Versa", 5) == 0) existing->category = CATEGORY_WATCH; // FITBIT
-            else if (strncmp(name, "Mi Smart Band", 13) == 0) existing->category = CATEGORY_WATCH; // Fitness
+            else if (strcmp(name, "iWatch") == 0) existing->category = CATEGORY_WEARABLE;
+            else if (strcmp(name, "Apple Watch") == 0) existing->category = CATEGORY_WEARABLE;
+            else if (strncmp(name, "Galaxy Watch", 12) == 0) existing->category = CATEGORY_WEARABLE;
+            else if (strncmp(name, "Gear S3", 7) == 0) existing->category = CATEGORY_WEARABLE;
+            else if (strncmp(name, "fenix", 5) == 0) existing->category = CATEGORY_WEARABLE;
+            else if (strncmp(name, "Versa", 5) == 0) existing->category = CATEGORY_WEARABLE; // FITBIT
+            else if (strncmp(name, "Mi Smart Band", 13) == 0) existing->category = CATEGORY_WEARABLE; // Fitness
+            else if (strncmp(name, "TICKR X", 7) == 0) existing->category = CATEGORY_WEARABLE; // Heartrate
             // TVs
             else if (strcmp(name, "AppleTV") == 0) existing->category = CATEGORY_TV;
             else if (strcmp(name, "Apple TV") == 0) existing->category = CATEGORY_TV;
