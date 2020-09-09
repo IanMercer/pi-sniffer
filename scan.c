@@ -1149,6 +1149,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             {
                 if (actualLength > 0)
                 {
+                    char gatts[1024];
+                    gatts[0] = '\0';
+
                     // Print off the UUIDs here
                     for (int i = 0; i < actualLength; i++)
                     {
@@ -1159,9 +1162,6 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                         // for their own services, so let's take the first four hex bytes
                         strCopy[8] = '\0';
                         int64_t ble_uuid = (int)strtol(strCopy, NULL, 16);
-
-                        char gatts[1024];
-                        gatts[0] = '\0';
 
                         // https://www.bluetooth.com/specifications/gatt/characteristics/
                         if (ble_uuid == 0x2a29)
@@ -1220,12 +1220,11 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                         else
                             append_text(gatts, sizeof(gatts), "Unknown(%s), ", strCopy);
 
-                        g_info("    %s %s", address, gatts);
                         g_free(strCopy);
                     }
                     char **allocdata = g_malloc(actualLength * sizeof(char *)); // array of pointers to strings
                     memcpy(allocdata, uuidArray, actualLength * sizeof(char *));
-                    g_debug("  %s UUIDs has changed      ", address);
+                    g_info ("  %s UUIDs: %s", address, gatts);
                     send_to_mqtt_uuids(address, "uuids", allocdata, actualLength);
                     existing->uuids_length = actualLength;
                     g_free(allocdata); // no need to free the actual strings, that happens below

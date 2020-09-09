@@ -52,4 +52,9 @@ void mac_64_to_string(char* output, int length, int64_t access_64);
 */
 int64_t mac_string_to_int_64 (char* mac);
 
+/*
+    Append text to buffer
+*/
+void append_text(char* buffer, int length, char* format, ...);
+
 #endif

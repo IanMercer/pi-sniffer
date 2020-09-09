@@ -9,13 +9,15 @@
 #include <sys/types.h>
 
 // These must be in same order as enum values
-char* categories[] = { "unknown", "phone", "wearable", "tablet", "headphones", "computer", "tv", "fixed", "beacon", "car", "audio" };
-int category_values[] = { CATEGORY_UNKNOWN, CATEGORY_PHONE, CATEGORY_WEARABLE, CATEGORY_TABLET, CATEGORY_HEADPHONES, CATEGORY_COMPUTER, CATEGORY_TV, CATEGORY_FIXED, CATEGORY_BEACON, CATEGORY_CAR, CATEGORY_AUDIO_CARD };
+char* categories[] = { "unknown", "phone", "wearable", "tablet", "headphones", "computer", 
+    "tv", "fixed", "beacon", "car", "audio" };
+int category_values[] = { CATEGORY_UNKNOWN, CATEGORY_PHONE, CATEGORY_WEARABLE, CATEGORY_TABLET, CATEGORY_HEADPHONES, CATEGORY_COMPUTER, 
+    CATEGORY_TV, CATEGORY_FIXED, CATEGORY_BEACON, CATEGORY_CAR, CATEGORY_AUDIO_CARD };
 
 int category_to_int(char* category)
 {
     for (uint i = 0; i < sizeof(categories); i++) {
-       if (category_values[i] != (int)i) g_warning("Category does not match %i %i", i, category_values[i]);
+       if (category_values[i] != (int)i) g_info("Category does not match %i %i", i, category_values[i]);
        if (strcmp(category, categories[i]) == 0) return category_values[i];
     }
     return 0;
