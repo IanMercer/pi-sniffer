@@ -35,7 +35,9 @@ sudo nmap -sn 192.168.0.0/24
 
 8. Change the default password for the pi user.
 
-9. Change the hostname and hosts by replacing `raspberrypi` with your chosen name
+9. Run `raspi-config` and resize the partition to fill the SD card.
+
+10. Change the hostname and hosts by replacing `raspberrypi` with your chosen name
  in both of these locations, and reboot:
 
 ````
@@ -44,7 +46,7 @@ sudo nano \hosts
 sudo reboot
 ````
 
-10. Reconnect and add a new root user (and delete the pi user later).
+11. Reconnect and add a new root user (and delete the pi user later).
 
 ````
 sudo adduser <username>
@@ -61,21 +63,21 @@ See https://lintut.com/how-to-setup-ssh-passwordless-login-on-centos-7-rhel-7-rh
 ssh-copy-id -i ~/.ssh/id_rsa.pub ian@192.168.0.178
 ````
 
-11. Log back in as the new root user after updating your Windows Terminal settings.
+13. Log back in as the new root user after updating your Windows Terminal settings.
 
-12. Update packages to latest version
+14. Update packages to latest version
 ````
 sudo apt-get update
 sudo apt-get upgrade
 ````
 
-13. Set you local time zone and check it
+15. Set you local time zone and check it
 ````
 sudo timedatectl set-timezone America/Los_Angeles
 timedatectl status
 ````
 
-14. Optionally allow `journalctl` to persist logs between boots:
+16. Optionally allow `journalctl` to persist logs between boots:
 ````
 sudo nano /etc/systemd/journald.conf
 ````
@@ -89,5 +91,5 @@ Storage=persistent
 
 This allows you to `journalctl --list-boots` and to display the journal for a specific boot, e.g. `-b -1`.
 
-15. Now return to the main instructions [README.md](README.md)
+17. Now return to the main instructions [README.md](README.md)
 
