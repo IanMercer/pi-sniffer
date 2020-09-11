@@ -1359,9 +1359,10 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
                 if (existing->service_data_hash != hash)
                 {
-                    g_debug("  ServiceData has changed ");
+                    //g_debug("  ServiceData has changed ");
                     pretty_print2("  ServiceData", prop_val, TRUE); // a{qv}
-                    send_to_mqtt_array(address, "servicedata", allocdata, actualLength);
+                    // Sends the service GUID as a key in the JSON object
+                    send_to_mqtt_array(address, service_guid, allocdata, actualLength);
                     existing->service_data_hash = hash;
 
                     // temp={p[16] - 10} brightness={p[17]} motioncount={p[19] + p[20] * 256} moving={p[22]}");
@@ -1415,7 +1416,11 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
                 if (existing->manufacturer != manufacturer)
                 {
-                    g_info("  %s Manufacturer 0x%4x  ", address, manufacturer);
+                    if (manufacturer == 0x4c){
+                        g_info("  %s Manufacturer Apple  ", address);
+                    } else {
+                        g_info("  %s Manufacturer 0x%4x  ", address, manufacturer);
+                    }
                     send_to_mqtt_single_value(address, "manufacturer", manufacturer);
                     existing->manufacturer = manufacturer;
                 }
