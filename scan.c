@@ -884,6 +884,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
             if (strcmp(name, "iPhone") == 0)
                 existing->category = CATEGORY_PHONE;
+            if (strstr(name, "Galaxy Note") != NULL)
+                existing->category = CATEGORY_PHONE;
+
             else if (strcmp(name, "iPad") == 0)
                 existing->category = CATEGORY_TABLET;
             else if (strcmp(name, "MacBook pro") == 0)
@@ -898,6 +901,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             else if (strcmp(name, "Apple Watch") == 0)
                 existing->category = CATEGORY_WEARABLE;
             else if (strncmp(name, "Galaxy Watch", 12) == 0)
+                existing->category = CATEGORY_WEARABLE;
+            else if (strncmp(name, "Galaxy Fit", 10) == 0)
                 existing->category = CATEGORY_WEARABLE;
             else if (strncmp(name, "Gear S3", 7) == 0)
                 existing->category = CATEGORY_WEARABLE;
@@ -953,6 +958,10 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             else if (strncmp(name, "[TV] Samsung", 12) == 0)
                 existing->category = CATEGORY_TV;
             else if (strncmp(name, "[Signage] Samsung", 17) == 0)
+                existing->category = CATEGORY_TV;
+            else if (strncmp(name, "[LG] webOS TV", 13) == 0)
+                existing->category = CATEGORY_TV;
+            else if (strncmp(name, "SONY XBR", 8) == 0)
                 existing->category = CATEGORY_TV;
             // Printers
             else if (strncmp(name, "ENVY Photo", 10) == 0)
@@ -2331,11 +2340,11 @@ int main(int argc, char **argv)
     // Also clear starting flag
     g_timeout_add_seconds(30, clear_cache, loop);
 
-    // Every 15s dump all devices
-    g_timeout_add_seconds(15, dump_all_devices_tick, loop);
+    // Every 29s dump all devices
+    g_timeout_add_seconds(29, dump_all_devices_tick, loop);
 
-    // Every 13s see if any unnamed device is ready to be connected
-    g_timeout_add_seconds(10, try_connect_tick, loop);
+    // Every 2s see if any unnamed device is ready to be connected
+    g_timeout_add_seconds(2, try_connect_tick, loop);
 
     // Flash the led N times for N people present
     g_timeout_add(300, flash_led, loop);
