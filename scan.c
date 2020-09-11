@@ -1183,6 +1183,63 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                         int64_t ble_uuid = strtol(strCopy, NULL, 16);
 
                         // https://www.bluetooth.com/specifications/gatt/characteristics/
+
+                        if (ble_uuid == 0x00001000) append_text(gatts, sizeof(gatts), "ServiceDiscoveryServer, ");
+                        if (ble_uuid == 0x00001001) append_text(gatts, sizeof(gatts), "BrowseGroupDescriptor, ");
+                        if (ble_uuid == 0x00001002) append_text(gatts, sizeof(gatts), "PublicBrowseGroup, ");
+                        if (ble_uuid == 0x00001101) append_text(gatts, sizeof(gatts), "SerialPort, ");
+                        if (ble_uuid == 0x00001102) append_text(gatts, sizeof(gatts), "LANAccessUsingPPP, ");
+                        if (ble_uuid == 0x00001103) append_text(gatts, sizeof(gatts), "DialupNetworking, ");
+                        if (ble_uuid == 0x00001104) append_text(gatts, sizeof(gatts), "IrMCSync, ");
+                        if (ble_uuid == 0x00001105) append_text(gatts, sizeof(gatts), "OBEXObjectPush, ");
+                        if (ble_uuid == 0x00001106) append_text(gatts, sizeof(gatts), "OBEXFileTransfer, ");
+                        if (ble_uuid == 0x00001107) append_text(gatts, sizeof(gatts), "IrMCSyncCommand, ");
+                        if (ble_uuid == 0x00001108) append_text(gatts, sizeof(gatts), "Headset, ");
+                        if (ble_uuid == 0x00001109) append_text(gatts, sizeof(gatts), "CordlessTelephony, ");
+                        if (ble_uuid == 0x0000110A) append_text(gatts, sizeof(gatts), "AudioSource, ");
+                        if (ble_uuid == 0x0000110B) append_text(gatts, sizeof(gatts), "AudioSink, ");
+                        if (ble_uuid == 0x0000110C) append_text(gatts, sizeof(gatts), "AVRemoteControlTarget, ");
+                        if (ble_uuid == 0x0000110D) append_text(gatts, sizeof(gatts), "AdvancedAudioDistribution, ");
+                        if (ble_uuid == 0x0000110E) append_text(gatts, sizeof(gatts), "AVRemoteControl, ");
+                        if (ble_uuid == 0x0000110F) append_text(gatts, sizeof(gatts), "VideoConferencing, ");
+                        if (ble_uuid == 0x00001110) append_text(gatts, sizeof(gatts), "Intercom, ");
+                        if (ble_uuid == 0x00001111) append_text(gatts, sizeof(gatts), "Fax, ");
+                        if (ble_uuid == 0x00001112) append_text(gatts, sizeof(gatts), "HeadsetAudioGateway, ");
+                        if (ble_uuid == 0x00001113) append_text(gatts, sizeof(gatts), "WAP, ");
+                        if (ble_uuid == 0x00001114) append_text(gatts, sizeof(gatts), "WAPClient, ");
+                        if (ble_uuid == 0x00001115) append_text(gatts, sizeof(gatts), "PANU, ");
+                        if (ble_uuid == 0x00001116) append_text(gatts, sizeof(gatts), "NAP, ");
+                        if (ble_uuid == 0x00001117) append_text(gatts, sizeof(gatts), "GN, ");
+                        if (ble_uuid == 0x00001118) append_text(gatts, sizeof(gatts), "DirectPrinting, ");
+                        if (ble_uuid == 0x00001119) append_text(gatts, sizeof(gatts), "ReferencePrinting, ");
+                        if (ble_uuid == 0x0000111A) append_text(gatts, sizeof(gatts), "Imaging, ");
+                        if (ble_uuid == 0x0000111B) append_text(gatts, sizeof(gatts), "ImagingResponder, ");
+                        if (ble_uuid == 0x0000111C) append_text(gatts, sizeof(gatts), "ImagingAutomaticArchive, ");
+                        if (ble_uuid == 0x0000111D) append_text(gatts, sizeof(gatts), "ImagingReferenceObjects, ");
+                        if (ble_uuid == 0x0000111E) append_text(gatts, sizeof(gatts), "Handsfree, ");
+                        if (ble_uuid == 0x0000111F) append_text(gatts, sizeof(gatts), "HandsfreeAudioGateway, ");
+
+                        if (ble_uuid == 0x00001120) append_text(gatts, sizeof(gatts), "DirectPrintingReferenceObjects, ");
+                        if (ble_uuid == 0x00001121) append_text(gatts, sizeof(gatts), "ReflectedUI, ");
+                        if (ble_uuid == 0x00001122) append_text(gatts, sizeof(gatts), "BasicPringing, ");
+                        if (ble_uuid == 0x00001123) append_text(gatts, sizeof(gatts), "PrintingStatus, ");
+                        if (ble_uuid == 0x00001124) append_text(gatts, sizeof(gatts), "HumanInterfaceDevice, ");
+                        if (ble_uuid == 0x00001125) append_text(gatts, sizeof(gatts), "HardcopyCableReplacement, ");
+                        if (ble_uuid == 0x00001126) append_text(gatts, sizeof(gatts), "HCRPrint, ");
+                        if (ble_uuid == 0x00001127) append_text(gatts, sizeof(gatts), "HCRScan, ");
+                        if (ble_uuid == 0x00001128) append_text(gatts, sizeof(gatts), "CommonISDNAccess, ");
+                        if (ble_uuid == 0x00001129) append_text(gatts, sizeof(gatts), "VideoConferencingGW, ");
+                        if (ble_uuid == 0x0000112A) append_text(gatts, sizeof(gatts), "UDIMT, ");
+                        if (ble_uuid == 0x0000112B) append_text(gatts, sizeof(gatts), "UDITA, ");
+                        if (ble_uuid == 0x0000112C) append_text(gatts, sizeof(gatts), "AudioVideo, ");
+                        if (ble_uuid == 0x0000112D) append_text(gatts, sizeof(gatts), "SIMAccess, ");
+
+                        if (ble_uuid == 0x00001200) append_text(gatts, sizeof(gatts), "PnPInformation, ");
+                        if (ble_uuid == 0x00001201) append_text(gatts, sizeof(gatts), "GenericNetworking, ");
+                        if (ble_uuid == 0x00001202) append_text(gatts, sizeof(gatts), "GenericFileTransfer, ");
+                        if (ble_uuid == 0x00001203) append_text(gatts, sizeof(gatts), "GenericAudio, ");
+                        if (ble_uuid == 0x00001204) append_text(gatts, sizeof(gatts), "GenericTelephony, ");
+
                         if (ble_uuid == 0x2a29)
                             append_text(gatts, sizeof(gatts), "Manufacturer, ");
                         else if (ble_uuid == 0x1800L)
