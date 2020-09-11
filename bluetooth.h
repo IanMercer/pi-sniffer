@@ -82,5 +82,21 @@ void bluez_get_discovery_filter_cb(GObject *conn, GAsyncResult *res, gpointer da
 
 int bluez_adapter_set_property(GDBusConnection *conn, const char *prop, GVariant *value);
 
+//typedef struct name_prefix {
+//    int category;
+//    char** items;
+//};
+
+extern char* terminals[];
+extern char* phones[];
+extern char* tablets[];
+extern char* computers[];
+extern char* wearables[];
+extern char* headphones[];
+extern char* tvs[];
+extern char* printers[];
+extern char* beacons[];
+extern char* cars[];
+
 
 #endif

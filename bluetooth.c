@@ -236,3 +236,20 @@ int bluez_adapter_set_property(GDBusConnection *conn, const char *prop, GVariant
     return 0;
 }
 
+
+/*
+    A mini-database of names that can be mapped onto categories if they match the start
+    of a Bluetooth name.
+*/
+char* POS_terminals[] = { "IBM", "Bluesnap", "NWTR040" };   // CATEGORY_FIXED
+char* phones[] = { "iPhone" };
+char* tablets[] = { "iPad", };
+char* computers[] = { "MacBook Pro", "BOOTCAMP", "BOOTCAMP2"};
+char* wearables[] = { "Apple Watch", "iWatch", "Galaxy Watch", "Gear S3", "fenix", 
+    "Mi Smart Band", "Ionic", "Versa", "TICKR X",
+    "Charge 2", "Charge 3" };
+char* headphones[] = {"Sesh Evo-LE", "F2", "Jabra", "LE-Bose", "LE-reserved_C", "Blaze", "HarpBT"};
+char* tvs[] = {"AppleTV", "Apple TV", "[TV] Samsung", "[Signage] Samsung"};
+char* printers[] = {"ENVY Photo"};
+char* beacons[] = {"AprilBeacon", "abtemp", "abeacon", "estimote", "EST", "Tile", "LYWSD03MMC"};
+char* cars[] = {"Audi", "BMW", "VW ", "GM_PEPS_", "Land Rover", "Subaru"};

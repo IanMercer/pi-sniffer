@@ -871,6 +871,12 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             {
                 // g_print("  Name unchanged '%s'=='%s'\n", name, existing->name);
             }
+
+            // TODO: Allocate categories by name automatically
+            // for(int i = 0; i < sizeof(phones); i++){
+            //     if (strcmp(name, phones[i] == 0)) existing->category = CATEGORY_PHONE;
+            // }
+
             if (strcmp(name, "iPhone") == 0)
                 existing->category = CATEGORY_PHONE;
             else if (strcmp(name, "iPad") == 0)
@@ -892,7 +898,13 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->category = CATEGORY_WEARABLE;
             else if (strncmp(name, "fenix", 5) == 0)
                 existing->category = CATEGORY_WEARABLE;
+            else if (strncmp(name, "Ionic", 5) == 0)
+                existing->category = CATEGORY_WEARABLE; // FITBIT
             else if (strncmp(name, "Versa", 5) == 0)
+                existing->category = CATEGORY_WEARABLE; // FITBIT
+            else if (strncmp(name, "Charge 2", 8) == 0)
+                existing->category = CATEGORY_WEARABLE; // FITBIT
+            else if (strncmp(name, "Charge 3", 8) == 0)
                 existing->category = CATEGORY_WEARABLE; // FITBIT
             else if (strncmp(name, "Mi Smart Band", 13) == 0)
                 existing->category = CATEGORY_WEARABLE; // Fitness
@@ -929,8 +941,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->category = CATEGORY_HEADPHONES;
             else if (strncmp(name, "Blaze", 5) == 0)
                 existing->category = CATEGORY_HEADPHONES;
-            else if (strncmp(name, "Charge 3", 8) == 0)
-                existing->category = CATEGORY_HEADPHONES; // Speakers
+            else if (strncmp(name, "HarpBT", 6) == 0)
+                existing->category = CATEGORY_HEADPHONES;
             // TVs
             // e.g. "[TV] Samsung Q70 Series (65)" icon is audio_card
             else if (strncmp(name, "[TV] Samsung", 12) == 0)
@@ -940,6 +952,13 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             // Printers
             else if (strncmp(name, "ENVY Photo", 10) == 0)
                 existing->category = CATEGORY_FIXED; // printer
+            // POS Terminals
+            else if (strncmp(name, "Bluesnap", 8) == 0)
+                existing->category = CATEGORY_FIXED;  // POS
+            else if (strncmp(name, "IBM", 3) == 0)
+                existing->category = CATEGORY_FIXED;  // POS
+            else if (strncmp(name, "NWTR040", 7) == 0)
+                existing->category = CATEGORY_FIXED;  // POS
             // Cars
             else if (strncmp(name, "Audi", 4) == 0)
                 existing->category = CATEGORY_CAR;
@@ -1161,7 +1180,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                         // so we only need two hex bytes. But Apple and others use complete GUIDs
                         // for their own services, so let's take the first four hex bytes
                         strCopy[8] = '\0';
-                        int64_t ble_uuid = (int)strtol(strCopy, NULL, 16);
+                        int64_t ble_uuid = strtol(strCopy, NULL, 16);
 
                         // https://www.bluetooth.com/specifications/gatt/characteristics/
                         if (ble_uuid == 0x2a29)
