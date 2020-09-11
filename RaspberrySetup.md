@@ -11,9 +11,7 @@ because it has the best Bluetooth range of all the models tested. You'll also ne
 
 4. Add a blank file called `ssh` with no extension in the root directory too.
 
-5. Plug the Pi in and find what IP address it was allocated
-You could connect a monitor and keyboard, or you can look at your router to see what IP was allocated or
-you can do a portscan on the local network to find it. (Change the base address to match your local network.)
+5. Plug the Pi in and find what IP address it was allocated. You can probably find it at `raspberrypi.ocal` or you can connect a monitor and keyboard, or you can look at your router to see what IP was allocated, or you can do a portscan on the local network to find it (change the base address to match your local network in this nmap command.)
 ````
 sudo nmap -sn 192.168.0.0/24
 ````
@@ -91,5 +89,10 @@ Storage=persistent
 
 This allows you to `journalctl --list-boots` and to display the journal for a specific boot, e.g. `-b -1`.
 
-17. Now return to the main instructions [README.md](README.md)
+17. Optionally add a RTC chip (recommended)
+
+You can find instructions for adding a real-time clock chip [here](https://pimylifeup.com/raspberry-pi-rtc/). I recommend the [DS3231](https://www.amazon.com/gp/product/B01N1LZSK3/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=B01N1LZSK3&linkCode=as2&tag=abodit01-20&linkId=daa1415a90f1e578374ad1a2e3fa2282) which has the best resolution.
+
+
+18. Now return to the main instructions [README.md](README.md)
 

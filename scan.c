@@ -2148,9 +2148,9 @@ void initialize_state()
     state.verbosity = Distances; // default verbosity
     char* verbosity = getenv("VERBOSITY");
     if (verbosity){
-        if (strcmp(verbosity, "Counts")) state.verbosity = Counts;
-        if (strcmp(verbosity, "Distances")) state.verbosity = Distances;
-        if (strcmp(verbosity, "Details")) state.verbosity = Details;
+        if (strcmp(verbosity, "counts")) state.verbosity = Counts;
+        if (strcmp(verbosity, "distances")) state.verbosity = Distances;
+        if (strcmp(verbosity, "details")) state.verbosity = Details;
     }
 }
 

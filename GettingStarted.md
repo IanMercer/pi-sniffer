@@ -3,20 +3,49 @@
 * First, if you haven't already, please set up your Raspberry Pi 
 following the instructions [here](RaspberrySetup.md).
 
-* update package lists: `sudo apt-get update`
-* install GIT if you don't already have it `sudo apt-get install git-core`
-* install dependencies: `sudo apt-get install libglib2.0-dev` and `libssl-dev`
-* clone the Elcipse PAHO MQTT C source from GIT; 
-    `git clone https://github.com/eclipse/paho.mqtt.c.git`
+* update package lists:
+
+`sudo apt-get update`
+
+* install GIT if you don't already have it
+
+`sudo apt-get install git-core`
+
+* install dependencies: 
+
+`sudo apt-get install libglib2.0-dev`
+
+`sudo apt-get install libssl-dev`
+
+* clone the Eclipse PAHO MQTT C source
+
+`git clone https://github.com/eclipse/paho.mqtt.c.git`
+
 * build and install it
-    `sudo make install`
+
+`cd paho.mqtt.c`
+
+`sudo make install`
+
+`cd ..`
+
 * clone this repository
-* edit the .service file to point to the scan executable location:
-    `nano pi-sniffer.service`
-* build and deploy the code:   `sudo ./build/sh`
+
+`git clone https://github.com/ianmercer/pi-sniffer.service`
+
+* edit the .service file to point to the scan executable location by editing the `ExecStart` and `WorkingDirectory` lines:
+
+`cd pi-sniffer`
+
+`nano pi-sniffer.service`
+
+* build and deploy the code:
+
+`sudo ./build/sh`
 
 * edit the systemd configuration overrides according to the environment
-    `sudo systemctl edit pi-sniffer.service`
+
+`sudo systemctl edit pi-sniffer.service`
 
     For outside use a lower divisor, say 2.5, for inside use a higher divisor, say 3.5
     Keep this value in the range 2.0 - 4.0 and adjust it to get distances reported within range.
@@ -47,11 +76,14 @@ Environment="MQTT_TOPIC=BLF"
 Environment="MQTT_USERNAME="
 Environment="MQTT_PASSWORD="
 
+# Set the level of MQTT messages to ONE of these:
+Environment="VERBOSITY=counts|distances|details"
+
 # Port on which to communicate with sensors in the same group in mesh mode
 Environment="UDP_MESH_PORT=7779"
 
 # Port on which to broadcast a count of people present x 10
-# If you have multiple sensors in a group, only one should send to the sign
+# If you have multiple sensors in a group, only one should send to the sign, set this to zero for the others
 Environment="UDP_SIGN_PORT=7778"
 
 # How to map people to the value sent, e.g. 0.5 so that 4 people = 2.0 sent
@@ -60,24 +92,31 @@ Environment="UDP_SCALE_FACTOR=0.5"
 
 # You can turn logging off entirely by replacing 'all' with specific log domains
 # or by removing this line entirely
-# And you can adjust the logging level in `build.sh` to exclude debug logging
 Environment="G_MESSAGES_DEBUG=all"
 
 ````
 
 * Alternatively, instead of using `build.sh` you can run the following steps manually:
-* Run `make`
+* Run 
+
+`make`
 * copy the service file to systemd:
-    `sudo cp pi-sniffer.service /etc/systemd/system/pi-sniffer.service`
+
+
+`sudo cp pi-sniffer.service /etc/systemd/system/pi-sniffer.service`
 * enable the service to restart after a reboot:
-    `sudo systemctl enable pi-sniffer.service`
+
+`sudo systemctl enable pi-sniffer.service`
 * start the service:
-    `sudo systemctl start pi-sniffer.service`
+
+`sudo systemctl start pi-sniffer.service`
 * check it's running:
-    `sudo systemctl status pi-sniffer.service`
+
+`sudo systemctl status pi-sniffer.service`
 
 * [optional, on Ubuntu in particular] open firewall so multiple instances can communicate
-    `sudo ufw allow 7779/udp`
+
+`sudo ufw allow 7779/udp`
 
 * Now setup one or more displays. There are several display options depending on your needs.
  
@@ -88,6 +127,4 @@ Environment="G_MESSAGES_DEBUG=all"
  * A browser-based display [instructions coming soon](GettingStarted.md).
 
 A comparison of the costs and benefits of these different display approaches will be added shortly. Some displays may display details of crowding in different areas, some may display only an aggregate, some may show detailed numbers, some may display based on a single aggregate cut off number. Displays may also apply blending, hysteresis, transitions and other effects to improve their overall impact.
-
-
 

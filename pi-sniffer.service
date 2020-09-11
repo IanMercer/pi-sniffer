@@ -14,7 +14,7 @@ After=network.target
 # Environment="MQTT_TOPIC=BLF"
 # Environment="MQTT_SERVER=192.168.0.52:1883"
 #
-ExecStart=/home/ian/pi-sniffer/scan 192.168.0.52:1883 BLF
+ExecStart=/home/ian/pi-sniffer/scan
 WorkingDirectory=/home/ian/pi-sniffer
 StandardOutput=inherit
 StandardError=inherit
