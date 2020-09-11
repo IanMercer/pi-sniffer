@@ -232,14 +232,6 @@ void add_closest(int64_t device_64, int access_id, time_t time, float distance, 
 /*
     Get the closest recent observation for a device
 */
-struct ClosestTo *get_closest(struct Device* device)
-{
-    return get_closest_64(mac_string_to_int_64(device->mac));
-}
-
-/*
-    Get the closest recent observation for a device
-*/
 struct ClosestTo *get_closest_64(int64_t device_64)
 {
     struct ClosestTo *best = NULL;
@@ -295,6 +287,14 @@ struct ClosestTo *get_closest_64(int64_t device_64)
     return best;
 }
 
+
+/*
+    Get the closest recent observation for a device
+*/
+struct ClosestTo *get_closest(struct Device* device)
+{
+    return get_closest_64(mac_string_to_int_64(device->mac));
+}
 
 
 
