@@ -2039,7 +2039,6 @@ gboolean try_connect(struct Device *a)
 }
 
 static int led_state = 0;
-
 // TODO: Suppress this on non-Pi platforms
 
 int flash_led(void *parameters)
@@ -2047,7 +2046,8 @@ int flash_led(void *parameters)
     (void)parameters;                // not used
     // Every other cycle turn the LED on or off
     if (led_state < state.local->people_in_range_count * 2) {
-        char d =  (led_state % 1 == 0) ? '0' : '1';
+        char d =  (led_state & 1) == 0 ? '1' : '0';
+        g_debug("%i in %.1f '%c'", led_state, state.local->people_in_range_count, d);
         int fd = open("/sys/class/leds/led0/brightness", O_WRONLY);
         write (fd, &d, 1);
         close(fd);
@@ -2055,12 +2055,13 @@ int flash_led(void *parameters)
 
     led_state = (led_state + 1);
     // 4s past end, restart
-    if (led_state > state.local->people_in_range_count *2 + 4){
+    if (led_state > state.local->people_in_range_count * 2 + 4){
         led_state = 0;
     }
 
     return TRUE;
 }
+
 
 #define SIMULTANEOUS_CONNECTIONS 5
 
@@ -2337,8 +2338,8 @@ int main(int argc, char **argv)
     // Every 13s see if any unnamed device is ready to be connected
     g_timeout_add_seconds(10, try_connect_tick, loop);
 
-    // Every second flash the led 
-    g_timeout_add_seconds(1, flash_led, loop);
+    // Flash the led N times for N people present
+    g_timeout_add(300, flash_led, loop);
 
     g_info(" ");
     g_info(" ");
