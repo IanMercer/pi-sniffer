@@ -1185,114 +1185,84 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                         // https://www.bluetooth.com/specifications/gatt/characteristics/
 
                         if (ble_uuid == 0x00001000) append_text(gatts, sizeof(gatts), "ServiceDiscoveryServer, ");
-                        if (ble_uuid == 0x00001001) append_text(gatts, sizeof(gatts), "BrowseGroupDescriptor, ");
-                        if (ble_uuid == 0x00001002) append_text(gatts, sizeof(gatts), "PublicBrowseGroup, ");
-                        if (ble_uuid == 0x00001101) append_text(gatts, sizeof(gatts), "SerialPort, ");
-                        if (ble_uuid == 0x00001102) append_text(gatts, sizeof(gatts), "LANAccessUsingPPP, ");
-                        if (ble_uuid == 0x00001103) append_text(gatts, sizeof(gatts), "DialupNetworking, ");
-                        if (ble_uuid == 0x00001104) append_text(gatts, sizeof(gatts), "IrMCSync, ");
-                        if (ble_uuid == 0x00001105) append_text(gatts, sizeof(gatts), "OBEXObjectPush, ");
-                        if (ble_uuid == 0x00001106) append_text(gatts, sizeof(gatts), "OBEXFileTransfer, ");
-                        if (ble_uuid == 0x00001107) append_text(gatts, sizeof(gatts), "IrMCSyncCommand, ");
-                        if (ble_uuid == 0x00001108) append_text(gatts, sizeof(gatts), "Headset, ");
-                        if (ble_uuid == 0x00001109) append_text(gatts, sizeof(gatts), "CordlessTelephony, ");
-                        if (ble_uuid == 0x0000110A) append_text(gatts, sizeof(gatts), "AudioSource, ");
-                        if (ble_uuid == 0x0000110B) append_text(gatts, sizeof(gatts), "AudioSink, ");
-                        if (ble_uuid == 0x0000110C) append_text(gatts, sizeof(gatts), "AVRemoteControlTarget, ");
-                        if (ble_uuid == 0x0000110D) append_text(gatts, sizeof(gatts), "AdvancedAudioDistribution, ");
-                        if (ble_uuid == 0x0000110E) append_text(gatts, sizeof(gatts), "AVRemoteControl, ");
-                        if (ble_uuid == 0x0000110F) append_text(gatts, sizeof(gatts), "VideoConferencing, ");
-                        if (ble_uuid == 0x00001110) append_text(gatts, sizeof(gatts), "Intercom, ");
-                        if (ble_uuid == 0x00001111) append_text(gatts, sizeof(gatts), "Fax, ");
-                        if (ble_uuid == 0x00001112) append_text(gatts, sizeof(gatts), "HeadsetAudioGateway, ");
-                        if (ble_uuid == 0x00001113) append_text(gatts, sizeof(gatts), "WAP, ");
-                        if (ble_uuid == 0x00001114) append_text(gatts, sizeof(gatts), "WAPClient, ");
-                        if (ble_uuid == 0x00001115) append_text(gatts, sizeof(gatts), "PANU, ");
-                        if (ble_uuid == 0x00001116) append_text(gatts, sizeof(gatts), "NAP, ");
-                        if (ble_uuid == 0x00001117) append_text(gatts, sizeof(gatts), "GN, ");
-                        if (ble_uuid == 0x00001118) append_text(gatts, sizeof(gatts), "DirectPrinting, ");
-                        if (ble_uuid == 0x00001119) append_text(gatts, sizeof(gatts), "ReferencePrinting, ");
-                        if (ble_uuid == 0x0000111A) append_text(gatts, sizeof(gatts), "Imaging, ");
-                        if (ble_uuid == 0x0000111B) append_text(gatts, sizeof(gatts), "ImagingResponder, ");
-                        if (ble_uuid == 0x0000111C) append_text(gatts, sizeof(gatts), "ImagingAutomaticArchive, ");
-                        if (ble_uuid == 0x0000111D) append_text(gatts, sizeof(gatts), "ImagingReferenceObjects, ");
-                        if (ble_uuid == 0x0000111E) append_text(gatts, sizeof(gatts), "Handsfree, ");
-                        if (ble_uuid == 0x0000111F) append_text(gatts, sizeof(gatts), "HandsfreeAudioGateway, ");
-
-                        if (ble_uuid == 0x00001120) append_text(gatts, sizeof(gatts), "DirectPrintingReferenceObjects, ");
-                        if (ble_uuid == 0x00001121) append_text(gatts, sizeof(gatts), "ReflectedUI, ");
-                        if (ble_uuid == 0x00001122) append_text(gatts, sizeof(gatts), "BasicPringing, ");
-                        if (ble_uuid == 0x00001123) append_text(gatts, sizeof(gatts), "PrintingStatus, ");
-                        if (ble_uuid == 0x00001124) append_text(gatts, sizeof(gatts), "HumanInterfaceDevice, ");
-                        if (ble_uuid == 0x00001125) append_text(gatts, sizeof(gatts), "HardcopyCableReplacement, ");
-                        if (ble_uuid == 0x00001126) append_text(gatts, sizeof(gatts), "HCRPrint, ");
-                        if (ble_uuid == 0x00001127) append_text(gatts, sizeof(gatts), "HCRScan, ");
-                        if (ble_uuid == 0x00001128) append_text(gatts, sizeof(gatts), "CommonISDNAccess, ");
-                        if (ble_uuid == 0x00001129) append_text(gatts, sizeof(gatts), "VideoConferencingGW, ");
-                        if (ble_uuid == 0x0000112A) append_text(gatts, sizeof(gatts), "UDIMT, ");
-                        if (ble_uuid == 0x0000112B) append_text(gatts, sizeof(gatts), "UDITA, ");
-                        if (ble_uuid == 0x0000112C) append_text(gatts, sizeof(gatts), "AudioVideo, ");
-                        if (ble_uuid == 0x0000112D) append_text(gatts, sizeof(gatts), "SIMAccess, ");
-
-                        if (ble_uuid == 0x00001200) append_text(gatts, sizeof(gatts), "PnPInformation, ");
-                        if (ble_uuid == 0x00001201) append_text(gatts, sizeof(gatts), "GenericNetworking, ");
-                        if (ble_uuid == 0x00001202) append_text(gatts, sizeof(gatts), "GenericFileTransfer, ");
-                        if (ble_uuid == 0x00001203) append_text(gatts, sizeof(gatts), "GenericAudio, ");
-                        if (ble_uuid == 0x00001204) append_text(gatts, sizeof(gatts), "GenericTelephony, ");
-
-                        if (ble_uuid == 0x2a29)
-                            append_text(gatts, sizeof(gatts), "Manufacturer, ");
-                        else if (ble_uuid == 0x1800L)
-                            append_text(gatts, sizeof(gatts), "Generic access, ");
-                        else if (ble_uuid == 0x1801L)
-                            append_text(gatts, sizeof(gatts), "Generic attribute, ");
-                        else if (ble_uuid == 0x1802L)
-                            append_text(gatts, sizeof(gatts), "Immediate Alert, ");
-                        else if (ble_uuid == 0x1803L)
-                            append_text(gatts, sizeof(gatts), "Link loss, ");
-                        else if (ble_uuid == 0x1804L)
-                            append_text(gatts, sizeof(gatts), "Tx Power level, ");
-                        else if (ble_uuid == 0x1805L)
-                            append_text(gatts, sizeof(gatts), "Current time, ");
-                        else if (ble_uuid == 0x180fL)
-                            append_text(gatts, sizeof(gatts), "Battery, ");
-                        else if (ble_uuid == 0x111eL)
-                            append_text(gatts, sizeof(gatts), "HandsFree, ");
-                        else if (ble_uuid == 0x180aL)
-                            append_text(gatts, sizeof(gatts), "Device information, ");
-                        else if (ble_uuid == 0x180dL)
-                            append_text(gatts, sizeof(gatts), "Heart rate service, ");
-                        else if (ble_uuid == 0x2A37L)
-                            append_text(gatts, sizeof(gatts), "Heart rate measurement ");
-                        else if (ble_uuid == 0xFEAAL)
-                            append_text(gatts, sizeof(gatts), "Eddystone ");
-                        else if (ble_uuid == 0xb9401000)
-                            append_text(gatts, sizeof(gatts), "Estimote 1, ");
-                        else if (ble_uuid == 0xb9402000)
-                            append_text(gatts, sizeof(gatts), "Estimote 2,");
-                        else if (ble_uuid == 0xb9403000)
-                            append_text(gatts, sizeof(gatts), "Estimote 3, ");
-                        else if (ble_uuid == 0xb9404000)
-                            append_text(gatts, sizeof(gatts), "Estimote 4, ");
-                        else if (ble_uuid == 0xb9405000)
-                            append_text(gatts, sizeof(gatts), "Estimote 5, ");
-                        else if (ble_uuid == 0xb9406000)
-                            append_text(gatts, sizeof(gatts), "Estimote 6, ");
-                        // Apple Media Service 89d3502b
-                        else if (ble_uuid == 0x89d3502bL)
-                            append_text(gatts, sizeof(gatts), "Apple MS, ");
-                        else if (ble_uuid == 0x7905f431L)
-                            append_text(gatts, sizeof(gatts), "Apple NCS, ");
-                        else if (ble_uuid == 0xd0611e78L)
-                            append_text(gatts, sizeof(gatts), "Apple CS, ");
-                        else if (ble_uuid == 0x9fa480e0L)
-                            append_text(gatts, sizeof(gatts), "Apple XX, ");
-                        else if (ble_uuid == 0xd0611e78L)
-                            append_text(gatts, sizeof(gatts), "Continuity, ");
-                        else if (ble_uuid == 0xffa0L)
-                            append_text(gatts, sizeof(gatts), "Accelerometer, ");
-                        else if (ble_uuid == 0xffe0L)
-                            append_text(gatts, sizeof(gatts), "Temperature, ");
+                        else if (ble_uuid == 0x00001001L) append_text(gatts, sizeof(gatts), "BrowseGroupDescriptor, ");
+                        else if (ble_uuid == 0x00001002L) append_text(gatts, sizeof(gatts), "PublicBrowseGroup, ");
+                        else if (ble_uuid == 0x00001101L) append_text(gatts, sizeof(gatts), "SerialPort, ");
+                        else if (ble_uuid == 0x00001102L) append_text(gatts, sizeof(gatts), "LANAccessUsingPPP, ");
+                        else if (ble_uuid == 0x00001103L) append_text(gatts, sizeof(gatts), "DialupNetworking, ");
+                        else if (ble_uuid == 0x00001104L) append_text(gatts, sizeof(gatts), "IrMCSync, ");
+                        else if (ble_uuid == 0x00001105L) append_text(gatts, sizeof(gatts), "OBEXObjectPush, ");
+                        else if (ble_uuid == 0x00001106L) append_text(gatts, sizeof(gatts), "OBEXFileTransfer, ");
+                        else if (ble_uuid == 0x00001107L) append_text(gatts, sizeof(gatts), "IrMCSyncCommand, ");
+                        else if (ble_uuid == 0x00001108L) append_text(gatts, sizeof(gatts), "Headset, ");
+                        else if (ble_uuid == 0x00001109L) append_text(gatts, sizeof(gatts), "CordlessTelephony, ");
+                        else if (ble_uuid == 0x0000110AL) append_text(gatts, sizeof(gatts), "AudioSource, ");
+                        else if (ble_uuid == 0x0000110BL) append_text(gatts, sizeof(gatts), "AudioSink, ");
+                        else if (ble_uuid == 0x0000110CL) append_text(gatts, sizeof(gatts), "AVRemoteControlTarget, ");
+                        else if (ble_uuid == 0x0000110DL) append_text(gatts, sizeof(gatts), "AdvancedAudioDistribution, ");
+                        else if (ble_uuid == 0x0000110EL) append_text(gatts, sizeof(gatts), "AVRemoteControl, ");
+                        else if (ble_uuid == 0x0000110FL) append_text(gatts, sizeof(gatts), "VideoConferencing, ");
+                        else if (ble_uuid == 0x00001110L) append_text(gatts, sizeof(gatts), "Intercom, ");
+                        else if (ble_uuid == 0x00001111L) append_text(gatts, sizeof(gatts), "Fax, ");
+                        else if (ble_uuid == 0x00001112L) append_text(gatts, sizeof(gatts), "HeadsetAudioGateway, ");
+                        else if (ble_uuid == 0x00001113L) append_text(gatts, sizeof(gatts), "WAP, ");
+                        else if (ble_uuid == 0x00001114L) append_text(gatts, sizeof(gatts), "WAPClient, ");
+                        else if (ble_uuid == 0x00001115L) append_text(gatts, sizeof(gatts), "PANU, ");
+                        else if (ble_uuid == 0x00001116L) append_text(gatts, sizeof(gatts), "NAP, ");
+                        else if (ble_uuid == 0x00001117L) append_text(gatts, sizeof(gatts), "GN, ");
+                        else if (ble_uuid == 0x00001118L) append_text(gatts, sizeof(gatts), "DirectPrinting, ");
+                        else if (ble_uuid == 0x00001119L) append_text(gatts, sizeof(gatts), "ReferencePrinting, ");
+                        else if (ble_uuid == 0x0000111AL) append_text(gatts, sizeof(gatts), "Imaging, ");
+                        else if (ble_uuid == 0x0000111BL) append_text(gatts, sizeof(gatts), "ImagingResponder, ");
+                        else if (ble_uuid == 0x0000111CL) append_text(gatts, sizeof(gatts), "ImagingAutomaticArchive, ");
+                        else if (ble_uuid == 0x0000111DL) append_text(gatts, sizeof(gatts), "ImagingReferenceObjects, ");
+                        else if (ble_uuid == 0x0000111EL) append_text(gatts, sizeof(gatts), "Handsfree, ");
+                        else if (ble_uuid == 0x0000111FL) append_text(gatts, sizeof(gatts), "HandsfreeAudioGateway, ");
+                        else if (ble_uuid == 0x00001120L) append_text(gatts, sizeof(gatts), "DirectPrintingReferenceObjects, ");
+                        else if (ble_uuid == 0x00001121L) append_text(gatts, sizeof(gatts), "ReflectedUI, ");
+                        else if (ble_uuid == 0x00001122L) append_text(gatts, sizeof(gatts), "BasicPringing, ");
+                        else if (ble_uuid == 0x00001123L) append_text(gatts, sizeof(gatts), "PrintingStatus, ");
+                        else if (ble_uuid == 0x00001124L) append_text(gatts, sizeof(gatts), "HumanInterfaceDevice, ");
+                        else if (ble_uuid == 0x00001125L) append_text(gatts, sizeof(gatts), "HardcopyCableReplacement, ");
+                        else if (ble_uuid == 0x00001126L) append_text(gatts, sizeof(gatts), "HCRPrint, ");
+                        else if (ble_uuid == 0x00001127L) append_text(gatts, sizeof(gatts), "HCRScan, ");
+                        else if (ble_uuid == 0x00001128L) append_text(gatts, sizeof(gatts), "CommonISDNAccess, ");
+                        else if (ble_uuid == 0x00001129L) append_text(gatts, sizeof(gatts), "VideoConferencingGW, ");
+                        else if (ble_uuid == 0x0000112AL) append_text(gatts, sizeof(gatts), "UDIMT, ");
+                        else if (ble_uuid == 0x0000112BL) append_text(gatts, sizeof(gatts), "UDITA, ");
+                        else if (ble_uuid == 0x0000112CL) append_text(gatts, sizeof(gatts), "AudioVideo, ");
+                        else if (ble_uuid == 0x0000112DL) append_text(gatts, sizeof(gatts), "SIMAccess, ");
+                        else if (ble_uuid == 0x00001200L) append_text(gatts, sizeof(gatts), "PnPInformation, ");
+                        else if (ble_uuid == 0x00001201L) append_text(gatts, sizeof(gatts), "GenericNetworking, ");
+                        else if (ble_uuid == 0x00001202L) append_text(gatts, sizeof(gatts), "GenericFileTransfer, ");
+                        else if (ble_uuid == 0x00001203L) append_text(gatts, sizeof(gatts), "GenericAudio, ");
+                        else if (ble_uuid == 0x00001204L) append_text(gatts, sizeof(gatts), "GenericTelephony, ");
+                        else if (ble_uuid == 0x2a29L) append_text(gatts, sizeof(gatts), "Manufacturer, ");
+                        else if (ble_uuid == 0x1800L) append_text(gatts, sizeof(gatts), "Generic access, ");
+                        else if (ble_uuid == 0x1801L) append_text(gatts, sizeof(gatts), "Generic attribute, ");
+                        else if (ble_uuid == 0x1802L) append_text(gatts, sizeof(gatts), "Immediate Alert, ");
+                        else if (ble_uuid == 0x1803L) append_text(gatts, sizeof(gatts), "Link loss, ");
+                        else if (ble_uuid == 0x1804L) append_text(gatts, sizeof(gatts), "Tx Power level, ");
+                        else if (ble_uuid == 0x1805L) append_text(gatts, sizeof(gatts), "Current time, ");
+                        else if (ble_uuid == 0x180fL) append_text(gatts, sizeof(gatts), "Battery, ");
+                        else if (ble_uuid == 0x111eL) append_text(gatts, sizeof(gatts), "HandsFree, ");
+                        else if (ble_uuid == 0x180aL) append_text(gatts, sizeof(gatts), "Device information, ");
+                        else if (ble_uuid == 0x180dL) append_text(gatts, sizeof(gatts), "Heart rate service, ");
+                        else if (ble_uuid == 0x2A37L) append_text(gatts, sizeof(gatts), "Heart rate measurement ");
+                        else if (ble_uuid == 0xFEAAL) append_text(gatts, sizeof(gatts), "Eddystone ");
+                        else if (ble_uuid == 0xb9401000) append_text(gatts, sizeof(gatts), "Estimote 1, ");
+                        else if (ble_uuid == 0xb9402000) append_text(gatts, sizeof(gatts), "Estimote 2,");
+                        else if (ble_uuid == 0xb9403000) append_text(gatts, sizeof(gatts), "Estimote 3, ");
+                        else if (ble_uuid == 0xb9404000) append_text(gatts, sizeof(gatts), "Estimote 4, ");
+                        else if (ble_uuid == 0xb9405000) append_text(gatts, sizeof(gatts), "Estimote 5, ");
+                        else if (ble_uuid == 0xb9406000) append_text(gatts, sizeof(gatts), "Estimote 6, ");
+                        else if (ble_uuid == 0x89d3502bL) append_text(gatts, sizeof(gatts), "Apple MS, ");
+                        else if (ble_uuid == 0x7905f431L) append_text(gatts, sizeof(gatts), "Apple NCS, ");
+                        else if (ble_uuid == 0xd0611e78L) append_text(gatts, sizeof(gatts), "Apple CS, ");
+                        else if (ble_uuid == 0x9fa480e0L) append_text(gatts, sizeof(gatts), "Apple XX, ");
+                        else if (ble_uuid == 0xd0611e78L) append_text(gatts, sizeof(gatts), "Continuity, ");
+                        else if (ble_uuid == 0xffa0L) append_text(gatts, sizeof(gatts), "Accelerometer, ");
+                        else if (ble_uuid == 0xffe0L) append_text(gatts, sizeof(gatts), "Temperature, ");
                         else
                             append_text(gatts, sizeof(gatts), "Unknown(%s), ", strCopy);
 
