@@ -94,5 +94,9 @@ This allows you to `journalctl --list-boots` and to display the journal for a sp
 You can find instructions for adding a real-time clock chip [here](https://pimylifeup.com/raspberry-pi-rtc/). I recommend the [DS3231](https://www.amazon.com/gp/product/B01N1LZSK3/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=B01N1LZSK3&linkCode=as2&tag=abodit01-20&linkId=daa1415a90f1e578374ad1a2e3fa2282) which has the best resolution.
 
 
-18. Now return to the main instructions [README.md](README.md)
+18. Optionally, turn off the on-board LED so that the code can use it to indicate activity
+
+`sudo sh -c "echo none > /sys/class/leds/led0/trigger"`
+
+19. Now return to the main instructions [README.md](README.md)
 
