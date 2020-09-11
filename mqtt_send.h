@@ -27,7 +27,7 @@ void send_to_mqtt_single(char *mac_address, char *key, char *value);
 
 void send_to_mqtt_distances(unsigned char *value, int length);
 
-void send_to_mqtt_array(char *mac_address, char *key, unsigned char *value, int length);
+void send_to_mqtt_array(char *mac_address, char *key, char* valuekey, unsigned char *value, int length);
 
 void send_to_mqtt_uuids(char *mac_address, char *key, char **uuids, int length);
 

@@ -386,9 +386,9 @@ void json_int_array(char*message, int length, char* mac, char* field, int* value
     snprintf(message + ptr - 1, length - ptr, "]}");
 }
 
-void json_byte_array(char*message, int length, char* mac, char* field, unsigned char* values, int values_length) {
+void json_byte_array(char*message, int length, char* mac, char* field, char* key, unsigned char* values, int values_length) {
     time_t now = time(0);
-    snprintf(message, length, "{\"mac\":\"%s\", \"time\":%lu, \"%s\":[", mac, now, field);
+    snprintf(message, length, "{\"mac\":\"%s\", \"time\":%lu, \"%s\":{ \"key\",\"%s\", [", mac, now, field, key);
 
     int ptr = strlen(message);
     for(int i = 0; i < values_length; i++)
@@ -397,7 +397,7 @@ void json_byte_array(char*message, int length, char* mac, char* field, unsigned 
     }
 
     // go back one for the comma and overwrite
-    snprintf(message + ptr - 1, length - ptr, "]}");
+    snprintf(message + ptr - 1, length - ptr, "]}}");
 }
 
 void json_string_array(char*message, int length, char* mac, char* field, char** values, int values_length) {
@@ -466,7 +466,7 @@ void send_device_mqtt(struct Device* device)
 {
     if (!isMQTTEnabled) return;
 
-    printf("    MQTT %s device %s '%s'\n", MESH_TOPIC, device->mac, device->name);
+    g_debug("    MQTT %s device %s '%s'\n", MESH_TOPIC, device->mac, device->name);
 
     char buffer[2048];
     memcpy(buffer, access_point_name, strlen(access_point_name)+1);  // assume this is <32 characters
@@ -508,20 +508,21 @@ void send_to_mqtt_single(char *mac_address, char *key, char *value)
     send_to_mqtt(topic, packet, MQTT_PUBLISH_QOS_1, 0);
 }
 
-void send_to_mqtt_array(char *mac_address, char *key, unsigned char *value, int length)
+void send_to_mqtt_array(char *mac_address, char *key, char* valuekey, unsigned char *value, int length)
 {
     if (!isMQTTEnabled) return;
 
     char topic[256];
     get_topic(topic, sizeof(topic), mac_address, key);
     char packet[2048];
-    json_byte_array(packet, sizeof(packet), mac_address, key, value, length);
+    json_byte_array(packet, sizeof(packet), mac_address, key, valuekey, value, length);
     send_to_mqtt(topic, packet, MQTT_PUBLISH_QOS_1, 0);
 }
 
 void send_to_mqtt_distances(unsigned char *value, int length)
 {
     if (!isMQTTEnabled) return;
+    //g_debug("send_to_mqtt_distances");
 
     char topic[256];
     get_topic(topic, sizeof(topic), "no-mac", "summary");
@@ -533,7 +534,8 @@ void send_to_mqtt_distances(unsigned char *value, int length)
 void send_to_mqtt_uuids(char *mac_address, char *key, char **uuids, int length)
 {
     if (!isMQTTEnabled) return;
-// TODO    if (isAzure) { printf("\n"); return; }
+    //g_debug("send_to_mqtt_uuids");
+
     char topic[256];
     get_topic(topic, sizeof(topic), mac_address, key);
 
@@ -545,6 +547,8 @@ void send_to_mqtt_uuids(char *mac_address, char *key, char **uuids, int length)
 void send_to_mqtt_single_value(char *mac_address, char *key, int32_t value)
 {
     if (!isMQTTEnabled) return;
+    //g_debug("send_to_mqtt_single_value");
+
     char topic[256];
     get_topic(topic, sizeof(topic), mac_address, key);
 
@@ -556,6 +560,8 @@ void send_to_mqtt_single_value(char *mac_address, char *key, int32_t value)
 void send_to_mqtt_single_value_keep(char *mac_address, char *key, int32_t value)
 {
     if (!isMQTTEnabled) return;
+    //g_debug("send_to_mqtt_single_value_keep");
+
     char topic[256];
     get_topic(topic, sizeof(topic), mac_address, key);
 
@@ -568,6 +574,8 @@ void send_to_mqtt_single_value_keep(char *mac_address, char *key, int32_t value)
 void send_to_mqtt_single_float(char *mac_address, char *key, float value)
 {
     if (!isMQTTEnabled) return;
+    //g_debug("send_to_mqtt_single_float");
+
     char topic[256];
     get_topic(topic, sizeof(topic), mac_address, key);
 
@@ -579,11 +587,11 @@ void send_to_mqtt_single_float(char *mac_address, char *key, float value)
 
 void mqtt_sync()
 {
-  if (!isMQTTEnabled) return;
-  //g_print("Sync\n");
-
-  if (!connected) {
-    printf("Reconnecting\n");
-    connect_async(client);
-  }
+    if (!isMQTTEnabled) return;
+    //g_debug("mqtt_sync");
+  
+    if (!connected) {
+        printf("Reconnecting\n");
+        connect_async(client);
+    }
 }

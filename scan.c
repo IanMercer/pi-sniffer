@@ -1094,7 +1094,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             if (existing->paired != paired)
             {
                 g_debug("  %s Paired has changed        ", address);
-                send_to_mqtt_single_value(address, "paired", paired ? 1 : 0);
+                if (state.verbosity >= Details) {
+                    send_to_mqtt_single_value(address, "paired", paired ? 1 : 0);
+                }
                 existing->paired = paired;
             }
         }
@@ -1108,7 +1110,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 else
                     g_debug("  %s Disconnected   ", address);
 
-                send_to_mqtt_single_value(address, "connected", connected ? 1 : 0);
+                if (state.verbosity >= Details) {
+                  send_to_mqtt_single_value(address, "connected", connected ? 1 : 0);
+                }
                 existing->connected = connected;
             }
         }
@@ -1118,7 +1122,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             if (existing->trusted != trusted)
             {
                 g_debug("  %s Trusted has changed       ", address);
-                send_to_mqtt_single_value(address, "trusted", trusted ? 1 : 0);
+                if (state.verbosity >= Details) {
+                    send_to_mqtt_single_value(address, "trusted", trusted ? 1 : 0);
+                }
                 existing->trusted = trusted;
             }
         }
@@ -1271,7 +1277,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                     char **allocdata = g_malloc(actualLength * sizeof(char *)); // array of pointers to strings
                     memcpy(allocdata, uuidArray, actualLength * sizeof(char *));
                     g_info ("  %s UUIDs: %s", address, gatts);
-                    send_to_mqtt_uuids(address, "uuids", allocdata, actualLength);
+                    if (state.verbosity >= Details) {
+                      send_to_mqtt_uuids(address, "uuids", allocdata, actualLength);
+                    }
                     existing->uuids_length = actualLength;
                     g_free(allocdata); // no need to free the actual strings, that happens below
                 }
@@ -1362,7 +1370,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                     //g_debug("  ServiceData has changed ");
                     pretty_print2("  ServiceData", prop_val, TRUE); // a{qv}
                     // Sends the service GUID as a key in the JSON object
-                    send_to_mqtt_array(address, service_guid, allocdata, actualLength);
+                    if (state.verbosity >= Details) {
+                      send_to_mqtt_array(address, "ServiceData", service_guid, allocdata, actualLength);
+                    }
                     existing->service_data_hash = hash;
 
                     // temp={p[16] - 10} brightness={p[17]} motioncount={p[19] + p[20] * 256} moving={p[22]}");
@@ -1433,7 +1443,10 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 {
                     pretty_print2("  ManufacturerData", prop_val, TRUE); // a{qv}
                     //g_debug("  ManufData has changed ");
-                    send_to_mqtt_array(address, "manufacturerdata", allocdata, actualLength);
+                    // Need to send actual manufacturer number not always 76 here TODO
+                    if (state.verbosity >= Details) {
+                      send_to_mqtt_array(address, "manufacturerdata", "76", allocdata, actualLength);
+                    }
                     existing->manufacturer_data_hash = hash;
 
                     if (existing->distance > 0)
@@ -1500,7 +1513,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         if (send_distance)
         {
             g_debug("  **** Send distance %6.3f                        ", existing->distance);
-            send_to_mqtt_single_float(address, "distance", existing->distance);
+            if (state.verbosity >= Distances){
+              send_to_mqtt_single_float(address, "distance", existing->distance);
+            }
             time(&existing->last_sent);
         }
         // TODO: Make this 'if send_distance or 30s has elapsed'
@@ -2129,27 +2144,37 @@ void initialize_state()
         state.mqtt_server = "";
     state.mqtt_username = getenv("MQTT_USERNAME");
     state.mqtt_password = getenv("MQTT_PASSWORD");
+
+    state.verbosity = Distances; // default verbosity
+    char* verbosity = getenv("VERBOSITY");
+    if (verbosity){
+        if (strcmp(verbosity, "Counts")) state.verbosity = Counts;
+        if (strcmp(verbosity, "Distances")) state.verbosity = Distances;
+        if (strcmp(verbosity, "Details")) state.verbosity = Details;
+    }
 }
 
 void display_state()
 {
-    g_info("HOST_NAME = %s\n", state.local->client_id);
-    g_info("HOST_DESCRIPTION = %s\n", state.local->description);
-    g_info("HOST_PLATFORM = %s\n", state.local->platform);
-    g_info("Position: (%.1f,%.1f,%.1f)\n", state.local->x, state.local->y, state.local->z);
+    g_info("HOST_NAME = %s", state.local->client_id);
+    g_info("HOST_DESCRIPTION = %s", state.local->description);
+    g_info("HOST_PLATFORM = %s", state.local->platform);
+    g_info("Position: (%.1f,%.1f,%.1f)", state.local->x, state.local->y, state.local->z);
 
-    g_info("RSSI_ONE_METER Power at 1m : %i\n", state.local->rssi_one_meter);
-    g_info("RSSI_FACTOR to distance : %.1f   (typically 2.0 (indoor, cluttered) to 4.0 (outdoor, no obstacles)\n", state.local->rssi_factor);
-    g_info("PEOPLE_DISTANCE : %.1fm (cutoff)\n", state.local->people_distance);
+    g_info("RSSI_ONE_METER Power at 1m : %i", state.local->rssi_one_meter);
+    g_info("RSSI_FACTOR to distance : %.1f   (typically 2.0 (indoor, cluttered) to 4.0 (outdoor, no obstacles)", state.local->rssi_factor);
+    g_info("PEOPLE_DISTANCE : %.1fm (cutoff)", state.local->people_distance);
 
-    g_info("UDP_MESH_PORT=%i\n", state.udp_mesh_port);
-    g_info("UDP_SIGN_PORT=%i\n", state.udp_sign_port);
-    g_info("UDP_SCALE_FACTOR=%.1f\n", state.udp_scale_factor);
+    g_info("UDP_MESH_PORT=%i", state.udp_mesh_port);
+    g_info("UDP_SIGN_PORT=%i", state.udp_sign_port);
+    g_info("UDP_SCALE_FACTOR=%.1f", state.udp_scale_factor);
 
-    g_info("MQTT_TOPIC='%s'\n", state.mqtt_topic);
-    g_info("MQTT_SERVER='%s'\n", state.mqtt_server);
-    g_info("MQTT_USERNAME='%s'\n", state.mqtt_username);
-    g_info("MQTT_PASSWORD='%s'\n", state.mqtt_password == NULL ? "(null)" : "*****");
+    g_info("VERBOSITY=%i", state.verbosity);
+
+    g_info("MQTT_TOPIC='%s'", state.mqtt_topic);
+    g_info("MQTT_SERVER='%s'", state.mqtt_server);
+    g_info("MQTT_USERNAME='%s'", state.mqtt_username);
+    g_info("MQTT_PASSWORD='%s'", state.mqtt_password == NULL ? "(null)" : "*****");
 }
 
 guint prop_changed;
