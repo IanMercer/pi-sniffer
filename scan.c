@@ -38,6 +38,11 @@
 #include <udp.h>
 #include <argp.h>
 
+// For LED flash
+#include <fcntl.h>
+#include <errno.h>
+#include <unistd.h>
+
 static struct OverallState state;
 // contains ... static struct Device devices[N];
 
@@ -2033,10 +2038,25 @@ gboolean try_connect(struct Device *a)
     return FALSE;
 }
 
+static int led_state = 0;
+
+// TODO: Suppress this on non-Pi platforms
+
+static void flash_led()
+{
+    led_state = (led_state + 1) & 0x01;
+    char d = led_state == 0 ? '0' : '1';
+    int fd = open("/sys/class/leds/led0/brightness", O_WRONLY);
+    write (fd, &d, 1);
+    close(fd);
+}
+
 #define SIMULTANEOUS_CONNECTIONS 5
 
 int try_connect_tick(void *parameters)
 {
+    flash_led();
+
     int simultaneus_connections = 0; // assumes none left from previous tick
     (void)parameters;                // not used
     if (starting)
