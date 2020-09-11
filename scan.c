@@ -2047,7 +2047,6 @@ int flash_led(void *parameters)
     // Every other cycle turn the LED on or off
     if (led_state < state.local->people_in_range_count * 2) {
         char d =  (led_state & 1) == 0 ? '1' : '0';
-        g_debug("%i in %.1f '%c'", led_state, state.local->people_in_range_count, d);
         int fd = open("/sys/class/leds/led0/brightness", O_WRONLY);
         write (fd, &d, 1);
         close(fd);
