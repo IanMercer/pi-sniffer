@@ -609,6 +609,12 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
             g_info("Did not recognize apple device type %.2x", apple_device_type);
         }
     }
+    else if (manufacturer == 0x022b)
+    {
+        optional(existing->name, "Tesla");
+        existing->category = CATEGORY_CAR;
+        //    ManufacturerData: {uint16 555: <[byte 0x04, 0x18, 0x77, 0x9d, 0x16, 0xee, 0x04, 0x6c, 0xf9, 0x49, 0x01, 0xf3, 0
+    }
     else if (manufacturer == 0x0087)
     {
         optional(existing->name, "Garmin");
@@ -903,19 +909,20 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             //     if (strcmp(name, phones[i] == 0)) existing->category = CATEGORY_PHONE;
             // }
 
-            if (strcmp(name, "iPhone") == 0)
+            if (string_contains(name, "iPhone"))
                 existing->category = CATEGORY_PHONE;
-            if (strstr(name, "Galaxy Note") != NULL)
+            else if (string_contains(name, "Galaxy Note"))
+                existing->category = CATEGORY_PHONE;
+            else if (string_contains(name, "Galaxy A20"))
                 existing->category = CATEGORY_PHONE;
 
-            else if (strcmp(name, "iPad") == 0)
+            else if (string_contains(name, "iPad"))
                 existing->category = CATEGORY_TABLET;
-            else if (strcmp(name, "MacBook pro") == 0)
+            else if (string_contains(name, "MacBook pro"))
                 existing->category = CATEGORY_COMPUTER;
-            else if (strcmp(name, "BOOTCAMP") == 0)
+            else if (string_starts_with(name, "BOOTCAMP"))
                 existing->category = CATEGORY_COMPUTER;
-            else if (strcmp(name, "BOOTCAMP2") == 0)
-                existing->category = CATEGORY_COMPUTER;
+
             // Watches
             else if (strcmp(name, "iWatch") == 0)
                 existing->category = CATEGORY_WEARABLE;
@@ -974,6 +981,11 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->category = CATEGORY_HEADPHONES;
             else if (strncmp(name, "HarpBT", 6) == 0)
                 existing->category = CATEGORY_HEADPHONES;
+            else if (string_starts_with(name, "LG HBS1120"))
+                existing->category = CATEGORY_HEADPHONES;
+            else if (string_starts_with(name, "Z-Link"))
+                existing->category = CATEGORY_HEADPHONES;
+
             // TVs
             // e.g. "[TV] Samsung Q70 Series (65)" icon is audio_card
             else if (strncmp(name, "[TV] Samsung", 12) == 0)

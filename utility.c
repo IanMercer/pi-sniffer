@@ -270,3 +270,18 @@ void append_text(char* buffer, int length, char* format, ...)
     }
 }
 
+/*
+  string starts with
+*/
+bool string_starts_with(char *buffer, char *match)
+{
+  return strncmp(buffer, match, strlen(match)) == 0;
+}
+
+/*
+  string contains
+*/
+bool string_contains(char *buffer, char *match)
+{
+    return g_strrstr(buffer, match) != NULL;
+}

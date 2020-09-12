@@ -57,4 +57,14 @@ int64_t mac_string_to_int_64 (char* mac);
 */
 void append_text(char* buffer, int length, char* format, ...);
 
+/*
+  string starts with
+*/
+bool string_starts_with(char *buffer, char *match);
+
+/*
+  string contains
+*/
+bool string_contains(char *buffer, char *match);
+
 #endif
