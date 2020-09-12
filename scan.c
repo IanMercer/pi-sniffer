@@ -444,7 +444,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         else if (apple_device_type == 0x02)
         {
             optional(existing->alias, "Beacon");
-            g_debug("  Beacon\n");
+            g_info("  Beacon\n");
             existing->category = CATEGORY_BEACON;
 
             // Aprilbeacon temperature sensor
@@ -455,11 +455,11 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
             }
         }
         else if (apple_device_type == 0x03)     // On user action
-            g_print("  Airprint \n");
+            g_info("  Airprint \n");
         else if (apple_device_type == 0x05)     // On user action
-            g_print("  Airdrop \n");
+            g_info("  Airdrop \n");
         else if (apple_device_type == 0x06)     // Constantly
-            g_print("  Homekit \n");
+            g_info("  Homekit \n");
             // 1 byte adv internal length
             // 1 byte status flags
             // 6 bytes device id
@@ -468,7 +468,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         else if (apple_device_type == 0x07)     // Proximity Pairing - Constantly (rare)
         {
             optional(existing->name, "Airpods");
-            g_debug("  Proximity pairing");
+            g_info("  Proximity pairing");
             existing->category = CATEGORY_HEADPHONES;
             // 1 byte length
             // 1 byte status flags
@@ -480,7 +480,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         else if (apple_device_type == 0x08)     // On user action (rare)
         {
             optional(existing->alias, "Siri");
-            g_debug("  Siri");
+            g_info("  Siri");
             // 1 byte length
             // 2 bytes perceptual hash
             // 1 byte SNR
@@ -491,7 +491,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         else if (apple_device_type == 0x09)     // On user action (some)
         {
             optional(existing->alias, "Airplay");
-            g_debug("  Airplay \n");
+            g_info("  Airplay \n");
             // 1 byte length
             // 1 byte flags
             // 1 byte config seed
@@ -500,28 +500,28 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         else if (apple_device_type == 0x0a)     // ?? (rare)
         {
             optional(existing->alias, "Apple 0a");
-            g_debug("  Apple 0a \n");
+            g_info("  Apple 0a \n");
         }
         else if (apple_device_type == 0x0b)     // On physical action
         {
             optional(existing->name, "iWatch");
-            g_debug("  Magic Switch");
+            g_info("  Magic Switch");
             existing->category = CATEGORY_WEARABLE;
             // Sent when watch has lost pairing to phone
         }
         else if (apple_device_type == 0x0c)     // Handoff
-            g_debug("  Handoff");
+            g_info("  Handoff");
             // 1 byte length
             // 1 byte version
             // 2 bytes IV
             // 1 byte AES-GCM Auth tag
             // 16 bytes encrypted payload
         else if (apple_device_type == 0x0d)     // Instant hotspot - On user action
-            g_debug("  WifiSet");
+            g_info("  WifiSet");
         else if (apple_device_type == 0x0e)     // Instant hotspot - Reaction to target presence
-            g_debug("  Hotspot");
+            g_info("  Hotspot");
         else if (apple_device_type == 0x0f)     // Nearby action - On user action (rare)
-            g_debug("  Nearby Action");
+            g_info("  Nearby Action");
             // Used for WiFi-password messages
             // 1 byte length
             // 1 byte action flags
@@ -547,41 +547,41 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
             uint8_t information_byte = allocdata[03];
 
             if (lower_bits == 0x00){
-                g_debug("  Nearby Info : unknown %.2x info=%.2x", upper_bits, information_byte);
+                g_info("  Nearby Info : unknown %.2x info=%.2x", upper_bits, information_byte);
             }
             else if (lower_bits == 0x01){
-                g_debug("  Nearby Info : disabled %.2x info=%.2x", upper_bits, information_byte);
+                g_info("  Nearby Info : disabled %.2x info=%.2x", upper_bits, information_byte);
             }
             else if (lower_bits == 0x03){
-                g_debug("  Nearby Info : idle %.2x info=%.2x", upper_bits, information_byte);
+                g_info("  Nearby Info : idle %.2x info=%.2x", upper_bits, information_byte);
             }
             else if (lower_bits == 0x05){
-                g_debug("  Nearby Info : audio playing, screen off %.2x info=%.2x", upper_bits, information_byte);
+                g_info("  Nearby Info : audio playing, screen off %.2x info=%.2x", upper_bits, information_byte);
             }
             else if (lower_bits == 0x07){
-                g_debug("  Nearby Info : screen is on %.2x info=%.2x", upper_bits, information_byte);
+                g_info("  Nearby Info : screen is on %.2x info=%.2x", upper_bits, information_byte);
             }
             else if (lower_bits == 0x09){
-                g_debug("  Nearby Info : screen is on and video playing %.2x info=%.2x", upper_bits, information_byte);
+                g_info("  Nearby Info : screen is on and video playing %.2x info=%.2x", upper_bits, information_byte);
             }
             else if (lower_bits == 0x0A){
-                g_debug("  Nearby Info : Watch is on wrist and unlocked %.2x info=%.2x", upper_bits, information_byte);
+                g_info("  Nearby Info : Watch is on wrist and unlocked %.2x info=%.2x", upper_bits, information_byte);
             }
             else if (lower_bits == 0x0B){
-                g_debug("  Nearby Info : Recent user interaction %.2x info=%.2x", upper_bits, information_byte);
+                g_info("  Nearby Info : Recent user interaction %.2x info=%.2x", upper_bits, information_byte);
             }
             else if (lower_bits == 0x0D){
-                g_debug("  Nearby Info : User is driving in a vehicle %.2x info=%.2x", upper_bits, information_byte);
+                g_info("  Nearby Info : User is driving in a vehicle %.2x info=%.2x", upper_bits, information_byte);
             }
             else if (lower_bits == 0x0E){
-                g_debug("  Nearby Info : Phone call or Facetime %.2x info=%.2x", upper_bits, information_byte);
+                g_info("  Nearby Info : Phone call or Facetime %.2x info=%.2x", upper_bits, information_byte);
             }
             else
-                g_debug("  Nearby Info : Unknown device status %2x upper=%2x info=%.2x", lower_bits, upper_bits, information_byte);
+                g_info("  Nearby Info : Unknown device status %2x upper=%2x info=%.2x", lower_bits, upper_bits, information_byte);
         }
         else
         {
-            g_debug("Did not recognize apple device type %.2x", apple_device_type);
+            g_info("Did not recognize apple device type %.2x", apple_device_type);
         }
     }
     else if (manufacturer == 0x0087)
