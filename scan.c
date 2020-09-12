@@ -546,7 +546,12 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
             uint8_t upper_bits = allocdata[02] >> 4;
             uint8_t information_byte = allocdata[03];
 
-            char* wifi = information_byte == 0x1e ? "Wifi ON" : information_byte == 0x1a ? "Wifi OFF" : " ";
+            char* wifi = 
+                information_byte == 0x10 ? "iPhone6?" : 
+                information_byte == 0x18 ? "Wifi ON (iPhone 5?)" : 
+                information_byte == 0x1c ? "Wifi ON (iPhone 5?)" : 
+                information_byte == 0x1e ? "Wifi ON (iPhone 8?)" : 
+                information_byte == 0x1a ? "Wifi OFF(iPhone 8?)" : " ";
 
             if (lower_bits == 0x00){
                 g_info("  Nearby Info 0x00: unknown u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
@@ -1291,6 +1296,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                         else if (ble_uuid == 0x0000fff0ul) append_text(gatts, sizeof(gatts), "Blood F0, ");
                         else if (ble_uuid == 0x0000fff1ul) append_text(gatts, sizeof(gatts), "Blood F1, ");
                         else if (ble_uuid == 0x0000fff2ul) append_text(gatts, sizeof(gatts), "Blood F2, ");
+                        else if (ble_uuid == 0x4e72b490ul) append_text(gatts, sizeof(gatts), "Alexa, ");
                         else if (ble_uuid == 0x7905f431ul) append_text(gatts, sizeof(gatts), "Apple NCS, ");
                         else if (ble_uuid == 0x89d3502bul) append_text(gatts, sizeof(gatts), "Apple MS, ");
                         else if (ble_uuid == 0x9fa480e0ul) append_text(gatts, sizeof(gatts), "Apple XX, ");
@@ -2364,7 +2370,7 @@ int main(int argc, char **argv)
     g_timeout_add_seconds(29, dump_all_devices_tick, loop);
 
     // Every 2s see if any unnamed device is ready to be connected
-    g_timeout_add_seconds(2, try_connect_tick, loop);
+    g_timeout_add_seconds(TRY_CONNECT_INTERVAL_S, try_connect_tick, loop);
 
     // Flash the led N times for N people present
     g_timeout_add(300, flash_led, loop);
