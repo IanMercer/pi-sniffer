@@ -555,6 +555,9 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
                 // Rare and not sure what this is, may represent a recent iOS update was applied
                 g_info("  Nearby Info 0x01: disabled u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
             }
+            else if (lower_bits == 0x02){
+                g_info("  Nearby Info 0x02: unknown? iPad? u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
+            }
             else if (lower_bits == 0x03){
                 // locked screen
                 g_info("  Nearby Info 0x03: locked u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
