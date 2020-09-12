@@ -806,13 +806,14 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
     {
         if (!isUpdate)
         {
-            // DEBUG g_print("Skip %s, bluez get_devices call and not seen yet\n", address);
+            // These devices may need to be removed from BLUEZ ??
+            g_debug("Skip %s, bluez get_devices call and not seen yet", address);
             return;
         }
 
         if (state.n == N)
         {
-            g_warning("Error, array of devices is full\n");
+            g_warning("Error, array of devices is full");
             return;
         }
 
