@@ -662,58 +662,58 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
     else if (manufacturer == 0x0110)
     {
         optional(existing->name, "Nippon Seiki Co., Ltd.");
-        g_debug("  Manufacturer is Nippon Seiki Co., Ltd.\n");
+        g_debug("  Manufacturer is Nippon Seiki Co., Ltd.");
     }
     else if (manufacturer == 0x0399)
     {
         optional(existing->name, "Nikon");
-        g_debug("  Manufacturer is Nikon Corporation\n");
+        g_debug("  Manufacturer is Nikon Corporation");
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x0003)
     {
         optional(existing->name, "IBM");
-        g_debug("  IBM\n");
+        g_debug("  IBM");
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x0501)
     {
         optional(existing->name, "Polaris ND");
-        g_debug("  Polaris ND\n");
+        g_debug("  Polaris ND");
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x014f)
     {
         optional(existing->name, "B&W Group Ltd.");
-        g_debug("  B&W Group Ltd.\n");
+        g_debug("  B&W Group Ltd.");
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x00c4)
     {
         optional(existing->name, "LG Electronics");
-        g_debug("  LG Electronics\n");
+        g_debug("  LG Electronics");
         existing->category = CATEGORY_TV;
     }
     else if (manufacturer == 0x03ee)
     {
         optional(existing->name, "CUBE Technolgies");
-        g_debug("  CUBE Technolgies\n");
+        g_debug("  CUBE Technolgies");
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x00e0)
     {
         optional(existing->name, "Google");
-        g_debug("  Google\n");
+        g_debug("  Google");
     }
     else if (manufacturer == 0x0085)
     {
         optional(existing->name, "BlueRadios ODM");
-        g_debug("  BlueRadios, Inc. (ODM)\n");
+        g_debug("  BlueRadios, Inc. (ODM)");
     }
     else if (manufacturer == 0x0434)
     {
         optional(existing->name, "Hatch Baby, Inc.");
-        g_debug("  Hatch Baby, Inc.\n");
+        g_debug("  Hatch Baby, Inc.");
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x0157)
@@ -725,18 +725,24 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
     else if (manufacturer == 0x001d)
     {
         optional(existing->name, "Qualcomm");
-        g_debug("  Qualcomm\n");
+        g_debug("  Qualcomm");
     }
     else if (manufacturer == 0x015e)
     {
         optional(existing->name, "Unikey Technologies, Inc");
-        g_debug("  Unikey Technologies, Inc\n");
+        g_debug("  Unikey Technologies, Inc");
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x01a5)
     {
         optional(existing->name, "Icon Health and Fitness");
-        g_debug("  Icon Health and Fitness\n");
+        g_debug("  Icon Health and Fitness");
+        existing->category = CATEGORY_FIXED;
+    }
+    else if (manufacturer == 0x0065)
+    {
+        optional(existing->name, "HP");
+        g_debug("  Hewlett-Packard");
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x00d2)
