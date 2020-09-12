@@ -546,47 +546,55 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
             uint8_t upper_bits = allocdata[02] >> 4;
             uint8_t information_byte = allocdata[03];
 
+            char* wifi = information_byte == 0x1e ? "Wifi ON" : information_byte == 0x1a ? "Wifi OFF" : " ";
+
             if (lower_bits == 0x00){
-                g_info("  Nearby Info 0x00: unknown u=%.2x info=%.2x", upper_bits, information_byte);
+                g_info("  Nearby Info 0x00: unknown u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x01){
-                g_info("  Nearby Info 0x01: disabled u=%.2x info=%.2x", upper_bits, information_byte);
+                // Rare and not sure what this is, may represent a recent iOS update was applied
+                g_info("  Nearby Info 0x01: disabled u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x03){
-                g_info("  Nearby Info 0x03: idle u=%.2x info=%.2x", upper_bits, information_byte);
+                // locked screen
+                g_info("  Nearby Info 0x03: locked u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x04){
-                g_info("  Nearby Info 0x04: unknown? u=%.2x info=%.2x", upper_bits, information_byte);
+                g_info("  Nearby Info 0x04: unknown? u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x05){
-                g_info("  Nearby Info 0x05: audio playing, screen off u=%.2x info=%.2x", upper_bits, information_byte);
+                g_info("  Nearby Info 0x05: audio playing, screen off u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x06){
-                g_info("  Nearby Info 0x06: unknown? watch? u=%.2x info=%.2x", upper_bits, information_byte);
+                g_info("  Nearby Info 0x06: unknown? watch? u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x07){
-                g_info("  Nearby Info 0x06: screen is on u=%.2x info=%.2x", upper_bits, information_byte);
+                // transition phase
+                g_info("  Nearby Info 0x06: screen is on u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x09){
-                g_info("  Nearby Info 0x09: screen is on and video playing u=%.2x info=%.2x", upper_bits, information_byte);
+                g_info("  Nearby Info 0x09: screen is on and video playing u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0A){
-                g_info("  Nearby Info 0x0a: Watch is on wrist and unlocked u=%.2x info=%.2x", upper_bits, information_byte);
+                // Elsewhere it says this is a message from phone to watch?
+                // See https://arxiv.org/pdf/1904.10600.pdf
+                g_info("  Nearby Info 0x0a: Watch is on wrist and unlocked u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0B){
-                g_info("  Nearby Info 0x0b: Recent user interaction u=%.2x info=%.2x", upper_bits, information_byte);
+                // active user
+                g_info("  Nearby Info 0x0b: Recent user interaction u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0D){
-                g_info("  Nearby Info 0x0d: User is driving in a vehicle %.2x info=%.2x", upper_bits, information_byte);
+                g_info("  Nearby Info 0x0d: User is driving in a vehicle %.2x info=%.2x %s", upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0E){
-                g_info("  Nearby Info 0x0e: Phone call or Facetime %.2x info=%.2x", upper_bits, information_byte);
+                g_info("  Nearby Info 0x0e: Phone call or Facetime %.2x info=%.2x %s", upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0F){
-                g_info("  Nearby Info 0x0f: unknown? watch? u=%.2x info=%.2x", upper_bits, information_byte);
+                g_info("  Nearby Info 0x0f: unknown? watch? u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
             }
             else
-                g_info("  Nearby Info 0x%2x: Unknown device status upper=%2x info=%.2x", lower_bits, upper_bits, information_byte);
+                g_info("  Nearby Info 0x%2x: Unknown device status upper=%2x info=%.2x %s", lower_bits, upper_bits, information_byte, wifi);
         }
         else
         {
