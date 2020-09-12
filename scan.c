@@ -1271,17 +1271,19 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                         else if (ble_uuid == 0x0000fff0ul) append_text(gatts, sizeof(gatts), "Blood F0, ");
                         else if (ble_uuid == 0x0000fff1ul) append_text(gatts, sizeof(gatts), "Blood F1, ");
                         else if (ble_uuid == 0x0000fff2ul) append_text(gatts, sizeof(gatts), "Blood F2, ");
+                        else if (ble_uuid == 0x7905f431ul) append_text(gatts, sizeof(gatts), "Apple NCS, ");
+                        else if (ble_uuid == 0x89d3502bul) append_text(gatts, sizeof(gatts), "Apple MS, ");
+                        else if (ble_uuid == 0x9fa480e0ul) append_text(gatts, sizeof(gatts), "Apple XX, ");
                         else if (ble_uuid == 0xb9401000ul) append_text(gatts, sizeof(gatts), "Estimote 1, ");
                         else if (ble_uuid == 0xb9402000ul) append_text(gatts, sizeof(gatts), "Estimote 2,");
                         else if (ble_uuid == 0xb9403000ul) append_text(gatts, sizeof(gatts), "Estimote 3, ");
                         else if (ble_uuid == 0xb9404000ul) append_text(gatts, sizeof(gatts), "Estimote 4, ");
                         else if (ble_uuid == 0xb9405000ul) append_text(gatts, sizeof(gatts), "Estimote 5, ");
                         else if (ble_uuid == 0xb9406000ul) append_text(gatts, sizeof(gatts), "Estimote 6, ");
-                        else if (ble_uuid == 0x89d3502bul) append_text(gatts, sizeof(gatts), "Apple MS, ");
-                        else if (ble_uuid == 0x7905f431ul) append_text(gatts, sizeof(gatts), "Apple NCS, ");
-                        else if (ble_uuid == 0x9fa480e0ul) append_text(gatts, sizeof(gatts), "Apple XX, ");
+                        else if (ble_uuid == 0xc7f94713ul) append_text(gatts, sizeof(gatts), "CDP, ");
                         else if (ble_uuid == 0xd0611e78ul) append_text(gatts, sizeof(gatts), "Continuity, ");
                         else
+
                             append_text(gatts, sizeof(gatts), "Unknown(%s), ", strCopy);
 
                         g_free(strCopy);
