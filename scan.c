@@ -1830,12 +1830,12 @@ void bluez_list_devices(GDBusConnection *conn, GAsyncResult *res, gpointer data)
     GVariant *ifaces_and_properties;
     GError *error = NULL;
 
-    //g_debug("List devices call back\n");
+    g_debug("get_managed_objects callback");
 
     result = g_dbus_connection_call_finish(conn, res, &error);
     if ((result == NULL) || error)
     {
-        g_print("Unable to get result for GetManagedObjects\n");
+        g_info("Unable to get result for GetManagedObjects\n");
         print_and_free_error(error);
         // probably out of memory
         exit(-1);
@@ -1872,7 +1872,7 @@ int get_managed_objects(void *parameters)
 {
     GMainLoop *loop = (GMainLoop *)parameters;
 
-    //g_debug("Get managed objects\n");
+    g_debug("get_managed_objects");
 
     g_dbus_connection_call(conn,
                            "org.bluez",
