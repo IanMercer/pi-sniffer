@@ -1898,11 +1898,16 @@ gboolean should_remove(struct Device *existing)
 
     double delta_time = difftime(now, existing->latest);
 
-    // 10 min for a regular device
-    int max_time_ago_seconds = 10 * 60;
+    // 2 min for a regular device
+    int max_time_ago_seconds = 2 * 60;
 
-    // 20 min for a beacon or other public mac address
-    if (existing->addressType == PUBLIC_ADDRESS_TYPE)
+    // 10 min if we got to know it
+    if (existing->category != CATEGORY_UNKNOWN){
+        max_time_ago_seconds = 10 * 60;
+    }
+
+    // 20 min for a beacon or other public mac address that we saw more than once
+    if (existing->addressType == PUBLIC_ADDRESS_TYPE && existing->count > 2)
     {
         max_time_ago_seconds = 20 * 60;
     }
@@ -1917,8 +1922,7 @@ gboolean should_remove(struct Device *existing)
 
     if (remove)
     {
-
-        g_debug("  Cache remove %s '%s' count=%i dt=%.1fs dist=%.1fm\n", existing->mac, existing->name, existing->count, delta_time, existing->distance);
+        g_info("  Cache remove %s '%s' count=%i dt=%.1fmin dist=%.1fm\n", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
 
         // And so when this device reconnects we get a proper reconnect message and so that BlueZ doesn't fill up a huge
         // cache of iOS devices that have passed by or changed mac address
