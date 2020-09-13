@@ -326,6 +326,10 @@ void *listen_loop(void *param)
             continue; // not enough to be a device message
         }
 
+        // Record time received to compare against time sent to check clock-sync
+        time_t now;
+        time(&now);
+
         struct Device d;
         struct AccessPoint a;
         strncpy(a.client_id, "notset", 7);
@@ -361,9 +365,6 @@ void *listen_loop(void *param)
                 continue;
             }
 
-            time_t now;
-            time(&now);
-
             bool found = false;
 
             pthread_mutex_lock(&state->lock);
@@ -384,16 +385,6 @@ void *listen_loop(void *param)
                     int64_t id_64 = mac_string_to_int_64(d.mac);
                     add_closest(id_64, a.id, d.latest, d.distance, d.category, d.superceeds);
                    
-                    // // struct ClosestTo *closest = get_closest(state->devices[i].id);
-                    // // if (closest)
-                    // // { // && (closest->distance < state->devices[i].distance)) {
-                    // //     struct AccessPoint *ap = get_access_point(closest->access_id);
-                    // //     if (ap)
-                    // //     {
-                    // //         //g_print(" * Closest overall is '%s' at %.2f\n", ap->client_id, closest->distance);
-                    // //     }
-                    // // }
-
                     break;
                 }
             }
