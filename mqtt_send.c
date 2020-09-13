@@ -114,7 +114,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
 
     connected = true;
 
-    g_info("Successful connection");
+    g_info("MQTT Successful connection");
 
     MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
     MQTTAsync_message pubmsg = MQTTAsync_message_initializer;

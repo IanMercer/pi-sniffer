@@ -2056,9 +2056,6 @@ gboolean try_connect(struct Device *a)
     if (a->category != CATEGORY_UNKNOWN)
         return FALSE; // already has a category
 
-    // If not idle, already in process of trying to connect
-    if (a->try_connect_state != TRY_CONNECT_ZERO) return FALSE;
-
     // Don't attempt connection until a device is close enough, or has been seen enough
     // otherwise likely to fail for a transient device at 12.0+m
     if (a->count == 1 && a->distance > 5.0)
@@ -2068,7 +2065,13 @@ gboolean try_connect(struct Device *a)
     if (a->try_connect_attempts > 4) return FALSE;
 
     // Every 16 counts we try again if not already connected
-    if (a->count < a->try_connect_attempts * 16) return FALSE;
+    if (a->try_connect_state == TRY_CONNECT_COMPLETE && 
+        a->count > a->try_connect_attempts * 16) {
+            a->try_connect_state = TRY_CONNECT_ZERO;
+        }
+
+    // If not idle, already in process of trying to connect
+    if (a->try_connect_state != TRY_CONNECT_ZERO) return FALSE;
 
     // Passed all pre-conditions, go ahead and start a connection attempt
     a->try_connect_state = 1;
