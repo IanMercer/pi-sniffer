@@ -10,6 +10,7 @@
 #include <time.h>
 #include <math.h>
 #include <signal.h>
+#include <glib.h>
 
 #include <MQTTClient.h>
 #include <MQTTAsync.h>
@@ -46,9 +47,8 @@ void connlost(void *context, char *cause)
     (void)context;
     //MQTTAsync client = (MQTTAsync)context;
 
-    printf("\nConnection lost\n");
-    printf("     cause: %s\n", cause);
-    printf("     Make sure you don't have another copy running\n");
+    g_info("MQTT Connection lost '%s'", cause);
+    g_debug("    Make sure you don't have another copy running");
 
     connected = false;
 }
@@ -57,20 +57,20 @@ void onDisconnectFailure(void* context, MQTTAsync_failureData* response)
 {
     (void)context;
     (void)response;
-    printf("Disconnect failed\n");
+    g_info("MQTT Disconnect failed");
 }
 
 void onDisconnect(void* context, MQTTAsync_successData* response)
 {
     (void)context;
     (void)response;
-	printf("Successful disconnection\n");
+	g_info("MQTT Successful disconnection\n");
 }
 
 void onSendFailure(void* context, MQTTAsync_failureData* response)
 {
     (void)context;
-    printf("Message send failed token %d error code %d\n", response->token, response->code);
+    g_info("MQTT Message send failed token %d error code %d\n", response->token, response->code);
 }
 
 void onSend(void* context, MQTTAsync_successData* response)
@@ -84,14 +84,14 @@ void onSubscribe(void* context, MQTTAsync_successData* response)
 {
     (void)context;
     (void)response;
-    printf("Subscribe succeeded\n");
+    g_info("MQTT Subscribe succeeded\n");
     // subscribed = 1;
 }
 
 void onSubscribeFailure(void* context, MQTTAsync_failureData* response)
 {
     (void)context;
-    printf("Subscribe failed, rc %d\n", response ? response->code : 0);
+    g_info("MQTT Subscribe failed, rc %d\n", response ? response->code : 0);
     // finished = 1;
 }
 
@@ -101,8 +101,8 @@ void onConnectFailure(void* context, MQTTAsync_failureData* response)
 {
     (void)context;
     //MQTTAsync client = (MQTTAsync)context;
-    printf("Connect failed, rc %d\n", response ? response->code : 0);
-    //connected = false;
+    g_info("MQTT Connect failed, rc %d\n", response ? response->code : 0);
+    connected = false;
 }
 
 
@@ -112,7 +112,9 @@ void onConnect(void* context, MQTTAsync_successData* response)
     MQTTAsync client = (MQTTAsync)context;
     int rc;
 
-    printf("Successful connection\n");
+    connected = true;
+
+    g_info("Successful connection");
 
     MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
     MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
@@ -133,7 +135,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
     pubmsg.retained = 0;
     if ((rc = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
     {
-        printf("Failed to start sendMessage, return code %d\n", rc);
+        g_info("Failed to start sendMessage, return code %d", rc);
         exit(EXIT_FAILURE);
     }
 
@@ -151,7 +153,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
 
     if ((rc = MQTTAsync_subscribe(client, MESH_TOPIC, 0, &opts2)) != MQTTASYNC_SUCCESS)
     {
-       printf("Failed to start subscribe, return code %d\n", rc);
+       g_info("Failed to start subscribe, return code %d", rc);
        exit(EXIT_FAILURE);
     }
 }
@@ -166,13 +168,13 @@ int messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_messa
     // ignore messages from self
     if (strcmp(payloadptr, access_point_name) == 0) return 1;
 
-    printf("Incoming from: %s", payloadptr);  // starts with a string (the access point sending it)
+    g_info("Incoming from: %s", payloadptr);  // starts with a string (the access point sending it)
 
     struct Device device;
 
     memcpy(&device, payloadptr+32, sizeof(struct Device));
 
-    printf("  Update for %s '%s'\n", device.mac, device.name);
+    g_info("  Update for %s '%s'\n", device.mac, device.name);
 
     // TODO: Put this into the global array and update which access point is closest
 
@@ -191,14 +193,12 @@ void exit_mqtt()
 int ssl_error_cb(const char *str, size_t len, void *u) {
     (void)len;
     (void)u;
-    printf("%s\n", str);
+    g_info("SSL error '%s'", str);
     return 0;
 }
 
 int connect_async(MQTTAsync client)
 {
-    connected = true;
-
     MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
 
     opts.username = username;
@@ -222,11 +222,11 @@ int connect_async(MQTTAsync client)
 
     opts.context = client;
 
-    g_print("Connecting...\n");
+    g_info("MQTT Connecting...");
     int rc;
     if ((rc = MQTTAsync_connect(client, &opts)) != MQTTASYNC_SUCCESS)
     {
-       printf("Failed to start connect, return code %d\n", rc);
+       g_info("MQTT Failed to start connect, return code %d", rc);
        exit(EXIT_FAILURE);
     }
     return rc;
@@ -324,7 +324,7 @@ void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* client_id, char* m
     }
     */
 
-    g_info("MQTT connect async\n");
+    g_info("MQTT connect async");
 
     connect_async(client);
 
@@ -433,8 +433,11 @@ void json_array_no_mac(char*message, int length, char* field, unsigned char* val
 void send_to_mqtt(char* topic, char *json, int qos, int retained)
 {
     if (!isMQTTEnabled) return;
+    if (!connected){
+        g_debug("MQTT Could not send message, not connected yet, discarding");
+    }
 
-    g_debug("MQTT %s %s\n", topic, json);
+    g_debug("MQTT %s %s", topic, json);
     int length = strlen(json);
 
     MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
@@ -449,10 +452,10 @@ void send_to_mqtt(char* topic, char *json, int qos, int retained)
     int rc = 0;
     if ((rc = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
     {
-        g_warning("Failed to start sendMessage, return code %d\n", rc);
+        g_warning("Failed to start sendMessage, return code %d", rc);
         send_errors ++;
         if (send_errors > 10) {
-            g_warning("\n\nToo many send errors, restarting\n\n");
+            g_warning("Too many send errors, restarting");
             exit(-1);
         }
     }
@@ -465,6 +468,9 @@ void send_to_mqtt(char* topic, char *json, int qos, int retained)
 void send_device_mqtt(struct Device* device)
 {
     if (!isMQTTEnabled) return;
+    if (!connected){
+        g_debug("MQTT Could not send message, not connected yet, discarding");
+    }
 
     g_debug("    MQTT %s device %s '%s'\n", MESH_TOPIC, device->mac, device->name);
 

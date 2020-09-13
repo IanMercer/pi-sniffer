@@ -1141,18 +1141,18 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         }
         else if (strcmp(property_name, "Connected") == 0)
         {
-            bool connected = g_variant_get_boolean(prop_val);
-            if (existing->connected != connected)
+            bool connected_device = g_variant_get_boolean(prop_val);
+            if (existing->connected != connected_device)
             {
-                if (connected)
+                if (connected_device)
                     g_debug("  %s Connected      ", address);
                 else
                     g_debug("  %s Disconnected   ", address);
 
                 if (state.verbosity >= Details) {
-                  send_to_mqtt_single_value(address, "connected", connected ? 1 : 0);
+                  send_to_mqtt_single_value(address, "connected", connected_device ? 1 : 0);
                 }
-                existing->connected = connected;
+                existing->connected = connected_device;
             }
         }
         else if (strcmp(property_name, "Trusted") == 0)
