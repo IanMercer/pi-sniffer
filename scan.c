@@ -761,20 +761,6 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
 }
 
 /*
-    bluez_remove_device
- */
-int bluez_remove_device(char address[18])
-{
-        GVariant *vars[1];
-        vars[0] = g_variant_new_string(address);
-        GVariant *param = g_variant_new_tuple(vars, 1); // floating
-
-        int rc = bluez_adapter_call_method(conn, "RemoveDevice", param, NULL);
-        if (rc) g_debug("Not able to remove %s\n", address);
-        return rc;
-}
-
-/*
     Report a new or changed device to MQTT endpoint
     NOTE: Free's address when done
 */
@@ -822,7 +808,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         {
             // These devices need to be removed from BLUEZ otherwise BLUEZ's cache gets huge!
             g_debug("Remove %s, bluez get_devices call and not seen yet", address);
-            bluez_remove_device(address);
+            bluez_remove_device(conn, address);
             return;
         }
 
@@ -1943,7 +1929,7 @@ gboolean should_remove(struct Device *existing)
 
         // And so when this device reconnects we get a proper reconnect message and so that BlueZ doesn't fill up a huge
         // cache of iOS devices that have passed by or changed mac address
-        bluez_remove_device(existing->mac);
+        bluez_remove_device(conn, existing->mac);
     }
 
     return remove; // 60 min of no activity = remove from cache

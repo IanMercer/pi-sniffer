@@ -74,13 +74,18 @@ int bluez_adapter_connect_device(GDBusConnection *conn, char *address);
 
 int bluez_adapter_disconnect_device(GDBusConnection *conn, char *address);
 
-int bluez_device_call_method(GDBusConnection *conn, const char *method, char* address, GVariant *param, method_cb_t method_cb);
+int bluez_device_call_method_address(GDBusConnection *conn, const char *method, char* address, GVariant *param, method_cb_t method_cb);
 
 int bluez_adapter_call_method(GDBusConnection *conn, const char *method, GVariant *param, method_cb_t method_cb);
 
 void bluez_get_discovery_filter_cb(GObject *conn, GAsyncResult *res, gpointer data);
 
 int bluez_adapter_set_property(GDBusConnection *conn, const char *prop, GVariant *value);
+
+/*
+    bluez_remove_device
+ */
+int bluez_remove_device(GDBusConnection *conn, char address[18]);
 
 //typedef struct name_prefix {
 //    int category;

@@ -63,7 +63,7 @@ int bluez_set_discovery_filter(GDBusConnection *conn)
 
 int bluez_adapter_connect_device(GDBusConnection *conn, char *address)
 {
-	int rc = bluez_device_call_method(conn, "Connect", address, NULL, NULL);
+	int rc = bluez_device_call_method_address(conn, "Connect", address, NULL, NULL);
 	if(rc) {
 		g_print("Not able to call Connect\n");
 		return 1;
@@ -71,7 +71,7 @@ int bluez_adapter_connect_device(GDBusConnection *conn, char *address)
 	return 0;
 }
 
-int bluez_device_call_method(GDBusConnection *conn, const char *method, char* address, GVariant *param, method_cb_t method_cb)
+int bluez_device_call_method_address(GDBusConnection *conn, const char *method, char* address, GVariant *param, method_cb_t method_cb)
 {
     //    g_print("bluez_device_call_method(%s)\n", method);
     GError *error = NULL;
@@ -193,13 +193,29 @@ void bluez_get_discovery_filter_cb(GObject *conn, GAsyncResult *res, gpointer da
 */
 int bluez_adapter_disconnect_device(GDBusConnection *conn, char *address)
 {
-	int rc = bluez_device_call_method(conn, "Disconnect", address, NULL, NULL);
+	int rc = bluez_device_call_method_address(conn, "Disconnect", address, NULL, NULL);
 	if(rc) {
 		g_print("Not able to call Disconnect\n");
 		return 1;
 	}
 	return 0;
 }
+
+/*
+    bluez_remove_device
+ */
+int bluez_remove_device(GDBusConnection *conn, char address[18])
+{
+        // RemoveDevice takes an argument to the object path i.e /org/bluez/hciX/dev_XX_YY_ZZ_AA_BB_CC.
+        GVariant *vars[1];
+        vars[0] = g_variant_new_string(address);
+        GVariant *param = g_variant_new_tuple(vars, 1); // floating
+
+        int rc = bluez_device_call_method_address(conn, "RemoveDevice", address, param, NULL);
+        if (rc) g_debug("Not able to remove %s", address);
+        return rc;
+}
+
 
 
 /*
