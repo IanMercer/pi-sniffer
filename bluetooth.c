@@ -206,14 +206,23 @@ int bluez_adapter_disconnect_device(GDBusConnection *conn, char *address)
  */
 int bluez_remove_device(GDBusConnection *conn, char address[18])
 {
-        // RemoveDevice takes an argument to the object path i.e /org/bluez/hciX/dev_XX_YY_ZZ_AA_BB_CC.
-        GVariant *vars[1];
-        vars[0] = g_variant_new_string(address);
-        GVariant *param = g_variant_new_tuple(vars, 1); // floating
+    // RemoveDevice takes an argument to the object path i.e /org/bluez/hciX/dev_XX_YY_ZZ_AA_BB_CC.
 
-        int rc = bluez_device_call_method_address(conn, "RemoveDevice", address, param, NULL);
-        if (rc) g_debug("Not able to remove %s", address);
-        return rc;
+    GVariantDict dict;
+    char path[128];
+
+    get_path_from_address(address, path, sizeof(path));
+
+    g_variant_dict_init (&dict, NULL);
+    g_variant_dict_insert_value(&dict, "Address", g_variant_new_string((char*)path));
+
+    GVariant *param = g_variant_dict_end(&dict);
+
+    int rc = bluez_adapter_call_method(conn, "RemoveDevice", param, NULL);
+    if (rc) g_debug("Not able to remove %s", address);
+    else g_debug("Removed %s", path);
+
+    return rc;
 }
 
 

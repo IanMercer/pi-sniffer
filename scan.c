@@ -581,6 +581,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
                 g_info("  Nearby Info 0x06: screen is on u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x09){
+                // Nope, iPad is locked 
                 g_info("  Nearby Info 0x09: screen is on and video playing u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0A){
