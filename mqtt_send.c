@@ -70,6 +70,7 @@ void onDisconnect(void* context, MQTTAsync_successData* response)
 void onSendFailure(void* context, MQTTAsync_failureData* response)
 {
     (void)context;
+    // 11 = Timeout waiting for UNSUBACK
     g_info("MQTT Message send failed token %d error code %d\n", response->token, response->code);
 }
 
@@ -135,7 +136,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
     pubmsg.retained = 0;
     if ((rc = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
     {
-        g_info("Failed to start sendMessage, return code %d", rc);
+        g_warning("Failed to send state message, return code %d", rc);
         exit(EXIT_FAILURE);
     }
 
@@ -153,7 +154,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
 
     if ((rc = MQTTAsync_subscribe(client, MESH_TOPIC, 0, &opts2)) != MQTTASYNC_SUCCESS)
     {
-       g_info("Failed to start subscribe, return code %d", rc);
+       g_warning("Failed to start subscribe, return code %d", rc);
        exit(EXIT_FAILURE);
     }
 }
@@ -174,7 +175,7 @@ int messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_messa
 
     memcpy(&device, payloadptr+32, sizeof(struct Device));
 
-    g_info("  Update for %s '%s'\n", device.mac, device.name);
+    g_info("  Update for %s '%s'", device.mac, device.name);
 
     // TODO: Put this into the global array and update which access point is closest
 
@@ -226,7 +227,7 @@ int connect_async(MQTTAsync client)
     int rc;
     if ((rc = MQTTAsync_connect(client, &opts)) != MQTTASYNC_SUCCESS)
     {
-       g_info("MQTT Failed to start connect, return code %d", rc);
+       g_warning("MQTT Failed to start connect, return code %d", rc);
        exit(EXIT_FAILURE);
     }
     return rc;
@@ -452,13 +453,14 @@ void send_to_mqtt(char* topic, char *json, int qos, int retained)
     int rc = 0;
     if ((rc = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
     {
-        g_warning("Failed to start sendMessage, return code %d", rc);
+        g_warning("Failed to send access point message, return code %d", rc);
         send_errors ++;
         if (send_errors > 10) {
             g_warning("Too many send errors, restarting");
             exit(-1);
         }
     }
+    send_errors = 0;
 }
 
 
@@ -493,13 +495,14 @@ void send_device_mqtt(struct Device* device)
     int rc = 0;
     if ((rc = MQTTAsync_sendMessage(client, MESH_TOPIC, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
     {
-        printf("Failed to start sendMessage, return code %d\n", rc);
+        g_warning("MQTT Failed to send device message, return code %d", rc);
         send_errors ++;
         if (send_errors > 10) {
-            g_print("\n\nToo many send errors, restarting\n\n");
+            g_warning("Too many send errors, restarting");
             exit(-1);
         }
     }
+    send_errors = 0;
 }
 
 void send_to_mqtt_single(char *mac_address, char *key, char *value)
