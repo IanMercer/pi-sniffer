@@ -282,7 +282,7 @@ char* tablets[] = { "iPad", };
 char* computers[] = { "MacBook Pro", "BOOTCAMP", "BOOTCAMP2"};
 char* wearables[] = { "Apple Watch", "iWatch", "Galaxy Watch", "Gear S3", "fenix", 
     "Mi Smart Band", "Ionic", "Versa", "TICKR X",
-    "Charge 2", "Charge 3" };
+    "Charge 2", "Charge 3", "Charge 4" };
 char* headphones[] = {"Sesh Evo-LE", "F2", "Jabra", "LE-Bose", "LE-reserved_C", "Blaze", "HarpBT"};
 char* tvs[] = {"AppleTV", "Apple TV", "[TV] Samsung", "[Signage] Samsung"};
 char* printers[] = {"ENVY Photo"};

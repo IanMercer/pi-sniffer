@@ -432,12 +432,12 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         uint8_t apple_device_type = allocdata[00];
         if (apple_device_type == 0x01)
         {
-            g_info(" **** Apple Device type 0x01 - what is this?");
+            g_info("  %s '%s' Apple Device type 0x01 - what is this?", existing->mac, existing->name);
         }
         else if (apple_device_type == 0x02)
         {
             optional_set(existing->alias, "Beacon", NAME_LENGTH);
-            g_info("  Beacon\n");
+            g_info("  %s '%s' Beacon", existing->mac, existing->name);
             existing->category = CATEGORY_BEACON;
 
             // Aprilbeacon temperature sensor
@@ -448,11 +448,11 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
             }
         }
         else if (apple_device_type == 0x03)     // On user action
-            g_info("  Airprint \n");
+            g_info("  %s '%s' Airprint", existing->mac, existing->name);
         else if (apple_device_type == 0x05)     // On user action
-            g_info("  Airdrop \n");
+            g_info("  %s '%s' Airdrop", existing->mac, existing->name);
         else if (apple_device_type == 0x06)     // Constantly
-            g_info("  Homekit \n");
+            g_info("  %s '%s' Homekit", existing->mac, existing->name);
             // 1 byte adv internal length
             // 1 byte status flags
             // 6 bytes device id
@@ -461,7 +461,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         else if (apple_device_type == 0x07)     // Proximity Pairing - Constantly (rare)
         {
             optional_set(existing->name, "Airpods", NAME_LENGTH);
-            g_info("  Proximity pairing");
+            g_info("  %s '%s' Proximity Pairing", existing->mac, existing->name);
             existing->category = CATEGORY_HEADPHONES;
             // 1 byte length
             // 1 byte status flags
@@ -473,7 +473,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         else if (apple_device_type == 0x08)     // On user action (rare)
         {
             optional_set(existing->alias, "Siri", NAME_LENGTH);
-            g_info("  Siri");
+            g_info("  %s '%s' Siri", existing->mac, existing->name);
             // 1 byte length
             // 2 bytes perceptual hash
             // 1 byte SNR
@@ -484,7 +484,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         else if (apple_device_type == 0x09)     // On user action (some)
         {
             optional_set(existing->alias, "Airplay", NAME_LENGTH);
-            g_info("  Airplay \n");
+            g_info("  %s '%s' Airplay", existing->mac, existing->name);
             // 1 byte length
             // 1 byte flags
             // 1 byte config seed
@@ -493,28 +493,28 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         else if (apple_device_type == 0x0a)     // ?? (rare)
         {
             optional_set(existing->alias, "Apple 0a", NAME_LENGTH);
-            g_info("  Apple 0a \n");
+            g_info("  %s '%s' Apple 0a??", existing->mac, existing->name);
         }
         else if (apple_device_type == 0x0b)     // On physical action
         {
             optional_set(existing->name, "iWatch", NAME_LENGTH);
-            g_info("  Magic Switch");
+            g_info("  %s '%s' Magic Switch", existing->mac, existing->name);
             existing->category = CATEGORY_WEARABLE;
             // Sent when watch has lost pairing to phone
         }
         else if (apple_device_type == 0x0c)     // Handoff
-            g_info("  Handoff");
+            g_info("  %s '%s' Handoff", existing->mac, existing->name);
             // 1 byte length
             // 1 byte version
             // 2 bytes IV
             // 1 byte AES-GCM Auth tag
             // 16 bytes encrypted payload
         else if (apple_device_type == 0x0d)     // Instant hotspot - On user action
-            g_info("  WifiSet");
+            g_info("  %s '%s' WifiSet", existing->mac, existing->name);
         else if (apple_device_type == 0x0e)     // Instant hotspot - Reaction to target presence
-            g_info("  Hotspot");
+            g_info("  %s '%s' Hotspot", existing->mac, existing->name);
         else if (apple_device_type == 0x0f)     // Nearby action - On user action (rare)
-            g_info("  Nearby Action");
+            g_info("  %s '%s' Nearby Action", existing->mac, existing->name);
             // Used for WiFi-password messages
             // 1 byte length
             // 1 byte action flags
@@ -541,66 +541,66 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
 
             char* wifi = 
                 information_byte == 0x10 ? "iPhone6?" : 
-                information_byte == 0x18 ? "Wifi ON (iPhone 5?)" : 
-                information_byte == 0x1c ? "Wifi ON (iPhone 5?)" : 
-                information_byte == 0x1e ? "Wifi ON (iPhone 8?)" : 
-                information_byte == 0x1a ? "Wifi OFF(iPhone 8?)" : " ";
+                information_byte == 0x18 ? "Wifi ON ()" : 
+                information_byte == 0x1c ? "Wifi ON ()" : 
+                information_byte == 0x1e ? "Wifi ON ()" : 
+                information_byte == 0x1a ? "Wifi OFF()" : " ";
 
             if (lower_bits == 0x00){
-                g_info("  Nearby Info 0x00: unknown u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
+                g_info(" %s '%s' Nearby Info 0x00: unknown u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x01){
                 // Rare and not sure what this is, may represent a recent iOS update was applied
-                g_info("  Nearby Info 0x01: disabled u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
+                g_info(" %s '%s' Nearby Info 0x01: disabled u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x02){
-                g_info("  Nearby Info 0x02: unknown? iPad? u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
+                g_info(" %s '%s' Nearby Info 0x02: unknown? iPad? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x03){
                 // locked screen
-                g_info("  Nearby Info 0x03: locked u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
+                g_info(" %s '%s' Nearby Info 0x03: locked u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x04){
-                g_info("  Nearby Info 0x04: unknown? u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
+                g_info(" %s '%s' Nearby Info 0x04: unknown? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x05){
-                g_info("  Nearby Info 0x05: audio playing, screen off u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
+                g_info(" %s '%s' Nearby Info 0x05: audio playing, screen off u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x06){
-                g_info("  Nearby Info 0x06: unknown? watch? u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
+                g_info(" %s '%s' Nearby Info 0x06: unknown? watch? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x07){
                 // transition phase
-                g_info("  Nearby Info 0x06: screen is on u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
+                g_info(" %s '%s' Nearby Info 0x06: screen is on u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x09){
                 // Nope, iPad is locked 
-                g_info("  Nearby Info 0x09: screen is on and video playing u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
+                g_info(" %s '%s' Nearby Info 0x09: screen is on and video playing u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0A){
                 // Elsewhere it says this is a message from phone to watch?
                 // See https://arxiv.org/pdf/1904.10600.pdf
-                g_info("  Nearby Info 0x0a: Watch is on wrist and unlocked u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
+                g_info(" %s '%s' Nearby Info 0x0a: Watch is on wrist and unlocked u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0B){
                 // active user
-                g_info("  Nearby Info 0x0b: Recent user interaction u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
+                g_info(" %s '%s' Nearby Info 0x0b: Recent user interaction u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0D){
-                g_info("  Nearby Info 0x0d: User is driving in a vehicle %.2x info=%.2x %s", upper_bits, information_byte, wifi);
+                g_info(" %s '%s' Nearby Info 0x0d: User is driving in a vehicle %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0E){
-                g_info("  Nearby Info 0x0e: Phone call or Facetime %.2x info=%.2x %s", upper_bits, information_byte, wifi);
+                g_info(" %s '%s' Nearby Info 0x0e: Phone call or Facetime %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0F){
-                g_info("  Nearby Info 0x0f: unknown? watch? u=%.2x info=%.2x %s", upper_bits, information_byte, wifi);
+                g_info(" %s '%s' Nearby Info 0x0f: unknown? watch? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else
-                g_info("  Nearby Info 0x%2x: Unknown device status upper=%2x info=%.2x %s", lower_bits, upper_bits, information_byte, wifi);
+                g_info(" %s '%s' Nearby Info 0x%2x: Unknown device status upper=%2x info=%.2x %s", existing->mac, existing->name, lower_bits, upper_bits, information_byte, wifi);
         }
         else
         {
-            g_info("Did not recognize apple device type %.2x", apple_device_type);
+            g_info(" %s '%s' Did not recognize apple device type %.2x", existing->mac, existing->name, apple_device_type);
         }
     }
     else if (manufacturer == 0x022b)
@@ -928,6 +928,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             else if (strncmp(name, "Charge 2", 8) == 0)
                 existing->category = CATEGORY_WEARABLE; // FITBIT
             else if (strncmp(name, "Charge 3", 8) == 0)
+                existing->category = CATEGORY_WEARABLE; // FITBIT
+            else if (strncmp(name, "Charge 4", 8) == 0)
                 existing->category = CATEGORY_WEARABLE; // FITBIT
             else if (strncmp(name, "Mi Smart Band", 13) == 0)
                 existing->category = CATEGORY_WEARABLE; // Fitness
