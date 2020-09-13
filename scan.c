@@ -2055,7 +2055,11 @@ gboolean try_connect(struct Device *a)
 {
     if (a->category != CATEGORY_UNKNOWN)
         return FALSE; // already has a category
-    //if (strlen(a->name) > 0) return FALSE;    // already named
+
+    // Don't attempt connection until a device is close enough, or has been seen enough
+    // otherwise likely to fail for a transient device at 12.0+m
+    if (a->count == 1 && a->distance > 5.0)
+        return FALSE;
 
     // Count will always be > 0 but optionally can change '0' to '1' to only attempt
     // connecting when a device has been seen more than once. Useful in situations where
