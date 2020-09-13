@@ -217,8 +217,9 @@ int bluez_remove_device(GDBusConnection *conn, char address[18])
     g_variant_dict_insert_value(&dict, "Address", g_variant_new_string((char*)path));
 
     GVariant *param = g_variant_dict_end(&dict);
+    // not needed g_variant_dict_unref(&dict);
 
-    int rc = bluez_adapter_call_method(conn, "RemoveDevice", param, NULL);
+    int rc = bluez_adapter_call_method(conn, "RemoveDevice", g_variant_new_tuple(&param, 1), NULL);
     if (rc) g_debug("Not able to remove %s", address);
     else g_debug("Removed %s", path);
 
