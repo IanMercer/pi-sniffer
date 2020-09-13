@@ -828,6 +828,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         existing->column = 0;
         existing->count = 0;
         existing->try_connect_state = TRY_CONNECT_ZERO;
+        existing->try_connect_attempts = 0;
 
         // RSSI values are stored with kalman filtering
         kalman_initialize(&existing->kalman);
@@ -2024,7 +2025,6 @@ gboolean try_disconnect(struct Device *a)
 {
     if (a->try_connect_state > TRY_CONNECT_ZERO && a->try_connect_state < TRY_CONNECT_COMPLETE)
     {
-
         a->try_connect_state = a->try_connect_state + 1;
 
         if (a->try_connect_state == TRY_CONNECT_COMPLETE)
@@ -2056,24 +2056,27 @@ gboolean try_connect(struct Device *a)
     if (a->category != CATEGORY_UNKNOWN)
         return FALSE; // already has a category
 
+    // If not idle, already in process of trying to connect
+    if (a->try_connect_state != TRY_CONNECT_ZERO) return FALSE;
+
     // Don't attempt connection until a device is close enough, or has been seen enough
     // otherwise likely to fail for a transient device at 12.0+m
     if (a->count == 1 && a->distance > 5.0)
         return FALSE;
 
-    // Count will always be > 0 but optionally can change '0' to '1' to only attempt
-    // connecting when a device has been seen more than once. Useful in situations where
-    // there may be too many transient devices to attempt connection to all of them
-    if (a->count > 0 && a->try_connect_state == 0)
-    {
-        a->try_connect_state = 1;
-        // Try forcing a connect to get a full dump from the device
-        g_info(">>>>>> Connect to %i. %s\n", a->id, a->mac);
-        bluez_adapter_connect_device(conn, a->mac);
-        return TRUE;
-    }
-    // didn't change state, try next one
-    return FALSE;
+    // At some point we just give up
+    if (a->try_connect_attempts > 4) return FALSE;
+
+    // Every 16 counts we try again if not already connected
+    if (a->count < a->try_connect_attempts * 16) return FALSE;
+
+    // Passed all pre-conditions, go ahead and start a connection attempt
+    a->try_connect_state = 1;
+    a->try_connect_attempts++;
+    // Try forcing a connect to get a full dump from the device
+    g_info(">>>>>> Connect to %i. %s  attempt=%i", a->id, a->mac, a->try_connect_attempts);
+    bluez_adapter_connect_device(conn, a->mac);
+    return TRUE;
 }
 
 static int led_state = 0;

@@ -80,7 +80,8 @@ struct Device
    time_t latest;                 // Latest time seen, used to calculate overlap
    int count;                     // Count how many times seen (ignore 1 offs)
    int column;                    // Allocated column in a non-overlapping range structure
-   int8_t try_connect_state;      // Zero = never tried, 1 = Try in progress, 2 = Done
+   int8_t try_connect_state;      // Zero = never tried, 1..N-1 = Try in progress, N = Done
+   int8_t try_connect_attempts;   // How many attempts have been made to connect
    // TODO: Collect data, SVM or trilateration TBD
    char *closest; // Closest access point name
    float x;       // Calculated position, will be Kalman filtered
