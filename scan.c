@@ -417,8 +417,8 @@ unsigned char *read_byte_array(GVariant *s_value, int *actualLength, uint8_t *ha
 
 void optional(char *name, char *value)
 {
-    if (strlen(name))
-        return;
+    // If it already has a name and it doesn't start with underscore, don't replace
+    if (strlen(name) && name[0] != '_') return;
     g_strlcpy(name, value, NAME_LENGTH);
 }
 
@@ -612,150 +612,132 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
     }
     else if (manufacturer == 0x022b)
     {
-        optional(existing->name, "Tesla");
+        optional(existing->name, "_Tesla");
         existing->category = CATEGORY_CAR;
         //    ManufacturerData: {uint16 555: <[byte 0x04, 0x18, 0x77, 0x9d, 0x16, 0xee, 0x04, 0x6c, 0xf9, 0x49, 0x01, 0xf3, 0
     }
     else if (manufacturer == 0x0087)
     {
-        optional(existing->name, "Garmin");
+        optional(existing->name, "_Garmin");
         existing->category = CATEGORY_WEARABLE; // could be fitness tracker
     }
     else if (manufacturer == 0x05A7)
     {
-        optional(existing->name, "Sonos");
+        optional(existing->name, "_Sonos");
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0xb4c1)
     {
-        optional(existing->name, "Dycoo"); // not on official Bluetooth website??
+        optional(existing->name, "_Dycoo"); // not on official Bluetooth website??
     }
     else if (manufacturer == 0x0101)
     {
-        optional(existing->name, "Fugoo, Inc.");
+        optional(existing->name, "_Fugoo, Inc.");
         existing->category = CATEGORY_HEADPHONES;
     }
     else if (manufacturer == 0x0310)
     {
-        optional(existing->name, "SGL Italia S.r.l.");
+        optional(existing->name, "_SGL Italia");
         existing->category = CATEGORY_HEADPHONES;
     }
     else if (manufacturer == 0x3042)
     { // 12354 = someone didn't register
-        optional(existing->name, "Unknown Manuf");
+        optional(existing->name, "_Manuf 0x3042");
         existing->category = CATEGORY_HEADPHONES;
     }
     else if (manufacturer == 0x0075)
     {
-        optional(existing->name, "Samsung");
-        g_debug("  Manufacturer is Samsung 0x0075\n");
+        optional(existing->name, "_Samsung 0x75");
     }
     else if (manufacturer == 0xff19)
     {
-        optional(existing->name, "Samsung");
-        g_debug("  Manufacturer is Samsung? 0xff19\n");
+        optional(existing->name, "_Samsung 0xff19");
     }
     else if (manufacturer == 0x0131)
     {
-        optional(existing->name, "Cypress Semiconductor");
-        g_debug("  Manufacturer is Cypress Semiconductor\n");
+        optional(existing->name, "_Cypress Semi");
     }
     else if (manufacturer == 0x0110)
     {
-        optional(existing->name, "Nippon Seiki Co., Ltd.");
-        g_debug("  Manufacturer is Nippon Seiki Co., Ltd.");
+        optional(existing->name, "_Nippon Seiki");
     }
     else if (manufacturer == 0x0399)
     {
-        optional(existing->name, "Nikon");
-        g_debug("  Manufacturer is Nikon Corporation");
+        optional(existing->name, "_Nikon");
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x0003)
     {
-        optional(existing->name, "IBM");
-        g_debug("  IBM");
+        optional(existing->name, "_IBM");
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x0501)
     {
-        optional(existing->name, "Polaris ND");
-        g_debug("  Polaris ND");
+        optional(existing->name, "_Polaris ND");
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x014f)
     {
-        optional(existing->name, "B&W Group Ltd.");
-        g_debug("  B&W Group Ltd.");
+        optional(existing->name, "_B&W Group Ltd.");
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x00c4)
     {
-        optional(existing->name, "LG Electronics");
-        g_debug("  LG Electronics");
-        existing->category = CATEGORY_TV;
+        optional(existing->name, "_LG Electronics");
+        existing->category = CATEGORY_TV;  // maybe, they did make phones for a while
     }
     else if (manufacturer == 0x03ee)
     {
-        optional(existing->name, "CUBE Technolgies");
-        g_debug("  CUBE Technolgies");
+        optional(existing->name, "_CUBE Technolgies");
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x00e0)
     {
-        optional(existing->name, "Google");
-        g_debug("  Google");
+        optional(existing->name, "_Google");
     }
     else if (manufacturer == 0x0085)
     {
-        optional(existing->name, "BlueRadios ODM");
-        g_debug("  BlueRadios, Inc. (ODM)");
+        optional(existing->name, "_BlueRadios ODM");
     }
     else if (manufacturer == 0x0434)
     {
-        optional(existing->name, "Hatch Baby, Inc.");
-        g_debug("  Hatch Baby, Inc.");
+        optional(existing->name, "_Hatch Baby, Inc.");
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x0157)
     {
-        optional(existing->name, "Anhui Huami Information Technology");
-        g_debug("  Anhui Huami Information Technology\n");
+        optional(existing->name, "_Anhui Huami");
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x001d)
     {
-        optional(existing->name, "Qualcomm");
-        g_debug("  Qualcomm");
+        optional(existing->name, "_Qualcomm");
     }
     else if (manufacturer == 0x015e)
     {
-        optional(existing->name, "Unikey Technologies, Inc");
-        g_debug("  Unikey Technologies, Inc");
+        optional(existing->name, "_Unikey Technologies");
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x01a5)
     {
-        optional(existing->name, "Icon Health and Fitness");
-        g_debug("  Icon Health and Fitness");
+        optional(existing->name, "_Icon Health and Fitness");
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x0065)
     {
-        optional(existing->name, "HP");
-        g_debug("  Hewlett-Packard");
+        optional(existing->name, "_HP");
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x00d2)
     {
-        optional(existing->name, "AbTemp");
+        optional(existing->name, "_AbTemp");
         g_debug("  Ignoring manufdata\n");
     }
     else
     {
         // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
         char manuf[32];
-        snprintf(manuf, sizeof(manuf), "Manufacturer 0x%04x", manufacturer);
+        snprintf(manuf, sizeof(manuf), "_Manufacturer 0x%04x", manufacturer);
         g_info("  Did not recognize %s\n", manuf);
         optional(existing->name, manuf);
     }
@@ -1833,7 +1815,7 @@ void bluez_list_devices(GDBusConnection *conn, GAsyncResult *res, gpointer data)
     GVariant *ifaces_and_properties;
     GError *error = NULL;
 
-    g_debug("get_managed_objects callback");
+    //g_debug("get_managed_objects callback");
 
     result = g_dbus_connection_call_finish(conn, res, &error);
     if ((result == NULL) || error)
@@ -1875,7 +1857,7 @@ int get_managed_objects(void *parameters)
 {
     GMainLoop *loop = (GMainLoop *)parameters;
 
-    g_debug("get_managed_objects");
+    //g_debug("get_managed_objects");
 
     g_dbus_connection_call(conn,
                            "org.bluez",
