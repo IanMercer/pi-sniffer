@@ -206,22 +206,31 @@ int bluez_adapter_disconnect_device(GDBusConnection *conn, char *address)
  */
 int bluez_remove_device(GDBusConnection *conn, char address[18])
 {
+    // int rc1 = bluez_device_call_method_address(conn, "RemoveDevice", address, NULL, NULL);
+	// if(rc1) {
+	// 	g_print("Not able to call Connect\n");
+	// 	return 1;
+	// }
+    // return 0;
+
     // RemoveDevice takes an argument to the object path i.e /org/bluez/hciX/dev_XX_YY_ZZ_AA_BB_CC.
 
-    GVariantDict dict;
     char path[128];
-
     get_path_from_address(address, path, sizeof(path));
 
-    g_variant_dict_init (&dict, NULL);
-    g_variant_dict_insert_value(&dict, "Address", g_variant_new_string((char*)path));
+// method call time=1599962072.172066 sender=:1.205754 -> destination=org.bluez serial=87 path=/org/bluez/hci0; interface=org.bluez.Adapter1; member=RemoveDevice
+//   object path "/org/bluez/hci0/dev_4F_B1_8A_BE_3A_B4"
 
-    GVariant *param = g_variant_dict_end(&dict);
-    // not needed g_variant_dict_unref(&dict);
+    GVariant *param = g_variant_new_object_path(path);
+
+    // GVariantBuilder *b = g_variant_builder_new(G_VARIANT_TYPE_VARDICT);
+    // g_variant_builder_add(b, "{sv}", "o", g_variant_new_string(path));
+    // GVariant *param = g_variant_builder_end(b);
+    // g_variant_builder_unref(b);
 
     int rc = bluez_adapter_call_method(conn, "RemoveDevice", g_variant_new_tuple(&param, 1), NULL);
     if (rc) g_debug("Not able to remove %s", address);
-    else g_debug("Removed %s", path);
+    else g_debug("Removed %s", address);
 
     return rc;
 }
