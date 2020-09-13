@@ -7,15 +7,11 @@
 #define G_LOG_USE_STRUCTURED 1
 #include <glib.h>
 #include <stdbool.h>
-//#include <gio/gio.h>
-//#include <stdio.h>
-//#include <sys/ioctl.h>
-//#include <sys/types.h>
-//#include <sys/socket.h>
-//#include <net/if.h>
-//#include <time.h>
-//#include <signal.h>
-//#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <sys/types.h>
 
 /*
  * Measures the current (and peak) resident and virtual memories
@@ -66,5 +62,14 @@ bool string_starts_with(char *buffer, char *match);
   string contains
 */
 bool string_contains(char *buffer, char *match);
+
+/*
+   Overwrite if it was empty or began with an underscore (temporary name)
+*/
+void optional_set(char* name, char* value, int max_length);
+
+void soft_set_8(int8_t* field, int8_t field_new);
+
+void soft_set_u16(uint16_t* field, uint16_t field_new);
 
 #endif

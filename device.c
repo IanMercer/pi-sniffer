@@ -29,22 +29,6 @@ char* category_from_int(uint i)
   return categories[i];
 }
 
-void optional_set(char* name, char* value) {
-  if (strlen(name)) return;
-  g_strlcpy(name, value, NAME_LENGTH);
-}
-
-void soft_set_8(int8_t* field, int8_t field_new)
-{
-    // CATEGORY_UNKNOWN, UNKNOWN_ADDRESS_TYPE = 0
-    if (*field == 0) *field = field_new;
-}
-
-void soft_set_u16(uint16_t* field, uint16_t field_new)
-{
-    // CATEGORY_UNKNOWN, UNKNOWN_ADDRESS_TYPE = 0
-    if (*field == 0) *field = field_new;
-}
 
 void merge(struct Device* local, struct Device* remote, char* access_name)
 {
@@ -52,8 +36,8 @@ void merge(struct Device* local, struct Device* remote, char* access_name)
     {
         g_info("Replace local '%s' by remote '%s'?", local->name, remote->name);
     }
-    optional_set(local->name, remote->name);
-    optional_set(local->alias, remote->alias);
+    optional_set(local->name, remote->name, NAME_LENGTH);
+    optional_set(local->alias, remote->alias, NAME_LENGTH);
     soft_set_8(&local->addressType, remote->addressType);
     if (local->category == 0 && remote->category != 0) g_info("  %s Changed category to '%s', message from %s", local->mac, category_from_int(remote->category), access_name);
     soft_set_8(&local->category, remote->category);

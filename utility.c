@@ -285,3 +285,23 @@ bool string_contains(char *buffer, char *match)
 {
     return g_strrstr(buffer, match) != NULL;
 }
+
+/*
+   Overwrite if it was empty or began with an underscore (temporary name)
+*/
+void optional_set(char* name, char* value, int max_length) {
+  if (strlen(name) && name[0]!='_') return;
+  g_strlcpy(name, value, max_length);
+}
+
+void soft_set_8(int8_t* field, int8_t field_new)
+{
+    // CATEGORY_UNKNOWN, UNKNOWN_ADDRESS_TYPE = 0
+    if (*field == 0) *field = field_new;
+}
+
+void soft_set_u16(uint16_t* field, uint16_t field_new)
+{
+    // CATEGORY_UNKNOWN, UNKNOWN_ADDRESS_TYPE = 0
+    if (*field == 0) *field = field_new;
+}

@@ -26,4 +26,5 @@ void print_access_points();
 
 struct ClosestTo* get_closest(struct Device* device);
 
+
 #endif

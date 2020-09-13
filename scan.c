@@ -415,13 +415,6 @@ unsigned char *read_byte_array(GVariant *s_value, int *actualLength, uint8_t *ha
     return allocdata;
 }
 
-void optional(char *name, char *value)
-{
-    // If it already has a name and it doesn't start with underscore, don't replace
-    if (strlen(name) && name[0] != '_') return;
-    g_strlcpy(name, value, NAME_LENGTH);
-}
-
 void soft_set_category(int8_t *category, int8_t category_new)
 {
     if (*category == CATEGORY_UNKNOWN)
@@ -443,7 +436,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         }
         else if (apple_device_type == 0x02)
         {
-            optional(existing->alias, "Beacon");
+            optional_set(existing->alias, "Beacon", NAME_LENGTH);
             g_info("  Beacon\n");
             existing->category = CATEGORY_BEACON;
 
@@ -467,7 +460,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
             // 2 bytes global state number
         else if (apple_device_type == 0x07)     // Proximity Pairing - Constantly (rare)
         {
-            optional(existing->name, "Airpods");
+            optional_set(existing->name, "Airpods", NAME_LENGTH);
             g_info("  Proximity pairing");
             existing->category = CATEGORY_HEADPHONES;
             // 1 byte length
@@ -479,7 +472,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         }
         else if (apple_device_type == 0x08)     // On user action (rare)
         {
-            optional(existing->alias, "Siri");
+            optional_set(existing->alias, "Siri", NAME_LENGTH);
             g_info("  Siri");
             // 1 byte length
             // 2 bytes perceptual hash
@@ -490,7 +483,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         }
         else if (apple_device_type == 0x09)     // On user action (some)
         {
-            optional(existing->alias, "Airplay");
+            optional_set(existing->alias, "Airplay", NAME_LENGTH);
             g_info("  Airplay \n");
             // 1 byte length
             // 1 byte flags
@@ -499,12 +492,12 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         }
         else if (apple_device_type == 0x0a)     // ?? (rare)
         {
-            optional(existing->alias, "Apple 0a");
+            optional_set(existing->alias, "Apple 0a", NAME_LENGTH);
             g_info("  Apple 0a \n");
         }
         else if (apple_device_type == 0x0b)     // On physical action
         {
-            optional(existing->name, "iWatch");
+            optional_set(existing->name, "iWatch", NAME_LENGTH);
             g_info("  Magic Switch");
             existing->category = CATEGORY_WEARABLE;
             // Sent when watch has lost pairing to phone
@@ -612,134 +605,134 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
     }
     else if (manufacturer == 0x022b)
     {
-        optional(existing->name, "_Tesla");
+        optional_set(existing->name, "_Tesla", NAME_LENGTH);
         existing->category = CATEGORY_CAR;
         //    ManufacturerData: {uint16 555: <[byte 0x04, 0x18, 0x77, 0x9d, 0x16, 0xee, 0x04, 0x6c, 0xf9, 0x49, 0x01, 0xf3, 0
     }
     else if (manufacturer == 0x0087)
     {
-        optional(existing->name, "_Garmin");
+        optional_set(existing->name, "_Garmin", NAME_LENGTH);
         existing->category = CATEGORY_WEARABLE; // could be fitness tracker
     }
     else if (manufacturer == 0x05A7)
     {
-        optional(existing->name, "_Sonos");
+        optional_set(existing->name, "_Sonos", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0xb4c1)
     {
-        optional(existing->name, "_Dycoo"); // not on official Bluetooth website??
+        optional_set(existing->name, "_Dycoo", NAME_LENGTH); // not on official Bluetooth website??
     }
     else if (manufacturer == 0x0101)
     {
-        optional(existing->name, "_Fugoo, Inc.");
+        optional_set(existing->name, "_Fugoo, Inc.", NAME_LENGTH);
         existing->category = CATEGORY_HEADPHONES;
     }
     else if (manufacturer == 0x0310)
     {
-        optional(existing->name, "_SGL Italia");
+        optional_set(existing->name, "_SGL Italia", NAME_LENGTH);
         existing->category = CATEGORY_HEADPHONES;
     }
     else if (manufacturer == 0x3042)
     { // 12354 = someone didn't register
-        optional(existing->name, "_Manuf 0x3042");
+        optional_set(existing->name, "_Manuf 0x3042", NAME_LENGTH);
         existing->category = CATEGORY_HEADPHONES;
     }
     else if (manufacturer == 0x0075)
     {
-        optional(existing->name, "_Samsung 0x75");
+        optional_set(existing->name, "_Samsung 0x75", NAME_LENGTH);
     }
     else if (manufacturer == 0xff19)
     {
-        optional(existing->name, "_Samsung 0xff19");
+        optional_set(existing->name, "_Samsung 0xff19", NAME_LENGTH);
     }
     else if (manufacturer == 0x0131)
     {
-        optional(existing->name, "_Cypress Semi");
+        optional_set(existing->name, "_Cypress Semi", NAME_LENGTH);
     }
     else if (manufacturer == 0x0110)
     {
-        optional(existing->name, "_Nippon Seiki");
+        optional_set(existing->name, "_Nippon Seiki", NAME_LENGTH);
     }
     else if (manufacturer == 0x0399)
     {
-        optional(existing->name, "_Nikon");
+        optional_set(existing->name, "_Nikon", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x0003)
     {
-        optional(existing->name, "_IBM");
+        optional_set(existing->name, "_IBM", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x0501)
     {
-        optional(existing->name, "_Polaris ND");
+        optional_set(existing->name, "_Polaris ND", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x014f)
     {
-        optional(existing->name, "_B&W Group Ltd.");
+        optional_set(existing->name, "_B&W Group Ltd.", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x00c4)
     {
-        optional(existing->name, "_LG Electronics");
+        optional_set(existing->name, "_LG Electronics", NAME_LENGTH);
         existing->category = CATEGORY_TV;  // maybe, they did make phones for a while
     }
     else if (manufacturer == 0x03ee)
     {
-        optional(existing->name, "_CUBE Technolgies");
+        optional_set(existing->name, "_CUBE Technolgies", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x00e0)
     {
-        optional(existing->name, "_Google");
+        optional_set(existing->name, "_Google", NAME_LENGTH);
     }
     else if (manufacturer == 0x0085)
     {
-        optional(existing->name, "_BlueRadios ODM");
+        optional_set(existing->name, "_BlueRadios ODM", NAME_LENGTH);
     }
     else if (manufacturer == 0x0434)
     {
-        optional(existing->name, "_Hatch Baby, Inc.");
+        optional_set(existing->name, "_Hatch Baby, Inc.", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x0157)
     {
-        optional(existing->name, "_Anhui Huami");
+        optional_set(existing->name, "_Anhui Huami", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x001d)
     {
-        optional(existing->name, "_Qualcomm");
+        optional_set(existing->name, "_Qualcomm", NAME_LENGTH);
     }
     else if (manufacturer == 0x015e)
     {
-        optional(existing->name, "_Unikey Technologies");
+        optional_set(existing->name, "_Unikey Technologies", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x01a5)
     {
-        optional(existing->name, "_Icon Health and Fitness");
+        optional_set(existing->name, "_Icon Health and Fitness", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x0065)
     {
-        optional(existing->name, "_HP");
+        optional_set(existing->name, "_HP", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x00d2)
     {
-        optional(existing->name, "_AbTemp");
-        g_debug("  Ignoring manufdata\n");
+        optional_set(existing->name, "_AbTemp", NAME_LENGTH);
+        g_debug("  Ignoring manufdata");
     }
     else
     {
         // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
         char manuf[32];
         snprintf(manuf, sizeof(manuf), "_Manufacturer 0x%04x", manufacturer);
-        g_info("  Did not recognize %s\n", manuf);
-        optional(existing->name, manuf);
+        g_info("  Did not recognize %s", manuf);
+        optional_set(existing->name, manuf, NAME_LENGTH);
     }
 }
 
