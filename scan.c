@@ -1783,6 +1783,7 @@ static void bluez_device_disappeared(GDBusConnection *sig,
             char address[BT_ADDRESS_STRING_SIZE];
             if (get_address_from_path(address, BT_ADDRESS_STRING_SIZE, object))
             {
+                g_warning("%s Device removed by BLUEZ", address);
                 // DEBUG g_print("Device %s removed (by bluez) ignoring this\n", address);
                 report_device_disconnected_to_MQTT(address);
             }
