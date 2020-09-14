@@ -363,21 +363,6 @@ void report_devices_count()
     send_to_udp_display(&state, people_closest, people_in_range);
 }
 
-/* SEND TO MQTT WITH ACCESS POINT MAC ADDRESS AND TIME STAMP */
-
-/*
-    REPORT DEVICE TO MQTT
-
-    address if known, if not have to find it in the dictionary of passed properties
-    appeared = we know this is fresh data so send RSSI and TxPower with timestamp
-*/
-
-static void report_device_disconnected_to_MQTT(char *address)
-{
-    (void)address;
-    // Not used
-}
-
 /*
    Read byte array from GVariant
 */
@@ -831,6 +816,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         // Grab the next empty item in the array
         existing = &state.devices[state.n++];
         existing->id = id_gen++;               // unique ID for each
+        existing->ttl = 10;                    // arbitrary, set during countdown to ejection
         existing->hidden = false;              // we own this one
         g_strlcpy(existing->mac, address, 18); // address
         existing->superceeds = 0;              // will be filled in when calculating columns
@@ -1783,9 +1769,10 @@ static void bluez_device_disappeared(GDBusConnection *sig,
             char address[BT_ADDRESS_STRING_SIZE];
             if (get_address_from_path(address, BT_ADDRESS_STRING_SIZE, object))
             {
+                // This event doesn't seem to correspond to reality
                 g_warning("%s Device removed by BLUEZ", address);
                 // DEBUG g_print("Device %s removed (by bluez) ignoring this\n", address);
-                report_device_disconnected_to_MQTT(address);
+                // do nothing ... report_device_disconnected_to_MQTT(address);
             }
         }
         g_free(interface_name);
@@ -1971,22 +1958,31 @@ gboolean should_remove(struct Device *existing)
         max_time_ago_seconds = 60 * MAX_TIME_AGO_CACHE;
     }
 
-    if (delta_time > max_time_ago_seconds + 5)  // 5 = same as run interval
-    {
-        // Assume already removed from BLUEZ
-        g_warning("  LOCAL Cache remove %s '%s' count=%i dt=%.1fmin dist=%.1fm\n", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
-        return TRUE;
+    if (delta_time < max_time_ago_seconds){
+        existing->ttl = 10;
     }
-    else if (delta_time > max_time_ago_seconds)
-    {
-        g_warning("  BLUEZ Cache remove %s '%s' count=%i dt=%.1fmin dist=%.1fm\n", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
-        // And so when this device reconnects we get a proper reconnect message and so that BlueZ doesn't fill up a huge
-        // cache of iOS devices that have passed by or changed mac address
-        bluez_remove_device(conn, existing->mac);
+    else {
+        // Count down to removal completely
 
-        // It might come right back ... or it might be truly gone
-        return FALSE;
+        if (existing->ttl == 10)
+        {
+            g_warning("  BLUEZ Cache remove %s '%s' count=%i dt=%.1fmin dist=%.1fm", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
+            // And so when this device reconnects we get a proper reconnect message and so that BlueZ doesn't fill up a huge
+            // cache of iOS devices that have passed by or changed mac address
+            bluez_remove_device(conn, existing->mac);
+
+            // It might come right back ... or it might be truly gone
+            return FALSE;
+        }
+        else if (existing->ttl == 6)    // 4x5s later = 20s later
+        {
+            g_warning("  LOCAL Cache remove %s '%s' count=%i dt=%.1fmin dist=%.1fm", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
+            return TRUE;
+        }
+
+        existing->ttl = existing->ttl - 1;
     }
+
 
     return FALSE;
 }
