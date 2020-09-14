@@ -263,8 +263,10 @@ uint8_t recvbuf[2048];            /* recvbuf should be large enough any whole mq
 
 static bool isMQTTEnabled = false;
 
-void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* access_name, char* mac_address,
-                  char* user, char* pass)
+void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* access_name, 
+                char* service_name,
+                char* mac_address,
+                char* user, char* pass)
 {
     username = user;
     password = pass;
@@ -297,10 +299,9 @@ void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* access_name, char*
     memcpy(&access_point_address, mac_address, 6);
     access_point_name = strdup(access_name);
 
-    // Construct a client_id consisting of the access_point name plus a random string
-    // so that during an overlapping restart there is no conflict over MQTT connections
+    // Construct a client_id consisting of the access_point name plus a service name
     char client_id[64];
-    snprintf(client_id, sizeof(client_id), "%s%lu", access_name, time(0)&0xffff);
+    snprintf(client_id, sizeof(client_id), "%s%s", access_name, service_name);
 
     // TODO: Add will topic
     //char will_topic[256];

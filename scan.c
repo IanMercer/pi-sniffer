@@ -2447,7 +2447,10 @@ int main(int argc, char **argv)
     }
     g_info("Started discovery\n");
 
-    prepare_mqtt(state.mqtt_server, state.mqtt_topic, state.local->client_id, mac_address, state.mqtt_username, state.mqtt_password);
+    prepare_mqtt(state.mqtt_server, state.mqtt_topic, 
+        state.local->client_id, 
+        "",  // no suffix on client id for MQTT
+        mac_address, state.mqtt_username, state.mqtt_password);
 
     // Periodically ask Bluez for every device including ones that are long departed
     // but only do updates to devices we have seen, do no not create a device for each

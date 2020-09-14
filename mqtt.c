@@ -281,7 +281,9 @@ int main(int argc, char **argv)
                                                       NULL,
                                                       NULL);
 
-    prepare_mqtt(state.mqtt_server, state.mqtt_topic, state.local->client_id, mac_address, state.mqtt_username, state.mqtt_password);
+    prepare_mqtt(state.mqtt_server, state.mqtt_topic, 
+        state.local->client_id, "-mqtt", 
+        mac_address, state.mqtt_username, state.mqtt_password);
 
     // MQTT send
     //g_timeout_add_seconds(5, mqtt_refresh, loop);
