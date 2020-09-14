@@ -1973,12 +1973,12 @@ gboolean should_remove(struct Device *existing)
     if (delta_time > max_time_ago_seconds + 20)
     {
         // Assume already removed from BLUEZ
-        g_info("  LOCAL Cache remove %s '%s' count=%i dt=%.1fmin dist=%.1fm\n", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
+        g_warning("  LOCAL Cache remove %s '%s' count=%i dt=%.1fmin dist=%.1fm\n", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
         return TRUE;
     }
     else if (delta_time > max_time_ago_seconds)
     {
-        g_info("  BLUEZ Cache remove %s '%s' count=%i dt=%.1fmin dist=%.1fm\n", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
+        g_warning("  BLUEZ Cache remove %s '%s' count=%i dt=%.1fmin dist=%.1fm\n", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
         // And so when this device reconnects we get a proper reconnect message and so that BlueZ doesn't fill up a huge
         // cache of iOS devices that have passed by or changed mac address
         bluez_remove_device(conn, existing->mac);
@@ -1992,8 +1992,6 @@ gboolean should_remove(struct Device *existing)
 
 int clear_cache(void *parameters)
 {
-    starting = FALSE;
-
     //    g_print("Clearing cache\n");
     (void)parameters; // not used
 
@@ -2046,6 +2044,8 @@ void dump_device(struct Device *d)
 
 int dump_all_devices_tick(void *parameters)
 {
+    starting = FALSE;
+
     (void)parameters; // not used
     if (starting)
         return TRUE; // not during first 30s startup time
@@ -2442,11 +2442,11 @@ int main(int argc, char **argv)
     // MQTT send
     g_timeout_add_seconds(5, mqtt_refresh, loop);
 
-    // Every 30s look see if any records have expired and should be removed
-    // Also clear starting flag
-    g_timeout_add_seconds(30, clear_cache, loop);
+    // Every 5s look see if any records have expired and should be removed
+    g_timeout_add_seconds(5, clear_cache, loop);
 
     // Every 29s dump all devices
+    // Also clear starting flag
     g_timeout_add_seconds(29, dump_all_devices_tick, loop);
 
     // Every 2s see if any unnamed device is ready to be connected
