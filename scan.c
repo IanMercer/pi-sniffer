@@ -1963,8 +1963,9 @@ gboolean should_remove(struct Device *existing)
     }
     else {
         // Count down to removal completely
+        existing->ttl = existing->ttl - 1;
 
-        if (existing->ttl == 10)
+        if (existing->ttl == 9)
         {
             g_warning("  BLUEZ Cache remove %s '%s' count=%i dt=%.1fmin dist=%.1fm", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
             // And so when this device reconnects we get a proper reconnect message and so that BlueZ doesn't fill up a huge
@@ -1974,13 +1975,12 @@ gboolean should_remove(struct Device *existing)
             // It might come right back ... or it might be truly gone
             return FALSE;
         }
-        else if (existing->ttl == 6)    // 4x5s later = 20s later
+        else if (existing->ttl == 5)    // 4x5s later = 20s later
         {
             g_warning("  LOCAL Cache remove %s '%s' count=%i dt=%.1fmin dist=%.1fm", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
             return TRUE;
         }
 
-        existing->ttl = existing->ttl - 1;
     }
 
 
