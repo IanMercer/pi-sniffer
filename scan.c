@@ -1973,11 +1973,12 @@ gboolean should_remove(struct Device *existing)
     if (delta_time > max_time_ago_seconds + 20)
     {
         // Assume already removed from BLUEZ
+        g_info("  LOCAL Cache remove %s '%s' count=%i dt=%.1fmin dist=%.1fm\n", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
         return TRUE;
     }
     else if (delta_time > max_time_ago_seconds)
     {
-        g_info("  Cache remove %s '%s' count=%i dt=%.1fmin dist=%.1fm\n", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
+        g_info("  BLUEZ Cache remove %s '%s' count=%i dt=%.1fmin dist=%.1fm\n", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
         // And so when this device reconnects we get a proper reconnect message and so that BlueZ doesn't fill up a huge
         // cache of iOS devices that have passed by or changed mac address
         bluez_remove_device(conn, existing->mac);
