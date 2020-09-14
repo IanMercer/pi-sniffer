@@ -570,6 +570,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
                 information_byte == 0x1a ? "Wifi OFF()" : " ";
 
             if (lower_bits == 0x00){
+                // iPad sends this, unused
                 g_info(" %s '%s' Nearby Info 0x00: unknown u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x01){
@@ -595,7 +596,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
             }
             else if (lower_bits == 0x07){
                 // transition phase
-                g_info(" %s '%s' Nearby Info 0x07: screen is on u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                g_info(" %s '%s' Nearby Info 0x07: on lock screen? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x08){
                 // iPhoneX 
@@ -814,6 +815,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         if (!isUpdate)
         {
             // These devices need to be removed from BLUEZ otherwise BLUEZ's cache gets huge!
+            g_warning("report_devices_internal, not an update, not found");
+            pretty_print2("Properties", properties, true);
             g_debug("Remove %s, bluez get_devices call and not seen yet", address);
             bluez_remove_device(conn, address);
             return;
@@ -1950,14 +1953,16 @@ gboolean should_remove(struct Device *existing)
 
     // 10 min if we got to know it
     if (existing->category != CATEGORY_UNKNOWN){
-        max_time_ago_seconds = 10 * 60;
+        max_time_ago_seconds = 4 * 60; // was 10 * 60;
     }
 
-    // 20 min for a beacon or other public mac address that we saw more than once
-    if (existing->addressType == PUBLIC_ADDRESS_TYPE && existing->count > 2)
-    {
-        max_time_ago_seconds = 20 * 60;
-    }
+    // Try letting public beacons go sooner, see if they come back
+    // // 20 min for a beacon or other public mac address
+    // // Some iBeacons seem to go offline occasionally for 10min
+    // if (existing->addressType == PUBLIC_ADDRESS_TYPE)
+    // {
+    //     max_time_ago_seconds = 20 * 60;
+    // }
 
     // 1 hour upper limit
     if (max_time_ago_seconds > 60 * MAX_TIME_AGO_CACHE)
@@ -1965,18 +1970,23 @@ gboolean should_remove(struct Device *existing)
         max_time_ago_seconds = 60 * MAX_TIME_AGO_CACHE;
     }
 
-    gboolean remove = delta_time > max_time_ago_seconds;
-
-    if (remove)
+    if (delta_time > max_time_ago_seconds + 20)
+    {
+        // Assume already removed from BLUEZ
+        return TRUE;
+    }
+    else if (delta_time > max_time_ago_seconds)
     {
         g_info("  Cache remove %s '%s' count=%i dt=%.1fmin dist=%.1fm\n", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
-
         // And so when this device reconnects we get a proper reconnect message and so that BlueZ doesn't fill up a huge
         // cache of iOS devices that have passed by or changed mac address
         bluez_remove_device(conn, existing->mac);
+
+        // It might come right back ... or it might be truly gone
+        return FALSE;
     }
 
-    return remove; // 60 min of no activity = remove from cache
+    return FALSE;
 }
 
 int clear_cache(void *parameters)
