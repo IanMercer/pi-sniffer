@@ -351,13 +351,31 @@ void report_devices_count()
         // And send access point to everyone over UDP
         send_access_point_udp(&state);
 
-        GVariant *parameters = g_variant_new("(ds)", people_closest, "people"); // floating ref
-        GError *error = NULL;
-        gboolean ret = g_dbus_connection_emit_signal(conn, NULL, "/com/signswift/sniffer", "com.signswift.sniffer", "PeopleClosest", parameters, &error);
-        if (ret)
-        {
-            print_and_free_error(error);
-        }
+    }
+
+// TEST TEST TEST TEST
+
+    GVariantBuilder *b = g_variant_builder_new(G_VARIANT_TYPE_VARDICT);
+    g_variant_builder_add(b, "{sv}", "PeopleClosest", g_variant_new_double(people_closest));
+    g_variant_builder_add(b, "{sv}", "PeopleInRange", g_variant_new_double(people_in_range));
+    GVariant *dict = g_variant_builder_end(b);
+    g_variant_builder_unref(b);
+
+    GVariant* parameters = g_variant_new_tuple(&dict, 1);
+    //rc = bluez_adapter_call_method(conn, "SetDiscoveryFilter", g_variant_new_tuple(&device_dict, 1), NULL);
+    // no need to ... g_variant_unref(dict);
+
+    GError *error = NULL;
+    gboolean ret = g_dbus_connection_emit_signal(conn, 
+        NULL,                           // bus name
+        "/com/signswift/sniffer",       // path
+        "com.signswift.sniffer",        // interface name
+        "People",                       // signal_name
+        parameters, &error);
+
+    if (ret)
+    {
+        print_and_free_error(error);
     }
 
     send_to_udp_display(&state, people_closest, people_in_range);
@@ -1770,7 +1788,7 @@ static void bluez_device_disappeared(GDBusConnection *sig,
             if (get_address_from_path(address, BT_ADDRESS_STRING_SIZE, object))
             {
                 // This event doesn't seem to correspond to reality
-                g_warning("%s Device removed by BLUEZ", address);
+                // g_warning("%s Device removed by BLUEZ", address);
                 // DEBUG g_print("Device %s removed (by bluez) ignoring this\n", address);
                 // do nothing ... report_device_disconnected_to_MQTT(address);
             }
@@ -1967,7 +1985,7 @@ gboolean should_remove(struct Device *existing)
 
         if (existing->ttl == 9)
         {
-            g_warning("  BLUEZ Cache remove %s '%s' count=%i dt=%.1fmin dist=%.1fm", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
+            g_debug("%s '%s' BLUEZ Cache remove count=%i dt=%.1fmin dist=%.1fm", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
             // And so when this device reconnects we get a proper reconnect message and so that BlueZ doesn't fill up a huge
             // cache of iOS devices that have passed by or changed mac address
             bluez_remove_device(conn, existing->mac);
@@ -1977,7 +1995,7 @@ gboolean should_remove(struct Device *existing)
         }
         else if (existing->ttl == 5)    // 4x5s later = 20s later
         {
-            g_warning("  LOCAL Cache remove %s '%s' count=%i dt=%.1fmin dist=%.1fm", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
+            g_info("%s '%s' LOCAL Cache remove count=%i dt=%.1fmin dist=%.1fm", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
             return TRUE;
         }
 

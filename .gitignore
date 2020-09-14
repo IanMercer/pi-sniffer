@@ -4,6 +4,7 @@
 bluetoothctl
 .vscode/c_cpp_properties.json
 scan
+mqtt
 *.save
 *.save.1
 *.save.2

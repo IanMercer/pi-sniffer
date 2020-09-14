@@ -141,11 +141,10 @@ void onConnect(void* context, MQTTAsync_successData* response)
     }
 
     /*
-        And subscribe so we get messages from all other scanners
+        And subscribe so we get messages from controller (TODO implement settings changes)
     */
 
     MQTTAsync_responseOptions opts2 = MQTTAsync_responseOptions_initializer;
-    //MQTTAsync_message pubmsg2 = MQTTAsync_message_initializer;
 
     opts2.onSuccess = onSubscribe;
     opts2.onFailure = onSubscribeFailure;
@@ -185,10 +184,35 @@ int messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_messa
 }
 
 
+void disconnect_success(void* context,  MQTTAsync_successData* response){
+    (void)context;
+    (void)response;
+    g_info("MQTT Disconnect success");
+}
+
+void disconnect_failure(void* context,  MQTTAsync_failureData* response){
+    (void)context;
+    (void)response;
+    g_warning("MQTT Disconnect failed");
+}
+
+// Milliseconds allowed for disconnect
+#define MS_DISCONNECT 100
+
 void exit_mqtt()
 {
-    // TODO: Destroy MQTT Client
+    g_debug("Closing MQTT client");
     if (access_point_name) g_free(access_point_name);
+
+    MQTTAsync_disconnectOptions options = MQTTAsync_disconnectOptions_initializer;
+    options.timeout = MS_DISCONNECT;
+    options.onFailure = &disconnect_failure;
+    options.onSuccess = &disconnect_success;
+
+    MQTTAsync_disconnect(client, &options);
+    g_usleep(MS_DISCONNECT * 1000);
+
+    MQTTAsync_destroy(&client);
 }
 
 int ssl_error_cb(const char *str, size_t len, void *u) {
@@ -239,7 +263,7 @@ uint8_t recvbuf[2048];            /* recvbuf should be large enough any whole mq
 
 static bool isMQTTEnabled = false;
 
-void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* client_id, char* mac_address,
+void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* access_name, char* mac_address,
                   char* user, char* pass)
 {
     username = user;
@@ -265,24 +289,29 @@ void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* client_id, char* m
       exit(-24);
     }
 
-    if (client_id == NULL) {
-      g_warning("Client ID must be set");
+    if (access_name == NULL) {
+      g_warning("Access name must be set");
       exit(-24);
     }
 
     memcpy(&access_point_address, mac_address, 6);
-    access_point_name = strdup(client_id);
+    access_point_name = strdup(access_name);
 
+    // Construct a client_id consisting of the access_point name plus a random string
+    // so that during an overlapping restart there is no conflict over MQTT connections
+    char client_id[64];
+    snprintf(client_id, sizeof(client_id), "%s%lu", access_name, time(0)&0xffff);
+
+    // TODO: Add will topic
     //char will_topic[256];
     //snprintf(will_topic, sizeof(will_topic), "%s/%s/%s", topicRoot, access_point_name, "state");
-
     //const char* will_message = "down";
 
     isMQTTEnabled = true;
 
-    g_info("Starting MQTT `%s` topic root=`%s` client_id=`%s`\n", mqtt_uri, mqtt_topicRoot, client_id);
-    g_info("Username '%s'\n", username);
-    g_info("Password '%s'\n", password);
+    g_info("Starting MQTT `%s` topic root=`%s` client_id=`%s`", mqtt_uri, mqtt_topicRoot, client_id);
+    g_info("Username '%s'", username);
+    g_info("Password '%s'", password);
     if (isAzure) {
       g_info("Sending only limited messages to Azure");
     }
@@ -291,7 +320,7 @@ void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* client_id, char* m
     inits.do_openssl_init = 1;
     MQTTAsync_global_init(&inits);
 
-    g_info("Create MQTT Async\n");
+    g_info("Create MQTT Async");
     MQTTAsync_create(&client, mqtt_uri, client_id, MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);  // MQTTASYNC_SUCCESS
 
     //MQTTAsync_connectOptions opts = get_opts();
