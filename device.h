@@ -54,6 +54,7 @@ struct Device
 {
    int id;
    bool hidden;        // not seen by this access point (yet)
+   uint8_t ttl;        // time to live count down during removal process
    char mac[18];       // mac address string
    int64_t superceeds; // mac address of previous mac in same column
    char name[NAME_LENGTH];
