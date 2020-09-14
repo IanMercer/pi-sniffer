@@ -448,16 +448,25 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
             }
         }
         else if (apple_device_type == 0x03)     // On user action
+        {
+            optional_set(existing->name, "_Airprint", NAME_LENGTH);
             g_info("  %s '%s' Airprint", existing->mac, existing->name);
+        }
         else if (apple_device_type == 0x05)     // On user action
+        {
+            optional_set(existing->name, "_Airdrop", NAME_LENGTH);
             g_info("  %s '%s' Airdrop", existing->mac, existing->name);
+        }
         else if (apple_device_type == 0x06)     // Constantly
+        {
+            optional_set(existing->name, "_Homekit", NAME_LENGTH);
             g_info("  %s '%s' Homekit", existing->mac, existing->name);
             // 1 byte adv internal length
             // 1 byte status flags
             // 6 bytes device id
             // 2 bytes category
             // 2 bytes global state number
+        }
         else if (apple_device_type == 0x07)     // Proximity Pairing - Constantly (rare)
         {
             optional_set(existing->name, "Airpods", NAME_LENGTH);
@@ -497,23 +506,35 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         }
         else if (apple_device_type == 0x0b)     // On physical action
         {
+            // Confirmed seen from iWatch
             optional_set(existing->name, "iWatch", NAME_LENGTH);
             g_info("  %s '%s' Magic Switch", existing->mac, existing->name);
             existing->category = CATEGORY_WEARABLE;
             // Sent when watch has lost pairing to phone
         }
         else if (apple_device_type == 0x0c)     // Handoff
+        {
+            optional_set(existing->name, "_Apple Phone", NAME_LENGTH);
             g_info("  %s '%s' Handoff", existing->mac, existing->name);
             // 1 byte length
             // 1 byte version
             // 2 bytes IV
             // 1 byte AES-GCM Auth tag
             // 16 bytes encrypted payload
+        }
         else if (apple_device_type == 0x0d)     // Instant hotspot - On user action
+        {
+            optional_set(existing->name, "_Apple WifiSet", NAME_LENGTH);
             g_info("  %s '%s' WifiSet", existing->mac, existing->name);
+        }
         else if (apple_device_type == 0x0e)     // Instant hotspot - Reaction to target presence
+        {
+            optional_set(existing->name, "_Apple Hotspot", NAME_LENGTH);
             g_info("  %s '%s' Hotspot", existing->mac, existing->name);
+        } 
         else if (apple_device_type == 0x0f)     // Nearby action - On user action (rare)
+        {
+            optional_set(existing->name, "_Apple Nearby Action", NAME_LENGTH);
             g_info("  %s '%s' Nearby Action", existing->mac, existing->name);
             // Used for WiFi-password messages
             // 1 byte length
@@ -521,8 +542,10 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
             // 1 byte action type
             // 3 bytes auth tag
             // 4 x 3 bytes action parameters
+        }
         else if (apple_device_type == 0x10)     // Nearby Info - Constantly
         {
+            optional_set(existing->name, "_Apple", NAME_LENGTH);
             //g_debug("  Nearby Info ");
             // 0x10
             // 1 byte length
@@ -554,7 +577,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
                 g_info(" %s '%s' Nearby Info 0x01: disabled u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x02){
-                g_info(" %s '%s' Nearby Info 0x02: unknown? iPad? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                g_info(" %s '%s' Nearby Info 0x02: unknown? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x03){
                 // locked screen
@@ -567,6 +590,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
                 g_info(" %s '%s' Nearby Info 0x05: audio playing, screen off u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x06){
+                // iWatch sends this
                 g_info(" %s '%s' Nearby Info 0x06: unknown? watch? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x07){
@@ -896,6 +920,10 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
             if (string_contains(name, "iPhone"))
                 existing->category = CATEGORY_PHONE;
+            else if (string_contains(name, "'s phone"))  // some people name them
+                existing->category = CATEGORY_PHONE;
+            else if (string_contains(name, "'s Phone"))
+                existing->category = CATEGORY_PHONE;
             else if (string_contains(name, "Galaxy Note"))
                 existing->category = CATEGORY_PHONE;
             else if (string_contains(name, "Galaxy A20"))
@@ -935,6 +963,23 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->category = CATEGORY_WEARABLE; // Fitness
             else if (strncmp(name, "TICKR X", 7) == 0)
                 existing->category = CATEGORY_WEARABLE; // Heartrate
+
+            // FIXED
+            else if (strncmp(name, "Tacx Neo 2T", 4) == 0)
+                existing->category = CATEGORY_FIXED; // Bike trainer
+            else if (strncmp(name, "MOLEKULE", 8) == 0)
+                existing->category = CATEGORY_FIXED; // Air filter
+            else if (strncmp(name, "Nest Cam", 8) == 0)
+                existing->category = CATEGORY_FIXED; // Camera
+            else if (strncmp(name, "Seos", 4) == 0)
+                existing->category = CATEGORY_FIXED; // Credential technology
+            else if (string_starts_with(name, "LEDBlue"))
+                existing->category = CATEGORY_FIXED; // RGB LED controller
+            else if (string_starts_with(name, "ELK-BLEDOM"))
+                existing->category = CATEGORY_FIXED; // RGB LED controller
+            else if (string_starts_with(name, "bhyve"))
+                existing->category = CATEGORY_FIXED; // Sprinkler controller
+
             // TVs
             else if (strcmp(name, "AppleTV") == 0)
                 existing->category = CATEGORY_TV;
@@ -972,6 +1017,11 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->category = CATEGORY_HEADPHONES;
             else if (string_starts_with(name, "Z-Link"))
                 existing->category = CATEGORY_HEADPHONES;
+            else if (string_starts_with(name, "LE_Stealth 700 Xbox"))
+                existing->category = CATEGORY_HEADPHONES;
+            else if (string_starts_with(name, "Bose AE2 SoundLink"))
+                existing->category = CATEGORY_HEADPHONES;
+                
 
             // TVs
             // e.g. "[TV] Samsung Q70 Series (65)" icon is audio_card
