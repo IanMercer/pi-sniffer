@@ -595,7 +595,11 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
             }
             else if (lower_bits == 0x07){
                 // transition phase
-                g_info(" %s '%s' Nearby Info 0x06: screen is on u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                g_info(" %s '%s' Nearby Info 0x07: screen is on u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+            }
+            else if (lower_bits == 0x08){
+                // iPhoneX 
+                g_info(" %s '%s' Nearby Info 0x08: screen is on u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x09){
                 // Nope, iPad is locked 
@@ -610,8 +614,11 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
                 // active user
                 g_info(" %s '%s' Nearby Info 0x0b: Recent user interaction u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
+            else if (lower_bits == 0x0C){
+                g_info(" %s '%s' Nearby Info 0x0c: ???? %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+            }
             else if (lower_bits == 0x0D){
-                g_info(" %s '%s' Nearby Info 0x0d: User is driving in a vehicle %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                g_info(" %s '%s' Nearby Info 0x0d: ???? %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0E){
                 g_info(" %s '%s' Nearby Info 0x0e: Phone call or Facetime %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
