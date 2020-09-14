@@ -1720,6 +1720,14 @@ static void bluez_device_appeared(GDBusConnection *sig,
         {
             pretty_print("  Media player = ", properties);
         }
+        else if (g_ascii_strcasecmp(interface_name, "org.bluez.Network1") == 0)
+        {
+            pretty_print("  Network = ", properties);
+        }
+        else if (g_ascii_strcasecmp(interface_name, "org.bluez.MediaControl1") == 0)
+        {
+            pretty_print("  Media control = ", properties);
+        }
         else if (g_ascii_strcasecmp(interface_name, "org.bluez.Battery1") == 0)
         {
             pretty_print("  Battery = ", properties);
