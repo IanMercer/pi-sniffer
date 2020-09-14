@@ -1970,7 +1970,7 @@ gboolean should_remove(struct Device *existing)
         max_time_ago_seconds = 60 * MAX_TIME_AGO_CACHE;
     }
 
-    if (delta_time > max_time_ago_seconds + 20)
+    if (delta_time > max_time_ago_seconds + 5)  // 5 = same as run interval
     {
         // Assume already removed from BLUEZ
         g_warning("  LOCAL Cache remove %s '%s' count=%i dt=%.1fmin dist=%.1fm\n", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
