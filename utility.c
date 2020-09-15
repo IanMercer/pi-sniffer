@@ -11,9 +11,9 @@
 #include <sys/types.h>
 #include <net/if.h>
 #include <string.h>
+#include <fcntl.h>  
 
 #include "utility.h"
-
 
 /*
  * Measures the current (and peak) resident and virtual memories
@@ -188,11 +188,15 @@ static bool try_get_mac_address(const char* ifname, char* access_point_address)
     memset(&buffer, 0x00, sizeof(buffer));
     strcpy(buffer.ifr_name, ifname);
     ioctl(s, SIOCGIFHWADDR, &buffer);
+
     close(s);
     memcpy(access_point_address, &buffer.ifr_hwaddr.sa_data, 6);
     if (access_point_address[0] == 0) return FALSE;
     return TRUE;
 }
+
+
+
 
 /*
    Get mac address (6 bytes) and string version (18 bytes)
@@ -304,4 +308,35 @@ void soft_set_u16(uint16_t* field, uint16_t field_new)
 {
     // CATEGORY_UNKNOWN, UNKNOWN_ADDRESS_TYPE = 0
     if (*field == 0) *field = field_new;
+}
+
+
+/*
+   Is a given interface UP
+*/
+bool is_interface_up(const char* ifname)
+{
+    int s;
+    struct ifreq buffer;
+
+    s = socket(PF_INET, SOCK_DGRAM, 0);
+    memset(&buffer, 0x00, sizeof(buffer));
+    strcpy(buffer.ifr_name, ifname);
+    ioctl(s, SIOCGIFFLAGS, &buffer);
+
+    close(s);
+    bool result = buffer.ifr_ifru.ifru_flags & IFF_UP;
+
+    g_debug("%s is %s", ifname, result ? "UP" : "DOWN");
+
+    return result;
+}
+
+/*
+    Is any interface up?
+*/
+bool is_any_interface_up()
+{
+    // TODO: Get list of interfaces
+    return is_interface_up("wlan0") || is_any_interface_up("eth0") || is_any_interface_up("enp4s0");
 }

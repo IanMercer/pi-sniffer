@@ -218,7 +218,7 @@ void send_to_udp_display(struct OverallState *state, float people_closest, float
 
     // NB This sends constantly even if value is unchanged because UDP is unreliable
     // and because a display may become unplugged and then reconnected
-    if (state->udp_sign_port > 0)
+    if (state->network_up && state->udp_sign_port > 0)
     {
         char msg[4];
         msg[0] = 0;
@@ -819,9 +819,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         if (!isUpdate)
         {
             // These devices need to be removed from BLUEZ otherwise BLUEZ's cache gets huge!
-            g_warning("report_devices_internal, not an update, not found");
+            // g_warning("report_devices_internal, not an update, not found");
             pretty_print2("Properties", properties, true);
-            g_debug("Remove %s, bluez get_devices call and not seen yet", address);
+            g_debug("Remove %s, bluez get_devices called back, and not seen yet", address);
             bluez_remove_device(conn, address);
             return;
         }
@@ -920,7 +920,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             if (strncmp(name, existing->name, NAME_LENGTH - 1) != 0)
             {
                 g_info("  %s Name has changed '%s' -> '%s'\n", address, existing->name, name);
-                send_to_mqtt_single(address, "name", name);
+                if (state.network_up) send_to_mqtt_single(address, "name", name);
                 g_strlcpy(existing->name, name, NAME_LENGTH);
             }
             else
@@ -1104,7 +1104,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                     g_debug("  %s Address type has changed -> '%s'\n", address, addressType);
                     // Not interested in random as most devices are random
                 }
-                send_to_mqtt_single(address, "type", addressType);
+                if (state.network_up) send_to_mqtt_single(address, "type", addressType);
             }
             else
             {
@@ -1194,7 +1194,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             {
                 g_debug("  %s Paired has changed        ", address);
                 if (state.verbosity >= Details) {
-                    send_to_mqtt_single_value(address, "paired", paired ? 1 : 0);
+                    if (state.network_up) send_to_mqtt_single_value(address, "paired", paired ? 1 : 0);
                 }
                 existing->paired = paired;
             }
@@ -1210,7 +1210,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                     g_debug("  %s Disconnected   ", address);
 
                 if (state.verbosity >= Details) {
-                  send_to_mqtt_single_value(address, "connected", connected_device ? 1 : 0);
+                  if (state.network_up) send_to_mqtt_single_value(address, "connected", connected_device ? 1 : 0);
                 }
                 existing->connected = connected_device;
             }
@@ -1222,7 +1222,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             {
                 g_debug("  %s Trusted has changed       ", address);
                 if (state.verbosity >= Details) {
-                    send_to_mqtt_single_value(address, "trusted", trusted ? 1 : 0);
+                    if (state.network_up) send_to_mqtt_single_value(address, "trusted", trusted ? 1 : 0);
                 }
                 existing->trusted = trusted;
             }
@@ -1381,7 +1381,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                     char **allocdata = g_malloc(actualLength * sizeof(char *)); // array of pointers to strings
                     memcpy(allocdata, uuidArray, actualLength * sizeof(char *));
                     g_info ("  %s UUIDs: %s", address, gatts);
-                    if (state.verbosity >= Details) {
+                    if (state.network_up && state.verbosity >= Details) {
                       send_to_mqtt_uuids(address, "uuids", allocdata, actualLength);
                     }
                     existing->uuids_length = actualLength;
@@ -1412,7 +1412,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             if (existing->deviceclass != deviceclass)
             {
                 g_debug("  %s Class has changed to %i        ", address, deviceclass);
-                send_to_mqtt_single_value(address, "class", deviceclass);
+                if (state.network_up) send_to_mqtt_single_value(address, "class", deviceclass);
                 existing->deviceclass = deviceclass;
             }
         }
@@ -1440,7 +1440,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             if (existing->appearance != appearance)
             {
                 g_print("  %s Appearance has changed ", address);
-                send_to_mqtt_single_value(address, "appearance", appearance);
+                if (state.network_up) send_to_mqtt_single_value(address, "appearance", appearance);
                 existing->appearance = appearance;
             }
         }
@@ -1474,7 +1474,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                     //g_debug("  ServiceData has changed ");
                     pretty_print2("  ServiceData", prop_val, TRUE); // a{qv}
                     // Sends the service GUID as a key in the JSON object
-                    if (state.verbosity >= Details) {
+                    if (state.network_up && state.verbosity >= Details) {
                       send_to_mqtt_array(address, "ServiceData", service_guid, allocdata, actualLength);
                     }
                     existing->service_data_hash = hash;
@@ -1617,7 +1617,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         if (send_distance)
         {
             //g_debug("  **** Send distance %6.3f                        ", existing->distance);
-            if (state.verbosity >= Distances){
+            if (state.network_up && state.verbosity >= Distances){
               send_to_mqtt_single_float(address, "distance", existing->distance);
             }
             time(&existing->last_sent);
@@ -2078,6 +2078,8 @@ int dump_all_devices_tick(void *parameters)
     }
     g_info("---------------------------------------------------------------------------------------------------------------\n");
 
+    state.network_up = is_any_interface_up();
+
     unsigned long total_minutes = (now - started) / 60; // minutes
     unsigned int minutes = total_minutes % 60;
     unsigned int hours = (total_minutes / 60) % 24;
@@ -2093,7 +2095,8 @@ int dump_all_devices_tick(void *parameters)
     else
         g_info("Uptime: %02i:%02i  People %.2f (%.2f in range)\n", hours, minutes, people_closest, people_in_range);
 
-    print_access_points();
+    if (state.network_up) 
+        print_access_points();
 
     // Bluez eventually seems to stop sending us data, so for now, just restart every few hours
     if (hours > 2)
@@ -2241,6 +2244,8 @@ void initialize_state()
     state.n = 0;
 
     gethostname(client_id, META_LENGTH);
+
+    state.network_up = is_any_interface_up();
 
     // Optional metadata about the access point for dashboard
     const char *s_client_id = getenv("HOST_NAME");

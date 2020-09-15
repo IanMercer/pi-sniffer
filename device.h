@@ -176,6 +176,7 @@ enum Verbosity
 struct OverallState
 {
    int n; // current devices
+   bool network_up;        // Is the network up
    pthread_mutex_t lock;
    struct Device devices[N];
    struct MacAddress mac_addresses[NMAC];

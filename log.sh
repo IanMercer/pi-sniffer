@@ -2,5 +2,5 @@
 
 # Script to tail the service log
 
-sudo journalctl -u pi-sniffer.service -f
+sudo journalctl -u pi-sniffer.service -S -5min -f
 
