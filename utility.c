@@ -11,7 +11,8 @@
 #include <sys/types.h>
 #include <net/if.h>
 #include <string.h>
-#include <fcntl.h>  
+#include <fcntl.h>
+#include <errno.h>
 
 #include "utility.h"
 
@@ -332,19 +333,41 @@ bool is_interface_up(const char* ifname)
     return result;
 }
 
-static bool interface_state = TRUE;
+static bool interface_state = FALSE;
 
-/*
-    Is any interface up?
-*/
 bool is_any_interface_up()
 {
-    // TODO: Get list of interfaces
-    bool result = is_interface_up("wlan0") || is_interface_up("eth0") || is_interface_up("enp4s0");
-    if (result != interface_state)
-    {
-        g_warning("Network connectivity is now %s", result ? "UP" : "DOWN");
+    int socketfd;
+    struct ifreq    ifr;
+    bool connected = false;
+    char name [IF_NAMESIZE+1];
+    name[0] = '\0';
+
+    for (int arg = 1; ; arg++) {
+
+        socketfd = socket(AF_INET, SOCK_DGRAM, 0);
+        if (socketfd == -1)
+            return FALSE;
+
+        ifr.ifr_ifindex = arg;
+        if (ioctl(socketfd, SIOCGIFNAME, &ifr) >= 0) 
+        {
+            strncpy(name, ifr.ifr_ifrn.ifrn_name, IF_NAMESIZE);
+            name[IF_NAMESIZE] = '\0';
+
+            if (strncmp(name, "lo", 2) == 0) continue;       // loopback
+
+            ioctl(socketfd, SIOCGIFFLAGS, &ifr);
+
+            connected = ifr.ifr_ifru.ifru_flags & IFF_UP;
+            if (connected) break;
+        }
     }
-    interface_state = result;
-    return result;
+    if (connected != interface_state)
+    {
+        g_warning("Network connectivity on %s is now %s", name, connected ? "UP" : "DOWN");
+        interface_state = connected;
+    }
+    return connected;
 }
+
