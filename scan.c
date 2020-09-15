@@ -575,68 +575,69 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
 
             if (lower_bits == 0x00){
                 // iPad sends this, unused
-                g_info(" %s '%s' Nearby Info 0x00: unknown u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                g_info("  %s '%s' Nearby Info 0x00: unknown u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x01){
                 // Rare and not sure what this is, may represent a recent iOS update was applied
-                g_info(" %s '%s' Nearby Info 0x01: disabled u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                g_info("  %s '%s' Nearby Info 0x01: disabled u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x02){
-                g_info(" %s '%s' Nearby Info 0x02: unknown? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                g_info("  %s '%s' Nearby Info 0x02: unknown? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x03){
                 // locked screen
-                g_info(" %s '%s' Nearby Info 0x03: locked u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                g_info("  %s '%s' Nearby Info 0x03: locked u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x04){
-                g_info(" %s '%s' Nearby Info 0x04: unknown? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                g_info("  %s '%s' Nearby Info 0x04: unknown? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x05){
-                g_info(" %s '%s' Nearby Info 0x05: audio playing, screen off u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                g_info("  %s '%s' Nearby Info 0x05: audio playing, screen off u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x06){
                 // iWatch sends this
-                g_info(" %s '%s' Nearby Info 0x06: unknown? watch? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                g_info("  %s '%s' Nearby Info 0x06: unknown? watch? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x07){
                 // transition phase
-                g_info(" %s '%s' Nearby Info 0x07: on lock screen? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                g_info("  %s '%s' Nearby Info 0x07: on lock screen? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x08){
                 // iPhoneX 
-                g_info(" %s '%s' Nearby Info 0x08: screen is on u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                g_info("  %s '%s' Nearby Info 0x08: screen is on u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x09){
                 // Nope, iPad is locked 
-                g_info(" %s '%s' Nearby Info 0x09: screen is on and video playing u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                g_info("  %s '%s' Nearby Info 0x09: screen is on and video playing u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0A){
                 // Elsewhere it says this is a message from phone to watch?
                 // See https://arxiv.org/pdf/1904.10600.pdf
-                g_info(" %s '%s' Nearby Info 0x0a: Watch is on wrist and unlocked u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                g_info("  %s '%s' Nearby Info 0x0a: Watch is on wrist and unlocked u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0B){
                 // active user
-                g_info(" %s '%s' Nearby Info 0x0b: Recent user interaction u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad?
+                g_info("  %s '%s' Nearby Info 0x0b: Recent user interaction u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0C){
-                g_info(" %s '%s' Nearby Info 0x0c: ???? %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                g_info("  %s '%s' Nearby Info 0x0c: ???? %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0D){
-                g_info(" %s '%s' Nearby Info 0x0d: ???? %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                g_info("  %s '%s' Nearby Info 0x0d: ???? %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0E){
-                g_info(" %s '%s' Nearby Info 0x0e: Phone call or Facetime %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                g_info("  %s '%s' Nearby Info 0x0e: Phone call or Facetime %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0F){
-                g_info(" %s '%s' Nearby Info 0x0f: unknown? watch? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                g_info("  %s '%s' Nearby Info 0x0f: unknown? watch? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else
-                g_info(" %s '%s' Nearby Info 0x%2x: Unknown device status upper=%2x info=%.2x %s", existing->mac, existing->name, lower_bits, upper_bits, information_byte, wifi);
+                g_info("  %s '%s' Nearby Info 0x%2x: Unknown device status upper=%2x info=%.2x %s", existing->mac, existing->name, lower_bits, upper_bits, information_byte, wifi);
         }
         else
         {
-            g_info(" %s '%s' Did not recognize apple device type %.2x", existing->mac, existing->name, apple_device_type);
+            g_info("  %s '%s' Did not recognize apple device type %.2x", existing->mac, existing->name, apple_device_type);
         }
     }
     else if (manufacturer == 0x022b)
@@ -649,6 +650,11 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
     {
         optional_set(existing->name, "_Garmin", NAME_LENGTH);
         existing->category = CATEGORY_WEARABLE; // could be fitness tracker
+    }
+    else if (manufacturer == 0x0141)
+    {
+        optional_set(existing->name, "Fedex", NAME_LENGTH);
+        existing->category = CATEGORY_CAR;   // Fedex delivery? 
     }
     else if (manufacturer == 0x05A7)
     {
@@ -968,15 +974,13 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->category = CATEGORY_WEARABLE; // FITBIT
             else if (strncmp(name, "Versa", 5) == 0)
                 existing->category = CATEGORY_WEARABLE; // FITBIT
-            else if (strncmp(name, "Charge 2", 8) == 0)
+            else if (string_starts_with(name, "Charge "))  //  Charge 2, 3, 4
                 existing->category = CATEGORY_WEARABLE; // FITBIT
-            else if (strncmp(name, "Charge 3", 8) == 0)
+            else if (string_starts_with(name, "Inspire HR"))
                 existing->category = CATEGORY_WEARABLE; // FITBIT
-            else if (strncmp(name, "Charge 4", 8) == 0)
-                existing->category = CATEGORY_WEARABLE; // FITBIT
-            else if (strncmp(name, "Mi Smart Band", 13) == 0)
+            else if (string_starts_with(name, "Mi Smart Band"))
                 existing->category = CATEGORY_WEARABLE; // Fitness
-            else if (strncmp(name, "TICKR X", 7) == 0)
+            else if (string_starts_with(name, "TICKR X"))
                 existing->category = CATEGORY_WEARABLE; // Heartrate
 
             // FIXED
@@ -994,12 +998,21 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->category = CATEGORY_FIXED; // RGB LED controller
             else if (string_starts_with(name, "bhyve"))
                 existing->category = CATEGORY_FIXED; // Sprinkler controller
+            else if (string_starts_with(name, "BEDJET"))
+                existing->category = CATEGORY_FIXED; // Bed temperature controller!
+            else if (string_starts_with(name, "[Refrigerator] Samsung"))
+                existing->category = CATEGORY_FIXED; // Fridge!
 
             // TVs
             else if (strcmp(name, "AppleTV") == 0)
                 existing->category = CATEGORY_TV;
             else if (strcmp(name, "Apple TV") == 0)
                 existing->category = CATEGORY_TV;
+            else if (string_starts_with(name, "HiSmart"))       // HiSmart[TV] 2k ...
+                existing->category = CATEGORY_TV;
+            else if (string_starts_with(name, "BRAVIA"))        // Sony Bravia TVs, VU1
+                existing->category = CATEGORY_TV;
+
             // Beacons
             else if (strncmp(name, "AprilBeacon", 11) == 0)
                 existing->category = CATEGORY_BEACON;
@@ -1013,6 +1026,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->category = CATEGORY_BEACON;
             else if (strncmp(name, "LYWSD03MMC", 10) == 0)
                 existing->category = CATEGORY_BEACON;
+
             // Headphones or speakers
             else if (strncmp(name, "Sesh Evo-LE", 11) == 0)
                 existing->category = CATEGORY_HEADPHONES; // Skullcandy
@@ -1036,22 +1050,38 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->category = CATEGORY_HEADPHONES;
             else if (string_starts_with(name, "Bose AE2 SoundLink"))
                 existing->category = CATEGORY_HEADPHONES;
+            else if (string_starts_with(name, "DSW229Dynamo 1100X"))
+                existing->category = CATEGORY_HEADPHONES;   // Subwoofer
+            else if (string_starts_with(name, "DSW227Dynamo 600X"))
+                existing->category = CATEGORY_HEADPHONES;   // Subwoofer
+ 
+            // BT Speakers
+            else if (string_starts_with(name, "SRS-XB12"))
+                existing->category = CATEGORY_HEADPHONES;   // BT Speakers
             else if (string_starts_with(name, "ACTON II"))
                 existing->category = CATEGORY_HEADPHONES;   // BT Speakers
+            else if (string_starts_with(name, "VIZIO V51"))
+                existing->category = CATEGORY_HEADPHONES;   // Soundbar
 
             // TVs
             // e.g. "[TV] Samsung Q70 Series (65)" icon is audio_card
-            else if (strncmp(name, "[TV] Samsung", 12) == 0)
+            else if (string_starts_with(name, "[TV] Samsung"))
                 existing->category = CATEGORY_TV;
-            else if (strncmp(name, "[Signage] Samsung", 17) == 0)
+            else if (string_starts_with(name, "[Signage] Samsung"))
                 existing->category = CATEGORY_TV;
-            else if (strncmp(name, "[LG] webOS TV", 13) == 0)
+            else if (string_starts_with(name, "[LG] webOS TV"))
                 existing->category = CATEGORY_TV;
-            else if (strncmp(name, "SONY XBR", 8) == 0)
+            else if (string_starts_with(name, "SONY XBR"))
                 existing->category = CATEGORY_TV;
+ 
+            // Receivers
+            else if (string_starts_with(name, "YamahaAV"))
+                existing->category = CATEGORY_FIXED; // receiver
+ 
             // Printers
-            else if (strncmp(name, "ENVY Photo", 10) == 0)
+            else if (string_starts_with(name, "ENVY Photo"))
                 existing->category = CATEGORY_FIXED; // printer
+
             // POS Terminals
             else if (strncmp(name, "Bluesnap", 8) == 0)
                 existing->category = CATEGORY_FIXED;  // POS
