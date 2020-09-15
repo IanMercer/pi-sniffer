@@ -39,4 +39,5 @@ sudo systemctl start pi-sniffer.service
 
 echo now tailing log, ctrl-c to stop but leave service running
 echo log level use -p 6 for info level, -p 7 for debug level or remove it
-sudo journalctl -u pi-sniffer.service -f -p 7
+# Start two minutes back to see the transition and tail forward
+sudo journalctl -u pi-sniffer.service -S -2min -f -p 7

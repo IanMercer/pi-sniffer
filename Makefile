@@ -17,3 +17,4 @@ scan: $(SRC)
 
 mqtt: $(MQTTSRC)
 	gcc -o $@ $^ $(CFLAGS) $(LIBS)
+

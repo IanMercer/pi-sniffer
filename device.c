@@ -32,7 +32,9 @@ char* category_from_int(uint i)
 
 void merge(struct Device* local, struct Device* remote, char* access_name)
 {
-    if (strcmp(local->name, remote->name) != 0 && strlen(local->name)>0 && strlen(remote->name)>0)
+    if (strcmp(local->name, remote->name) != 0 
+        && strlen(local->name)>0 && strlen(remote->name)>0
+        && remote->name[0] != '_')
     {
         g_info("Replace local '%s' by remote '%s'?", local->name, remote->name);
     }
