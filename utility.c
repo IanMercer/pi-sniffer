@@ -327,10 +327,12 @@ bool is_interface_up(const char* ifname)
     close(s);
     bool result = buffer.ifr_ifru.ifru_flags & IFF_UP;
 
-    g_debug("%s is %s", ifname, result ? "UP" : "DOWN");
+    //g_debug("%s is %s", ifname, result ? "UP" : "DOWN");
 
     return result;
 }
+
+static bool interface_state = TRUE;
 
 /*
     Is any interface up?
@@ -338,5 +340,11 @@ bool is_interface_up(const char* ifname)
 bool is_any_interface_up()
 {
     // TODO: Get list of interfaces
-    return is_interface_up("wlan0") || is_any_interface_up("eth0") || is_any_interface_up("enp4s0");
+    bool result = is_interface_up("wlan0") || is_interface_up("eth0") || is_interface_up("enp4s0");
+    if (result != interface_state)
+    {
+        g_warning("Network connectivity is now %s", result ? "UP" : "DOWN");
+    }
+    interface_state = result;
+    return result;
 }
