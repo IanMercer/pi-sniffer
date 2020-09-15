@@ -72,12 +72,17 @@ void append_text(char* buffer, int length, char* format, ...);
 /*
   string starts with
 */
-bool string_starts_with(char *buffer, char *match);
+bool string_starts_with(const char *buffer, const char *match);
 
 /*
-  string contains
+  string ends with (case sensitive at the moment)
 */
-bool string_contains(char *buffer, char *match);
+bool string_endswith(const char *buffer, const char *match);
+
+/*
+  string contains insensitive (ASCII)
+*/
+bool string_contains_insensitive(const char *buffer, const char *match);
 
 /*
    Overwrite if it was empty or began with an underscore (temporary name)

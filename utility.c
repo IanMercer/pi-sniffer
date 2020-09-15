@@ -277,18 +277,42 @@ void append_text(char* buffer, int length, char* format, ...)
 
 /*
   string starts with
+  TODO: Make this insensitive
 */
-bool string_starts_with(char *buffer, char *match)
+bool string_starts_with(const char *buffer, const char *match)
 {
   return strncmp(buffer, match, strlen(match)) == 0;
 }
 
 /*
-  string contains
+  string ends with
+  TODO: Make this insensitive
 */
-bool string_contains(char *buffer, char *match)
+bool string_endswith(const char *buffer, const char *match)
 {
-    return g_strrstr(buffer, match) != NULL;
+    int offset = strlen(buffer) - strlen(match);
+    if (offset < 0) return FALSE;
+    return strncmp(buffer + offset, match, strlen(match)) == 0;
+}
+
+/*
+  string contains insensitive
+*/
+bool string_contains_insensitive(const char *buffer, const char *match)
+{
+  do {
+    const char* h = buffer;
+    const char* n = match;
+
+    while (g_ascii_tolower((unsigned char) *h) == g_ascii_tolower((unsigned char ) *n) && *n) {
+      h++;
+      n++;
+    }
+    if (*n == 0) {
+      return TRUE;
+    }
+  } while (*buffer++);
+  return FALSE;
 }
 
 /*

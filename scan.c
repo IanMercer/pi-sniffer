@@ -513,13 +513,14 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
             // Confirmed seen from iWatch
             optional_set(existing->name, "iWatch", NAME_LENGTH);
             g_info("  %s '%s' Magic Switch", existing->mac, existing->name);
-            existing->category = CATEGORY_WEARABLE;
+            soft_set_category(&existing->category, CATEGORY_WEARABLE);
             // Sent when watch has lost pairing to phone
         }
         else if (apple_device_type == 0x0c)     // Handoff
         {
             optional_set(existing->name, "_Apple Phone", NAME_LENGTH);
             g_info("  %s '%s' Handoff", existing->mac, existing->name);
+            soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? but assume phone
             // 1 byte length
             // 1 byte version
             // 2 bytes IV
@@ -758,6 +759,11 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         optional_set(existing->name, "_Icon Health and Fitness", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
+    else if (manufacturer == 0x0401)
+    {
+        optional_set(existing->name, "_Relations Inc", NAME_LENGTH);
+        existing->category = CATEGORY_FIXED;
+    }
     else if (manufacturer == 0x0065)
     {
         optional_set(existing->name, "_HP", NAME_LENGTH);
@@ -939,36 +945,38 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             //     if (strcmp(name, phones[i] == 0)) existing->category = CATEGORY_PHONE;
             // }
 
-            if (string_contains(name, "iPhone"))
+            if (string_contains_insensitive(name, "iPhone"))
                 existing->category = CATEGORY_PHONE;
-            else if (string_contains(name, "'s phone"))  // some people name them
+            else if (string_endswith(name, "'s phone"))  // some people name them
+                // TODO: Remove the name for privacy reasons
                 existing->category = CATEGORY_PHONE;
-            else if (string_contains(name, "'s Phone"))
+            else if (string_endswith(name, "s phone"))  // some people name them
+                // TODO: Remove the name for privacy reasons
                 existing->category = CATEGORY_PHONE;
-            else if (string_contains(name, "Galaxy Note"))
+            else if (string_contains_insensitive(name, "Galaxy Note"))
                 existing->category = CATEGORY_PHONE;
-            else if (string_contains(name, "Galaxy A20"))
+            else if (string_contains_insensitive(name, "Galaxy A20"))
                 existing->category = CATEGORY_PHONE;
 
-            else if (string_contains(name, "iPad"))
+            else if (string_contains_insensitive(name, "iPad"))
                 existing->category = CATEGORY_TABLET;
-            else if (string_contains(name, "MacBook pro"))
+            else if (string_contains_insensitive(name, "MacBook pro"))
                 existing->category = CATEGORY_COMPUTER;
             else if (string_starts_with(name, "BOOTCAMP"))
                 existing->category = CATEGORY_COMPUTER;
 
             // Watches
-            else if (strcmp(name, "iWatch") == 0)
+            else if (string_starts_with(name, "iWatch"))
                 existing->category = CATEGORY_WEARABLE;
-            else if (strcmp(name, "Apple Watch") == 0)
+            else if (string_starts_with(name, "Apple Watch"))
                 existing->category = CATEGORY_WEARABLE;
-            else if (strncmp(name, "Galaxy Watch", 12) == 0)
+            else if (string_starts_with(name, "Galaxy Watch"))
                 existing->category = CATEGORY_WEARABLE;
-            else if (strncmp(name, "Galaxy Fit", 10) == 0)
+            else if (string_starts_with(name, "Galaxy Fit"))
                 existing->category = CATEGORY_WEARABLE;
-            else if (strncmp(name, "Gear S3", 7) == 0)
+            else if (string_starts_with(name, "Gear S3"))
                 existing->category = CATEGORY_WEARABLE;
-            else if (strncmp(name, "fenix", 5) == 0)
+            else if (string_starts_with(name, "fenix"))
                 existing->category = CATEGORY_WEARABLE;
             else if (strncmp(name, "Ionic", 5) == 0)
                 existing->category = CATEGORY_WEARABLE; // FITBIT
@@ -981,6 +989,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             else if (string_starts_with(name, "Mi Smart Band"))
                 existing->category = CATEGORY_WEARABLE; // Fitness
             else if (string_starts_with(name, "TICKR X"))
+                existing->category = CATEGORY_WEARABLE; // Heartrate
+            else if (string_starts_with(name, "ID115Plus HR"))
                 existing->category = CATEGORY_WEARABLE; // Heartrate
 
             // FIXED
@@ -1002,6 +1012,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->category = CATEGORY_FIXED; // Bed temperature controller!
             else if (string_starts_with(name, "[Refrigerator] Samsung"))
                 existing->category = CATEGORY_FIXED; // Fridge!
+            else if (string_starts_with(name, "Self Checkout"))
+                existing->category = CATEGORY_FIXED; // Self-checkout terminal
 
             // TVs
             else if (strcmp(name, "AppleTV") == 0)
@@ -1054,7 +1066,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->category = CATEGORY_HEADPHONES;   // Subwoofer
             else if (string_starts_with(name, "DSW227Dynamo 600X"))
                 existing->category = CATEGORY_HEADPHONES;   // Subwoofer
- 
+            else if (string_contains_insensitive(name, "headphone"))
+                existing->category = CATEGORY_HEADPHONES;   // Subwoofer
+
             // BT Speakers
             else if (string_starts_with(name, "SRS-XB12"))
                 existing->category = CATEGORY_HEADPHONES;   // BT Speakers
