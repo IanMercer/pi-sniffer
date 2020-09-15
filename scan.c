@@ -62,18 +62,19 @@ static int id_gen = 0;
 bool logTable = FALSE; // set to true each time something changes
 
 /*
-      Connection to DBUS
+    Connection to DBUS
 */
 GDBusConnection *conn;
 
 /*
-  Do these two devices overlap in time? If so they cannot be the same device
+    Do these two devices overlap in time? If so they cannot be the same device
+    (allowed to touch given granularity of time)
 */
 bool overlaps(struct Device *a, struct Device *b)
 {
-    if (a->earliest > b->latest)
+    if (a->earliest >= b->latest)
         return FALSE; // a is entirely after b
-    if (b->earliest > a->latest)
+    if (b->earliest >= a->latest)
         return FALSE; // b is entirely after a
     return TRUE;      // must overlap if not entirely after or before
 }
@@ -1035,7 +1036,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->category = CATEGORY_HEADPHONES;
             else if (string_starts_with(name, "Bose AE2 SoundLink"))
                 existing->category = CATEGORY_HEADPHONES;
-                
+            else if (string_starts_with(name, "ACTON II"))
+                existing->category = CATEGORY_HEADPHONES;   // BT Speakers
 
             // TVs
             // e.g. "[TV] Samsung Q70 Series (65)" icon is audio_card
@@ -1127,8 +1129,6 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             int16_t rssi = g_variant_get_int16(prop_val);
             //send_to_mqtt_single_value(address, "rssi", rssi);
 
-            g_debug("  %s RSSI %i\n", address, rssi);
-
             time_t now;
             time(&now);
 
@@ -1169,6 +1169,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 //g_print("  %s Will send rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
                 existing->distance = averaged;
                 send_distance = TRUE;
+                g_debug("  %s RSSI %i d=%.1fm", address, rssi, averaged);
             }
             else
             {
@@ -1609,13 +1610,13 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
     if (starting && send_distance)
     {
-        g_debug("Skip sending, starting\n");
+        g_debug("Skip sending, starting");
     }
     else
     {
         if (send_distance)
         {
-            g_debug("  **** Send distance %6.3f                        ", existing->distance);
+            //g_debug("  **** Send distance %6.3f                        ", existing->distance);
             if (state.verbosity >= Distances){
               send_to_mqtt_single_float(address, "distance", existing->distance);
             }
