@@ -378,7 +378,11 @@ void *listen_loop(void *param)
                     double delta_time = difftime(now, d.latest);
 
                     // If the delta time between our clock and theirs is > 0, log it
-                    //if (delta_time > 0)
+                    if (delta_time > 0)
+                    {
+                      g_warning("%s '%s' %s dist=%.2fm time=%.1fs", d.mac, d.name, a.client_id, d.distance, delta_time);
+                    }
+                    else
                     {
                       g_debug("%s '%s' %s dist=%.2fm time=%.1fs", d.mac, d.name, a.client_id, d.distance, delta_time);
                     }
