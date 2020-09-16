@@ -2111,7 +2111,7 @@ void dump_device(struct Device *d)
         }
     }
 
-    g_info("%4i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %13s %5.1fm %s\n", d->id % 10000, d->mac, d->count, addressType, d->distance, d->column, (d->earliest - started), (d->latest - started), d->name, closest_ap, closest_dist, category);
+    g_info("%4i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %13s %5.1fm %s", d->id % 10000, d->mac, d->count, addressType, d->distance, d->column, (d->earliest - started), (d->latest - started), d->name, closest_ap, closest_dist, category);
 }
 
 /*

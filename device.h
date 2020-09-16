@@ -160,7 +160,7 @@ char *access_point_to_json(struct AccessPoint *a);
 
 bool device_from_json(const char *json, struct AccessPoint *access_point, struct Device *device);
 
-void merge(struct Device *local, struct Device *remote, char *access_name);
+void merge(struct Device *local, struct Device *remote, char *access_name, bool safe);
 
 /*
    How much data is sent over MQTT

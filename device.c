@@ -29,8 +29,10 @@ char* category_from_int(uint i)
   return categories[i];
 }
 
-
-void merge(struct Device* local, struct Device* remote, char* access_name)
+/*
+   merge
+*/
+void merge(struct Device* local, struct Device* remote, char* access_name, bool safe)
 {
     if (strcmp(local->name, remote->name) != 0 
         && strlen(local->name)>0 && strlen(remote->name)>0
@@ -46,6 +48,16 @@ void merge(struct Device* local, struct Device* remote, char* access_name)
     soft_set_u16(&local->appearance, remote->appearance);  // not used ?
     if (remote->try_connect_state >= TRY_CONNECT_COMPLETE) local->try_connect_state = TRY_CONNECT_COMPLETE;  // already connected once
     // TODO: Other fields that we can transfer over
+
+    if (safe)  // i.e. difference between our clock and theirs was zero
+    {
+        if (remote->latest > local->latest)
+        {
+            g_debug("Bumping time %s '%s' by %.1fs", local->mac, local->name, difftime(remote->latest, local->latest));
+            local->latest = remote->latest;
+        }
+    }
+
 }
 
 char* access_point_to_json (struct AccessPoint* a)
