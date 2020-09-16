@@ -74,7 +74,7 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
     {
         if (remote->latest > local->latest)
         {
-            g_debug("Bumping time %s '%s' by %.1fs", local->mac, local->name, difftime(remote->latest, local->latest));
+            g_debug("Bumping %s '%s' by %.1fs", local->mac, local->name, difftime(remote->latest, local->latest));
             local->latest = remote->latest;
         }
     }

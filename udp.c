@@ -380,13 +380,24 @@ void *listen_loop(void *param)
                     merge(&state->devices[i], &d, a.client_id, delta_time == 0);
 
                     // If the delta time between our clock and theirs is > 0, log it
-                    if (delta_time > 0)
+                    if (delta_time < 0)
                     {
+                        // This is problematic, they are ahead of us
                         g_warning("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, a.client_id, d.distance, delta_time);
+                    }
+                    else if (delta_time > 1)
+                    {
+                        // Could be a problem, they appear to be somewhat behind us
+                        g_warning("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, a.client_id, d.distance, delta_time);
+                    }
+                    else if (delta_time > 0)
+                    {
+                        g_debug("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, a.client_id, d.distance, delta_time);
                     }
                     else
                     {
-                        g_debug("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, a.client_id, d.distance, delta_time);
+                        // silent, right on zero time difference
+                        //g_debug("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, a.client_id, d.distance, delta_time);
                     }
 
                     // Use an int64 version of the mac address
