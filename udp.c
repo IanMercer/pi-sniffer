@@ -378,8 +378,9 @@ void *listen_loop(void *param)
                     double delta_time = difftime(now, d.latest);
 
                     // If the delta time between our clock and theirs is > 0, log it
-                    if (delta_time > 0){
-                      g_debug("%s '%s' %s dt=%.1fs", d.mac, d.name, a.client_id, delta_time);
+                    //if (delta_time > 0)
+                    {
+                      g_debug("%s '%s' %s dist=%.2fm time=%.1fs", d.mac, d.name, a.client_id, d.distance, delta_time);
                     }
                     merge(&state->devices[i], &d, a.client_id);
 
