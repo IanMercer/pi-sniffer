@@ -44,21 +44,27 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
     optional_set(local->name, remote->name, NAME_LENGTH);
     optional_set(local->alias, remote->alias, NAME_LENGTH);
     soft_set_8(&local->addressType, remote->addressType);
-    if (local->category == 0 && remote->category != 0)
-        g_info("  %s Change category to '%s', message from %s", local->mac, category_from_int(remote->category), access_name);
-    else if (local->category == CATEGORY_PHONE && remote->category == CATEGORY_TABLET)
+
+    if (remote->category != CATEGORY_UNKNOWN)
     {
-        // TABLET overrides PHONE because we assume phone when someone unlocks or uses an Apple device
-        g_info("  %s Change category from '%s' to '%s', message from %s", local->mac, category_from_int(local->category), category_from_int(remote->category), access_name);
-        local->category = remote->category;
-    }
-    else if (local->category != remote->category) 
-    {
-        g_info("  %s MAYBE change category from '%s' to '%s', message from %s", local->mac, category_from_int(local->category), category_from_int(remote->category), access_name);
+        if (local->category == CATEGORY_UNKNOWN)
+        {
+            g_info("  %s Set category to '%s', message from %s", local->mac, category_from_int(remote->category), access_name);
+            local->category = remote->category;
+        }
+        else if (local->category == CATEGORY_PHONE && remote->category == CATEGORY_TABLET)
+        {
+            // TABLET overrides PHONE because we assume phone when someone unlocks or uses an Apple device
+            g_info("  %s Override category from '%s' to '%s', message from %s", local->mac, category_from_int(local->category), category_from_int(remote->category), access_name);
+            local->category = remote->category;
+        }
+        else if (local->category != remote->category) 
+        {
+            g_warning("  %s MAYBE change category from '%s' to '%s', message from %s", local->mac, category_from_int(local->category), category_from_int(remote->category), access_name);
+            // TODO: Check any here
+        }
     }
 
-    // TODO: What if the category is different (e.g. iPad vs iPhone)
-    soft_set_8(&local->category, remote->category);
     soft_set_u16(&local->appearance, remote->appearance);  // not used ?
     if (remote->try_connect_state >= TRY_CONNECT_COMPLETE) local->try_connect_state = TRY_CONNECT_COMPLETE;  // already connected once
     // TODO: Other fields that we can transfer over
