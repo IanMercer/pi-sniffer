@@ -896,7 +896,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         }
         else
         {
-            g_debug("Existing device %i. %s '%s' (%s)\n", existing->id, address, existing->name, existing->alias);
+            g_debug("Existing device %i. %s '%s' (%s)", existing->id, address, existing->name, existing->alias);
         }
     }
 
@@ -1007,7 +1007,13 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             else if (string_starts_with(name, "ELK-BLEDOM"))
                 existing->category = CATEGORY_FIXED; // RGB LED controller
             else if (string_starts_with(name, "bhyve"))
+            {
                 existing->category = CATEGORY_FIXED; // Sprinkler controller
+            }
+            else if (string_starts_with(name, "ihoment_H"))
+            {
+                existing->category = CATEGORY_FIXED; // LED light strip controller
+            }
             else if (string_starts_with(name, "BEDJET"))
                 existing->category = CATEGORY_FIXED; // Bed temperature controller!
             else if (string_starts_with(name, "[Refrigerator] Samsung"))
@@ -1336,6 +1342,12 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                         if (ble_uuid == 0x00001000ul) append_text(gatts, sizeof(gatts), "ServiceDiscoveryServer, ");
                         else if (ble_uuid == 0x00001001ul) append_text(gatts, sizeof(gatts), "BrowseGroupDescriptor, ");
                         else if (ble_uuid == 0x00001002ul) append_text(gatts, sizeof(gatts), "PublicBrowseGroup, ");
+                        else if (ble_uuid == 0x00001816ul) append_text(gatts, sizeof(gatts), "CyclingCadence, ");
+                        else if (ble_uuid == 0x00001818ul) 
+                        {
+                             append_text(gatts, sizeof(gatts), "CyclingPower, ");
+                             soft_set_category(&existing->category, CATEGORY_WEARABLE);
+                        }
                         else if (ble_uuid == 0x00001101ul) append_text(gatts, sizeof(gatts), "SerialPort, ");
                         else if (ble_uuid == 0x00001102ul) append_text(gatts, sizeof(gatts), "LANAccessUsingPPP, ");
                         else if (ble_uuid == 0x00001103ul) append_text(gatts, sizeof(gatts), "DialupNetworking, ");
@@ -1669,7 +1681,11 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         // TODO: Make this 'if send_distance or 30s has elapsed'
         // Broadcast what we know about the device to all other listeners
         //send_device_mqtt(existing);
-        send_device_udp(&state, existing);
+        if (isUpdate)
+        {
+            // only send when isUpdate is set, i.e. not for get all devices requests
+            send_device_udp(&state, existing);
+        }
     }
 
     report_devices_count();
