@@ -534,16 +534,19 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         {
             optional_set(existing->name, "_Apple WifiSet", NAME_LENGTH);
             g_info("  %s '%s' WifiSet", existing->mac, existing->name);
+            soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? but assume phone
         }
         else if (apple_device_type == 0x0e)     // Instant hotspot - Reaction to target presence
         {
             optional_set(existing->name, "_Apple Hotspot", NAME_LENGTH);
             g_info("  %s '%s' Hotspot", existing->mac, existing->name);
+            soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? but assume phone
         } 
         else if (apple_device_type == 0x0f)     // Nearby action - On user action (rare)
         {
             optional_set(existing->name, "_Apple Nearby Action", NAME_LENGTH);
             g_info("  %s '%s' Nearby Action", existing->mac, existing->name);
+            soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? but assume phone
             // Used for WiFi-password messages
             // 1 byte length
             // 1 byte action flags
@@ -611,13 +614,18 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
                 g_info("  %s '%s' Nearby Info 0x08: screen is on u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x09){
-                // Nope, iPad is locked 
-                g_info("  %s '%s' Nearby Info 0x09: screen is on and video playing u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                // Nope, iPad is locked
+                // Nope, iPhone X, video was not playing, u=07
+                // Nope, iPhone 8, video not playing, u=03, info=1a, wifi was on
+                g_info("  %s '%s' Nearby Info 0x09: screen is on u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0A){
                 // Elsewhere it says this is a message from phone to watch?
+                // This message is sent by phones not watches, seems to have nothing to do with them
+                // iPhone X
                 // See https://arxiv.org/pdf/1904.10600.pdf
-                g_info("  %s '%s' Nearby Info 0x0a: Watch is on wrist and unlocked u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+                soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad?
+                g_info("  %s '%s' Nearby Info 0x0a: iPhone u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             }
             else if (lower_bits == 0x0B){
                 // active user
@@ -649,6 +657,11 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         optional_set(existing->name, "_Tesla", NAME_LENGTH);
         existing->category = CATEGORY_CAR;
         //    ManufacturerData: {uint16 555: <[byte 0x04, 0x18, 0x77, 0x9d, 0x16, 0xee, 0x04, 0x6c, 0xf9, 0x49, 0x01, 0xf3, 0
+    }
+    else if (manufacturer == 0x0006)
+    {
+        optional_set(existing->name, "_Microsoft", NAME_LENGTH);
+        existing->category = CATEGORY_COMPUTER; // maybe?
     }
     else if (manufacturer == 0x0087)
     {
@@ -714,6 +727,12 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
     {
         optional_set(existing->name, "_Polaris ND", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
+    }
+    else if (manufacturer == 0x0649)
+    {
+        optional_set(existing->name, "_Ryeex", NAME_LENGTH);
+        // Makes fitness bands
+        existing->category = CATEGORY_WEARABLE;
     }
     else if (manufacturer == 0x014f)
     {
@@ -995,10 +1014,20 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->category = CATEGORY_WEARABLE; // Heartrate
             else if (string_starts_with(name, "ID115Plus HR"))
                 existing->category = CATEGORY_WEARABLE; // Heartrate
+            else if (string_starts_with(name, "ID128Color HM"))
+                existing->category = CATEGORY_WEARABLE; // ID128Color HM fitness band
+            else if (string_starts_with(name, "HR-BT"))
+                existing->category = CATEGORY_WEARABLE; // Heartrate
+
+            else if (string_starts_with(name, "RS507 "))
+                existing->category = CATEGORY_WEARABLE; // Ring barcode scanner
 
             // FIXED
             else if (strncmp(name, "Tacx Neo 2T", 4) == 0)
                 existing->category = CATEGORY_FIXED; // Bike trainer
+            else if (strncmp(name, "SCHWINN 170/270", 4) == 0)
+                existing->category = CATEGORY_FIXED; // Bike trainer
+                
             else if (strncmp(name, "MOLEKULE", 8) == 0)
                 existing->category = CATEGORY_FIXED; // Air filter
             else if (strncmp(name, "Nest Cam", 8) == 0)
@@ -1009,6 +1038,10 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->category = CATEGORY_FIXED; // RGB LED controller
             else if (string_starts_with(name, "ELK-BLEDOM"))
                 existing->category = CATEGORY_FIXED; // RGB LED controller
+            else if (string_starts_with(name, "SP110E"))
+                existing->category = CATEGORY_FIXED; // RGB LED controller
+            else if (string_starts_with(name, "WYZE"))
+                existing->category = CATEGORY_FIXED; // Smart door lock?
             else if (string_starts_with(name, "bhyve"))
             {
                 existing->category = CATEGORY_FIXED; // Sprinkler controller
@@ -1085,6 +1118,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->category = CATEGORY_HEADPHONES;   // BT Speakers
             else if (string_starts_with(name, "VIZIO V51"))
                 existing->category = CATEGORY_HEADPHONES;   // Soundbar
+            else if (string_starts_with(name, "VQ"))
+                existing->category = CATEGORY_HEADPHONES;   // Retroradio and speakers
 
             // TVs
             // e.g. "[TV] Samsung Q70 Series (65)" icon is audio_card
@@ -1104,6 +1139,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             // Printers
             else if (string_starts_with(name, "ENVY Photo"))
                 existing->category = CATEGORY_FIXED; // printer
+            else if (string_starts_with(name, "Sony UP-DX"))
+                existing->category = CATEGORY_FIXED; // printer Sony UP-DX100
 
             // POS Terminals
             else if (strncmp(name, "Bluesnap", 8) == 0)
@@ -1112,6 +1149,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->category = CATEGORY_FIXED;  // POS
             else if (strncmp(name, "NWTR040", 7) == 0)
                 existing->category = CATEGORY_FIXED;  // POS
+
             // Cars
             else if (strncmp(name, "Audi", 4) == 0)
                 existing->category = CATEGORY_CAR;
@@ -1123,6 +1161,10 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->category = CATEGORY_CAR; // maybe the key fob
             else if (strncmp(name, "Subaru", 6) == 0)
                 existing->category = CATEGORY_CAR;
+            else if (string_starts_with(name, "nuvi"))
+                existing->category = CATEGORY_CAR;
+            else if (string_starts_with(name, "UberBeacon"))
+                existing->category = CATEGORY_CAR; // Uber's dashboard display
             else if (strncmp(name, "Land Rover", 10) == 0)
                 existing->category = CATEGORY_CAR;
             // TODO: Android device names
@@ -1467,10 +1509,11 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         else if (strcmp(property_name, "Class") == 0)
         {
             // Very few devices send this information (not very useful)
+            // 7936 was a heart-rate monitor
             uint32_t deviceclass = g_variant_get_uint32(prop_val);
             if (existing->deviceclass != deviceclass)
             {
-                g_debug("  %s Class has changed to %i        ", address, deviceclass);
+                g_debug("  %s Class has changed to %.4x        ", address, deviceclass);
                 if (state.network_up) send_to_mqtt_single_value(address, "class", deviceclass);
                 existing->deviceclass = deviceclass;
             }
@@ -1540,7 +1583,11 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
                     // temp={p[16] - 10} brightness={p[17]} motioncount={p[19] + p[20] * 256} moving={p[22]}");
                     if (strcmp(service_guid, "000080e7-0000-1000-8000-00805f9b34fb") == 0)
-                    { // Sensoro
+                    { 
+                        // Sensoro (used during testing, hence special treatement, TODO: Generalize)
+                        if (strlen(existing->name) == 0) { 
+                            g_strlcpy(existing->name, "Sensoro", NAME_LENGTH);
+                        }
                         existing->category = CATEGORY_BEACON;
 
                         int battery = allocdata[14] + 256 * allocdata[15]; // ???
