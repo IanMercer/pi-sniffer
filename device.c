@@ -52,9 +52,10 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
             g_info("  %s Set category to '%s', message from %s", local->mac, category_from_int(remote->category), access_name);
             local->category = remote->category;
         }
-        else if (local->category == CATEGORY_PHONE && remote->category == CATEGORY_TABLET)
+        else if (local->category == CATEGORY_PHONE && 
+            (remote->category == CATEGORY_TABLET || remote->category == CATEGORY_WEARABLE))
         {
-            // TABLET overrides PHONE because we assume phone when someone unlocks or uses an Apple device
+            // TABLET/WATCH overrides PHONE because we assume phone when someone unlocks or uses an Apple device
             g_info("  %s Override category from '%s' to '%s', message from %s", local->mac, category_from_int(local->category), category_from_int(remote->category), access_name);
             local->category = remote->category;
         }
