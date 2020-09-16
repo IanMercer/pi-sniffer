@@ -111,7 +111,10 @@ void pack_columns()
                 bool haveDifferentAddressTypes = (a->addressType > 0 && b->addressType > 0 && a->addressType != b->addressType);
 
                 // cannot be the same if they both have names and the names are different
-                bool haveDifferentNames = (strlen(a->name) > 0) && (strlen(b->name) > 0) && (g_strcmp0(a->name, b->name) != 0);
+                // but don't reject _ names as they are temporary and will get replaced
+                bool haveDifferentNames = (strlen(a->name) > 0) && (strlen(b->name) > 0) 
+                    && (a->name[0] != '_') && (b->name[0] != '_')
+                    && (g_strcmp0(a->name, b->name) != 0);
 
                 // cannot be the same if they both have known categories and they are different
                 // Used to try to blend unknowns in with knowns but now we get category right 99.9% of the time, no longer necessary
