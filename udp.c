@@ -377,6 +377,8 @@ void *listen_loop(void *param)
 
                     double delta_time = difftime(now, d.latest);
 
+                    merge(&state->devices[i], &d, a.client_id);
+
                     // If the delta time between our clock and theirs is > 0, log it
                     if (delta_time > 0)
                     {
@@ -384,9 +386,14 @@ void *listen_loop(void *param)
                     }
                     else
                     {
-                      g_debug("%s '%s' %s dist=%.2fm time=%.1fs", d.mac, d.name, a.client_id, d.distance, delta_time);
+                        g_debug("%s '%s' %s dist=%.2fm time=%.1fs", d.mac, d.name, a.client_id, d.distance, delta_time);
+
+                        if (d.latest > state->devices[i].latest)
+                        {
+                            g_debug("Bumping time %s '%s' by %.1fs", d.mac, d.name, difftime(d.latest, state->devices[i].latest));
+                            state->devices[i].latest = d.latest;
+                        }
                     }
-                    merge(&state->devices[i], &d, a.client_id);
 
                     // Use an int64 version of the mac address
                     int64_t id_64 = mac_string_to_int_64(d.mac);
