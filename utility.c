@@ -343,7 +343,7 @@ void soft_set_u16(uint16_t* field, uint16_t field_new)
 
 
 /*
-   Is a given interface UP
+   Is a given interface running (IFF_UP and IFF_RUNNING)
 */
 bool is_interface_up(const char* ifname)
 {
@@ -356,7 +356,7 @@ bool is_interface_up(const char* ifname)
     ioctl(s, SIOCGIFFLAGS, &buffer);
 
     close(s);
-    bool result = buffer.ifr_ifru.ifru_flags & IFF_UP;
+    bool result = buffer.ifr_ifru.ifru_flags & IFF_RUNNING;
 
     //g_debug("%s is %s", ifname, result ? "UP" : "DOWN");
 
@@ -389,13 +389,13 @@ bool is_any_interface_up()
 
             ioctl(socketfd, SIOCGIFFLAGS, &ifr);
 
-            connected = ifr.ifr_ifru.ifru_flags & IFF_UP;
+            connected = ifr.ifr_ifru.ifru_flags & IFF_RUNNING;
             if (connected) break;
         }
     }
     if (connected != interface_state)
     {
-        g_warning("Network connectivity on %s is now %s", name, connected ? "UP" : "DOWN");
+        g_warning("Network connectivity on %s is now %s", name, connected ? "RUNNING" : "DOWN");
         interface_state = connected;
     }
     return connected;
