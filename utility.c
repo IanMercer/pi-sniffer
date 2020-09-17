@@ -363,7 +363,7 @@ bool is_interface_up(const char* ifname)
     return result;
 }
 
-static bool interface_state = FALSE;
+bool interface_state = FALSE;
 
 bool is_any_interface_up()
 {

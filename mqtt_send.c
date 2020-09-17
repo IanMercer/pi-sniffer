@@ -178,6 +178,7 @@ void onConnectFailure(void* context, MQTTAsync_failureData* response)
     (void)context;
     //MQTTAsync client = (MQTTAsync)context;
     g_warning("MQTT Connect failed, rc %d", response ? response->code : 0);
+    // This appears to be called both on initial CONNECT or later during send message
     status = disconnected;
 }
 
@@ -692,7 +693,7 @@ void mqtt_sync()
         }
         else 
         {
-            g_debug("Not reconnecting yet, no network connection");
+            //g_debug("Not reconnecting yet, no network connection");
         }
     }
 }
