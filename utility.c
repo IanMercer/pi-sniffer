@@ -329,6 +329,12 @@ void soft_set_8(int8_t* field, int8_t field_new)
     if (*field == 0) *field = field_new;
 }
 
+void soft_set_category(int8_t* field, int8_t field_new)
+{
+    // CATEGORY_UNKNOWN, UNKNOWN_ADDRESS_TYPE = 0
+    if (*field == 0) *field = field_new;
+}
+
 void soft_set_u16(uint16_t* field, uint16_t field_new)
 {
     // CATEGORY_UNKNOWN, UNKNOWN_ADDRESS_TYPE = 0

@@ -91,6 +91,8 @@ void optional_set(char* name, char* value, int max_length);
 
 void soft_set_8(int8_t* field, int8_t field_new);
 
+void soft_set_category(int8_t* field, int8_t field_new);
+
 void soft_set_u16(uint16_t* field, uint16_t field_new);
 
 #endif
