@@ -14,11 +14,14 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x02)
     {
-        optional_set(existing->alias, "Beacon", NAME_LENGTH);
-        g_info("  %s '%s' Beacon", existing->mac, existing->name);
-        existing->category = CATEGORY_BEACON;
+        optional_set(existing->name, "_Beacon", NAME_LENGTH);
+        if (existing->category != CATEGORY_BEACON)
+        {
+            g_info("  %s '%s' Beacon", existing->mac, existing->name);
+            existing->category = CATEGORY_BEACON;
+        }
 
-        // Aprilbeacon temperature sensor
+        // Aprilbeacon temperature sensor sends temperature in manufacturer data
         if (strncmp(existing->name, "abtemp", 6) == 0)
         {
             uint8_t temperature = allocdata[21];

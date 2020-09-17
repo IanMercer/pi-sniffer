@@ -47,8 +47,8 @@ void connlost(void *context, char *cause)
     (void)context;
     //MQTTAsync client = (MQTTAsync)context;
 
-    g_info("MQTT Connection lost '%s'", cause);
-    g_debug("    Make sure you don't have another copy running");
+    g_warning("MQTT Connection lost '%s'", cause);
+    g_warning("    Make sure you don't have another copy running");
 
     connected = false;
 }
@@ -64,14 +64,14 @@ void onDisconnect(void* context, MQTTAsync_successData* response)
 {
     (void)context;
     (void)response;
-	g_info("MQTT Successful disconnection\n");
+	g_info("MQTT Successful disconnection");
 }
 
 void onSendFailure(void* context, MQTTAsync_failureData* response)
 {
     (void)context;
     // 11 = Timeout waiting for UNSUBACK
-    g_info("MQTT Message send failed token %d error code %d\n", response->token, response->code);
+    g_info("MQTT Message send failed token %d error code %d", response->token, response->code);
 }
 
 void onSend(void* context, MQTTAsync_successData* response)
@@ -485,12 +485,19 @@ void send_to_mqtt(char* topic, char *json, int qos, int retained)
     {
         g_warning("Failed to send access point message, return code %d", rc);
         send_errors ++;
-        if (send_errors > 10) {
+        if (send_errors == 5) {
+            g_warning("MQTT 5 errors, attempt reconnect");
+            connected = false;
+        }
+        else if (send_errors > 10) {
             g_warning("Too many send errors, restarting");
             exit(-1);
         }
     }
-    send_errors = 0;
+    else 
+    {
+        send_errors = 0;
+    }
 }
 
 
@@ -527,12 +534,19 @@ void send_device_mqtt(struct Device* device)
     {
         g_warning("MQTT Failed to send device message, return code %d", rc);
         send_errors ++;
-        if (send_errors > 10) {
+        if (send_errors == 5) {
+            g_warning("MQTT 5 errors, attempt reconnect");
+            connected = false;
+        }
+        else if (send_errors > 10) {
             g_warning("Too many send errors, restarting");
             exit(-1);
         }
     }
-    send_errors = 0;
+    else 
+    {
+        send_errors = 0;
+    }
 }
 
 void send_to_mqtt_single(char *mac_address, char *key, char *value)
@@ -627,7 +641,7 @@ void send_to_mqtt_single_float(char *mac_address, char *key, float value)
 void mqtt_sync()
 {
     if (!isMQTTEnabled) return;
-    //g_debug("mqtt_sync");
+    g_debug("mqtt_sync");
   
     if (!connected) {
         printf("Reconnecting\n");
