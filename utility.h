@@ -43,11 +43,6 @@ void pretty_print(const char *field_name, GVariant *value);
 void get_mac_address(char* access_point_address);
 
 /*
-   Is a given interface UP
-*/
-bool is_interface_up(const char* ifname);
-
-/*
     Is any network interface up (from a list of common names)
 */
 bool is_any_interface_up();

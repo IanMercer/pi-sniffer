@@ -36,8 +36,8 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x00001816ul) append_text(gatts, gatts_length, "CyclingCadence, ");
         else if (ble_uuid == 0x00001818ul) 
         {
-                append_text(gatts, gatts_length, "CyclingPower, ");
-                soft_set_category(&existing->category, CATEGORY_WEARABLE);
+            append_text(gatts, gatts_length, "CyclingPower, ");
+            soft_set_category(&existing->category, CATEGORY_WEARABLE);
         }
         else if (ble_uuid == 0x00001101ul) append_text(gatts, gatts_length, "SerialPort, ");
         else if (ble_uuid == 0x00001102ul) append_text(gatts, gatts_length, "LANAccessUsingPPP, ");
@@ -119,8 +119,15 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0xb9406000ul) append_text(gatts, gatts_length, "Estimote 6, ");
         else if (ble_uuid == 0xc7f94713ul) append_text(gatts, gatts_length, "CDP, ");
         else if (ble_uuid == 0xd0611e78ul) append_text(gatts, gatts_length, "Continuity, ");
+        else if (ble_uuid == 0xcbbfe0e1ul) {
+            append_text(gatts, gatts_length, "ATT STB?, ");
+            soft_set_category(&existing->category, CATEGORY_TV);
+        }
+        else if (ble_uuid == 0x5918f000ul) {
+            append_text(gatts, gatts_length, "Ezurio MTM, ");
+            soft_set_category(&existing->category, CATEGORY_FIXED);
+        }
         else
-
             append_text(gatts, gatts_length, "Unknown(%s), ", strCopy);
 
         g_free(strCopy);

@@ -61,6 +61,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_WEARABLE; // ID128Color HM fitness band
     else if (string_starts_with(name, "HR-BT"))
         existing->category = CATEGORY_WEARABLE; // Heartrate
+    else if (string_starts_with(name, "WHOOP"))
+        existing->category = CATEGORY_WEARABLE; // Heartrate
 
     else if (string_starts_with(name, "RS507 "))
         existing->category = CATEGORY_WEARABLE; // Ring barcode scanner
@@ -97,8 +99,14 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_FIXED; // Bed temperature controller!
     else if (string_starts_with(name, "[Refrigerator] Samsung"))
         existing->category = CATEGORY_FIXED; // Fridge!
+    else if (string_starts_with(name, "eDynamo"))
+        existing->category = CATEGORY_FIXED; // Credit card reader
+    else if (string_starts_with(name, "Square Reader"))
+        existing->category = CATEGORY_FIXED; // Credit card reader
     else if (string_starts_with(name, "Self Checkout"))
         existing->category = CATEGORY_FIXED; // Self-checkout terminal
+    else if (string_starts_with(name, "TJQLJ"))
+        existing->category = CATEGORY_FIXED; // Checkout? or beacon in TJMAX store
 
     // TVs
     else if (strcmp(name, "AppleTV") == 0)
@@ -108,6 +116,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     else if (string_starts_with(name, "HiSmart"))       // HiSmart[TV] 2k ...
         existing->category = CATEGORY_TV;
     else if (string_starts_with(name, "BRAVIA"))        // Sony Bravia TVs, VU1
+        existing->category = CATEGORY_TV;
+    else if (string_starts_with(name, "AT&T TV"))       // AT&T TV
         existing->category = CATEGORY_TV;
 
     // Beacons

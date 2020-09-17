@@ -158,6 +158,11 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         optional_set(existing->name, "_AbTemp", NAME_LENGTH);
         g_debug("  Ignoring manufdata");
     }
+    else if (manufacturer == 0xb1bc)
+    {
+        // This code appears to be some special mesh message
+        optional_set(existing->name, "Mesh message", NAME_LENGTH);
+    }
     else
     {
         // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/

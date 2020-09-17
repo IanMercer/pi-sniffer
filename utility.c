@@ -342,27 +342,6 @@ void soft_set_u16(uint16_t* field, uint16_t field_new)
 }
 
 
-/*
-   Is a given interface running (IFF_UP and IFF_RUNNING)
-*/
-bool is_interface_up(const char* ifname)
-{
-    int s;
-    struct ifreq buffer;
-
-    s = socket(PF_INET, SOCK_DGRAM, 0);
-    memset(&buffer, 0x00, sizeof(buffer));
-    strcpy(buffer.ifr_name, ifname);
-    ioctl(s, SIOCGIFFLAGS, &buffer);
-
-    close(s);
-    bool result = buffer.ifr_ifru.ifru_flags & IFF_RUNNING;
-
-    //g_debug("%s is %s", ifname, result ? "UP" : "DOWN");
-
-    return result;
-}
-
 bool interface_state = FALSE;
 
 bool is_any_interface_up()
@@ -372,12 +351,18 @@ bool is_any_interface_up()
     bool connected = false;
     char name [IF_NAMESIZE+1];
     name[0] = '\0';
+    int count = 1;
 
     for (int arg = 1; ; arg++) {
 
         socketfd = socket(AF_INET, SOCK_DGRAM, 0);
         if (socketfd == -1)
-            return FALSE;
+        {
+            // end of list
+            break;
+        }
+
+        count++;
 
         ifr.ifr_ifindex = arg;
         if (ioctl(socketfd, SIOCGIFNAME, &ifr) >= 0) 
@@ -395,7 +380,7 @@ bool is_any_interface_up()
     }
     if (connected != interface_state)
     {
-        g_warning("Network connectivity on %s is now %s", name, connected ? "RUNNING" : "DOWN");
+        g_warning("Network connectivity on %s is now %s (%i interfaces)", name, connected ? "RUNNING" : "DOWN", count);
         interface_state = connected;
     }
     return connected;
