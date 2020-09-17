@@ -4,6 +4,7 @@
 */
 
 #include "mqtt_send.h"
+#include "utility.h"
 
 #include <sys/socket.h>
 #include <net/if.h>
@@ -30,6 +31,10 @@
 // Internal communication assumes a local MQTT broker to relay between access points
 #define MESH_TOPIC "mesh"
 
+// Milliseconds allowed for disconnect
+#define MS_DISCONNECT 100
+
+
 static bool isAzure;      // Azure is 'limited' in what it can handle
 static char* topicRoot;
 static char* topicSuffix; // required by Azure
@@ -40,7 +45,72 @@ static char* password;
 
 MQTTClient client;
 
-bool connected = false;
+// Is shutdown requested? If not, keep trying to connect
+bool isShutdown = FALSE;
+
+enum connection_state { 
+    initial = 0,          // disconnected, no client created
+    connecting = 2, 
+    connected = 3,
+    disconnecting = 7,
+    disconnect_failed = 8,
+    disconnected = 9
+};
+
+void report_error(const char* message, int rc);
+
+enum connection_state status = initial;
+
+static int send_errors = 0;
+
+void disconnect_success(void* context,  MQTTAsync_successData* response){
+    (void)context;
+    (void)response;
+    g_info("MQTT Disconnect success");
+    status = disconnected;
+
+    if (isShutdown){
+        MQTTAsync_destroy(&client);
+    }
+    else 
+    {
+        // Will reconnect on tick
+    }
+}
+
+void disconnect_failure(void* context,  MQTTAsync_failureData* response){
+    (void)context;
+    (void)response;
+    g_warning("MQTT Disconnect failed");
+    exit(EXIT_FAILURE);
+}
+
+void disconnect()
+{
+    MQTTAsync_disconnectOptions options = MQTTAsync_disconnectOptions_initializer;
+    options.timeout = MS_DISCONNECT;
+    options.onFailure = &disconnect_failure;
+    options.onSuccess = &disconnect_success;
+    status = disconnecting;
+    MQTTAsync_disconnect(client, &options);
+    // will call back to onFailure or onSuccess
+}
+
+
+void report_error(const char* message, int rc)
+{
+    send_errors ++;
+    g_warning("MQTT %i. Failed %s, return code %d", send_errors, message, rc);
+    if (send_errors == 5) {
+        g_warning("MQTT 5 errors, attempt reconnect");
+        disconnect(); // and then attempt reconnect
+    }
+    // else if (send_errors > 10) {
+    //     g_warning("Too many errors, restarting");
+    //     exit(EXIT_FAILURE);
+    // }
+}
+
 
 void connlost(void *context, char *cause)
 {
@@ -50,14 +120,15 @@ void connlost(void *context, char *cause)
     g_warning("MQTT Connection lost '%s'", cause);
     g_warning("    Make sure you don't have another copy running");
 
-    connected = false;
+    status = disconnected;
 }
 
 void onDisconnectFailure(void* context, MQTTAsync_failureData* response)
 {
     (void)context;
     (void)response;
-    g_info("MQTT Disconnect failed");
+    g_warning("MQTT Disconnect failed");
+    exit(EXIT_FAILURE);
 }
 
 void onDisconnect(void* context, MQTTAsync_successData* response)
@@ -65,6 +136,8 @@ void onDisconnect(void* context, MQTTAsync_successData* response)
     (void)context;
     (void)response;
 	g_info("MQTT Successful disconnection");
+
+    status = initial;
 }
 
 void onSendFailure(void* context, MQTTAsync_failureData* response)
@@ -72,6 +145,7 @@ void onSendFailure(void* context, MQTTAsync_failureData* response)
     (void)context;
     // 11 = Timeout waiting for UNSUBACK
     g_info("MQTT Message send failed token %d error code %d", response->token, response->code);
+    report_error("send failure", response->code);
 }
 
 void onSend(void* context, MQTTAsync_successData* response)
@@ -103,7 +177,7 @@ void onConnectFailure(void* context, MQTTAsync_failureData* response)
     (void)context;
     //MQTTAsync client = (MQTTAsync)context;
     g_warning("MQTT Connect failed, rc %d", response ? response->code : 0);
-    connected = false;
+    status = disconnected;
 }
 
 
@@ -113,7 +187,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
     MQTTAsync client = (MQTTAsync)context;
     int rc;
 
-    connected = true;
+    status = connected;
 
     g_info("MQTT Successful connection");
 
@@ -137,7 +211,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
     if ((rc = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
     {
         g_warning("Failed to send state message, return code %d", rc);
-        exit(EXIT_FAILURE);
+        report_error("state up message", rc);
     }
 
     /*
@@ -154,7 +228,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
     if ((rc = MQTTAsync_subscribe(client, MESH_TOPIC, 0, &opts2)) != MQTTASYNC_SUCCESS)
     {
        g_warning("Failed to start subscribe, return code %d", rc);
-       exit(EXIT_FAILURE);
+       report_error("subscribe", rc);
     }
 }
 
@@ -184,35 +258,14 @@ int messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_messa
 }
 
 
-void disconnect_success(void* context,  MQTTAsync_successData* response){
-    (void)context;
-    (void)response;
-    g_info("MQTT Disconnect success");
-}
-
-void disconnect_failure(void* context,  MQTTAsync_failureData* response){
-    (void)context;
-    (void)response;
-    g_warning("MQTT Disconnect failed");
-}
-
-// Milliseconds allowed for disconnect
-#define MS_DISCONNECT 100
-
 void exit_mqtt()
 {
     g_debug("Closing MQTT client");
-    if (access_point_name) g_free(access_point_name);
-
-    MQTTAsync_disconnectOptions options = MQTTAsync_disconnectOptions_initializer;
-    options.timeout = MS_DISCONNECT;
-    options.onFailure = &disconnect_failure;
-    options.onSuccess = &disconnect_success;
-
-    MQTTAsync_disconnect(client, &options);
+    isShutdown = TRUE;
+    disconnect();
+    // Give disconnect time to happen
     g_usleep(MS_DISCONNECT * 1000);
-
-    MQTTAsync_destroy(&client);
+    if (access_point_name) g_free(access_point_name);
 }
 
 int ssl_error_cb(const char *str, size_t len, void *u) {
@@ -224,6 +277,8 @@ int ssl_error_cb(const char *str, size_t len, void *u) {
 
 int connect_async(MQTTAsync client)
 {
+    status = connecting;
+
     MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
 
     opts.username = username;
@@ -356,10 +411,7 @@ void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* access_name,
     */
 
     g_info("MQTT connect async");
-
     connect_async(client);
-
-//	MQTTAsync_destroy(&client);
 }
 
 
@@ -373,8 +425,6 @@ void get_topic(char* topic, int topic_length, char* mac_address, char* key)
     (void)mac_address;   // Was used in a topic but Azure can't handle it
     snprintf(topic, topic_length, "%s/%s%s/%s", topicRoot, access_point_name, "/messages/events", key);
 }
-
-static int send_errors = 0;
 
 /* Pseudo JSON formatters */
 
@@ -464,8 +514,10 @@ void json_array_no_mac(char*message, int length, char* field, unsigned char* val
 void send_to_mqtt(char* topic, char *json, int qos, int retained)
 {
     if (!isMQTTEnabled) return;
-    if (!connected){
+
+    if (status != connected){
         g_debug("MQTT Could not send message, not connected yet, discarding");
+        return;
     }
 
     g_debug("MQTT %s %s", topic, json);
@@ -483,16 +535,7 @@ void send_to_mqtt(char* topic, char *json, int qos, int retained)
     int rc = 0;
     if ((rc = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
     {
-        send_errors ++;
-        g_warning("MQTT %i. Failed to send access point message, return code %d", send_errors, rc);
-        if (send_errors == 5) {
-            g_warning("MQTT 5 errors, attempt reconnect");
-            connected = false;
-        }
-        else if (send_errors > 10) {
-            g_warning("Too many send errors, restarting");
-            exit(-1);
-        }
+        report_error("access message", rc);
     }
     else 
     {
@@ -507,8 +550,10 @@ void send_to_mqtt(char* topic, char *json, int qos, int retained)
 void send_device_mqtt(struct Device* device)
 {
     if (!isMQTTEnabled) return;
-    if (!connected){
+
+    if (status != connected){
         g_debug("MQTT Could not send message, not connected yet, discarding");
+        return;
     }
 
     g_debug("    MQTT %s device %s '%s'\n", MESH_TOPIC, device->mac, device->name);
@@ -532,16 +577,7 @@ void send_device_mqtt(struct Device* device)
     int rc = 0;
     if ((rc = MQTTAsync_sendMessage(client, MESH_TOPIC, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
     {
-        send_errors ++;
-        g_warning("MQTT %i. Failed to send device message, return code %d", send_errors, rc);
-        if (send_errors == 5) {
-            g_warning("MQTT 5 errors, attempt reconnect");
-            connected = false;
-        }
-        else if (send_errors > 10) {
-            g_warning("Too many send errors, restarting");
-            exit(-1);
-        }
+        report_error("device message", rc);
     }
     else 
     {
@@ -644,9 +680,11 @@ void mqtt_sync()
 {
     if (!isMQTTEnabled) return;
     //g_debug("mqtt_sync");
-  
-    if (!connected) {
-        printf("Reconnecting\n");
-        connect_async(client);
+
+    if (connected == disconnected && is_any_interface_up())
+    {
+        g_warning("MQTT reconnecting");
+        status = connecting;
+        MQTTAsync_reconnect(client);
     }
 }
