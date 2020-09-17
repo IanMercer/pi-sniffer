@@ -87,8 +87,9 @@ void disconnect_failure(void* context,  MQTTAsync_failureData* response){
 
 void disconnect()
 {
+    g_info("MQTT Disconnect");
     MQTTAsync_disconnectOptions options = MQTTAsync_disconnectOptions_initializer;
-    options.timeout = MS_DISCONNECT;
+    options.timeout = 0; // was MS_DISCONNECT;
     options.onFailure = &disconnect_failure;
     options.onSuccess = &disconnect_success;
     status = disconnecting;
@@ -102,7 +103,7 @@ void report_error(const char* message, int rc)
     send_errors ++;
     g_warning("MQTT %i. Failed %s, return code %d", send_errors, message, rc);
     if (send_errors == 5) {
-        g_warning("MQTT 5 errors, attempt reconnect");
+        g_warning("MQTT Disconnect and then attempt reconnect");
         disconnect(); // and then attempt reconnect
     }
     // else if (send_errors > 10) {
@@ -681,10 +682,17 @@ void mqtt_sync()
     if (!isMQTTEnabled) return;
     //g_debug("mqtt_sync");
 
-    if (connected == disconnected && is_any_interface_up())
+    if (status == disconnected)
     {
-        g_warning("MQTT reconnecting");
-        status = connecting;
-        MQTTAsync_reconnect(client);
+        if (is_any_interface_up())
+        {
+            g_warning("MQTT reconnecting");
+            status = connecting;
+            MQTTAsync_reconnect(client);
+        }
+        else 
+        {
+            g_debug("Not reconnecting yet, no network connection");
+        }
     }
 }

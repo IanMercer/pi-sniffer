@@ -18,38 +18,44 @@
 
 void udp_send(int port, const char *message, int message_length)
 {
-    int sockfd;
-
-    const int opt = 1;
-    struct sockaddr_in servaddr;
-
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+    if (is_any_interface_up())
     {
-        perror("socket creation failed");
-        return;
-    }
-    if (setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, (char *)&opt, sizeof(opt)) < 0)
-    {
-        perror("setsockopt error");
+        int sockfd;
+
+        const int opt = 1;
+        struct sockaddr_in servaddr;
+
+        if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+        {
+            perror("socket creation failed");
+            return;
+        }
+        if (setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, (char *)&opt, sizeof(opt)) < 0)
+        {
+            perror("setsockopt error");
+            close(sockfd);
+            return;
+        }
+
+        memset(&servaddr, 0, sizeof(struct sockaddr_in));
+
+        // Filling server information
+        servaddr.sin_family = AF_INET;
+        servaddr.sin_port = htons(port);
+        //servaddr.sin_addr.s_addr = INADDR_ANY;
+        servaddr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
+
+        int sent = sendto(sockfd, message, message_length, 0, (const struct sockaddr *)&servaddr, sizeof(struct sockaddr_in));
+        if (sent < message_length)
+        {
+            // Need some way to detect network is not connected
+            //g_print("    Incomplete message sent to port %i - %i bytes.\n", port, sent);
+        }
         close(sockfd);
-        return;
     }
-
-    memset(&servaddr, 0, sizeof(struct sockaddr_in));
-
-    // Filling server information
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(port);
-    //servaddr.sin_addr.s_addr = INADDR_ANY;
-    servaddr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
-
-    int sent = sendto(sockfd, message, message_length, 0, (const struct sockaddr *)&servaddr, sizeof(struct sockaddr_in));
-    if (sent < message_length)
-    {
-        // Need some way to detect network is not connected
-        //g_print("    Incomplete message sent to port %i - %i bytes.\n", port, sent);
+    else {
+        g_debug("No interface running, skip UDP send");
     }
-    close(sockfd);
 }
 
 GCancellable *cancellable;
