@@ -102,7 +102,7 @@ void onConnectFailure(void* context, MQTTAsync_failureData* response)
 {
     (void)context;
     //MQTTAsync client = (MQTTAsync)context;
-    g_info("MQTT Connect failed, rc %d\n", response ? response->code : 0);
+    g_warning("MQTT Connect failed, rc %d", response ? response->code : 0);
     connected = false;
 }
 
@@ -483,8 +483,8 @@ void send_to_mqtt(char* topic, char *json, int qos, int retained)
     int rc = 0;
     if ((rc = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
     {
-        g_warning("Failed to send access point message, return code %d", rc);
         send_errors ++;
+        g_warning("MQTT %i. Failed to send access point message, return code %d", send_errors, rc);
         if (send_errors == 5) {
             g_warning("MQTT 5 errors, attempt reconnect");
             connected = false;
@@ -532,8 +532,8 @@ void send_device_mqtt(struct Device* device)
     int rc = 0;
     if ((rc = MQTTAsync_sendMessage(client, MESH_TOPIC, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
     {
-        g_warning("MQTT Failed to send device message, return code %d", rc);
         send_errors ++;
+        g_warning("MQTT %i. Failed to send device message, return code %d", send_errors, rc);
         if (send_errors == 5) {
             g_warning("MQTT 5 errors, attempt reconnect");
             connected = false;
@@ -638,10 +638,12 @@ void send_to_mqtt_single_float(char *mac_address, char *key, float value)
     send_to_mqtt(topic, packet, MQTT_PUBLISH_QOS_1, 0);
 }
 
+// This is called every 5 seconds
+
 void mqtt_sync()
 {
     if (!isMQTTEnabled) return;
-    g_debug("mqtt_sync");
+    //g_debug("mqtt_sync");
   
     if (!connected) {
         printf("Reconnecting\n");
