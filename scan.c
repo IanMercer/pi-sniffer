@@ -826,20 +826,20 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                     // CoD Bits 10: Audio/Video (headset,speaker,stereo, video display, vcr…)
                     // Minor Device Class
                     // CoD Bits 2: Wearable Headset Device
-                    soft_set_category(existing->category, CATEGORY_HEADPHONES);
+                    soft_set_category(&existing->category, CATEGORY_HEADPHONES);
                 }
                 else if (deviceclass == 0x240408)
                 {
                     // handsfree car kit
-                    soft_set_category(existing->category, CATEGORY_CAR);
+                    soft_set_category(&existing->category, CATEGORY_CAR);
                 }
                 else if (deviceclass == 0x043c || deviceclass == 0x8043c)
                 {
-                    soft_set_category(existing->category, CATEGORY_TV);
+                    soft_set_category(&existing->category, CATEGORY_TV);
                 }
                 else if (deviceclass == 0x5a020c)
                 {
-                    soft_set_category(existing->category, CATEGORY_PHONE);
+                    soft_set_category(&existing->category, CATEGORY_PHONE);
                 }
                 else if (deviceclass == 0x60680)
                 {

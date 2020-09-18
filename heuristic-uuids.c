@@ -108,7 +108,7 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x0000feaaul) 
         {
             append_text(gatts, gatts_length, "Eddystone, ");
-            soft_set_category(existing->category, CATEGORY_BEACON);
+            soft_set_category(&existing->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0x0000ffa0ul) append_text(gatts, gatts_length, "Accelerometer, ");
         else if (ble_uuid == 0x0000ffe0ul) append_text(gatts, gatts_length, "Temperature, ");
@@ -121,27 +121,27 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x9fa480e0ul) append_text(gatts, gatts_length, "Apple XX, ");
         else if (ble_uuid == 0xb9401000ul) {
             append_text(gatts, gatts_length, "Estimote 1, ");
-            soft_set_category(existing->category, CATEGORY_BEACON);
+            soft_set_category(&existing->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0xb9402000ul) {
             append_text(gatts, gatts_length, "Estimote 2,");
-            soft_set_category(existing->category, CATEGORY_BEACON);
+            soft_set_category(&existing->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0xb9403000ul) {
             append_text(gatts, gatts_length, "Estimote 3, ");
-            soft_set_category(existing->category, CATEGORY_BEACON);
+            soft_set_category(&existing->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0xb9404000ul) {
             append_text(gatts, gatts_length, "Estimote 4, ");
-            soft_set_category(existing->category, CATEGORY_BEACON);
+            soft_set_category(&existing->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0xb9405000ul) {
             append_text(gatts, gatts_length, "Estimote 5, ");
-            soft_set_category(existing->category, CATEGORY_BEACON);
+            soft_set_category(&existing->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0xb9406000ul) {
             append_text(gatts, gatts_length, "Estimote 6, ");
-            soft_set_category(existing->category, CATEGORY_BEACON);
+            soft_set_category(&existing->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0xc7f94713ul) append_text(gatts, gatts_length, "CDP, ");
         else if (ble_uuid == 0xd0611e78ul) 
