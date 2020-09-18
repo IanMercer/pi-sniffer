@@ -14,6 +14,14 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#define _GNU_SOURCE     /* To get defns of NI_MAXSERV and NI_MAXHOST */
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <ifaddrs.h>
+#include <unistd.h>
+#include <linux/if_link.h>
+
 #include "utility.h"
 
 /*
@@ -344,45 +352,60 @@ void soft_set_u16(uint16_t* field, uint16_t field_new)
 
 bool interface_state = FALSE;
 
+#define MAXHOST 5;
+
 bool is_any_interface_up()
 {
-    int socketfd;
-    struct ifreq    ifr;
-    bool connected = false;
-    char name [IF_NAMESIZE+1];
-    name[0] = '\0';
-    int count = 1;
+    int count = 0;
+    int count_connected = 0;
 
-    for (int arg = 1; ; arg++) {
+    struct ifaddrs *ifaddr;
+    struct ifaddrs *ifa;
+    int family;
 
-        socketfd = socket(AF_INET, SOCK_DGRAM, 0);
-        if (socketfd == -1)
-        {
-            // end of list
-            break;
-        }
+    if (getifaddrs(&ifaddr) == -1) {
+        perror("getifaddrs");
+        return FALSE;
+    }
+
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+
+        if (ifa->ifa_addr == NULL)
+            continue;
+
+        family = ifa->ifa_addr->sa_family;
+
+        if (family != AF_INET && family != AF_INET6) continue;
+        if (strncmp(ifa->ifa_name, "lo", 2) == 0) continue;       // loopback
 
         count++;
+       
+        // use getnameinfo to get address (not needed)
 
-        ifr.ifr_ifindex = arg;
-        if (ioctl(socketfd, SIOCGIFNAME, &ifr) >= 0) 
+        // get flags to see if interface is UP and RUNNING
+        struct ifreq    ifr;
+        int socketfd = socket(AF_INET, SOCK_DGRAM, 0);
+        if (socketfd != -1)
         {
-            strncpy(name, ifr.ifr_ifrn.ifrn_name, IF_NAMESIZE);
-            name[IF_NAMESIZE] = '\0';
-
-            if (strncmp(name, "lo", 2) == 0) continue;       // loopback
+            strncpy(ifr.ifr_ifrn.ifrn_name, ifa->ifa_name, IF_NAMESIZE);
 
             ioctl(socketfd, SIOCGIFFLAGS, &ifr);
 
-            connected = ifr.ifr_ifru.ifru_flags & IFF_RUNNING;
-            if (connected) break;
+            bool isConnected = ifr.ifr_ifru.ifru_flags & IFF_RUNNING;
+            //g_debug("%s is %i", ifa->ifa_name, isConnected);
+            if (isConnected) count_connected++;
+
+            close(socketfd);
         }
     }
-    if (connected != interface_state)
+
+    freeifaddrs(ifaddr);
+
+    if ((count_connected > 0) != interface_state)
     {
-        g_warning("Network connectivity on %s is now %s (%i interfaces)", name, connected ? "RUNNING" : "DOWN", count);
-        interface_state = connected;
+        g_warning("Network connectivity %i out of %i interfaces connected", count_connected, count);
+        interface_state = count_connected > 0;
     }
-    return connected;
+    return count_connected > 0;
 }
 
