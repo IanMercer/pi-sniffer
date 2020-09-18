@@ -471,7 +471,7 @@ void json_int_array(char*message, int length, char* mac, char* field, int* value
 
 void json_byte_array(char*message, int length, char* mac, char* field, char* key, unsigned char* values, int values_length) {
     time_t now = time(0);
-    snprintf(message, length, "{\"mac\":\"%s\", \"time\":%lu, \"%s\":{ \"key\",\"%s\", [", mac, now, field, key);
+    snprintf(message, length, "{\"mac\":\"%s\", \"time\":%lu, \"%s\":{ \"key\":\"%s\", \"value\": [", mac, now, field, key);
 
     int ptr = strlen(message);
     for(int i = 0; i < values_length; i++)

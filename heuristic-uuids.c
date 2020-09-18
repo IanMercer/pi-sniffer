@@ -26,7 +26,7 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         // so we only need two hex bytes. But Apple and others use complete GUIDs
         // for their own services, so let's take the first four hex bytes
         strCopy[8] = '\0';
-        int64_t ble_uuid = strtol(strCopy, NULL, 16);
+        uint64_t ble_uuid = strtoul(strCopy, NULL, 16);
 
         // https://www.bluetooth.com/specifications/gatt/characteristics/
 
@@ -101,7 +101,15 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x0000180aul) append_text(gatts, gatts_length, "Device information, ");
         else if (ble_uuid == 0x0000180dul) append_text(gatts, gatts_length, "Heart rate service, ");
         else if (ble_uuid == 0x00002A37ul) append_text(gatts, gatts_length, "Heart rate measurement ");
-        else if (ble_uuid == 0x0000feaaul) append_text(gatts, gatts_length, "Eddystone ");
+        else if (ble_uuid == 0x6ada028cul) 
+        {
+            append_text(gatts, gatts_length, "Nosuch, ");
+        }
+        else if (ble_uuid == 0x0000feaaul) 
+        {
+            append_text(gatts, gatts_length, "Eddystone, ");
+            soft_set_category(existing->category, CATEGORY_BEACON);
+        }
         else if (ble_uuid == 0x0000ffa0ul) append_text(gatts, gatts_length, "Accelerometer, ");
         else if (ble_uuid == 0x0000ffe0ul) append_text(gatts, gatts_length, "Temperature, ");
         else if (ble_uuid == 0x0000fff0ul) append_text(gatts, gatts_length, "Blood F0, ");
@@ -111,14 +119,39 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x7905f431ul) append_text(gatts, gatts_length, "Apple NCS, ");
         else if (ble_uuid == 0x89d3502bul) append_text(gatts, gatts_length, "Apple MS, ");
         else if (ble_uuid == 0x9fa480e0ul) append_text(gatts, gatts_length, "Apple XX, ");
-        else if (ble_uuid == 0xb9401000ul) append_text(gatts, gatts_length, "Estimote 1, ");
-        else if (ble_uuid == 0xb9402000ul) append_text(gatts, gatts_length, "Estimote 2,");
-        else if (ble_uuid == 0xb9403000ul) append_text(gatts, gatts_length, "Estimote 3, ");
-        else if (ble_uuid == 0xb9404000ul) append_text(gatts, gatts_length, "Estimote 4, ");
-        else if (ble_uuid == 0xb9405000ul) append_text(gatts, gatts_length, "Estimote 5, ");
-        else if (ble_uuid == 0xb9406000ul) append_text(gatts, gatts_length, "Estimote 6, ");
+        else if (ble_uuid == 0xb9401000ul) {
+            append_text(gatts, gatts_length, "Estimote 1, ");
+            soft_set_category(existing->category, CATEGORY_BEACON);
+        }
+        else if (ble_uuid == 0xb9402000ul) {
+            append_text(gatts, gatts_length, "Estimote 2,");
+            soft_set_category(existing->category, CATEGORY_BEACON);
+        }
+        else if (ble_uuid == 0xb9403000ul) {
+            append_text(gatts, gatts_length, "Estimote 3, ");
+            soft_set_category(existing->category, CATEGORY_BEACON);
+        }
+        else if (ble_uuid == 0xb9404000ul) {
+            append_text(gatts, gatts_length, "Estimote 4, ");
+            soft_set_category(existing->category, CATEGORY_BEACON);
+        }
+        else if (ble_uuid == 0xb9405000ul) {
+            append_text(gatts, gatts_length, "Estimote 5, ");
+            soft_set_category(existing->category, CATEGORY_BEACON);
+        }
+        else if (ble_uuid == 0xb9406000ul) {
+            append_text(gatts, gatts_length, "Estimote 6, ");
+            soft_set_category(existing->category, CATEGORY_BEACON);
+        }
         else if (ble_uuid == 0xc7f94713ul) append_text(gatts, gatts_length, "CDP, ");
-        else if (ble_uuid == 0xd0611e78ul) append_text(gatts, gatts_length, "Continuity, ");
+        else if (ble_uuid == 0xd0611e78ul) 
+        {
+            append_text(gatts, gatts_length, "Continuity, ");
+        }
+        else if (ble_uuid == 0x0000fe79ul) 
+        {
+            append_text(gatts, gatts_length, "Zebra, ");
+        }
         else if (ble_uuid == 0xcbbfe0e1ul) {
             append_text(gatts, gatts_length, "ATT STB?, ");
             soft_set_category(&existing->category, CATEGORY_TV);

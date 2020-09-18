@@ -196,21 +196,23 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_FIXED; // printer Sony UP-DX100
 
     // POS Terminals
-    else if (strncmp(name, "Bluesnap", 8) == 0)
+    else if (string_starts_with(name, "Bluesnap"))
         existing->category = CATEGORY_FIXED;  // POS
-    else if (strncmp(name, "IBM", 3) == 0)
+    else if (string_starts_with(name, "IBM"))
         existing->category = CATEGORY_FIXED;  // POS
-    else if (strncmp(name, "NWTR040", 7) == 0)
+    else if (string_starts_with(name, "NWTR040"))
         existing->category = CATEGORY_FIXED;  // POS
+    else if (string_starts_with(name, "XXZKJ"))
+        existing->category = CATEGORY_FIXED;  // Taiyo Yuden module Beacon? Other?
 
     // Cars
-    else if (strncmp(name, "Audi", 4) == 0)
+    else if (string_starts_with(name, "Audi"))
         existing->category = CATEGORY_CAR;
-    else if (strncmp(name, "VW ", 3) == 0)
+    else if (string_starts_with(name, "VW "))
         existing->category = CATEGORY_CAR;
     else if (strncmp(name, "BMW", 3) == 0)
         existing->category = CATEGORY_CAR;
-    else if (strncmp(name, "GM_PEPS_", 8) == 0)
+    else if (string_starts_with(name, "GM_PEPS_"))
         existing->category = CATEGORY_CAR; // maybe the key fob
     else if (strncmp(name, "Subaru", 6) == 0)
         existing->category = CATEGORY_CAR;
@@ -218,6 +220,10 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_CAR;
     else if (string_starts_with(name, "UberBeacon"))
         existing->category = CATEGORY_CAR; // Uber's dashboard display
+    else if (string_starts_with(name, "Lyft Amp"))
+        existing->category = CATEGORY_CAR; // Lyft's dashboard display
+    else if (string_starts_with(name, "Scosche BTFM4"))
+        existing->category = CATEGORY_CAR; // Handsfree car kit
     else if (strncmp(name, "Land Rover", 10) == 0)
         existing->category = CATEGORY_CAR;
     // TODO: Android device names

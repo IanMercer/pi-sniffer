@@ -159,8 +159,8 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
             g_info("  %s '%s' Nearby Info 0x00: unknown u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
         }
         else if (lower_bits == 0x01){
-            // Rare and not sure what this is, may represent a recent iOS update was applied
             g_info("  %s '%s' Nearby Info 0x01: disabled u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+            soft_set_category(&existing->category, CATEGORY_PHONE);  // most likely category
         }
         else if (lower_bits == 0x02){
             g_info("  %s '%s' Nearby Info 0x02: unknown? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
