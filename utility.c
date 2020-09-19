@@ -375,7 +375,7 @@ bool is_any_interface_up()
 
         family = ifa->ifa_addr->sa_family;
 
-        if (family != AF_INET && family != AF_INET6) continue;
+        if (family != AF_INET) continue; // For IPV6 add && family != AF_INET6) continue;
         if (strncmp(ifa->ifa_name, "lo", 2) == 0) continue;       // loopback
 
         count++;
