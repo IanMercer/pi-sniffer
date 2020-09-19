@@ -50,13 +50,15 @@ MQTTClient client;
 bool isShutdown = FALSE;
 
 enum connection_state { 
-    initial = 0,          // disconnected, no client created
-    connecting = 2, 
-    connected = 3,
-    disconnecting = 7,
-    disconnect_failed = 8,
-    disconnected = 9
+    initial,          // disconnected, no client created
+    connecting, 
+    connected,
+    disconnecting,
+    disconnect_failed,
+    disconnected
 };
+
+static const char* connection_state_strings[] = { "initial", "connecting", "connected", "disconnecting", "disconnect failed", "disconnected" };
 
 void report_error(const char* message, int rc);
 
@@ -66,6 +68,11 @@ static int send_errors = 0;
 static int skipped_messages = 0;
 bool warningIssued = FALSE;
 int reconnect_attempts = 0;
+
+const char* mqtt_state()
+{
+    return connection_state_strings[status];
+}
 
 void disconnect_success(void* context,  MQTTAsync_successData* response){
     (void)context;

@@ -1528,14 +1528,15 @@ int dump_all_devices_tick(void *parameters)
     float people_closest = state.local->people_closest_count;
     float people_in_range = state.local->people_in_range_count;
 
-    char* connected = is_any_interface_up() ? "" : "NETWORK DOWN";
+    const char* connected = is_any_interface_up() ? "" : "NETWORK DOWN ";
+    const char* m_state = mqtt_state();
 
     if (days > 1)
-        g_info("People %.2f (%.2f in range) Uptime: %i days %02i:%02i %s", people_closest, people_in_range, days, hours, minutes, connected);
+        g_info("People %.2f (%.2f in range) Uptime: %i days %02i:%02i %s%s", people_closest, people_in_range, days, hours, minutes, connected, m_state);
     else if (days == 1)
-        g_info("People %.2f (%.2f in range) Uptime: 1 day %02i:%02i %s", people_closest, people_in_range, hours, minutes, connected);
+        g_info("People %.2f (%.2f in range) Uptime: 1 day %02i:%02i %s%s", people_closest, people_in_range, hours, minutes, connected, m_state);
     else
-        g_info("People %.2f (%.2f in range) Uptime: %02i:%02i %s", people_closest, people_in_range, hours, minutes, connected);
+        g_info("People %.2f (%.2f in range) Uptime: %02i:%02i %s%s", people_closest, people_in_range, hours, minutes, connected, m_state);
 
     if (state.network_up) 
         print_access_points();

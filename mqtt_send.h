@@ -41,4 +41,9 @@ void mqtt_sync();
 
 void send_device_mqtt(struct Device* device);
 
+/*
+    Get the MQTT state
+*/
+const char* mqtt_state();
+
 #endif
