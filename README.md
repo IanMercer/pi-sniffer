@@ -11,7 +11,7 @@ But this system isn't limited to crowding signs. You can use the data it collect
 
 Not only does this project count how many phones are present, it tracks every other device that comes into range and can send data back over MQTT about them. For devices other than cellphones, i.e ones with either defined names or public (unchanging) mac addresses you can use this information to trigger actions. For example, put an iBeacon on your car and trigger an action when it comes home or after it's been gone for a set time.
 
-It uses the built-in Linux BLUEZ libraries and the Bluetooth antenna on any Raspberry Pi (W, 3+, 4) to scan for nearby BLE devices. But it's also written to be as portable as possible using only the C language and avoiding dependencies unless absolutely necessary.
+It uses the built-in Linux BLUEZ libraries and the Bluetooth antenna on any Raspberry Pi (Pi3 is recommended but also runs on PiW and Pi4) to scan for nearby BLE devices. But it's also written to be as portable as possible using only the C language and avoiding dependencies unless absolutely necessary.
 
 It reports all BLE devices found (Mac address, name, type, UUIDs, ...) and their approximate distance to an MQTT endpoint. It applies a simple Kalman filter to smooth the distance values. It also handles iPhones and other Apple devices that randomize their mac addresses periodically and can give a reliable count of how many phones/watches/... are in-range.
 

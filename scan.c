@@ -1528,12 +1528,14 @@ int dump_all_devices_tick(void *parameters)
     float people_closest = state.local->people_closest_count;
     float people_in_range = state.local->people_in_range_count;
 
+    char* connected = is_any_interface_up() ? "" : "NETWORK DOWN";
+
     if (days > 1)
-        g_info("Uptime: %i days %02i:%02i  People %.2f (%.2f in range)\n", days, hours, minutes, people_closest, people_in_range);
+        g_info("People %.2f (%.2f in range) Uptime: %i days %02i:%02i %s", people_closest, people_in_range, days, hours, minutes, connected);
     else if (days == 1)
-        g_info("Uptime: 1 day %02i:%02i  People %.2f (%.2f in range)\n", hours, minutes, people_closest, people_in_range);
+        g_info("People %.2f (%.2f in range) Uptime: 1 day %02i:%02i %s", people_closest, people_in_range, hours, minutes, connected);
     else
-        g_info("Uptime: %02i:%02i  People %.2f (%.2f in range)\n", hours, minutes, people_closest, people_in_range);
+        g_info("People %.2f (%.2f in range) Uptime: %02i:%02i %s", people_closest, people_in_range, hours, minutes, connected);
 
     if (state.network_up) 
         print_access_points();
