@@ -112,11 +112,21 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         }
         else if (ble_uuid == 0x0000ffa0ul) append_text(gatts, gatts_length, "Accelerometer, ");
         else if (ble_uuid == 0x0000ffe0ul) append_text(gatts, gatts_length, "Temperature, ");
+        else if (ble_uuid == 0x0000feaful) {
+            append_text(gatts, gatts_length, "Nest, ");
+            soft_set_category(&existing->category, CATEGORY_FIXED);
+        }
+        else if (ble_uuid == 0xadabfb00ul) {
+            append_text(gatts, gatts_length, "FitbitHR?, ");
+            soft_set_category(&existing->category, CATEGORY_WEARABLE);
+        }
         else if (ble_uuid == 0x0000fff0ul) append_text(gatts, gatts_length, "Blood F0, ");
         else if (ble_uuid == 0x0000fff1ul) append_text(gatts, gatts_length, "Blood F1, ");
         else if (ble_uuid == 0x0000fff2ul) append_text(gatts, gatts_length, "Blood F2, ");
         else if (ble_uuid == 0x4e72b490ul) append_text(gatts, gatts_length, "Alexa, ");
+        // Apple Notification Center Service
         else if (ble_uuid == 0x7905f431ul) append_text(gatts, gatts_length, "Apple NCS, ");
+        // Apple Media Service
         else if (ble_uuid == 0x89d3502bul) append_text(gatts, gatts_length, "Apple MS, ");
         else if (ble_uuid == 0x9fa480e0ul) append_text(gatts, gatts_length, "Apple XX, ");
         else if (ble_uuid == 0xb9401000ul) {

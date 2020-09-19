@@ -5,6 +5,14 @@
 #include "heuristics.h"
 #include <stdio.h>
 
+typedef struct {
+    const uint16_t manufacturer;
+    const char* name;
+} manufacturer_entry;
+
+manufacturer_entry Disney = { .manufacturer = 0x0183, .name = "Disney" };
+
+
 /*
      handle the manufacturer data
 */
@@ -149,7 +157,19 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
     }
     else if (manufacturer == 0x015e)
     {
+        // Locks
         optional_set(existing->name, "_Unikey Technologies", NAME_LENGTH);
+        existing->category = CATEGORY_FIXED;
+    }
+    else if (manufacturer == 0x0183)
+    {
+        optional_set(existing->name, "_Disney", NAME_LENGTH);
+        existing->category = CATEGORY_WEARABLE;  // no idea!
+    }
+    else if (manufacturer == 0x01d1)
+    {
+        // Locks and home automation
+        optional_set(existing->name, "_August Home", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x01a5)

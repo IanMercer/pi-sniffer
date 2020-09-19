@@ -63,6 +63,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_WEARABLE; // Heartrate
     else if (string_starts_with(name, "WHOOP"))
         existing->category = CATEGORY_WEARABLE; // Heartrate
+    else if (string_starts_with(name, "Alta HR"))
+        existing->category = CATEGORY_WEARABLE; // Fitbit Alta Heartrate
 
     else if (string_starts_with(name, "RS507 "))
         existing->category = CATEGORY_WEARABLE; // Ring barcode scanner
@@ -155,6 +157,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_HEADPHONES;
     else if (string_starts_with(name, "LE_Stealth 700 Xbox"))
         existing->category = CATEGORY_HEADPHONES;
+    else if (string_starts_with(name, "LE_WH-H900N"))
+        existing->category = CATEGORY_HEADPHONES;  //LE_WH-H900N (h.ear)
     else if (string_starts_with(name, "Bose AE2 SoundLink"))
         existing->category = CATEGORY_HEADPHONES;
     else if (string_starts_with(name, "DSW229Dynamo 1100X"))

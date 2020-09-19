@@ -33,7 +33,8 @@
 
 // Milliseconds allowed for disconnect
 #define MS_DISCONNECT 100
-
+#define RECONNECT_ATTEMPTS 5
+#define SKIPPED_MESSAGES_LIMIT 100
 
 static bool isAzure;      // Azure is 'limited' in what it can handle
 static char* topicRoot;
@@ -62,6 +63,9 @@ void report_error(const char* message, int rc);
 enum connection_state status = initial;
 
 static int send_errors = 0;
+static int skipped_messages = 0;
+bool warningIssued = FALSE;
+int reconnect_attempts = 0;
 
 void disconnect_success(void* context,  MQTTAsync_successData* response){
     (void)context;
@@ -519,6 +523,12 @@ void send_to_mqtt(char* topic, char *json, int qos, int retained)
 
     if (status != connected){
         g_debug("MQTT Could not send message, not connected yet, discarding");
+
+        skipped_messages++;
+        if (skipped_messages >= SKIPPED_MESSAGES_LIMIT){
+            g_error("FATAL, too many MQTT send attempts while disconnected");
+            exit(EXIT_FAILURE);
+        }
         return;
     }
 
@@ -687,13 +697,32 @@ void mqtt_sync()
     {
         if (is_any_interface_up())
         {
-            g_warning("MQTT reconnecting");
-            status = connecting;
-            MQTTAsync_reconnect(client);
+            reconnect_attempts++;
+            if (reconnect_attempts <= RECONNECT_ATTEMPTS) 
+            {
+                g_warning("MQTT reconnecting, attempt #%i", reconnect_attempts);
+                status = connecting;
+                MQTTAsync_reconnect(client);
+            }
+            else 
+            {
+                g_warning("MQTT Reconnect retry limit reached, restarting");
+                exit(EXIT_FAILURE);
+            }
         }
         else 
         {
-            //g_debug("Not reconnecting yet, no network connection");
+            if (!warningIssued)
+            {
+                g_warning("Not reconnecting yet, no network connection");
+                warningIssued = TRUE;
+            }
         }
+    }
+    else if (status == connected)
+    {
+        reconnect_attempts = 0;
+        warningIssued = FALSE;
+        skipped_messages = 0;
     }
 }
