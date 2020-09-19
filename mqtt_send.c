@@ -32,7 +32,7 @@
 #define MESH_TOPIC "mesh"
 
 // Milliseconds allowed for disconnect
-#define MS_DISCONNECT 100
+#define MS_DISCONNECT 200
 #define RECONNECT_ATTEMPTS 5
 #define SKIPPED_MESSAGES_LIMIT 100
 
@@ -100,7 +100,7 @@ void disconnect()
 {
     g_info("MQTT Disconnect");
     MQTTAsync_disconnectOptions options = MQTTAsync_disconnectOptions_initializer;
-    options.timeout = 0; // was MS_DISCONNECT;
+    options.timeout = MS_DISCONNECT;
     options.onFailure = &disconnect_failure;
     options.onSuccess = &disconnect_success;
     status = disconnecting;
