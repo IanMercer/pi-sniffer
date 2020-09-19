@@ -106,11 +106,13 @@ struct AccessPoint
    // Put a device 1m away and measure the average RSSI
    int rssi_one_meter; // RSSI at one meter for test device (-64 dbm typical)
    // 2.0 to 4.0, lower for indoor or cluttered environments, default is 3.5
-   float rssi_factor;     // Factor for RSSI to distance calculation 2.0-4.0 see README.md
-   float people_distance; // Counts as a person if under this range (meters)
+   float rssi_factor;            // Factor for RSSI to distance calculation 2.0-4.0 see README.md
+   float people_distance;        // Counts as a person if under this range (meters)
 
-   float people_closest_count;  // E[x] of count of people closest
-   float people_in_range_count; // E[x] of count of people in range
+   float people_closest_count;   // E[x] of count of people closest
+   float people_in_range_count;  // E[x] of count of people in range
+
+   time_t last_seen;             // Time access point was last seen
 };
 
 /*

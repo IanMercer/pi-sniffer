@@ -471,8 +471,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         {
             // These devices need to be removed from BLUEZ otherwise BLUEZ's cache gets huge!
             // g_warning("report_devices_internal, not an update, not found");
-            pretty_print2("Properties", properties, true);
-            g_debug("Remove %s, bluez get_devices called back, and not seen yet", address);
+            //pretty_print2("Properties", properties, true);
+            //g_debug("Remove %s, bluez get_devices called back, and not seen yet", address);
             bluez_remove_device(conn, address);
             return;
         }

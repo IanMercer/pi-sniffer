@@ -131,24 +131,30 @@ struct AccessPoint *add_access_point(char *client_id,
             ap->rssi_one_meter = rssi_one_meter;
         }
     }
+    time(&ap->last_seen);
+
     return ap;
 }
 
 void print_access_points()
 {
-  float people_total = 0.0;
-  g_info("ACCESS POINTS          Platform       Close Range (x,y,z)                 Parameters\n");
-  for (int k = 0; k < access_point_count; k++)
-  {
-    struct AccessPoint ap = accessPoints[k];
-    g_info("%20s %16s (%4.1f %4.1f) (%6.1f,%6.1f,%6.1f) (%3i, %.1f, %.1fm)\n",
-    ap.client_id, ap.platform,
-    ap.people_closest_count, ap.people_in_range_count,
-    ap.x, ap.y, ap.z, ap.rssi_one_meter, ap.rssi_factor, ap.people_distance);
-    //g_print("              %16s %s\n", ap->platform, ap->description);
-    people_total += ap.people_closest_count;
-  }
-  g_info("Total people = %.1f\n", people_total);
+    time_t now;
+    time(&now);
+    float people_total = 0.0;
+    g_info("ACCESS POINTS          Platform       Close Range (x,y,z)                 Parameters         Last Seen");
+    for (int k = 0; k < access_point_count; k++)
+    {
+        struct AccessPoint ap = accessPoints[k];
+        int delta_time = difftime(now, ap.last_seen);
+        g_info("%20s %16s (%4.1f %4.1f) (%6.1f,%6.1f,%6.1f) (%3i, %.1f, %.1fm) %is",
+        ap.client_id, ap.platform,
+        ap.people_closest_count, ap.people_in_range_count,
+        ap.x, ap.y, ap.z, ap.rssi_one_meter, ap.rssi_factor, ap.people_distance,
+        delta_time);
+        //g_print("              %16s %s\n", ap->platform, ap->description);
+        people_total += ap.people_closest_count;
+    }
+    g_info("Total people = %.1f", people_total);
 }
 
 struct AccessPoint *update_accessPoints(struct AccessPoint access_point)
@@ -161,6 +167,7 @@ struct AccessPoint *update_accessPoints(struct AccessPoint access_point)
     ap->people_in_range_count = access_point.people_in_range_count;
     strncpy(ap->description, access_point.description, META_LENGTH);
     strncpy(ap->platform, access_point.platform, META_LENGTH);
+    time(&access_point.last_seen);
     return ap;
 }
 
