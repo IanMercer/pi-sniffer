@@ -95,14 +95,15 @@ void post_to_influx(struct OverallState* state, const char* topic, double value)
             "count", value);          // count = value
 
         g_debug("%s", body);
+        int len = strlen(body);
 
         /* Note spaces are important and the carriage-returns & newlines */
         /* db= is the datbase name, u= the username and p= the password */
         sprintf(header,
-            "POST /write?db=%s&u=%s&p=%s HTTP/1.1\r\nHost: %s:%i\r\nContent-Length: %ld\r\n\r\n",
+            "POST /write?db=%s&u=%s&p=%s HTTP/1.1\r\nHost: %s:%i\r\nContent-Length: %i\r\n\r\n",
             state->influx_database, 
             state->influx_username, state->influx_password, 
-            state->influx_server, state->influx_port, strlen(body));
+            state->influx_server, state->influx_port, len);
 
         ret = write(sockfd, header, strlen(header));
         if (ret < 0)
