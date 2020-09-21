@@ -187,7 +187,17 @@ void find_latest_observations()
         int col = a->column;
         if (columns[col].distance < 0.0 || columns[col].latest < a->latest)
         {
-            columns[col].distance = a->distance;
+            // Issue here, a single later 10.0m distance was moving a column
+            // beyond the range allowed
+
+            if (a->count > 1 || 
+                columns[col].distance < 0.0 || 
+                a->distance < columns[col].distance)
+            {
+                // distance only replaces old distance if >2 count or it's closer
+                // otherwise one random far distance can move a device out of range
+                columns[col].distance = a->distance;
+            }
             if (a->category != CATEGORY_UNKNOWN)
             {
                 // a later unknown does not override an actual phone category nor extend it
