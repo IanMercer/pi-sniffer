@@ -672,7 +672,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             // a per-device. PowerLevel is supposed to do this but it's not reliably sent.
             if (strcmp(existing->name, "iPad") == 0)
             {
-                distance = distance * 2.1;
+                distance = distance * 1.4;
             }
 
             float averaged = kalman_update(&existing->kalman, distance);
