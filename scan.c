@@ -335,9 +335,10 @@ void report_devices_count()
             continue;
 
         // double score = 0.55 - atan(delta_time/40.0  - 4.0) / 3.0; -- left some spikes in the graph, dropped too quickly
-        double score = 0.55 - atan(delta_time / 45.0 - 4.0) / 3.0;
+        // double score = 0.55 - atan(delta_time / 45.0 - 4.0) / 3.0; -- maybe too much?
+        double score = 0.55 - atan(delta_time / 42.0 - 4.0) / 3.0;
         // A curve that stays a 1.0 for a while and then drops rapidly around 3 minutes out
-        if (score > 0.9)
+        if (score > 0.99)
             score = 1.0;
         if (score < 0.0)
             score = 0.0;
@@ -1552,12 +1553,14 @@ int dump_all_devices_tick(void *parameters)
     if (state.network_up) 
     {
         print_access_points();
-
         access_points_foreach(&send_to_influx, NULL);
     }
     // Bluez eventually seems to stop sending us data, so for now, just restart every few hours
     if (hours > 2)
+    {
+        g_warning("*** RESTARTING AFTER 2 HOURS RUNNING");
         int_handler(0);
+    }
 
     return TRUE;
 }
