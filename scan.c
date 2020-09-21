@@ -19,6 +19,7 @@
 #include "device.h"
 #include "bluetooth.h"
 #include "heuristics.h"
+#include "influx.h"
 
 #define G_LOG_USE_STRUCTURED 1
 #include <glib.h>
@@ -1495,6 +1496,16 @@ void dump_device(struct Device *d)
 }
 
 /*
+   Send to influx db
+*/
+void send_to_influx(struct AccessPoint ap, void* extra)
+{
+    (void)extra;
+    post_to_influx(&state, ap.client_id, ap.people_closest_count);
+}
+
+
+/*
     Dump all devices present
 */
 
@@ -1539,8 +1550,11 @@ int dump_all_devices_tick(void *parameters)
         g_info("People %.2f (%.2f in range) Uptime: %02i:%02i %s%s", people_closest, people_in_range, hours, minutes, connected, m_state);
 
     if (state.network_up) 
+    {
         print_access_points();
 
+        access_points_foreach(&send_to_influx, NULL);
+    }
     // Bluez eventually seems to stop sending us data, so for now, just restart every few hours
     if (hours > 2)
         int_handler(0);
@@ -1586,7 +1600,8 @@ gboolean try_disconnect(struct Device *a)
 */
 gboolean try_connect(struct Device *a)
 {
-    if (a->category != CATEGORY_UNKNOWN)
+    // If we already have a category and a non-temporary name
+    if (a->category != CATEGORY_UNKNOWN && strncmp(a->name, "_", 1) != 0)
         return FALSE; // already has a category
 
     // Don't attempt connection until a device is close enough, or has been seen enough
@@ -1753,6 +1768,17 @@ void initialize_state()
     state.mqtt_username = getenv("MQTT_USERNAME");
     state.mqtt_password = getenv("MQTT_PASSWORD");
 
+    state.influx_server = getenv("INFLUX_SERVER");
+    if (state.influx_server == NULL) state.influx_server = "";
+
+    const char *s_influx_port = getenv("INFLUX_PORT");
+    state.influx_port = (s_influx_port != NULL) ? atoi(s_influx_port) : 8086;
+
+    state.influx_database = getenv("INFLUX_DATABASE");
+
+    state.influx_username = getenv("INFLUX_USERNAME");
+    state.influx_password = getenv("INFLUX_PASSWORD");
+
     state.verbosity = Distances; // default verbosity
     char* verbosity = getenv("VERBOSITY");
     if (verbosity){
@@ -1783,6 +1809,12 @@ void display_state()
     g_info("MQTT_SERVER='%s'", state.mqtt_server);
     g_info("MQTT_USERNAME='%s'", state.mqtt_username);
     g_info("MQTT_PASSWORD='%s'", state.mqtt_password == NULL ? "(null)" : "*****");
+
+    g_info("INFLUX_SERVER='%s'", state.influx_server);
+    g_info("INFLUX_PORT='%i'", state.influx_port);
+    g_info("INFLUX_DATABASE='%s'", state.influx_database);
+    g_info("INFLUX_USERNAME='%s'", state.influx_username);
+    g_info("INFLUX_PASSWORD='%s'", state.influx_password == NULL ? "(null)" : "*****");
 }
 
 guint prop_changed;

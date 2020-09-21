@@ -14,6 +14,7 @@
 #include "kalman.h"
 #include "device.h"
 #include "bluetooth.h"
+#include "influx.h"
 
 #define G_LOG_USE_STRUCTURED 1
 #include <glib.h>
@@ -29,7 +30,6 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <sys/types.h>
 #include <string.h>
 #include <udp.h>
 #include <argp.h>
@@ -206,6 +206,9 @@ static void people_updated(GDBusConnection *conn,
     {
         double d = g_variant_get_double(prop_val);
         g_info("%s = %.2f", property_name, d);
+
+        //post_to_influx(state, property_name, d);
+
         g_variant_unref(prop_val);
     }
 

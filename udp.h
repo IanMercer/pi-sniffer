@@ -22,6 +22,11 @@ struct AccessPoint* add_access_point(char* client_id, const char* description, c
 
 struct AccessPoint* get_access_point(int id);
 
+/*
+    Iterate over access points
+*/
+void access_points_foreach(void (*f)(struct AccessPoint ap, void *), void *f_data);
+
 void print_access_points();
 
 struct ClosestTo* get_closest(struct Device* device);

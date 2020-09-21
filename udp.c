@@ -186,6 +186,11 @@ struct AccessPoint *get_access_point(int id)
     return NULL;
 }
 
+void access_points_foreach(void (*f)(struct AccessPoint ap, void *), void *f_data)
+{
+    for(int i = 0; i < access_point_count; i++) f(accessPoints[i], f_data);
+}
+
 #define CLOSEST_N 2048
 
 // Most recent 2048 closest to observations

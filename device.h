@@ -185,6 +185,9 @@ struct OverallState
 
    struct AccessPoint *local; // the local access point (in the access points struct)
 
+   // TODO: The following will all move to a new systemd service running on the
+   // other end of DBUS.
+
    // Set only if you want to broadcast people to whole of LAN
    int udp_sign_port;      // The display for this group of sensors
    int udp_mesh_port;      // The mesh port for this group of sensors
@@ -195,6 +198,12 @@ struct OverallState
    char *mqtt_username;
    char *mqtt_password;
    enum Verbosity verbosity;
+
+   char* influx_server;
+   int influx_port;
+   char* influx_database;
+   char* influx_username;
+   char* influx_password;
 };
 
 #endif
