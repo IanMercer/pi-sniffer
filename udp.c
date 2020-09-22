@@ -369,14 +369,18 @@ void print_counts_by_closest()
 
                 // Is this a better match than the current one?
                 int time_diff = difftime(test->time, other->time);
+                // Should always be +ve as we are scanning back in time
+
                 float distance_dilution = time_diff / 10.0;  // 0.1 m/s  1.4m/s human speed
 
                 // e.g. test = 10.0m, current = 3.0m, 30s ago => 3m
-                if (time_diff < 30){
+                //if (time_diff < 30)
+                {
                     struct AccessPoint *ap2 = get_access_point(other->access_id);
                     g_debug("    %12s distance %5.1fm dt=%3is count=%3i", ap2->client_id, other->distance, time_diff, other->count);
                 }
 
+                // other needs to be better than test by at least as far as test could have moved in that time interval
                 if (other->distance < test->distance - distance_dilution)
                 {
                     // g_debug("   Moving %s from %.1fm to %.1fm dop=%.2fm dot=%is", mac, test->distance, closest[j].distance, distance_dilution, time_diff);
@@ -420,6 +424,10 @@ void print_counts_by_closest()
                 ap->people_closest_count = ap->people_closest_count + score;
                 ap->people_in_range_count = ap->people_in_range_count + score;  // TODO:
             }
+        }
+        else
+        {
+            g_debug("   score %.1f", score);
         }
     }
 

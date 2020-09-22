@@ -19,40 +19,13 @@
 #define BUFSIZE 8196
 #define CACHE_TOPICS 100
 
-struct cache_item 
-{
-    char name[80];
-    double value;
-};
 
-static int cache_count = 0;
-static struct cache_item cache[CACHE_TOPICS];
-
-void post_to_influx(struct OverallState* state, const char* topic, double value, time_t timestamp)
+void post_to_influx_body(struct OverallState* state, char body[BUFSIZE], int len)
 {
    if (state->influx_server == NULL || strlen(state->influx_server) == 0) return;
 
-   gboolean found = FALSE;
-   for (int i = 0; i < cache_count; i++)
-   {
-       if (strcmp(cache[i].name, topic) == 0)
-       {
-           if (fabs(cache[i].value - value) < 0.1) return;
-           cache[i].value = value;
-           found = TRUE;
-           break;
-       }
-   }
-   if (!found && cache_count < CACHE_TOPICS)
-   {
-       strncpy((char*)&cache[cache_count].name, topic, 80);
-       cache[cache_count].value = value;
-       cache_count++;
-   }
-
     int ret;
     char header[BUFSIZE];
-    char body[BUFSIZE];
     char result[BUFSIZE];
 
     static struct sockaddr_in serv_addr; /* static is zero filled on start up */
@@ -82,21 +55,6 @@ void post_to_influx(struct OverallState* state, const char* topic, double value,
         g_warning("Connect failed to InfluxDB %i", ret);
         return;
     }
-
-        /* InfluxDB line protocol note:
-            measurement name
-            tag is host=... - multiple tags separate with comma
-            data is key value
-            ending epoch time missing (3 spaces) so InfluxDB generates the timestamp */
-        /* InfluxDB line protocol note: ending epoch time missing so InfluxDB greates it */
-        sprintf(body, "people,host=%s,from=%s %s=%.3f %lu000000000\n",
-            topic,                    // access point name
-            state->local->client_id,  // from = client_id
-            "count", value,           // count = value
-            timestamp);               // nanosecond timestamp
-
-        //g_debug("%s", body);
-        int len = strlen(body);
 
         /* Note spaces are important and the carriage-returns & newlines */
         /* db= is the datbase name, u= the username and p= the password */
@@ -133,7 +91,57 @@ void post_to_influx(struct OverallState* state, const char* topic, double value,
 
         //g_info("->|%s|<-\n", result);
 
-        g_info("Posted %s:%.2f to influxdb: %s", topic, value, body);
-
     close(sockfd);
+}
+
+struct cache_item 
+{
+    char name[80];
+    double value;
+};
+
+static int cache_count = 0;
+static struct cache_item cache[CACHE_TOPICS];
+
+void post_to_influx(struct OverallState* state, const char* topic, double value, time_t timestamp)
+{
+   if (state->influx_server == NULL || strlen(state->influx_server) == 0) return;
+
+    gboolean found = FALSE;
+    for (int i = 0; i < cache_count; i++)
+    {
+        if (strcmp(cache[i].name, topic) == 0)
+        {
+            if (fabs(cache[i].value - value) < 0.1) return;
+            cache[i].value = value;
+            found = TRUE;
+            break;
+        }
+    }
+    if (!found && cache_count < CACHE_TOPICS)
+    {
+        strncpy((char*)&cache[cache_count].name, topic, 80);
+        cache[cache_count].value = value;
+        cache_count++;
+    }
+
+    char body[BUFSIZE];
+
+    /* InfluxDB line protocol note:
+        measurement name
+        tag is host=... - multiple tags separate with comma
+        data is key value
+        ending epoch time missing (3 spaces) so InfluxDB generates the timestamp */
+    /* InfluxDB line protocol note: ending epoch time missing so InfluxDB greates it */
+    sprintf(body, "people,host=%s,from=%s %s=%.3f %lu000000000\n",
+        topic,                    // access point name
+        state->local->client_id,  // from = client_id
+        "count", value,           // count = value
+        timestamp);               // nanosecond timestamp
+
+    //g_debug("%s", body);
+    int len = strlen(body);
+
+    post_to_influx_body(state, body, len);
+    g_info("Posted %s:%.2f to influxdb: %s", topic, value, body);
 }

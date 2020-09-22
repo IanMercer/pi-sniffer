@@ -1561,11 +1561,14 @@ void send_to_influx(struct AccessPoint* ap, void* extra)
 */
 int report_to_influx_tick(void *parameters)
 {
+    if (strlen(state.influx_server)==0) return FALSE;  // no need to keep calling this, remove from loop
+
     (void)parameters;
     print_counts_by_closest();
 
-    if (state.network_up) 
+    if (state.network_up && !starting)
     {
+        // TODO: Make this a single Influx message
         time_t now = time(0);
         access_points_foreach(&send_to_influx, &now);
     }
@@ -2022,8 +2025,8 @@ int main(int argc, char **argv)
     // Also clear starting flag
     g_timeout_add_seconds(29, dump_all_devices_tick, loop);
 
-    // Every 10s report devices by access point to InfluxDB
-    g_timeout_add_seconds(10, report_to_influx_tick, loop);
+    // Every 2s report devices by access point to InfluxDB
+    g_timeout_add_seconds(2, report_to_influx_tick, loop);
 
     // Every 5 min dump access point metadata
     g_timeout_add_seconds(301, print_access_points_tick, loop);
