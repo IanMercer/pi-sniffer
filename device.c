@@ -269,6 +269,12 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
         device->distance = (float)distance->valuedouble;
     }
 
+    cJSON *count = cJSON_GetObjectItemCaseSensitive(djson, "count");
+    if (cJSON_IsNumber(count))
+    {
+        device->count = count->valueint;
+    }
+
     cJSON *earliest = cJSON_GetObjectItemCaseSensitive(djson, "earliest");
     if (cJSON_IsNumber(earliest))
     {

@@ -317,6 +317,15 @@ void set_count_to_zero(struct AccessPoint* ap, void* extra)
     ap->people_in_range_count = 0;
 }
 
+
+// struct AccessPointSummary
+// {
+//     int64_t access_point_id;
+//     int count;
+//     float distance;
+// };
+
+
 /*
     Find counts by access point
 */
@@ -342,21 +351,31 @@ void print_counts_by_closest()
 
         char mac[18];
         mac_64_to_string(mac, sizeof(mac), test->device_64);
+        int count = 0;
+
+        g_debug(" ");
+        g_debug("  %s", mac);
 
         // mark remainder of array as claimed
-        for (int j = i; j > 0; j--)
+        for (int j = i; j >= 0; j--)
         {
             struct ClosestTo* other = &closest[j];
 
             if (other->device_64 == test->device_64)
             {
+                // other is test on first iteration
                 other->mark = true;
+                count += other->count;
 
                 // Is this a better match than the current one?
                 int time_diff = difftime(test->time, other->time);
                 float distance_dilution = time_diff / 10.0;  // 0.1 m/s  1.4m/s human speed
 
                 // e.g. test = 10.0m, current = 3.0m, 30s ago => 3m
+                if (time_diff < 30){
+                    struct AccessPoint *ap2 = get_access_point(other->access_id);
+                    g_debug("    %12s distance %5.1fm dt=%3is count=%3i", ap2->client_id, other->distance, time_diff, other->count);
+                }
 
                 if (other->distance < test->distance - distance_dilution)
                 {
@@ -376,10 +395,24 @@ void print_counts_by_closest()
         if (score > 0.99) score = 1.0;
         if (score < 0.1) score = 0.0;
 
+        // Model the uncertainty when a new device arrives. On first tick it could
+        if (count < 2)
+        {
+            score = score * 0.25;
+        }
+        else if (count < 3)
+        {
+            score = score * 0.5;
+        }
+        else if (count < 4)
+        {
+            score = score * 0.75;
+        }
+
         if (score > 0)
         {
-            g_debug("    %s %s is at %16s for %3is at %4.1fm score=%.1f%s", mac, category, ap->client_id, delta_time, test->distance, score,
-                test->distance > 7.5 ? " * TOO FAR *": "");
+            g_debug("   %s %s is at %16s for %3is at %4.1fm score=%.1f count=%i%s", mac, category, ap->client_id, delta_time, test->distance, score,
+                count, test->distance > 7.5 ? " * TOO FAR *": "");
 
             if (test->distance < 7.5)
             {
@@ -390,6 +423,7 @@ void print_counts_by_closest()
         }
     }
 
+    g_info(" ");
     g_info("Total people present %.1f", total_count);
     g_info(" ");
 
