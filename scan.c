@@ -136,17 +136,25 @@ void pack_columns()
 
     for (int i = state.n - 1; i > 0; i--)
     {
+        int64_t mac64 = mac_string_to_int_64(state.devices[i].mac);
         for (int j = i - 1; j >= 0; j--)
         {
             if (state.devices[i].column == state.devices[j].column)
             {
                 bool send_update = (state.devices[j].superceededby == 0);
-                state.devices[j].superceededby = mac_string_to_int_64(state.devices[i].mac);
+                state.devices[j].superceededby = mac64;
                 if (send_update)
                 {
                     g_info("%s has been superceded by %s", state.devices[j].mac, state.devices[i].mac);
                     send_device_udp(&state, &state.devices[j]);
                 }
+            }
+            else if (state.devices[i].superceededby == mac64)
+            {
+                // This device used to be superceeded by the new one, but now we know it isn't
+                state.devices[j].superceededby = 0;
+                g_info("%s IS NO LONGER superceded by %s", state.devices[j].mac, state.devices[i].mac);
+                send_device_udp(&state, &state.devices[j]);
             }
         }
     }
@@ -1090,6 +1098,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         //send_device_mqtt(existing);
         if (isUpdate)
         {
+            pack_columns();
             // only send when isUpdate is set, i.e. not for get all devices requests
             send_device_udp(&state, existing);
         }

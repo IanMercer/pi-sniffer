@@ -198,6 +198,32 @@ void access_points_foreach(void (*f)(struct AccessPoint* ap, void *), void *f_da
 static uint closest_n = 0;
 static struct ClosestTo closest[CLOSEST_N];
 
+
+/*
+   Mark as superceeded
+*/
+void mark_superceeded(int64_t device_64, int64_t superseededby)
+{
+    if (superseededby != 0)
+    {
+        char mac[18];
+        mac_64_to_string(mac, 18, device_64);
+        g_debug("Removing %s from closest as it's superceeded", mac);
+        for (int j = closest_n; j >= 0; j--)
+        {
+            if (closest[j].device_64 == device_64)
+            {
+                closest[j].superceededby = superseededby;
+            }
+        }
+        // Could trim them from array
+
+        // Need to report this right away
+
+        return;
+    }
+}
+
 /*
    Add a closest observation (get a lock before you call this)
 */
@@ -216,6 +242,9 @@ void add_closest(int64_t device_64, int access_id, time_t time, float distance, 
             }
         }
         // Could trim them from array
+
+        // Need to report this right away
+
         return;
     }
 
@@ -482,7 +511,7 @@ void *listen_loop(void *param)
 
             // TODO: Ignore messages with no device, access point matrix already updated
             if (d.mac == NULL || strlen(d.mac) == 0){
-                g_info("Ignoring access point only message\n");
+                g_info("Ignoring access point only message");
                 continue;
             }
 
@@ -503,9 +532,8 @@ void *listen_loop(void *param)
                     if (d.superceededby != 0)
                     {
                         // remove from closest
-                        // Use an int64 version of the mac address
                         int64_t id_64 = mac_string_to_int_64(d.mac);
-                        add_closest(id_64, a.id, d.latest, d.distance, d.category, d.superceededby);
+                        mark_superceeded(id_64, d.superceededby);
                     }
                     else 
                     {
