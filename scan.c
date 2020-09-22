@@ -151,6 +151,7 @@ void pack_columns()
             }
             else if (state.devices[i].superceededby == mac64)
             {
+                // Not in same column but has a superceededby value
                 // This device used to be superceeded by the new one, but now we know it isn't
                 state.devices[j].superceededby = 0;
                 g_info("%s IS NO LONGER superceded by %s", state.devices[j].mac, state.devices[i].mac);
@@ -579,6 +580,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
     {
         time(&existing->latest);
         existing->count++;
+        // If we just saw it, it can't be superseeded by anyone else
+        existing->superceededby = 0;
     }
 
     // If after examining every key/value pair, distance has been set then we will send it
