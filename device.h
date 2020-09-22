@@ -152,6 +152,8 @@ struct ClosestTo
    int64_t superceededby;
    // mark and sweep flag
    bool mark;
+   // count from access point
+   int count;
 };
 
 int category_to_int(char *category);

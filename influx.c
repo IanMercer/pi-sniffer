@@ -28,7 +28,7 @@ struct cache_item
 static int cache_count = 0;
 static struct cache_item cache[CACHE_TOPICS];
 
-void post_to_influx(struct OverallState* state, const char* topic, double value)
+void post_to_influx(struct OverallState* state, const char* topic, double value, time_t timestamp)
 {
    if (state->influx_server == NULL || strlen(state->influx_server) == 0) return;
 
@@ -89,12 +89,13 @@ void post_to_influx(struct OverallState* state, const char* topic, double value)
             data is key value
             ending epoch time missing (3 spaces) so InfluxDB generates the timestamp */
         /* InfluxDB line protocol note: ending epoch time missing so InfluxDB greates it */
-        sprintf(body, "people,host=%s,from=%s %s=%.3f   \n", 
+        sprintf(body, "people,host=%s,from=%s %s=%.3f %lu000000000\n",
             topic,                    // access point name
             state->local->client_id,  // from = client_id
-            "count", value);          // count = value
+            "count", value,           // count = value
+            timestamp);               // nanosecond timestamp
 
-        g_debug("%s", body);
+        //g_debug("%s", body);
         int len = strlen(body);
 
         /* Note spaces are important and the carriage-returns & newlines */
@@ -132,7 +133,7 @@ void post_to_influx(struct OverallState* state, const char* topic, double value)
 
         //g_info("->|%s|<-\n", result);
 
-        g_info("Posted %s:%.2f to influxdb", topic, value);
+        g_info("Posted %s:%.2f to influxdb: %s", topic, value, body);
 
     close(sockfd);
 }

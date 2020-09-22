@@ -1527,7 +1527,14 @@ void dump_device(struct Device *d)
         }
     }
 
-    g_info("%4i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %13s %5.1fm %s", d->id % 10000, d->mac, d->count, addressType, d->distance, d->column, (d->earliest - started), (d->latest - started), d->name, closest_ap, closest_dist, category);
+    if (d->superceededby == 0)
+    {
+        g_info("%4i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %13s %5.1fm %s", d->id % 10000, d->mac, d->count, addressType, d->distance, d->column, (d->earliest - started), (d->latest - started), d->name, closest_ap, closest_dist, category);
+    }
+    else
+    {
+        g_debug("%4i %s.%4i %3s %5.1fm %4i  %6li-%6li %20s %13s %5.1fm %s", d->id % 10000, d->mac, d->count, addressType, d->distance, d->column, (d->earliest - started), (d->latest - started), d->name, closest_ap, closest_dist, category);
+    }
 }
 
 /*
@@ -1535,24 +1542,34 @@ void dump_device(struct Device *d)
 */
 void send_to_influx(struct AccessPoint* ap, void* extra)
 {
-    (void)extra;
-    post_to_influx(&state, ap->client_id, ap->people_closest_count);
+    time_t t = *(time_t*)extra;
+    post_to_influx(&state, ap->client_id, ap->people_closest_count, t);
 }
 
 /*
     Report access point counts to InfluxDB
 */
-int report_access_points_tick(void *parameters)
+int report_to_influx_tick(void *parameters)
 {
     (void)parameters;
     print_counts_by_closest();
-    print_access_points();
 
     if (state.network_up) 
     {
-        access_points_foreach(&send_to_influx, NULL);
+        time_t now = time(0);
+        access_points_foreach(&send_to_influx, &now);
     }
 
+    return TRUE;
+}
+
+/*
+    Print access point metadata
+*/
+int print_access_points_tick(void *parameters)
+{
+    (void)parameters;
+    print_access_points();
     return TRUE;
 }
 
@@ -1996,7 +2013,10 @@ int main(int argc, char **argv)
     g_timeout_add_seconds(29, dump_all_devices_tick, loop);
 
     // Every 10s report devices by access point to InfluxDB
-    g_timeout_add_seconds(10, report_access_points_tick, loop);
+    g_timeout_add_seconds(10, report_to_influx_tick, loop);
+
+    // Every 5 min dump access point metadata
+    g_timeout_add_seconds(301, print_access_points_tick, loop);
 
     // Every 2s see if any unnamed device is ready to be connected
     g_timeout_add_seconds(TRY_CONNECT_INTERVAL_S, try_connect_tick, loop);
