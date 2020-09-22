@@ -332,11 +332,15 @@ void print_counts_by_closest()
 
         if (score > 0)
         {
-            g_debug("  %s %s is at %s for %is at %.1fm score=%.1f", mac, category, ap->client_id, delta_time, test->distance, score);
+            g_debug("  %s %s is at %16s for %3is at %4.1fm score=%.1f%s", mac, category, ap->client_id, delta_time, test->distance, score,
+                test->distance > 7.5 ? " * TOO FAR *": "");
 
-            total_count += score;
-            ap->people_closest_count = ap->people_closest_count + score;
-            ap->people_in_range_count = ap->people_in_range_count + score;  // TODO:
+            if (test->distance < 7.5)
+            {
+                total_count += score;
+                ap->people_closest_count = ap->people_closest_count + score;
+                ap->people_in_range_count = ap->people_in_range_count + score;  // TODO:
+            }
         }
     }
 
