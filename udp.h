@@ -25,11 +25,12 @@ struct AccessPoint* get_access_point(int id);
 /*
     Iterate over access points
 */
-void access_points_foreach(void (*f)(struct AccessPoint ap, void *), void *f_data);
+void access_points_foreach(void (*f)(struct AccessPoint* ap, void *), void *f_data);
 
 void print_access_points();
 
 struct ClosestTo* get_closest(struct Device* device);
 
+void print_counts_by_closest();
 
 #endif

@@ -56,7 +56,7 @@ struct Device
    bool hidden;        // not seen by this access point (yet)
    uint8_t ttl;        // time to live count down during removal process
    char mac[18];       // mac address string
-   int64_t superceeds; // mac address of previous mac in same column
+   int64_t superceededby; // mac address of previous mac in same column
    char name[NAME_LENGTH];
    char alias[NAME_LENGTH];
    int8_t addressType; // 0, 1, 2
@@ -147,9 +147,11 @@ struct ClosestTo
    int8_t category;
    // When was this observation received
    time_t time;
-   // Superceeds: i.e. access_id has seen this mac address
+   // Superceeded by another: i.e. access_id has seen this mac address
    // in a column more recently than this one that it superceeds
-   int64_t superceeds;
+   int64_t superceededby;
+   // mark and sweep flag
+   bool mark;
 };
 
 int category_to_int(char *category);

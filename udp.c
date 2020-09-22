@@ -11,6 +11,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <math.h>
 
 #define BLOCK_SIZE 1024
 
@@ -186,9 +187,9 @@ struct AccessPoint *get_access_point(int id)
     return NULL;
 }
 
-void access_points_foreach(void (*f)(struct AccessPoint ap, void *), void *f_data)
+void access_points_foreach(void (*f)(struct AccessPoint* ap, void *), void *f_data)
 {
-    for(int i = 0; i < access_point_count; i++) f(accessPoints[i], f_data);
+    for(int i = 0; i < access_point_count; i++) f(&accessPoints[i], f_data);
 }
 
 #define CLOSEST_N 2048
@@ -200,8 +201,24 @@ static struct ClosestTo closest[CLOSEST_N];
 /*
    Add a closest observation (get a lock before you call this)
 */
-void add_closest(int64_t device_64, int access_id, time_t time, float distance, int8_t category, int64_t superseeds)
+void add_closest(int64_t device_64, int access_id, time_t time, float distance, int8_t category, int64_t superseededby)
 {
+    if (superseededby != 0)
+    {
+        char mac[18];
+        mac_64_to_string(mac, 18, device_64);
+        g_debug("Removing %s from closest as it's superceeded", mac);
+        for (int j = closest_n; j >= 0; j--)
+        {
+            if (closest[j].device_64 == device_64)
+            {
+                closest[j].superceededby = superseededby;
+            }
+        }
+        // Could trim them from array
+        return;
+    }
+
     if (distance < 0.1)
         return;
 
@@ -229,7 +246,7 @@ void add_closest(int64_t device_64, int access_id, time_t time, float distance, 
                 last->time = time;
                 last->distance = distance;
                 last->category = category;
-                last->superceeds = superseeds;
+                last->superceededby = superseededby;
                 overwrite = TRUE;
             }
         }
@@ -241,11 +258,93 @@ void add_closest(int64_t device_64, int access_id, time_t time, float distance, 
         closest[closest_n].device_64 = device_64;
         closest[closest_n].distance = distance;
         closest[closest_n].category = category;
-        closest[closest_n].superceeds = superseeds;
+        closest[closest_n].superceededby = superseededby;
         closest[closest_n].time = time;
         closest_n++;
     }
 }
+
+/*
+   Set count to zero
+*/
+void set_count_to_zero(struct AccessPoint* ap, void* extra)
+{
+    (void)extra;
+    ap->people_closest_count = 0;
+    ap->people_in_range_count = 0;
+}
+
+/*
+    Find counts by access point
+*/
+void print_counts_by_closest()
+{
+    float total_count = 0.0;
+    access_points_foreach(&set_count_to_zero, NULL);
+
+    g_info("Counts");
+    time_t now = time(0);
+
+    for (int i = closest_n - 1; i >= 0; i--)
+    {
+        closest[i].mark = false;
+    }
+
+    for (int i = closest_n - 1; i >= 0; i--)
+    {
+        if (closest[i].category != CATEGORY_PHONE) continue;
+        if (closest[i].mark) continue;  // already claimed
+        struct ClosestTo *test = &closest[i];
+
+        char mac[18];
+        mac_64_to_string(mac, sizeof(mac), test->device_64);
+
+        // mark remainder of array as claimed
+        for (int j = i; j > 0; j--)
+        {
+            if (closest[j].device_64 == test->device_64)
+            {
+                closest[j].mark = true;
+
+                // Is this a better match than the current one?
+                int time_diff = difftime(test->time, closest[j].time);
+                float distance_dilution = time_diff / 10.0;  // 0.1 m/s  1.4m/s human speed
+
+                // e.g. test = 10.0m, current = 3.0m, 30s ago => 3m
+
+                if (closest[j].distance < test->distance - distance_dilution)
+                {
+                    // g_debug("   Moving %s from %.1fm to %.1fm dop=%.2fm dot=%is", mac, test->distance, closest[j].distance, distance_dilution, time_diff);
+                    test = &closest[j];
+                }
+            }
+        }
+
+        struct AccessPoint *ap = get_access_point(test->access_id);
+
+        char* category = category_from_int(closest[i].category);
+
+        int delta_time = difftime(now, test->time);
+        double score = 0.55 - atan(delta_time / 42.0 - 4.0) / 3.0;
+        // A curve that stays a 1.0 for a while and then drops rapidly around 3 minutes out
+        if (score > 0.99) score = 1.0;
+        if (score < 0.1) score = 0.0;
+
+        if (score > 0)
+        {
+            g_debug("  %s %s is at %s for %is at %.1fm score=%.1f", mac, category, ap->client_id, delta_time, test->distance, score);
+
+            total_count += score;
+            ap->people_closest_count = ap->people_closest_count + score;
+            ap->people_in_range_count = ap->people_in_range_count + score;  // TODO:
+        }
+    }
+
+    g_info("Total people present %.1f", total_count);
+
+}
+
+
 
 /*
     Get the closest recent observation for a device
@@ -397,30 +496,42 @@ void *listen_loop(void *param)
 
                     merge(&state->devices[i], &d, a.client_id, delta_time == 0);
 
-                    // If the delta time between our clock and theirs is > 0, log it
-                    if (delta_time < 0)
+                    if (d.superceededby != 0)
                     {
-                        // This is problematic, they are ahead of us
-                        g_warning("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, a.client_id, d.distance, delta_time);
+                        // remove from closest
+                        // Use an int64 version of the mac address
+                        int64_t id_64 = mac_string_to_int_64(d.mac);
+                        add_closest(id_64, a.id, d.latest, d.distance, d.category, d.superceededby);
                     }
-                    else if (delta_time > 1)
+                    else 
                     {
-                        // Could be a problem, they appear to be somewhat behind us
-                        g_warning("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, a.client_id, d.distance, delta_time);
-                    }
-                    else if (delta_time > 0)
-                    {
-                        g_debug("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, a.client_id, d.distance, delta_time);
-                    }
-                    else
-                    {
-                        // silent, right on zero time difference
-                        //g_debug("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, a.client_id, d.distance, delta_time);
-                    }
+                        // This is a current observation, time should match
 
-                    // Use an int64 version of the mac address
-                    int64_t id_64 = mac_string_to_int_64(d.mac);
-                    add_closest(id_64, a.id, d.latest, d.distance, d.category, d.superceeds);
+                        // If the delta time between our clock and theirs is > 0, log it
+                        if (delta_time < 0)
+                        {
+                            // This is problematic, they are ahead of us
+                            g_warning("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, a.client_id, d.distance, delta_time);
+                        }
+                        else if (delta_time > 1)
+                        {
+                            // Could be a problem, they appear to be somewhat behind us
+                            g_warning("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, a.client_id, d.distance, delta_time);
+                        }
+                        else if (delta_time > 0)
+                        {
+                            g_debug("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, a.client_id, d.distance, delta_time);
+                        }
+                        else
+                        {
+                            // silent, right on zero time difference
+                            //g_debug("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, a.client_id, d.distance, delta_time);
+                        }
+
+                        // Use an int64 version of the mac address
+                        int64_t id_64 = mac_string_to_int_64(d.mac);
+                        add_closest(id_64, a.id, d.latest, d.distance, d.category, d.superceededby);
+                    }
                    
                     break;
                 }
@@ -432,7 +543,7 @@ void *listen_loop(void *param)
                 //g_debug("Add foreign device %s %s\n", d.mac, cat);
 
                 int64_t id_64 = mac_string_to_int_64(d.mac);
-                add_closest(id_64, a.id, d.latest, d.distance, d.category, d.superceeds);
+                add_closest(id_64, a.id, d.latest, d.distance, d.category, d.superceededby);
             }
 
             pthread_mutex_unlock(&state->lock);
@@ -476,7 +587,7 @@ void send_device_udp(struct OverallState *state, struct Device *device)
 
     // Add local observations into the same structure
     int64_t id_64 = mac_string_to_int_64(device->mac);
-    add_closest(id_64, state->local->id, device->latest, device->distance, device->category, device->superceeds);
+    add_closest(id_64, state->local->id, device->latest, device->distance, device->category, device->superceededby);
 }
 
 /*

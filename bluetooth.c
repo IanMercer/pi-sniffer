@@ -215,7 +215,7 @@ int bluez_remove_device(GDBusConnection *conn, char address[18])
 
     int rc = bluez_adapter_call_method(conn, "RemoveDevice", g_variant_new_tuple(&param, 1), NULL);
     if (rc) g_debug("Not able to remove %s", address);
-    else g_debug("%s BLUEZ removed", address);
+//    else g_debug("%s BLUEZ removed", address);
 
     return rc;
 }

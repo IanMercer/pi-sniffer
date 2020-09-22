@@ -45,6 +45,11 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
     optional_set(local->alias, remote->alias, NAME_LENGTH);
     soft_set_8(&local->addressType, remote->addressType);
 
+    if (remote->superceededby != 0 && local->superceededby == 0)
+    {
+        local->superceededby = remote->superceededby;
+    }
+
     if (remote->category != CATEGORY_UNKNOWN)
     {
         if (local->category == CATEGORY_UNKNOWN)
@@ -128,8 +133,8 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     cJSON_AddStringToObject(j, "name", device->name);
 
     char mac_super[18];
-    mac_64_to_string(mac_super, 18, device->superceeds);
-    cJSON_AddStringToObject(j, "superceeds", mac_super);
+    mac_64_to_string(mac_super, 18, device->superceededby);
+    cJSON_AddStringToObject(j, "superceededby", mac_super);
 
     cJSON_AddStringToObject(j, "alias", device->alias);
     cJSON_AddNumberToObject(j, "addressType", device->addressType);
@@ -244,11 +249,11 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
         strncpy(device->name, name->valuestring, NAME_LENGTH);
     }
 
-    cJSON *supercedes = cJSON_GetObjectItemCaseSensitive(djson, "supercedes");
+    cJSON *supercedes = cJSON_GetObjectItemCaseSensitive(djson, "supercededby");
     if (cJSON_IsString(supercedes))
     {
         // TODO: ulong serialization with cJSON
-        device->superceeds = mac_string_to_int_64(supercedes->valuestring);
+        device->superceededby = mac_string_to_int_64(supercedes->valuestring);
     }
 
     cJSON *latest = cJSON_GetObjectItemCaseSensitive(djson, "latest");

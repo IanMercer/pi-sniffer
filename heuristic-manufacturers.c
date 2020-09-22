@@ -177,6 +177,16 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         optional_set(existing->name, "_Icon Health and Fitness", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
+    else if (manufacturer == 0x02ab)
+    {
+        optional_set(existing->name, "_BBPOS Limited", NAME_LENGTH);
+        existing->category = CATEGORY_FIXED;
+    }
+    else if (manufacturer == 0x01da)
+    {
+        optional_set(existing->name, "_Logitech", NAME_LENGTH);
+        existing->category = CATEGORY_FIXED;
+    }
     else if (manufacturer == 0x0401)
     {
         optional_set(existing->name, "_Relations Inc", NAME_LENGTH);

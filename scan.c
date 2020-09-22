@@ -133,6 +133,23 @@ void pack_columns()
         if (!changed)
             break;
     }
+
+    for (int i = state.n; i > 0; i--)
+    {
+        for (int j = i - 1; j >= 0; j--)
+        {
+            if (state.devices[i].column == state.devices[j].column)
+            {
+                bool send_update = (state.devices[j].superceededby == 0);
+                state.devices[j].superceededby = mac_string_to_int_64(state.devices[i].mac);
+                if (send_update)
+                {
+                    g_info("%s has been superceded by %s", state.devices[j].mac, state.devices[i].mac);
+                    send_device_udp(&state, &state.devices[j]);
+                }
+            }
+        }
+    }
 }
 
 /*
@@ -348,10 +365,8 @@ void report_devices_count()
         // double score = 0.55 - atan(delta_time / 45.0 - 4.0) / 3.0; -- maybe too much?
         double score = 0.55 - atan(delta_time / 42.0 - 4.0) / 3.0;
         // A curve that stays a 1.0 for a while and then drops rapidly around 3 minutes out
-        if (score > 0.99)
-            score = 1.0;
-        if (score < 0.0)
-            score = 0.0;
+        if (score > 0.99) score = 1.0;
+        if (score < 0.0) score = 0.0;
 
         // Expected value E[x] = i x p(i) so sum p(i) for each column which is one person
         people_in_range += score;
@@ -501,7 +516,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         existing->ttl = 10;                    // arbitrary, set during countdown to ejection
         existing->hidden = false;              // we own this one
         g_strlcpy(existing->mac, address, 18); // address
-        existing->superceeds = 0;              // will be filled in when calculating columns
+        existing->superceededby = 0;              // will be filled in when calculating columns
 
         // dummy struct filled with unmatched values
         existing->name[0] = '\0';
@@ -1438,7 +1453,7 @@ gboolean should_remove(struct Device *existing)
 
         if (existing->ttl == 9)
         {
-            g_debug("%s '%s' BLUEZ Cache remove count=%i dt=%.1fmin dist=%.1fm", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
+            //g_debug("%s '%s' BLUEZ Cache remove count=%i dt=%.1fmin dist=%.1fm", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
             // And so when this device reconnects we get a proper reconnect message and so that BlueZ doesn't fill up a huge
             // cache of iOS devices that have passed by or changed mac address
             bluez_remove_device(conn, existing->mac);
@@ -1448,7 +1463,7 @@ gboolean should_remove(struct Device *existing)
         }
         else if (existing->ttl == 5)    // 4x5s later = 20s later
         {
-            g_info("%s '%s' LOCAL Cache remove count=%i dt=%.1fmin dist=%.1fm", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
+            //g_info("%s '%s' LOCAL Cache remove count=%i dt=%.1fmin dist=%.1fm", existing->mac, existing->name, existing->count, delta_time/60.0, existing->distance);
             return TRUE;
         }
 
@@ -1509,17 +1524,32 @@ void dump_device(struct Device *d)
 /*
    Send to influx db
 */
-void send_to_influx(struct AccessPoint ap, void* extra)
+void send_to_influx(struct AccessPoint* ap, void* extra)
 {
     (void)extra;
-    post_to_influx(&state, ap.client_id, ap.people_closest_count);
+    post_to_influx(&state, ap->client_id, ap->people_closest_count);
 }
 
+/*
+    Report access point counts to InfluxDB
+*/
+int report_access_points_tick(void *parameters)
+{
+    (void)parameters;
+    print_counts_by_closest();
+    print_access_points();
+
+    if (state.network_up) 
+    {
+        access_points_foreach(&send_to_influx, NULL);
+    }
+
+    return TRUE;
+}
 
 /*
     Dump all devices present
 */
-
 int dump_all_devices_tick(void *parameters)
 {
     starting = FALSE;
@@ -1560,11 +1590,6 @@ int dump_all_devices_tick(void *parameters)
     else
         g_info("People %.2f (%.2f in range) Uptime: %02i:%02i %s%s", people_closest, people_in_range, hours, minutes, connected, m_state);
 
-    if (state.network_up) 
-    {
-        print_access_points();
-        access_points_foreach(&send_to_influx, NULL);
-    }
     // Bluez eventually seems to stop sending us data, so for now, just restart every few hours
     if (hours > 2)
     {
@@ -1960,6 +1985,9 @@ int main(int argc, char **argv)
     // Every 29s dump all devices
     // Also clear starting flag
     g_timeout_add_seconds(29, dump_all_devices_tick, loop);
+
+    // Every 10s report devices by access point to InfluxDB
+    g_timeout_add_seconds(10, report_access_points_tick, loop);
 
     // Every 2s see if any unnamed device is ready to be connected
     g_timeout_add_seconds(TRY_CONNECT_INTERVAL_S, try_connect_tick, loop);

@@ -235,14 +235,15 @@ void mac_address_to_string(char* output, int length, char* access_point_address)
 */
 void mac_64_to_string(char* output, int length, int64_t access_64)
 {
-    snprintf(output, length, "%.2x%.2x%.2x%.2x%.2x%.2x", 
+    if (length != 18) g_error("Length must be 18");
+    snprintf(output, length, "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
         (int8_t)(access_64 >> 40) & 0xff,
         (int8_t)(access_64 >> 32) & 0xff,
         (int8_t)(access_64 >> 24) & 0xff,
         (int8_t)(access_64 >> 16) & 0xff,
         (int8_t)(access_64 >> 8) & 0xff,
         (int8_t)(access_64 >> 0) & 0xff);
-    output[12] = '\0';
+    output[17] = '\0';
 }
 
 /*

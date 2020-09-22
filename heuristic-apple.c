@@ -50,7 +50,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x07)     // Proximity Pairing - Constantly (rare)
     {
-        optional_set(existing->name, "Airpods", NAME_LENGTH);
+        optional_set(existing->name, "_Airpods", NAME_LENGTH);
         g_info("  %s '%s' Proximity Pairing", existing->mac, existing->name);
         existing->category = CATEGORY_HEADPHONES;
         // 1 byte length
@@ -62,7 +62,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x08)     // On user action (rare)
     {
-        optional_set(existing->alias, "Siri", NAME_LENGTH);
+        optional_set(existing->name, "_Siri", NAME_LENGTH);
         g_info("  %s '%s' Siri", existing->mac, existing->name);
         // 1 byte length
         // 2 bytes perceptual hash
@@ -73,8 +73,9 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x09)     // On user action (some)
     {
-        optional_set(existing->alias, "Airplay", NAME_LENGTH);
+        optional_set(existing->name, "_Airplay", NAME_LENGTH);
         g_info("  %s '%s' Airplay", existing->mac, existing->name);
+        existing->category = CATEGORY_FIXED;  // probably an Apple TV?
         // 1 byte length
         // 1 byte flags
         // 1 byte config seed
@@ -82,16 +83,16 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x0a)     // ?? (rare)
     {
-        optional_set(existing->alias, "Apple 0a", NAME_LENGTH);
+        optional_set(existing->name, "_Apple 0a", NAME_LENGTH);
         g_info("  %s '%s' Apple 0a??", existing->mac, existing->name);
     }
     else if (apple_device_type == 0x0b)     // On physical action
     {
         // Confirmed seen from iWatch
+        // Sent when watch has lost pairing to phone?
         optional_set(existing->name, "iWatch", NAME_LENGTH);
         g_info("  %s '%s' Magic Switch", existing->mac, existing->name);
         soft_set_category(&existing->category, CATEGORY_WEARABLE);
-        // Sent when watch has lost pairing to phone
     }
     else if (apple_device_type == 0x0c)     // Handoff
     {
