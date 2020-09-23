@@ -57,7 +57,7 @@ struct Device
    uint8_t ttl;            // time to live count down during removal process
    char mac[18];           // mac address string
    int64_t mac64;          // mac address (moving off string)
-   int64_t superceededby;  // mac address of previous mac in same column
+   int64_t supersededby;  // mac address of previous mac in same column
    char name[NAME_LENGTH];
    char alias[NAME_LENGTH];
    int8_t addressType; // 0, 1, 2
@@ -153,7 +153,7 @@ struct ClosestTo
    // Remove this, cannot go retroactive on sending data
    // Superceeded by another: i.e. access_id has seen this mac address
    // in a column more recently than this one that it superceeds
-   int64_t superceededby;
+   int64_t supersededby;
    // mark and sweep flag
    bool mark;
    // count from access point

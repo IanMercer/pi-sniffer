@@ -201,9 +201,9 @@ static struct ClosestTo closest[CLOSEST_N];
 /*
    Mark as superceeded
 */
-void mark_superceeded(int64_t device_64, int64_t superseededby)
+void mark_superceeded(int64_t device_64, int64_t supersededby)
 {
-    if (superseededby != 0)
+    if (supersededby != 0)
     {
         char mac[18];
         mac_64_to_string(mac, 18, device_64);
@@ -212,7 +212,7 @@ void mark_superceeded(int64_t device_64, int64_t superseededby)
         {
             if (closest[j].device_64 == device_64)
             {
-                closest[j].superceededby = superseededby;
+                closest[j].supersededby = supersededby;
             }
         }
         // Could trim them from array
@@ -228,21 +228,29 @@ void mark_superceeded(int64_t device_64, int64_t superseededby)
 */
 void add_closest(int64_t device_64, int access_id, time_t earliest,
     time_t time, float distance, 
-    int8_t category, int64_t superseededby, int count)
+    int8_t category, int64_t supersededby, int count)
 {
     // First scan back, see if this is an update
     for (int j = closest_n; j >= 0; j--)
     {
         if (closest[j].device_64 == device_64 && closest[j].access_id == access_id
+            && closest[j].supersededby != supersededby
             && closest[j].time == time)
         {
-            g_debug("*** Received an UPDATE, changing superceded");
-            closest[j].superceededby = superseededby;
+            char mac[18];
+            mac_64_to_string(mac, 18, device_64);
+            char from[18];
+            mac_64_to_string(from, 18, closest[j].supersededby);
+            char to[18];
+            mac_64_to_string(to, 18, supersededby);
+
+            g_debug("*** Received an UPDATE, changing %s superceded from %s to %s", mac, from, to);
+            closest[j].supersededby = supersededby;
             return;
         }
     }
 
-    if (superseededby != 0)
+    if (supersededby != 0)
     {
         //g_warning("****************** SHOULD NEVER COME HERE *********************");
         char mac[18];
@@ -252,7 +260,7 @@ void add_closest(int64_t device_64, int access_id, time_t earliest,
         {
             if (closest[j].device_64 == device_64)
             {
-                closest[j].superceededby = superseededby;
+                closest[j].supersededby = supersededby;
             }
         }
         // Could trim them from array (no, it might come back)
@@ -276,7 +284,7 @@ void add_closest(int64_t device_64, int access_id, time_t earliest,
     closest[closest_n].device_64 = device_64;
     closest[closest_n].distance = distance;
     closest[closest_n].category = category;
-    closest[closest_n].superceededby = superseededby;
+    closest[closest_n].supersededby = supersededby;
     closest[closest_n].earliest = earliest;
     closest[closest_n].time = time;
     closest[closest_n].count = count;
@@ -592,11 +600,11 @@ void *listen_loop(void *param)
 
                     merge(&state->devices[i], &d, a.client_id, delta_time == 0);
 
-                    if (d.superceededby != 0)
+                    if (d.supersededby != 0)
                     {
                         // remove from closest
                         int64_t id_64 = mac_string_to_int_64(d.mac);
-                        mark_superceeded(id_64, d.superceededby);
+                        mark_superceeded(id_64, d.supersededby);
                     }
                     else 
                     {
@@ -626,7 +634,7 @@ void *listen_loop(void *param)
                         // Use an int64 version of the mac address
                         int64_t id_64 = mac_string_to_int_64(d.mac);
                         add_closest(id_64, a.id, d.earliest,
-                            d.latest, d.distance, d.category, d.superceededby, d.count);
+                            d.latest, d.distance, d.category, d.supersededby, d.count);
                     }
                    
                     break;
@@ -639,7 +647,7 @@ void *listen_loop(void *param)
                 //g_debug("Add foreign device %s %s\n", d.mac, cat);
 
                 int64_t id_64 = mac_string_to_int_64(d.mac);
-                add_closest(id_64, a.id, d.earliest, d.latest, d.distance, d.category, d.superceededby, d.count);
+                add_closest(id_64, a.id, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count);
             }
 
             pthread_mutex_unlock(&state->lock);
@@ -690,7 +698,7 @@ void update_closest(struct OverallState *state, struct Device *device)
 {
     // Add local observations into the same structure
     int64_t id_64 = mac_string_to_int_64(device->mac);
-    add_closest(id_64, state->local->id, device->earliest, device->latest, device->distance, device->category, device->superceededby, device->count);
+    add_closest(id_64, state->local->id, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count);
 }
 
 /*
@@ -700,7 +708,7 @@ void update_superceded(struct OverallState *state, struct Device *device)
 {
     // Add local observations into the same structure
     int64_t id_64 = mac_string_to_int_64(device->mac);
-    add_closest(id_64, state->local->id, device->earliest, device->latest, device->distance, device->category, device->superceededby, device->count);
+    add_closest(id_64, state->local->id, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count);
 }
 
 /*

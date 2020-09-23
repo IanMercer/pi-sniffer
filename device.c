@@ -46,11 +46,11 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
     soft_set_8(&local->addressType, remote->addressType);
 
     // If this is an update for an existing value update the superceded field
-    if (local->superceededby != remote->superceededby)
+    if (local->supersededby != remote->supersededby)
     {
         if (difftime(remote->latest, local->latest) == 0 || safe)
         {
-            local->superceededby = remote->superceededby;
+            local->supersededby = remote->supersededby;
         }
         else
         {
@@ -141,8 +141,8 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     cJSON_AddStringToObject(j, "name", device->name);
 
     char mac_super[18];
-    mac_64_to_string(mac_super, 18, device->superceededby);
-    cJSON_AddStringToObject(j, "superceededby", mac_super);
+    mac_64_to_string(mac_super, 18, device->supersededby);
+    cJSON_AddStringToObject(j, "supersededby", mac_super);
 
     cJSON_AddStringToObject(j, "alias", device->alias);
     cJSON_AddNumberToObject(j, "addressType", device->addressType);
@@ -263,7 +263,7 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
     if (cJSON_IsString(supercedes))
     {
         // TODO: ulong serialization with cJSON
-        device->superceededby = mac_string_to_int_64(supercedes->valuestring);
+        device->supersededby = mac_string_to_int_64(supercedes->valuestring);
     }
 
     cJSON *latest = cJSON_GetObjectItemCaseSensitive(djson, "latest");

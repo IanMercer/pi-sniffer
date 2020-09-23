@@ -150,8 +150,8 @@ void pack_columns()
 
             if (current->column == earlier->column)
             {
-                bool send_update = (earlier->superceededby == 0);
-                earlier->superceededby = mac64;
+                bool send_update = (earlier->supersededby == 0);
+                earlier->supersededby = mac64;
                 if (send_update)
                 {
                     g_info("%s has been superceded by %s", earlier->mac, current->mac);
@@ -159,11 +159,11 @@ void pack_columns()
                     update_superceded(&state, earlier);
                 }
             }
-            else if (state.devices[i].superceededby == mac64)
+            else if (state.devices[i].supersededby == mac64)
             {
-                // Not in same column but has a superceededby value
+                // Not in same column but has a supersededby value
                 // This device used to be superceeded by the new one, but now we know it isn't
-                earlier->superceededby = 0;
+                earlier->supersededby = 0;
                 g_info("%s IS NO LONGER superceded by %s", earlier->mac, current->mac);
                 send_device_udp(&state, earlier);
                 update_superceded(&state, earlier);
@@ -537,7 +537,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         existing->hidden = false;               // we own this one
         g_strlcpy(existing->mac, address, 18);  // address
         existing->mac64 = mac_string_to_int_64(address);    // mac64
-        existing->superceededby = 0;            // will be filled in when calculating columns
+        existing->supersededby = 0;            // will be filled in when calculating columns
 
         // dummy struct filled with unmatched values
         existing->name[0] = '\0';
@@ -593,7 +593,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         time(&existing->latest);
         existing->count++;
         // If we just saw it, it can't be superseeded by anyone else
-        existing->superceededby = 0;
+        existing->supersededby = 0;
     }
 
     // If after examining every key/value pair, distance has been set then we will send it
@@ -1543,7 +1543,7 @@ void dump_device(struct Device *d)
         }
     }
 
-    if (d->superceededby == 0)
+    if (d->supersededby == 0)
     {
         g_info("%4i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %13s %5.1fm %s", d->id % 10000, d->mac, d->count, addressType, d->distance, d->column, (d->earliest - started), (d->latest - started), d->name, closest_ap, closest_dist, category);
     }
