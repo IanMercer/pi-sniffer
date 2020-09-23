@@ -231,7 +231,8 @@ void add_closest(int64_t device_64, int access_id, time_t earliest,
     // First scan back, see if this is an update
     for (int j = closest_n; j >= 0; j--)
     {
-        if (closest[j].device_64 == device_64 && closest[j].access_id == access_id
+        if (closest[j].device_64 == device_64 
+            && closest[j].access_id == access_id
             && closest[j].supersededby != supersededby
             && closest[j].time == time)
         {
@@ -242,7 +243,7 @@ void add_closest(int64_t device_64, int access_id, time_t earliest,
             char to[18];
             mac_64_to_string(to, 18, supersededby);
 
-            g_debug("*** Received an UPDATE, changing %s superceded from %s to %s", mac, from, to);
+            g_debug("*** Received an UPDATE %i, changing %s superceded from %s to %s", access_id, mac, from, to);
             closest[j].supersededby = supersededby;
             return;
         }
@@ -253,12 +254,15 @@ void add_closest(int64_t device_64, int access_id, time_t earliest,
         //g_warning("****************** SHOULD NEVER COME HERE *********************");
         char mac[18];
         mac_64_to_string(mac, 18, device_64);
-        g_info("Removing %s from closest as it's superceeded", mac);
         for (int j = closest_n; j >= 0; j--)
         {
-            if (closest[j].device_64 == device_64)
+            if (closest[j].device_64 == device_64 && closest[j].access_id == access_id)
             {
-                closest[j].supersededby = supersededby;
+                if (closest[j].supersededby != supersededby)
+                {
+                    g_info("Removing %s from closest for %i as it's superceeded", mac, access_id);
+                    closest[j].supersededby = supersededby;
+                }
             }
         }
         // Could trim them from array (no, it might come back)
