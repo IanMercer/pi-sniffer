@@ -53,10 +53,11 @@ typedef uint64_t u_int64_t;
 struct Device
 {
    int id;
-   bool hidden;        // not seen by this access point (yet)
-   uint8_t ttl;        // time to live count down during removal process
-   char mac[18];       // mac address string
-   int64_t superceededby; // mac address of previous mac in same column
+   bool hidden;            // not seen by this access point (yet)
+   uint8_t ttl;            // time to live count down during removal process
+   char mac[18];           // mac address string
+   int64_t mac64;          // mac address (moving off string)
+   int64_t superceededby;  // mac address of previous mac in same column
    char name[NAME_LENGTH];
    char alias[NAME_LENGTH];
    int8_t addressType; // 0, 1, 2

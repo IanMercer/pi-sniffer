@@ -122,6 +122,8 @@ void pack_columns()
                 // Used to try to blend unknowns in with knowns but now we get category right 99.9% of the time, no longer necessary
                 bool haveDifferentCategories = (a->category != b->category); // && (a->category != CATEGORY_UNKNOWN) && (b->category != CATEGORY_UNKNOWN);
 
+                bool haveDifferentMacAndPublic = (a->addressType == PUBLIC_ADDRESS_TYPE && strcmp(a->mac, b->mac)!=0);
+
                 if (over || haveDifferentAddressTypes || haveDifferentNames || haveDifferentCategories)
                 {
                     b->column++;
@@ -528,11 +530,12 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
         // Grab the next empty item in the array
         existing = &state.devices[state.n++];
-        existing->id = id_gen++;               // unique ID for each
-        existing->ttl = 10;                    // arbitrary, set during countdown to ejection
-        existing->hidden = false;              // we own this one
-        g_strlcpy(existing->mac, address, 18); // address
-        existing->superceededby = 0;              // will be filled in when calculating columns
+        existing->id = id_gen++;                // unique ID for each
+        existing->ttl = 10;                     // arbitrary, set during countdown to ejection
+        existing->hidden = false;               // we own this one
+        g_strlcpy(existing->mac, address, 18);  // address
+        existing->mac64 = mac_string_to_int_64(address);    // mac64
+        existing->superceededby = 0;            // will be filled in when calculating columns
 
         // dummy struct filled with unmatched values
         existing->name[0] = '\0';
@@ -2025,8 +2028,8 @@ int main(int argc, char **argv)
     // Also clear starting flag
     g_timeout_add_seconds(29, dump_all_devices_tick, loop);
 
-    // Every 2s report devices by access point to InfluxDB
-    g_timeout_add_seconds(2, report_to_influx_tick, loop);
+    // Every 10s report devices by access point to InfluxDB
+    g_timeout_add_seconds(10, report_to_influx_tick, loop);
 
     // Every 5 min dump access point metadata
     g_timeout_add_seconds(301, print_access_points_tick, loop);
