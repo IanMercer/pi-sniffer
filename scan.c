@@ -124,7 +124,7 @@ void pack_columns()
 
                 bool haveDifferentMacAndPublic = (a->addressType == PUBLIC_ADDRESS_TYPE && strcmp(a->mac, b->mac)!=0);
 
-                if (over || haveDifferentAddressTypes || haveDifferentNames || haveDifferentCategories)
+                if (over || haveDifferentAddressTypes || haveDifferentNames || haveDifferentCategories || haveDifferentMacAndPublic)
                 {
                     b->column++;
                     changed = true;
