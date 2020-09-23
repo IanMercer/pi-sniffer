@@ -221,7 +221,7 @@ static void people_updated(GDBusConnection *conn,
 guint prop_changed;
 GMainLoop *loop;
 static char mac_address[6];       // bytes
-static char mac_address_text[13]; // string
+static char mac_address_text[18]; // string
 
 GCancellable *socket_service;
 

@@ -156,6 +156,7 @@ void pack_columns()
                 {
                     g_info("%s has been superceded by %s", earlier->mac, current->mac);
                     send_device_udp(&state, earlier);
+                    update_superceded(&state, earlier);
                 }
             }
             else if (state.devices[i].superceededby == mac64)
@@ -165,6 +166,7 @@ void pack_columns()
                 earlier->superceededby = 0;
                 g_info("%s IS NO LONGER superceded by %s", earlier->mac, current->mac);
                 send_device_udp(&state, earlier);
+                update_superceded(&state, earlier);
             }
         }
     }
@@ -1114,6 +1116,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             pack_columns();
             // only send when isUpdate is set, i.e. not for get all devices requests
             send_device_udp(&state, existing);
+            update_closest(&state, existing);
         }
     }
 
@@ -1902,7 +1905,7 @@ guint iface_added;
 guint iface_removed;
 GMainLoop *loop;
 static char mac_address[6];       // bytes
-static char mac_address_text[13]; // string
+static char mac_address_text[18]; // string
 
 GCancellable *socket_service;
 

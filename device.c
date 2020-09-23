@@ -45,9 +45,17 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
     optional_set(local->alias, remote->alias, NAME_LENGTH);
     soft_set_8(&local->addressType, remote->addressType);
 
-    if (remote->superceededby != 0 && local->superceededby == 0)
+    // If this is an update for an existing value update the superceded field
+    if (local->superceededby != remote->superceededby)
     {
-        local->superceededby = remote->superceededby;
+        if (difftime(remote->latest, local->latest) == 0 || safe)
+        {
+            local->superceededby = remote->superceededby;
+        }
+        else
+        {
+            g_warning("Did not update superceded");
+        }
     }
 
     if (remote->category != CATEGORY_UNKNOWN)
@@ -241,6 +249,8 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
     if (cJSON_IsString(mac) && (mac->valuestring != NULL))
     {
         strncpy(device->mac, mac->valuestring, 18);
+        int64_t mac64 = mac_string_to_int_64(mac->valuestring);
+        device->mac64 = mac64;
     }
 
     cJSON *name = cJSON_GetObjectItemCaseSensitive(djson, "name");

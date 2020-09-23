@@ -225,9 +225,10 @@ void get_mac_address(char* access_point_address)
 */
 void mac_address_to_string(char* output, int length, char* access_point_address)
 {
-    snprintf(output, length, "%.2x%.2x%.2x%.2x%.2x%.2x", access_point_address[0], access_point_address[1],
+    if (length != 18) g_error("Length must be 18");
+    snprintf(output, length, "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x", access_point_address[0], access_point_address[1],
         access_point_address[2], access_point_address[3], access_point_address[4], access_point_address[5]);
-    output[12] = '\0';
+    output[18] = '\0';
 }
 
 /*
@@ -274,7 +275,7 @@ void append_text(char* buffer, int length, char* format, ...)
 {
     char* pos = buffer;
     int count = 0;
-    while (*pos != '\0' && count++<length) pos++;
+    while (*pos != '\0' && ++count<length) pos++;
     if (count < length)
     {
         va_list argptr;

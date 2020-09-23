@@ -146,8 +146,11 @@ struct ClosestTo
    float distance;
    // category of the device
    int8_t category;
+   // Earliest for this mac on this access point
+   time_t earliest;
    // When was this observation received
    time_t time;
+   // Remove this, cannot go retroactive on sending data
    // Superceeded by another: i.e. access_id has seen this mac address
    // in a column more recently than this one that it superceeds
    int64_t superceededby;
