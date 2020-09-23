@@ -201,24 +201,22 @@ static struct ClosestTo closest[CLOSEST_N];
 /*
    Mark as superceeded
 */
-void mark_superceeded(int64_t device_64, int64_t supersededby)
+void mark_superceeded(int access_id, int64_t device_64, int64_t supersededby)
 {
     if (supersededby != 0)
     {
         char mac[18];
         mac_64_to_string(mac, 18, device_64);
-        g_debug("Removing %s from closest as it's superceeded", mac);
+        char by[18];
+        mac_64_to_string(by, 18, supersededby);
+        g_debug("Marking %s in closest as superseded by %s", mac, by);
         for (int j = closest_n; j >= 0; j--)
         {
-            if (closest[j].device_64 == device_64)
+            if (closest[j].access_id == access_id && closest[j].device_64 == device_64)
             {
                 closest[j].supersededby = supersededby;
             }
         }
-        // Could trim them from array
-
-        // Need to report this right away
-
         return;
     }
 }
@@ -366,12 +364,13 @@ void print_counts_by_closest()
 
                 // Is this a better match than the current one?
                 int time_diff = difftime(test->time, other->time);
+                int abs_diff = difftime(now, other->time);
                 // Should always be +ve as we are scanning back in time
 
                 float distance_dilution = time_diff / 10.0;  // 0.1 m/s  1.4m/s human speed
-
                 // e.g. test = 10.0m, current = 3.0m, 30s ago => 3m
-                if (time_diff < 30)  // only interested in where it is now
+
+                if (abs_diff < 60)  // only interested in where it is now
                 {
                     struct AccessPoint *ap2 = get_access_point(other->access_id);
                     //g_debug("    %12s distance %5.1fm dt=%3is count=%3i", ap2->client_id, other->distance, time_diff, other->count);
@@ -421,10 +420,16 @@ void print_counts_by_closest()
             // g_debug("   %s %s is at %16s for %3is at %4.1fm score=%.1f count=%i%s", mac, category, ap->client_id, delta_time, test->distance, score,
             //     count, test->distance > 7.5 ? " * TOO FAR *": "");
 
-            if (test->distance < 7.5)
+            if (test->supersededby != 0)
             {
                 g_debug(" ");
-                g_info("%s Cluster %s (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.1f", mac, category, -earliest, -delta_time, -age, count, score);
+                g_info("%s Superseded %s (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.1f", mac, category, -earliest, -delta_time, -age, count, score);
+                g_info("  %s", json);
+            }
+            else if (test->distance < 7.5)
+            {
+                g_debug(" ");
+                g_info("%s Cluster %s (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.1f dist=%.1f", mac, category, -earliest, -delta_time, -age, count, score, test->distance);
                 g_info("  %s", json);
 
                 total_count += score;
@@ -604,7 +609,7 @@ void *listen_loop(void *param)
                     {
                         // remove from closest
                         int64_t id_64 = mac_string_to_int_64(d.mac);
-                        mark_superceeded(id_64, d.supersededby);
+                        mark_superceeded(a.id, id_64, d.supersededby);
                     }
                     else 
                     {
