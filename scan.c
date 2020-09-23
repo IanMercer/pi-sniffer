@@ -144,25 +144,25 @@ void pack_columns()
         int64_t mac64 = mac_string_to_int_64(state.devices[i].mac);
         for (int j = i - 1; j >= 0; j--)
         {
-            struct Device* other = &state.devices[j];
+            struct Device* earlier = &state.devices[j];
 
-            if (current->column == other->column)
+            if (current->column == earlier->column)
             {
-                bool send_update = (state.devices[j].superceededby == 0);
-                other->superceededby = mac64;
+                bool send_update = (earlier->superceededby == 0);
+                earlier->superceededby = mac64;
                 if (send_update)
                 {
-                    g_info("%s has been superceded by %s", other->mac, current->mac);
-                    send_device_udp(&state, other);
+                    g_info("%s has been superceded by %s", earlier->mac, current->mac);
+                    send_device_udp(&state, earlier);
                 }
             }
             else if (state.devices[i].superceededby == mac64)
             {
                 // Not in same column but has a superceededby value
                 // This device used to be superceeded by the new one, but now we know it isn't
-                other->superceededby = 0;
-                g_info("%s IS NO LONGER superceded by %s", other->mac, current->mac);
-                send_device_udp(&state, other);
+                earlier->superceededby = 0;
+                g_info("%s IS NO LONGER superceded by %s", earlier->mac, current->mac);
+                send_device_udp(&state, earlier);
             }
         }
     }
@@ -327,7 +327,7 @@ void report_devices_count()
             if (columns[col].distance < 0.01)
                 continue; // not allocated
 
-            double delta_time = difftime(now, columns[col].latest);
+            int delta_time = difftime(now, columns[col].latest);
             if (delta_time > MAX_TIME_AGO_COUNTING_MINUTES * 60)
                 continue;
 
@@ -373,7 +373,7 @@ void report_devices_count()
         if (columns[col].distance < 0.01)
             continue; // not allocated
 
-        double delta_time = difftime(now, columns[col].latest);
+        int delta_time = difftime(now, columns[col].latest);
         if (delta_time > MAX_TIME_AGO_COUNTING_MINUTES * 60)
             continue;
 
@@ -713,7 +713,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             // 10s with distance change of 1m triggers send
             // 1s with distance change of 10m triggers send
 
-            double delta_time_sent = difftime(now, existing->last_sent);
+            int delta_time_sent = difftime(now, existing->last_sent);
             double delta_v = fabs(existing->distance - averaged);
             double score = delta_v * delta_time_sent;
 
@@ -726,7 +726,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             }
             else
             {
-                g_debug("  %s Skip sending rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
+                g_debug("  %s Skip sending rssi=%i dist=%.1fm, delta v=%.1fm t=%is score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
             }
         }
         else if (strcmp(property_name, "TxPower") == 0)
@@ -1439,7 +1439,7 @@ gboolean should_remove(struct Device *existing)
     time_t now;
     time(&now);
 
-    double delta_time = difftime(now, existing->latest);
+    int delta_time = difftime(now, existing->latest);
 
     // 2 min for a regular device
     int max_time_ago_seconds = 2 * 60;

@@ -98,6 +98,7 @@ struct cache_item
 {
     char name[80];
     double value;
+    time_t time;
 };
 
 static int cache_count = 0;
@@ -105,15 +106,20 @@ static struct cache_item cache[CACHE_TOPICS];
 
 void post_to_influx(struct OverallState* state, const char* topic, double value, time_t timestamp)
 {
-   if (state->influx_server == NULL || strlen(state->influx_server) == 0) return;
+    if (state->influx_server == NULL || strlen(state->influx_server) == 0) return;
+
+    time_t now;
+    time(&now);
 
     gboolean found = FALSE;
     for (int i = 0; i < cache_count; i++)
     {
         if (strcmp(cache[i].name, topic) == 0)
         {
-            if (fabs(cache[i].value - value) < 0.1) return;
+            int age = difftime(now, cache[i].time);
+            if (fabs(cache[i].value - value) < 0.1 && age < 30) return;
             cache[i].value = value;
+            time(&cache[i].time);
             found = TRUE;
             break;
         }
@@ -122,6 +128,7 @@ void post_to_influx(struct OverallState* state, const char* topic, double value,
     {
         strncpy((char*)&cache[cache_count].name, topic, 80);
         cache[cache_count].value = value;
+        time(&cache[cache_count].time);
         cache_count++;
     }
 
