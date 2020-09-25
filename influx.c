@@ -101,54 +101,31 @@ struct cache_item
     time_t time;
 };
 
-static int cache_count = 0;
-static struct cache_item cache[CACHE_TOPICS];
 
-void post_to_influx(struct OverallState* state, const char* topic, double value, time_t timestamp)
+/*
+   Append an Influx line message
+*/
+void append_influx_line(struct OverallState* state, char* line, int line_length,  const char* group, const char* topic, double value, time_t timestamp)
 {
-    if (state->influx_server == NULL || strlen(state->influx_server) == 0) return;
-
-    time_t now;
-    time(&now);
-
-    gboolean found = FALSE;
-    for (int i = 0; i < cache_count; i++)
-    {
-        if (strcmp(cache[i].name, topic) == 0)
-        {
-            int age = difftime(now, cache[i].time);
-            if (fabs(cache[i].value - value) < 0.1 && age < 30) return;
-            cache[i].value = value;
-            time(&cache[i].time);
-            found = TRUE;
-            break;
-        }
-    }
-    if (!found && cache_count < CACHE_TOPICS)
-    {
-        strncpy((char*)&cache[cache_count].name, topic, 80);
-        cache[cache_count].value = value;
-        time(&cache[cache_count].time);
-        cache_count++;
-    }
-
-    char body[BUFSIZE];
-
     /* InfluxDB line protocol note:
         measurement name
         tag is host=... - multiple tags separate with comma
         data is key value
         ending epoch time missing (3 spaces) so InfluxDB generates the timestamp */
     /* InfluxDB line protocol note: ending epoch time missing so InfluxDB greates it */
-    sprintf(body, "people,host=%s,from=%s %s=%.3f %lu000000000\n",
+    int existing_length = strlen(line);
+
+    snprintf(line+existing_length, line_length-existing_length, "%s,host=%s,from=%s %s=%.3f %lu000000000\n",
+        group,                    // A group of rooms
         topic,                    // access point name
         state->local->client_id,  // from = client_id
         "count", value,           // count = value
         timestamp);               // nanosecond timestamp
+}
 
-    //g_debug("%s", body);
-    int len = strlen(body);
-
-    post_to_influx_body(state, body, len);
-    g_info("Posted %s:%.2f to influxdb: %s", topic, value, body);
+void post_to_influx(struct OverallState* state, char* body, int body_length)
+{
+    if (state->influx_server == NULL || strlen(state->influx_server) == 0) return;
+    post_to_influx_body(state, body, body_length);
+    //g_info("Posted %s", body);
 }

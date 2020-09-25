@@ -39,7 +39,6 @@
 static bool isAzure;      // Azure is 'limited' in what it can handle
 static char* topicRoot;
 static char* topicSuffix; // required by Azure
-static char access_point_address[6];
 static char* access_point_name;
 static char* username;
 static char* password;
@@ -333,7 +332,6 @@ static bool isMQTTEnabled = false;
 
 void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* access_name, 
                 char* service_name,
-                char* mac_address,
                 char* user, char* pass)
 {
     username = user;
@@ -364,7 +362,6 @@ void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* access_name,
       exit(-24);
     }
 
-    memcpy(&access_point_address, mac_address, 6);
     access_point_name = strdup(access_name);
 
     // Construct a client_id consisting of the access_point name plus a service name

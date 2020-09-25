@@ -20,6 +20,7 @@
 #include "bluetooth.h"
 #include "heuristics.h"
 #include "influx.h"
+#include "rooms.h"
 
 #define G_LOG_USE_STRUCTURED 1
 #include <glib.h>
@@ -398,11 +399,10 @@ void report_devices_count()
     {
         state.local->people_closest_count = people_closest;
         state.local->people_in_range_count = people_in_range;
-        g_info("People count = %.2f (%.2f in range)\n", people_closest, people_in_range);
+        g_info("Local people count = %.2f (%.2f in range)\n", people_closest, people_in_range);
 
         // And send access point to everyone over UDP
         send_access_point_udp(&state);
-
     }
 
 // TEST TEST TEST TEST
@@ -1553,32 +1553,37 @@ void dump_device(struct Device *d)
     }
 }
 
-/*
-   Send to influx db
-*/
-void send_to_influx(struct AccessPoint* ap, void* extra)
-{
-    time_t t = *(time_t*)extra;
-    post_to_influx(&state, ap->client_id, ap->people_closest_count, t);
-}
 
 /*
     Report access point counts to InfluxDB
 */
 int report_to_influx_tick(void *parameters)
 {
+    (void)parameters;
+
     if (strlen(state.influx_server)==0) return FALSE;  // no need to keep calling this, remove from loop
 
-    (void)parameters;
-    print_counts_by_closest();
+    double room_totals[state.room_count];
+
+    print_counts_by_closest(state.rooms, state.room_count, room_totals);
+
+    //g_debug("Send to influx");
 
     if (state.network_up && !starting)
     {
-        // TODO: Make this a single Influx message
-        time_t now = time(0);
-        access_points_foreach(&send_to_influx, &now);
-    }
+        char body[4096];
+        body[0] = '\0';
 
+        time_t now = time(0);
+        for (int i=0; i < state.room_count; i++)
+        {
+            struct room* r = state.rooms[i];
+            append_influx_line(&state, body, sizeof(body), r->group, r->name, room_totals[i], now);
+        }
+        //g_debug("%s", body);
+        post_to_influx(&state, body, strlen(body));
+
+    }
     return TRUE;
 }
 
@@ -1685,7 +1690,7 @@ gboolean try_connect(struct Device *a)
 {
     // If we already have a category and a non-temporary name
     if (a->category != CATEGORY_UNKNOWN && strncmp(a->name, "_", 1) != 0)
-        return FALSE; // already has a category
+        return FALSE; // already has a category and a name
 
     // Don't attempt connection until a device is close enough, or has been seen enough
     // otherwise likely to fail for a transient device at 12.0+m
@@ -1869,6 +1874,8 @@ void initialize_state()
         if (strcmp(verbosity, "distances")) state.verbosity = Distances;
         if (strcmp(verbosity, "details")) state.verbosity = Details;
     }
+   
+    state.rooms = get_rooms(&state.room_count);
 }
 
 void display_state()
@@ -1898,14 +1905,14 @@ void display_state()
     g_info("INFLUX_DATABASE='%s'", state.influx_database);
     g_info("INFLUX_USERNAME='%s'", state.influx_username);
     g_info("INFLUX_PASSWORD='%s'", state.influx_password == NULL ? "(null)" : "*****");
+
+    g_info("ROOMS:%i", state.room_count);
 }
 
 guint prop_changed;
 guint iface_added;
 guint iface_removed;
 GMainLoop *loop;
-static char mac_address[6];       // bytes
-static char mac_address_text[18]; // string
 
 GCancellable *socket_service;
 
@@ -1916,7 +1923,7 @@ int main(int argc, char **argv)
 
     if (pthread_mutex_init(&state.lock, NULL) != 0)
     {
-        printf("\n mutex init failed\n");
+        g_error("mutex init failed");
         exit(123);
     }
 
@@ -1927,17 +1934,12 @@ int main(int argc, char **argv)
 
     if (argc < 1)
     {
-        g_print("Bluetooth scanner\n");
-        g_print("   scan\n");
-        g_print("   but first set all the environment variables according to README.md");
-        g_print("For Azure you must use ssl:// and :8833\n");
+        g_info("Bluetooth scanner\n");
+        g_info("   scan\n");
+        g_info("   but first set all the environment variables according to README.md");
+        g_info("For Azure you must use ssl:// and :8833\n");
         return -1;
     }
-
-    g_debug("Get mac address\n");
-    get_mac_address(mac_address);
-    mac_address_to_string(mac_address_text, sizeof(mac_address_text), mac_address);
-    g_info("Local MAC address is: %s\n", mac_address_text);
 
     // Create a UDP listener for mesh messages about devices connected to other access points in same LAN
     socket_service = create_socket_service(&state);
@@ -2014,7 +2016,7 @@ int main(int argc, char **argv)
     prepare_mqtt(state.mqtt_server, state.mqtt_topic, 
         state.local->client_id, 
         "",  // no suffix on client id for MQTT
-        mac_address, state.mqtt_username, state.mqtt_password);
+        state.mqtt_username, state.mqtt_password);
 
     // Periodically ask Bluez for every device including ones that are long departed
     // but only do updates to devices we have seen, do no not create a device for each

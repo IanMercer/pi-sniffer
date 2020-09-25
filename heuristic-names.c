@@ -43,9 +43,9 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_WEARABLE;
     else if (string_starts_with(name, "fenix"))
         existing->category = CATEGORY_WEARABLE;
-    else if (strncmp(name, "Ionic", 5) == 0)
+    else if (string_starts_with(name, "Ionic"))
         existing->category = CATEGORY_WEARABLE; // FITBIT
-    else if (strncmp(name, "Versa", 5) == 0)
+    else if (string_starts_with(name, "Versa"))
         existing->category = CATEGORY_WEARABLE; // FITBIT
     else if (string_starts_with(name, "Charge "))  //  Charge 2, 3, 4
         existing->category = CATEGORY_WEARABLE; // FITBIT
@@ -68,55 +68,55 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     else if (string_starts_with(name, "Alta HR"))
         existing->category = CATEGORY_WEARABLE; // Fitbit Alta Heartrate
 
-    else if (string_starts_with(name, "RS507 "))
-        existing->category = CATEGORY_WEARABLE; // Ring barcode scanner
-
     // FIXED
-    else if (strncmp(name, "Tacx Neo 2T", 4) == 0)
-        existing->category = CATEGORY_FIXED; // Bike trainer
-    else if (strncmp(name, "SCHWINN 170/270", 4) == 0)
-        existing->category = CATEGORY_FIXED; // Bike trainer
-        
-    else if (strncmp(name, "MOLEKULE", 8) == 0)
-        existing->category = CATEGORY_FIXED; // Air filter
-    else if (strncmp(name, "Nest Cam", 8) == 0)
-        existing->category = CATEGORY_FIXED; // Camera
-    else if (strncmp(name, "Seos", 4) == 0)
-        existing->category = CATEGORY_FIXED; // Credential technology
+    else if (string_starts_with(name, "Tacx Neo 2T"))
+        existing->category = CATEGORY_FITNESS; // Bike trainer
+    else if (string_starts_with(name, "SCHWINN 170/270"))
+        existing->category = CATEGORY_FITNESS; // Bike trainer
+    else if (string_starts_with(name, "HT SANA"))
+        existing->category = CATEGORY_FITNESS; // Massage chair
+    else if (string_starts_with(name, "MOLEKULE"))
+        existing->category = CATEGORY_APPLIANCE; // Air filter
+
+
+    else if (string_starts_with(name, "Nest Cam"))
+        existing->category = CATEGORY_SECURITY; // Camera
+    else if (string_starts_with(name, "Seos"))
+        existing->category = CATEGORY_SECURITY; // Credential technology
+    else if (string_starts_with(name, "SCHLAGE"))
+        existing->category = CATEGORY_SECURITY; // Smart door lock?
+    else if (string_starts_with(name, "WYZE"))
+        existing->category = CATEGORY_SECURITY; // Smart door lock?
+
     else if (string_starts_with(name, "LEDBlue"))
         existing->category = CATEGORY_FIXED; // RGB LED controller
     else if (string_starts_with(name, "ELK-BLEDOM"))
-        existing->category = CATEGORY_FIXED; // RGB LED controller
+        existing->category = CATEGORY_LIGHTING; // RGB LED controller
     else if (string_starts_with(name, "SP110E"))
-        existing->category = CATEGORY_FIXED; // RGB LED controller
-    else if (string_starts_with(name, "SCHLAGE"))
-        existing->category = CATEGORY_FIXED; // Smart door lock?
-    else if (string_starts_with(name, "WYZE"))
-        existing->category = CATEGORY_FIXED; // Smart door lock?
+        existing->category = CATEGORY_LIGHTING; // RGB LED controller
+
     else if (string_starts_with(name, "bhyve"))
     {
-        existing->category = CATEGORY_FIXED; // Sprinkler controller
+        existing->category = CATEGORY_SPRINKLERS; // Sprinkler controller
     }
+
+    // LIGHTING
+
+    else if (string_starts_with(name, "Feit Bulb"))
+        existing->category = CATEGORY_LIGHTING;
+    else if (string_starts_with(name, "Triones"))
+        existing->category = CATEGORY_LIGHTING;
     else if (string_starts_with(name, "Evluma"))
-    {
-        existing->category = CATEGORY_FIXED; // Evluma AMAX lighting controller
-    }
+        existing->category = CATEGORY_LIGHTING; // Evluma AMAX lighting controller
     else if (string_starts_with(name, "ihoment_H"))
-    {
-        existing->category = CATEGORY_FIXED; // LED light strip controller
-    }
+        existing->category = CATEGORY_LIGHTING; // LED light strip controller
+
+    // APPLIANCE
+
     else if (string_starts_with(name, "BEDJET"))
-        existing->category = CATEGORY_FIXED; // Bed temperature controller!
+        existing->category = CATEGORY_APPLIANCE; // Bed temperature controller!
     else if (string_starts_with(name, "[Refrigerator] Samsung"))
-        existing->category = CATEGORY_FIXED; // Fridge!
-    else if (string_starts_with(name, "eDynamo"))
-        existing->category = CATEGORY_FIXED; // Credit card reader
-    else if (string_starts_with(name, "Square Reader"))
-        existing->category = CATEGORY_FIXED; // Credit card reader
-    else if (string_starts_with(name, "Self Checkout"))
-        existing->category = CATEGORY_FIXED; // Self-checkout terminal
-    else if (string_starts_with(name, "TJQLJ"))
-        existing->category = CATEGORY_FIXED; // Checkout? or beacon in TJMAX store
+        existing->category = CATEGORY_APPLIANCE; // Fridge!
 
     // TVs
     else if (strcmp(name, "AppleTV") == 0)
@@ -124,6 +124,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     else if (strcmp(name, "Apple TV") == 0)
         existing->category = CATEGORY_TV;
     else if (string_starts_with(name, "HiSmart"))       // HiSmart[TV] 2k ...
+        existing->category = CATEGORY_TV;
+    else if (string_starts_with(name, "XBR-"))          // Sony TV 
         existing->category = CATEGORY_TV;
     else if (string_starts_with(name, "BRAVIA"))        // Sony Bravia TVs, VU1
         existing->category = CATEGORY_TV;
@@ -169,16 +171,21 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_HEADPHONES;  //LE_WH-H900N (h.ear)
     else if (string_starts_with(name, "Bose AE2 SoundLink"))
         existing->category = CATEGORY_HEADPHONES;
-    else if (string_starts_with(name, "DSW229Dynamo 1100X"))
-        existing->category = CATEGORY_HEADPHONES;   // Subwoofer
-    else if (string_starts_with(name, "DSW227Dynamo 600X"))
-        existing->category = CATEGORY_HEADPHONES;   // Subwoofer
+    else if (string_starts_with(name, "Sparkle Motion"))
+        existing->category = CATEGORY_HEADPHONES;
     else if (string_contains_insensitive(name, "headphone"))
-        existing->category = CATEGORY_HEADPHONES;   // Subwoofer
+        existing->category = CATEGORY_HEADPHONES;
+
+    // SPEAKERS
+
+    else if (string_starts_with(name, "DSW229Dynamo 1100X"))
+        existing->category = CATEGORY_SPEAKERS;   // Subwoofer
+    else if (string_starts_with(name, "DSW227Dynamo 600X"))
+        existing->category = CATEGORY_SPEAKERS;   // Subwoofer
     else if (string_starts_with(name, "LHB-"))
-        existing->category = CATEGORY_HEADPHONES;   // LG Soundbar?
+        existing->category = CATEGORY_SPEAKERS;   // LG Soundbar?
     else if (string_starts_with(name, "HTC BS"))
-        existing->category = CATEGORY_HEADPHONES;   // Conference speaker
+        existing->category = CATEGORY_SPEAKERS;   // Conference speaker
 
     // BT Speakers
     else if (string_starts_with(name, "Venue-Tile"))
@@ -206,6 +213,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_TV;
     else if (string_starts_with(name, "SONY XBR"))
         existing->category = CATEGORY_TV;
+    else if (string_starts_with(name, "Chromecast"))
+        existing->category = CATEGORY_TV;
 
     // Receivers
     else if (string_starts_with(name, "YamahaAV"))
@@ -213,9 +222,9 @@ void apply_name_heuristics (struct Device* existing, const char* name)
 
     // Printers
     else if (string_starts_with(name, "ENVY Photo"))
-        existing->category = CATEGORY_FIXED; // printer
+        existing->category = CATEGORY_PRINTER; // printer
     else if (string_starts_with(name, "Sony UP-DX"))
-        existing->category = CATEGORY_FIXED; // printer Sony UP-DX100
+        existing->category = CATEGORY_PRINTER; // printer Sony UP-DX100
 
     // Accessories
     else if (string_starts_with(name, "Apple Pencil"))
@@ -223,21 +232,32 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     else if (string_starts_with(name, "SPEN 02"))
         existing->category = CATEGORY_FIXED;  // Not really fixed WACOM
 
-    // POS Terminals
+    // POS
+
+    else if (string_starts_with(name, "eDynamo"))
+        existing->category = CATEGORY_POS; // Credit card reader
+    else if (string_starts_with(name, "Square Reader"))
+        existing->category = CATEGORY_POS; // Credit card reader
+    else if (string_starts_with(name, "Self Checkout"))
+        existing->category = CATEGORY_POS; // Self-checkout terminal
+    else if (string_starts_with(name, "TJQLJ"))
+        existing->category = CATEGORY_POS; // Checkout? or beacon in TJMAX store
+    else if (string_starts_with(name, "RS507 "))
+        existing->category = CATEGORY_POS; // Ring barcode scanner
     else if (string_starts_with(name, "Tap & Chip"))
-        existing->category = CATEGORY_FIXED;  // Shopify tap & chip reader
+        existing->category = CATEGORY_POS;  // Shopify tap & chip reader
     else if (string_starts_with(name, "*MOB85"))
-        existing->category = CATEGORY_FIXED;  // POS
+        existing->category = CATEGORY_POS;  // POS
     else if (string_starts_with(name, "PayRange"))
-        existing->category = CATEGORY_FIXED;  // POS
+        existing->category = CATEGORY_POS;  // POS
     else if (string_starts_with(name, "Bluesnap"))
-        existing->category = CATEGORY_FIXED;  // POS
+        existing->category = CATEGORY_POS;  // POS
     else if (string_starts_with(name, "IBM"))
-        existing->category = CATEGORY_FIXED;  // POS
+        existing->category = CATEGORY_POS;  // POS
     else if (string_starts_with(name, "NWTR040"))
-        existing->category = CATEGORY_FIXED;  // POS
+        existing->category = CATEGORY_POS;  // POS
     else if (string_starts_with(name, "XXZKJ"))
-        existing->category = CATEGORY_FIXED;  // Taiyo Yuden module Beacon? Other?
+        existing->category = CATEGORY_POS;  // Taiyo Yuden module Beacon? Other?
 
     // Cars
     else if (string_starts_with(name, "Audi"))
@@ -256,6 +276,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_CAR; // Uber's dashboard display
     else if (string_starts_with(name, "Lyft Amp"))
         existing->category = CATEGORY_CAR; // Lyft's dashboard display
+    else if (string_starts_with(name, "LMU3030_BT"))
+        existing->category = CATEGORY_CAR; // OBD-II monitor
     else if (string_starts_with(name, "Scosche BTFM4"))
         existing->category = CATEGORY_CAR; // Handsfree car kit
     else if (strncmp(name, "Land Rover", 10) == 0)

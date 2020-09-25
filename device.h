@@ -3,6 +3,7 @@
 
 #define G_LOG_USE_STRUCTURED 1
 
+#include "rooms.h"
 #include "kalman.h"
 #include <pthread.h>
 #include <string.h>
@@ -36,6 +37,15 @@ typedef uint64_t u_int64_t;
 #define CATEGORY_BEACON 8
 #define CATEGORY_CAR 9
 #define CATEGORY_AUDIO_CARD 10
+#define CATEGORY_LIGHTING 11
+#define CATEGORY_SPRINKLERS 12
+#define CATEGORY_POS 13
+#define CATEGORY_APPLIANCE 14   // fridge, bed, air filter, ...
+#define CATEGORY_SECURITY 15    // NestCam etc.
+#define CATEGORY_FITNESS 16    // Bikes, bike trainers, ergos, ...
+#define CATEGORY_PRINTER 17
+#define CATEGORY_SPEAKERS 18
+
 
 // Max allowed length of names and aliases (plus 1 for null)
 #define NAME_LENGTH 21
@@ -212,6 +222,9 @@ struct OverallState
    char* influx_database;
    char* influx_username;
    char* influx_password;
+
+   struct room** rooms;
+   int room_count;
 };
 
 #endif

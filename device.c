@@ -10,9 +10,12 @@
 
 // These must be in same order as enum values
 char* categories[] = { "unknown", "phone", "wearable", "tablet", "headphones", "computer", 
-    "tv", "fixed", "beacon", "car", "audio" };
+    "tv", "fixed", "beacon", "car", "audio", "lighting", "sprinklers", "sales", "appliance", "security", "fitness", "printer",
+    "speakers" };
+
 int category_values[] = { CATEGORY_UNKNOWN, CATEGORY_PHONE, CATEGORY_WEARABLE, CATEGORY_TABLET, CATEGORY_HEADPHONES, CATEGORY_COMPUTER, 
-    CATEGORY_TV, CATEGORY_FIXED, CATEGORY_BEACON, CATEGORY_CAR, CATEGORY_AUDIO_CARD };
+    CATEGORY_TV, CATEGORY_FIXED, CATEGORY_BEACON, CATEGORY_CAR, CATEGORY_AUDIO_CARD, CATEGORY_LIGHTING, CATEGORY_SPRINKLERS, CATEGORY_POS, 
+    CATEGORY_APPLIANCE, CATEGORY_SECURITY, CATEGORY_FITNESS, CATEGORY_PRINTER, CATEGORY_SPEAKERS };
 
 int category_to_int(char* category)
 {
@@ -113,7 +116,7 @@ char* access_point_to_json (struct AccessPoint* a)
     cJSON_AddNumberToObject(j, "people_closest_count", a->people_closest_count);
     cJSON_AddNumberToObject(j, "people_in_range_count", a->people_in_range_count);
 
-    string = cJSON_Print(j);
+    string = cJSON_PrintUnformatted(j);
     cJSON_Delete(j);
     return string;
 }
@@ -166,7 +169,7 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     cJSON_AddNumberToObject(j, "column", device->column);
     cJSON_AddNumberToObject(j, "try_connect_state", device->try_connect_state);
 
-    string = cJSON_Print(j);
+    string = cJSON_PrintUnformatted(j);
     cJSON_Delete(j);
     return string;
 }

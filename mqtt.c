@@ -220,8 +220,6 @@ static void people_updated(GDBusConnection *conn,
 
 guint prop_changed;
 GMainLoop *loop;
-static char mac_address[6];       // bytes
-static char mac_address_text[18]; // string
 
 GCancellable *socket_service;
 
@@ -250,11 +248,6 @@ int main(int argc, char **argv)
         g_print("   but first set all the environment variables according to README.md");
         return -1;
     }
-
-    g_debug("Get mac address\n");
-    get_mac_address(mac_address);
-    mac_address_to_string(mac_address_text, sizeof(mac_address_text), mac_address);
-    g_info("Local MAC address is: %s\n", mac_address_text);
 
     // Create a UDP listener for mesh messages about devices connected to other access points in same LAN
     //socket_service = create_socket_service(&state);
@@ -286,7 +279,7 @@ int main(int argc, char **argv)
 
     prepare_mqtt(state.mqtt_server, state.mqtt_topic, 
         state.local->client_id, "-mqtt", 
-        mac_address, state.mqtt_username, state.mqtt_password);
+        state.mqtt_username, state.mqtt_password);
 
     // MQTT send
     //g_timeout_add_seconds(5, mqtt_refresh, loop);

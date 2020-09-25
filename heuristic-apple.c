@@ -10,7 +10,9 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     uint8_t apple_device_type = allocdata[00];
     if (apple_device_type == 0x01)
     {
+        // An iMac causes this
         g_info("  %s '%s' Apple Device type 0x01 - what is this?", existing->mac, existing->name);
+
     }
     else if (apple_device_type == 0x02)
     {

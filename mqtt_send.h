@@ -19,7 +19,7 @@
 
 void exit_mqtt();
 
-void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* access_name, char* service_name, char* mac_address, char* username, char* password);
+void prepare_mqtt(char *mqtt_uri, char *mqtt_topicRoot, char* access_name, char* service_name, char* username, char* password);
 
 void send_to_mqtt_null(char *mac_address, char *key);
 
