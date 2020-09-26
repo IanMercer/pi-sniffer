@@ -141,7 +141,7 @@ void pack_columns()
     {
         struct Device* current = &state.devices[i];
 
-        // Can't mark superceeded until we know for sure it's a phone etc.
+        // Can't mark superseded until we know for sure it's a phone etc.
         if (current->category == CATEGORY_UNKNOWN) continue;
 
         int64_t mac64 = mac_string_to_int_64(state.devices[i].mac);
@@ -155,19 +155,19 @@ void pack_columns()
                 earlier->supersededby = mac64;
                 if (send_update)
                 {
-                    g_info("%s has been superceded by %s", earlier->mac, current->mac);
+                    g_info("%s has been superseded by %s", earlier->mac, current->mac);
                     send_device_udp(&state, earlier);
-                    update_superceded(&state, earlier);
+                    update_superseded(&state, earlier);
                 }
             }
             else if (state.devices[i].supersededby == mac64)
             {
                 // Not in same column but has a supersededby value
-                // This device used to be superceeded by the new one, but now we know it isn't
+                // This device used to be superseded by the new one, but now we know it isn't
                 earlier->supersededby = 0;
-                g_info("%s IS NO LONGER superceded by %s", earlier->mac, current->mac);
+                g_info("%s IS NO LONGER superseded by %s", earlier->mac, current->mac);
                 send_device_udp(&state, earlier);
-                update_superceded(&state, earlier);
+                update_superseded(&state, earlier);
             }
         }
     }

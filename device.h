@@ -161,8 +161,8 @@ struct ClosestTo
    // When was this observation received
    time_t time;
    // Remove this, cannot go retroactive on sending data
-   // Superceeded by another: i.e. access_id has seen this mac address
-   // in a column more recently than this one that it superceeds
+   // Superseded by another: i.e. access_id has seen this mac address
+   // in a column more recently than this one that it superseeds
    int64_t supersededby;
    // mark and sweep flag
    bool mark;

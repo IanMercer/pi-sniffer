@@ -229,9 +229,9 @@ static uint closest_n = 0;
 static struct ClosestTo closest[CLOSEST_N];
 
 /*
-   Mark as superceeded
+   Mark as superseeded
 */
-void mark_superceeded(int access_id, int64_t device_64, int64_t supersededby)
+void mark_superseded(int access_id, int64_t device_64, int64_t supersededby)
 {
     if (supersededby != 0)
     {
@@ -275,7 +275,7 @@ void add_closest(int64_t device_64, char* client_id, int access_id, time_t earli
             char to[18];
             mac_64_to_string(to, 18, supersededby);
 
-            g_debug("*** Received an UPDATE %i, changing %s superceded from %s to %s", access_id, mac, from, to);
+            g_debug("*** Received an UPDATE %i, changing %s superseded from %s to %s", access_id, mac, from, to);
             closest[j].supersededby = supersededby;
             return;
         }
@@ -292,7 +292,7 @@ void add_closest(int64_t device_64, char* client_id, int access_id, time_t earli
             {
                 if (closest[j].supersededby != supersededby)
                 {
-                    g_info("Removing %s from closest for %i as it's superceeded", mac, access_id);
+                    g_info("Removing %s from closest for %i as it's superseded", mac, access_id);
                     closest[j].supersededby = supersededby;
                 }
             }
@@ -452,13 +452,17 @@ void print_counts_by_closest(struct room* rooms[], int room_count, double* room_
     access_points_foreach(&set_count_to_zero, NULL);
 
     g_info(" ");
-    g_info("COUNTS");
+    g_info("COUNTS (closest contains %i)", closest_n);
     time_t now = time(0);
 
     for (int i = closest_n - 1; i >= 0; i--)
     {
         closest[i].mark = false;
     }
+
+    int count_examined = 0;
+    int count_not_marked = 0;
+    int count_in_age_range = 0;
 
     for (int i = closest_n - 1; i >= 0; i--)
     {
@@ -472,17 +476,26 @@ void print_counts_by_closest(struct room* rooms[], int room_count, double* room_
         struct ClosestTo* test = &closest[i];
 
         if (test->category != CATEGORY_PHONE) continue;
+
+        count_examined++;
         if (test->mark) continue;  // already claimed
+        count_not_marked++;
 
         char mac[18];
         mac_64_to_string(mac, sizeof(mac), test->device_64);
         int count = 0;
 
+        char* category = category_from_int(test->category);
+
+
+        g_debug("----------------------------------%s-%s--------------------------", mac, category);
+
         int earliest = difftime(now, test->earliest);
         int age = difftime(now, test->time);
 
-        // Stop when we pass 120s (2 min)
-        if (age > 180) break;
+        // Stop when we pass 300s (2 min)
+        if (age > 3000) break;
+        count_in_age_range++;
 
         // mark remainder of array as claimed
         for (int j = i; j >= 0; j--)
@@ -537,8 +550,6 @@ void print_counts_by_closest(struct room* rooms[], int room_count, double* room_
 
         struct AccessPoint *ap = get_access_point(test->access_id);
 
-        char* category = category_from_int(closest[i].category);
-
         int delta_time = difftime(now, test->time);
         double score = 0.55 - atan(delta_time / 42.0 - 4.0) / 3.0;
         // A curve that stays a 1.0 for a while and then drops rapidly around 3 minutes out
@@ -574,14 +585,14 @@ void print_counts_by_closest(struct room* rooms[], int room_count, double* room_
             // the latest/best version says the state is:
             if (test->supersededby != 0)
             {
-                g_info("%s Superseded %s (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", mac, category, -earliest, -delta_time, -age, count, score);
+                g_info("Superseded (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, score);
                 g_info("  %s", json);
             }
             else //if (test->distance < 7.5)
             {
                 // Instead of just the one distance, need to look how good a match it is to a room centroid
-                g_info("%s Cluster %s (earliest=%4is, chosen=%4is latest=%4is) count=%i dist=%.1f score=%.2f", mac, category, -earliest, -delta_time, -age, count, test->distance, score);
-                g_info("  %s", json);
+                g_info("Cluster (earliest=%4is, chosen=%4is latest=%4is) count=%i dist=%.1f score=%.2f", -earliest, -delta_time, -age, count, test->distance, score);
+                g_info("%s", json);
 
                 total_count += score;
                 ap->people_closest_count = ap->people_closest_count + score;
@@ -623,6 +634,9 @@ void print_counts_by_closest(struct room* rooms[], int room_count, double* room_
     cJSON_Delete(jobject_rooms);
 
     g_info(" ");
+    g_info("==============================================================================================");
+    g_info(" ");
+    g_debug("Examined %i > %i > %i > %i", closest_n, count_examined, count_not_marked, count_in_age_range);
     g_info("Summary by room: %s", json_rooms);
 
     free(json_rooms);
@@ -788,7 +802,7 @@ void *listen_loop(void *param)
                     {
                         // remove from closest
                         int64_t id_64 = mac_string_to_int_64(d.mac);
-                        mark_superceeded(a.id, id_64, d.supersededby);
+                        mark_superseded(a.id, id_64, d.supersededby);
                     }
                     else 
                     {
@@ -888,9 +902,9 @@ void update_closest(struct OverallState *state, struct Device *device)
 }
 
 /*
-    Update superceded
+    Update superseded
 */
-void update_superceded(struct OverallState *state, struct Device *device)
+void update_superseded(struct OverallState *state, struct Device *device)
 {
     //g_debug("update_superseded(%i, %s)", state->local->id, device->mac);
     // Add local observations into the same structure

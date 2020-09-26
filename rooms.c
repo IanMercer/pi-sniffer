@@ -91,6 +91,11 @@ struct room* create(char* jsonstring)
 */
 struct room** get_rooms(int* room_count)
 {
+    // Read from file ...
+
+    // If no file, calculate from access points
+
+
     // {"barn":3.8,"barn2":0,"garage":0,"kitchen":0,"livingroom":11.8,"mobile":10.9,"office":0,"store":0,"study":6.5,"ubuntu":7}
     struct room* office = create ("{\"name\":\"Office\",\"group\":\"House\",\"weights\":[{\"n\":\"office\",\"v\":2.5},{\"n\":\"livingroom\",\"v\":11.8},{\"n\":\"mobile\",\"v\":10.9},{\"n\":\"study\",\"v\":6.5},{\"n\":\"ubuntu\",\"v\":7.6}]}");
 
@@ -105,6 +110,9 @@ struct room** get_rooms(int* room_count)
     // {"barn":0,"barn2":0,"garage":0,"kitchen":0,"livingroom":10.3,"mobile":0,"office":0,"store":0,"study":5.6,"ubuntu":0}
     // {"barn":0,"barn2":0,"garage":5.5,"kitchen":10.7,"livingroom":5,"mobile":10.6,"office":0,"store":6.7,"study":5.1,"ubuntu":6.3}
     // {"garage":3.4,"kitchen":17.8,"livingroom":6.6,"mobile":8.1,"office":0,"store":8.1,"study":0,"ubuntu":0}
+    //
+    // {"barn":0,"barn2":0,"garage":3.9,"kitchen":13.6,"livingroom":5.7,"mobile":9.9,"office":0,"store":5.8,"study":6.7,"ubuntu":7.8}
+    // {"barn":0,"barn2":0,"garage":3.3,"kitchen":13.1,"livingroom":8.2,"mobile":13.1,"office":0,"store":10,"study":6.2,"ubuntu":4}
     struct room* kitchen = create("{\"name\":\"Kitchen\",\"group\":\"House\", \"weights\":[{\"n\":\"garage\",\"v\":4.5},{\"n\":\"kitchen\", \"v\":13.7},{\"n\":\"livingroom\", \"v\":5},{\"n\":\"mobile\", \"v\":9.6},{\"n\":\"store\", \"v\":7.7}, {\"n\":\"study\", \"v\":5.1}, {\"n\":\"ubuntu\", \"v\":6.3}]}");
 
 // {"office":0,"store":4.4,"mobile":11.9,"study":0,"livingroom":0,"ubuntu":0,"garage":4.1,"kitchen":16.3}

@@ -16,7 +16,7 @@ void close_socket_service();
 void send_device_udp(struct OverallState* state, struct Device* device); 
 
 void update_closest(struct OverallState* state, struct Device* device); 
-void update_superceded(struct OverallState* state, struct Device* device); 
+void update_superseded(struct OverallState* state, struct Device* device); 
 
 void send_access_point_udp(struct OverallState* state);
 
