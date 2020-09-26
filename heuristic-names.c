@@ -13,11 +13,17 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     if (string_contains_insensitive(name, "iPhone"))
         existing->category = CATEGORY_PHONE;
     else if (string_endswith(name, "'s phone"))  // some people name them
-        // TODO: Remove the name for privacy reasons
+    {
+        // Privacy
+        g_strlcpy(existing->name, "*****'s phone", NAME_LENGTH);
         existing->category = CATEGORY_PHONE;
+    }
     else if (string_endswith(name, "s phone"))  // some people name them
-        // TODO: Remove the name for privacy reasons
+    {
+        // Privacy
+        g_strlcpy(existing->name, "*****'s phone", NAME_LENGTH);
         existing->category = CATEGORY_PHONE;
+    }
     else if (string_contains_insensitive(name, "Galaxy Note"))
         existing->category = CATEGORY_PHONE;
     else if (string_contains_insensitive(name, "Galaxy A20"))
@@ -25,8 +31,12 @@ void apply_name_heuristics (struct Device* existing, const char* name)
 
     else if (string_contains_insensitive(name, "iPad"))
         existing->category = CATEGORY_TABLET;
-    else if (string_contains_insensitive(name, "MacBook pro"))
+    else if (string_contains_insensitive(name, "MacBook"))
+    {
+        // Privacy
+        g_strlcpy(existing->name, "*****'s MacBook", NAME_LENGTH);
         existing->category = CATEGORY_COMPUTER;
+    }
     else if (string_starts_with(name, "BOOTCAMP"))
         existing->category = CATEGORY_COMPUTER;
 
@@ -88,17 +98,10 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     else if (string_starts_with(name, "WYZE"))
         existing->category = CATEGORY_SECURITY; // Smart door lock?
 
-    else if (string_starts_with(name, "LEDBlue"))
-        existing->category = CATEGORY_FIXED; // RGB LED controller
-    else if (string_starts_with(name, "ELK-BLEDOM"))
-        existing->category = CATEGORY_LIGHTING; // RGB LED controller
-    else if (string_starts_with(name, "SP110E"))
-        existing->category = CATEGORY_LIGHTING; // RGB LED controller
+    // Spriklers
 
     else if (string_starts_with(name, "bhyve"))
-    {
         existing->category = CATEGORY_SPRINKLERS; // Sprinkler controller
-    }
 
     // LIGHTING
 
@@ -110,6 +113,12 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_LIGHTING; // Evluma AMAX lighting controller
     else if (string_starts_with(name, "ihoment_H"))
         existing->category = CATEGORY_LIGHTING; // LED light strip controller
+    else if (string_starts_with(name, "LEDBlue"))
+        existing->category = CATEGORY_LIGHTING; // RGB LED controller
+    else if (string_starts_with(name, "ELK-BLEDOM"))
+        existing->category = CATEGORY_LIGHTING; // RGB LED controller
+    else if (string_starts_with(name, "SP110E"))
+        existing->category = CATEGORY_LIGHTING; // RGB LED controller
 
     // APPLIANCE
 
@@ -200,6 +209,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_HEADPHONES;   // Soundbar
     else if (string_starts_with(name, "VQ"))
         existing->category = CATEGORY_HEADPHONES;   // Retroradio and speakers
+    else if (string_starts_with(name, "iHome iBT751"))
+        existing->category = CATEGORY_HEADPHONES; // iHome iBT751 speakers and lighting
 
     // TVs
     // e.g. "[TV] Samsung Q70 Series (65)" icon is audio_card
