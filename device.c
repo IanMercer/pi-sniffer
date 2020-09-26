@@ -51,13 +51,14 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
     // If this is an update for an existing value update the superseded field
     if (local->supersededby != remote->supersededby)
     {
-        if (difftime(remote->latest, local->latest) == 0 || safe)
+        int timedelta = difftime(remote->latest, local->latest);
+        if (timedelta == 0 || safe)
         {
             local->supersededby = remote->supersededby;
         }
         else
         {
-            g_warning("Did not update superseded");
+            g_warning("Did not update superseded for %s from %lx to %lx", local->mac, local->supersededby, remote->supersededby);
         }
     }
 

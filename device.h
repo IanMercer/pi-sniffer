@@ -223,8 +223,10 @@ struct OverallState
    char* influx_username;
    char* influx_password;
 
-   struct room** rooms;
-   int room_count;
+   // linked list of rooms
+   struct room* rooms;
+   // linked list of groups
+   struct group* groups;
 };
 
 #endif

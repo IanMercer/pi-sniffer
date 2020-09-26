@@ -380,14 +380,13 @@ double room_probability(struct room* r, char * ap_name, double distance)
 }
 
 
-void calculate_location(struct room* rooms[], int room_count, double accessdistances[N_ACCESS_POINTS], double* room_scores)
+void calculate_location(struct room* room_list, double accessdistances[N_ACCESS_POINTS])
 {
     char line[120];
     line[0] = '\0';
 
-    for (int i = 0; i < room_count; i++)
+    for (struct room* room = room_list; room != NULL; room = room->next)
     {
-        struct room* room = rooms[i];
         double room_score = 1.0;
         //g_debug("  calculating %s", room->name);
         for (int j = 0; j < access_point_count; j++)
@@ -397,27 +396,26 @@ void calculate_location(struct room* rooms[], int room_count, double accessdista
             room_score *= score;
             //g_debug("    %s  %s %.2fm s=%.2f", room->name, accessPoints[j].client_id, distance, score);
         }
-        room_scores[i] = room_score;
+        room->room_score = room_score;
     }
 
     double total_score = 0.00000001;  // non-zero
     double top = 0.0;
-    for (int i = 0; i < room_count; i++)
+    for (struct room* room = room_list; room != NULL; room = room->next)
     {
-        total_score += room_scores[i];
-        if (room_scores[i] > top) top = room_scores[i];
+        total_score += room->room_score;
+        if (room->room_score > top) top = room->room_score;
     }
 
-    for (int i = 0; i < room_count; i++)
+    for (struct room* room = room_list; room != NULL; room = room->next)
     {
         // Normalize
-        room_scores[i] = room_scores[i] / total_score;
+        room->room_score = room->room_score / total_score;
 
         // Log that are at least 30% of top score
-        if (room_scores[i] > top / 30.0)
+        if (room->room_score > top / 30.0)
         {
-            struct room* room = rooms[i];
-            append_text(line, sizeof(line), "%s:%.2f, ", room->name, room_scores[i]);
+            append_text(line, sizeof(line), "%s:%.2f, ", room->name, room->room_score);
         }
     }
 
@@ -439,14 +437,15 @@ void set_count_to_zero(struct AccessPoint* ap, void* extra)
 /*
     Find counts by access point
 */
-void print_counts_by_closest(struct room* rooms[], int room_count, double* room_totals)
+void print_counts_by_closest(struct room* room_list)
 {
     float total_count = 0.0;
 
 //    g_debug("Clear room totals");
 
-    for (int i = 0; i < room_count; i++){
-        room_totals[i] = 0.0;
+    for (struct room* current = room_list; current != NULL; current = current->next)
+    {
+        current->room_total = 0.0;
     }
 
     access_points_foreach(&set_count_to_zero, NULL);
@@ -481,23 +480,24 @@ void print_counts_by_closest(struct room* rooms[], int room_count, double* room_
         if (test->mark) continue;  // already claimed
         count_not_marked++;
 
+        int age = difftime(now, test->time);
+        // If this hasn't been seen in > 300s (5min), skip it
+        // and therefore all later instances of it 
+        if (age > 300) continue;
+        count_in_age_range++;
+
         char mac[18];
         mac_64_to_string(mac, sizeof(mac), test->device_64);
         int count = 0;
 
         char* category = category_from_int(test->category);
 
-
         g_debug("----------------------------------%s-%s--------------------------", mac, category);
 
         int earliest = difftime(now, test->earliest);
-        int age = difftime(now, test->time);
-
-        // Stop when we pass 300s (2 min)
-        if (age > 3000) break;
-        count_in_age_range++;
 
         bool superseded = false;
+        int count_same_mac = 0;
 
         // mark remainder of array as claimed
         for (int j = i; j >= 0; j--)
@@ -512,18 +512,25 @@ void print_counts_by_closest(struct room* rooms[], int room_count, double* room_
 
                 // Is this a better match than the current one?
                 int time_diff = difftime(test->time, other->time);
-                //int abs_diff = difftime(now, other->time);
+                int abs_diff = difftime(now, other->time);
                 // Should always be +ve as we are scanning back in time
 
                 float distance_dilution = time_diff / 10.0;  // 0.1 m/s  1.4m/s human speed
                 // e.g. test = 10.0m, current = 3.0m, 30s ago => 3m
 
-                superseded = superseded | (other->supersededby != 0);
+                // TODO: Issue: was superseded on one AP but has been seen since in good health
+                superseded = superseded | ((other->supersededby != 0) && (count_same_mac < 2));
+                // ignore a superseded value if it was a long time ago and we've seen other reports since then from it
+                count_same_mac++;
 
-                //if (abs_diff < 120)      // only interested in where it has been recently
+                //if (abs_diff < 300)      // only interested in where it has been recently // handled above in outer loop
                 {
+                    char other_mac[18];
+                    mac_64_to_string(other_mac, 18, other->supersededby);
+
                     struct AccessPoint *ap2 = get_access_point(other->access_id);
-                    g_debug("    %12s distance %5.1fm dt=%3is count=%3i superseded=%lu", ap2->client_id, other->distance, time_diff, other->count, other->supersededby);
+                    g_debug("    %12s distance %5.1fm at=%3is dt=%3is count=%3i superseded=%s", ap2->client_id, other->distance, abs_diff, time_diff, other->count, 
+                        other->supersededby==0 ? "" : other_mac);
                     int index = get_access_point_index(other->access_id);
                     access_distances[index] = round(other->distance * 10.0) / 10.0;
 
@@ -550,6 +557,7 @@ void print_counts_by_closest(struct room* rooms[], int room_count, double* room_
         json = cJSON_PrintUnformatted(jobject);
         cJSON_Delete(jobject);
 
+        // Summary of access distances
         g_debug("%s", json);
 
         struct AccessPoint *ap = get_access_point(test->access_id);
@@ -576,17 +584,15 @@ void print_counts_by_closest(struct room* rooms[], int room_count, double* room_
 
         if (score > 0)
         {
-            g_debug(" ");
             // SVM model goes here to convert access point distances to locations
-            double room_scores[room_count];
-            calculate_location(rooms, room_count, access_distances, room_scores);
+
+            calculate_location(room_list, access_distances);
 
             // g_debug("   %s %s is at %16s for %3is at %4.1fm score=%.1f count=%i%s", mac, category, ap->client_id, delta_time, test->distance, score,
             //     count, test->distance > 7.5 ? " * TOO FAR *": "");
 
             // Several observations, some have it superseded, some don't either because they know it
-            // wasn't or because they didn't see the later mac address. Resolve for now by using whatever
-            // the latest/best version says the state is:
+            // wasn't or because they didn't see the later mac address.
             if (superseded)
             {
                 g_info("Superseded (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, score);
@@ -594,18 +600,16 @@ void print_counts_by_closest(struct room* rooms[], int room_count, double* room_
             }
             else //if (test->distance < 7.5)
             {
-                // Instead of just the one distance, need to look how good a match it is to a room centroid
                 g_info("Cluster (earliest=%4is, chosen=%4is latest=%4is) count=%i dist=%.1f score=%.2f", -earliest, -delta_time, -age, count, test->distance, score);
-                g_info("%s", json);
 
                 total_count += score;
                 ap->people_closest_count = ap->people_closest_count + score;
                 ap->people_in_range_count = ap->people_in_range_count + score;  // TODO:
 
                 //g_debug("Update room total %i", room_count);
-                for (int h = 0; h < room_count; h++)
+                for (struct room* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    room_totals[h] += room_scores[h] * score;        // probability x incidence
+                    rcurrent->room_total += rcurrent->room_score * score;        // probability x incidence
                 }
             }
             // else 
@@ -619,19 +623,19 @@ void print_counts_by_closest(struct room* rooms[], int room_count, double* room_
         {
             g_debug("   score %.2f", score);
         }
-
-        // TDO: ACCUMULATE BY ROOM AND SEND THAT TO INFLUXDB INSTEAD OF ACCESS POINT SCORES
+        g_debug(" ");
 
         free(json);
     }
 
+    // Now display totals
+
     char *json_rooms = NULL;
     cJSON *jobject_rooms = cJSON_CreateObject();
 
-    for (int i = 0; i < room_count; i++)
+    for (struct room* r = room_list; r != NULL; r = r->next)
     {
-        struct room* r = rooms[i];
-        cJSON_AddNumberToObject(jobject_rooms, r->name, round(room_totals[i]*10.0) / 10.0);
+        cJSON_AddNumberToObject(jobject_rooms, r->name, round(r->room_total*10.0) / 10.0);
     }
 
     json_rooms = cJSON_PrintUnformatted(jobject_rooms);

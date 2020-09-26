@@ -100,3 +100,42 @@ You can find instructions for adding a real-time clock chip [here](https://pimyl
 
 19. Now return to the main instructions [README.md](README.md)
 
+
+
+#ADDENDUM
+
+The Raspberry PiW seems to be unreliable maintaining a consistent network connection. To fix that:-
+
+````
+sudo nano /etc/network/interfaces
+````
+
+Add the following:
+
+````
+auto lo
+
+iface lo inet loopback
+# iface eth0 inet dhcp
+
+auto wlan0
+allow-hotplug wlan0
+iface wlan0 inet dhcp
+wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf
+wireless-power off
+iface default inet dhcp
+````
+
+And then reboot and check with `iwconfig` that power management is now off for `wlan0`.
+
+
+# OPTIONAL RTC
+
+The Raspberry PiW seems to suffer from clock drift. You may wish to install an RTC based on the more accurate DS3231 chip. Full instructions can be found on [pimylifeup](https://pimylifeup.com/raspberry-pi-rtc/).
+
+In short:
+
+1. Enable I2C using raspi-config
+2. Reboot
+3. `sudo apt-get install python-smbus i2c-tools`
+

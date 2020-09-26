@@ -1564,24 +1564,37 @@ int report_to_influx_tick(void *parameters)
 
     if (strlen(state.influx_server)==0) return FALSE;  // no need to keep calling this, remove from loop
 
-    double room_totals[state.room_count];
-
-    print_counts_by_closest(state.rooms, state.room_count, room_totals);
+    print_counts_by_closest(state.rooms);
 
     //g_debug("Send to influx");
 
     if (state.network_up && !starting)
     {
+
+        // Create group summaries
+        for (struct group* g = state.groups; g != NULL; g = g->next)
+        {
+            g->group_total = 0.0;
+        }
+
+        for (struct room* r = state.rooms; r != NULL; r = r->next)
+        {
+            r->group->group_total += r->room_total;
+        }
+
         char body[4096];
         body[0] = '\0';
 
         time_t now = time(0);
-        for (int i=0; i < state.room_count; i++)
+        for (struct room* r = state.rooms; r != NULL; r = r->next)
         {
-            struct room* r = state.rooms[i];
-            append_influx_line(&state, body, sizeof(body), r->group, r->name, room_totals[i], now);
+            append_influx_line(&state, body, sizeof(body), r->group->name, r->name, r->room_total, now);
         }
-        //g_debug("%s", body);
+        for (struct group* g = state.groups; g != NULL; g = g->next)
+        {
+            append_influx_line(&state, body, sizeof(body), "Groups", g->name, g->group_total, now);
+        }
+        g_debug("%s", body);
         post_to_influx(&state, body, strlen(body));
 
     }
@@ -1876,7 +1889,7 @@ void initialize_state()
         if (strcmp(verbosity, "details")) state.verbosity = Details;
     }
    
-    state.rooms = get_rooms(&state.room_count);
+    get_rooms(&state.rooms, &state.groups);
 }
 
 void display_state()
@@ -1907,7 +1920,7 @@ void display_state()
     g_info("INFLUX_USERNAME='%s'", state.influx_username);
     g_info("INFLUX_PASSWORD='%s'", state.influx_password == NULL ? "(null)" : "*****");
 
-    g_info("ROOMS:%i", state.room_count);
+    g_info("ROOMS:%s (first)", state.rooms->name);
 }
 
 guint prop_changed;

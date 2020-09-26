@@ -34,6 +34,6 @@ void print_access_points();
 
 struct ClosestTo* get_closest(struct Device* device);
 
-void print_counts_by_closest(struct room* rooms[], int room_count, double* room_totals);
+void print_counts_by_closest(struct room* room_list);
 
 #endif
