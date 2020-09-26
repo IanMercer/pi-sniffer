@@ -497,6 +497,8 @@ void print_counts_by_closest(struct room* rooms[], int room_count, double* room_
         if (age > 3000) break;
         count_in_age_range++;
 
+        bool superseded = false;
+
         // mark remainder of array as claimed
         for (int j = i; j >= 0; j--)
         {
@@ -515,6 +517,8 @@ void print_counts_by_closest(struct room* rooms[], int room_count, double* room_
 
                 float distance_dilution = time_diff / 10.0;  // 0.1 m/s  1.4m/s human speed
                 // e.g. test = 10.0m, current = 3.0m, 30s ago => 3m
+
+                superseded = superseded | (other->supersededby != 0);
 
                 //if (abs_diff < 120)      // only interested in where it has been recently
                 {
@@ -583,7 +587,7 @@ void print_counts_by_closest(struct room* rooms[], int room_count, double* room_
             // Several observations, some have it superseded, some don't either because they know it
             // wasn't or because they didn't see the later mac address. Resolve for now by using whatever
             // the latest/best version says the state is:
-            if (test->supersededby != 0)
+            if (superseded)
             {
                 g_info("Superseded (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, score);
                 g_info("  %s", json);

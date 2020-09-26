@@ -160,7 +160,8 @@ void pack_columns()
                     update_superseded(&state, earlier);
                 }
             }
-            else if (state.devices[i].supersededby == mac64)
+            // If earlier was supersededby this one but now it isn't we need to report that
+            else if (earlier->supersededby == mac64)
             {
                 // Not in same column but has a supersededby value
                 // This device used to be superseded by the new one, but now we know it isn't
