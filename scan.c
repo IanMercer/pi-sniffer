@@ -1594,7 +1594,7 @@ int report_to_influx_tick(void *parameters)
         {
             append_influx_line(&state, body, sizeof(body), "Groups", g->name, g->group_total, now);
         }
-        g_debug("%s", body);
+        //g_debug("%s", body);
         post_to_influx(&state, body, strlen(body));
 
     }
