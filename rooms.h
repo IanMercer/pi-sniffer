@@ -36,6 +36,13 @@ struct room
     double room_total;          // across all aps
 };
 
+#define MAX_ROOMS 200
+
+/*
+  Get top k rooms sorted by total, return count maybe < k
+*/
+int top_k_by_room_score(struct room* result[], int k, struct room* room_list);
+
 // Initialize the rooms structure on startup
 void get_rooms(struct room** room_list, struct group** group_list);
 

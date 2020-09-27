@@ -179,3 +179,43 @@ void get_rooms(struct room** room_list, struct group** group_list)
 
     fclose(fp);
 }
+
+
+/*
+    Get top k rooms sorted by total, return count found
+*/
+int top_k_by_room_score(struct room* result[], int k, struct room* room_list)
+{
+    for (int i = 0; i < k; i++)
+    {
+        result[i] = NULL;
+    }
+
+    int count = 0;
+    for (struct room* room = room_list; room != NULL; room = room->next)
+    {
+        struct room* current = room;  // take a copy before we mangle it
+        for (int i = 0; i < k; i++)
+        {
+            if (i == count)
+            {
+                // Off the end, but still < k, so add the item here
+                count++;
+                result[i] = current;
+                break;
+            }
+            else if (result[i]->room_score < current->room_score)
+            {
+                // Insert at this position, pick up current and move it down
+                struct room* temp = result[i];
+                result[i] = current;
+                current = temp;
+            }
+            else
+            {
+                // keep going
+            }
+        }
+    }
+    return count;
+}

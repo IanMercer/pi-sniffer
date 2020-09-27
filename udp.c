@@ -404,14 +404,24 @@ void calculate_location(struct room* room_list, double accessdistances[N_ACCESS_
     for (struct room* room = room_list; room != NULL; room = room->next)
     {
         total_score += room->room_score;
+    }
+
+    // Normalize
+    for (struct room* room = room_list; room != NULL; room = room->next)
+    {
+        room->room_score = room->room_score / total_score;
         if (room->room_score > top) top = room->room_score;
     }
 
-    for (struct room* room = room_list; room != NULL; room = room->next)
-    {
-        // Normalize
-        room->room_score = room->room_score / total_score;
+    // log the results in sorted order so they are easier to read
 
+    struct room* sorted[MAX_ROOMS];
+
+    int k = top_k_by_room_score(sorted, MAX_ROOMS, room_list);
+
+    for (int i = 0; i < k; i++)
+    {
+        struct room* room = sorted[i];    
         // Log that are at least 30% of top score
         if (room->room_score > top / 30.0)
         {
@@ -498,6 +508,7 @@ void print_counts_by_closest(struct room* room_list)
 
         bool superseded = false;
         int count_same_mac = 0;
+        bool skipping = false;
 
         // mark remainder of array as claimed
         for (int j = i; j >= 0; j--)
@@ -508,6 +519,8 @@ void print_counts_by_closest(struct room* room_list)
             {
                 // other is test on first iteration
                 other->mark = true;
+                if (skipping) continue;
+
                 count += other->count;
 
                 // Is this a better match than the current one?
@@ -523,13 +536,22 @@ void print_counts_by_closest(struct room* room_list)
                 // ignore a superseded value if it was a long time ago and we've seen other reports since then from it
                 count_same_mac++;
 
-                //if (abs_diff < 300)      // only interested in where it has been recently // handled above in outer loop
+                if (time_diff > 300)
+                {
+                    g_debug("Skip remainder, delta time %i > 300", time_diff);
+                    skipping = true;
+                    continue;
+                }
+
+                //if (time_diff < 300)      // only interested in where it has been recently // handled above in outer loop
                 {
                     char other_mac[18];
                     mac_64_to_string(other_mac, 18, other->supersededby);
 
                     struct AccessPoint *ap2 = get_access_point(other->access_id);
-                    g_debug("    %12s distance %5.1fm at=%3is dt=%3is count=%3i superseded=%s", ap2->client_id, other->distance, abs_diff, time_diff, other->count, 
+                    g_debug(" %10s distance %5.1fm at=%3is dt=%3is count=%3i %s%s", ap2->client_id, other->distance, abs_diff, time_diff, other->count,
+                        // lazy concat
+                        other->supersededby==0 ? "" : "superseeded=", 
                         other->supersededby==0 ? "" : other_mac);
                     int index = get_access_point_index(other->access_id);
                     access_distances[index] = round(other->distance * 10.0) / 10.0;
@@ -550,8 +572,12 @@ void print_counts_by_closest(struct room* room_list)
 
         for (int i = 0; i < access_point_count; i++)
         {
-            struct AccessPoint* ap = accessPoints[i];
-            cJSON_AddNumberToObject(jobject, ap->client_id, access_distances[i]);
+            // remove 'if' for machine consumption
+            if (access_distances[i] != 0)
+            {
+                struct AccessPoint* ap = accessPoints[i];
+                cJSON_AddNumberToObject(jobject, ap->client_id, access_distances[i]);
+            }
         }
 
         json = cJSON_PrintUnformatted(jobject);
@@ -559,6 +585,7 @@ void print_counts_by_closest(struct room* room_list)
 
         // Summary of access distances
         g_debug("%s", json);
+        free(json);
 
         struct AccessPoint *ap = get_access_point(test->access_id);
 
@@ -596,7 +623,6 @@ void print_counts_by_closest(struct room* room_list)
             if (superseded)
             {
                 g_info("Superseded (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, score);
-                g_info("  %s", json);
             }
             else //if (test->distance < 7.5)
             {
@@ -625,7 +651,6 @@ void print_counts_by_closest(struct room* room_list)
         }
         g_debug(" ");
 
-        free(json);
     }
 
     // Now display totals
@@ -635,7 +660,10 @@ void print_counts_by_closest(struct room* room_list)
 
     for (struct room* r = room_list; r != NULL; r = r->next)
     {
-        cJSON_AddNumberToObject(jobject_rooms, r->name, round(r->room_total*10.0) / 10.0);
+        if (r->room_total > 0.0)
+        {
+            cJSON_AddNumberToObject(jobject_rooms, r->name, round(r->room_total*10.0) / 10.0);
+        }
     }
 
     json_rooms = cJSON_PrintUnformatted(jobject_rooms);

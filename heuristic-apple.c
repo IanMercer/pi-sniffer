@@ -163,7 +163,8 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
         }
         else if (lower_bits == 0x01){
             g_info("  %s '%s' Nearby Info 0x01: disabled u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
-            soft_set_category(&existing->category, CATEGORY_PHONE);  // most likely category
+            // Apple TV sends this too, so cannot assume phone here '_Apple' Nearby Info 0x01: disabled u=00 info=00
+            //soft_set_category(&existing->category, CATEGORY_PHONE);  // most likely category
         }
         else if (lower_bits == 0x02){
             g_info("  %s '%s' Nearby Info 0x02: unknown? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);

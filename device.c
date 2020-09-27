@@ -78,9 +78,18 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
         }
         else if (local->category != remote->category) 
         {
-            // messages wearable->phone should be ignored
-            g_debug("  %s MAYBE change category from '%s' to '%s', message from %s", local->mac, category_from_int(local->category), category_from_int(remote->category), access_name);
-            // TODO: Check any here
+            if (local->category == CATEGORY_PHONE && remote->category == CATEGORY_TV)
+            {
+                // Apple device, originally thought to be phone but is actually a TV
+                local->category = CATEGORY_TV;
+                g_debug("  %s Changed category from '%s' to '%s', message from %s", local->mac, category_from_int(local->category), category_from_int(remote->category), access_name);
+            }
+            else
+            {
+                // messages wearable->phone should be ignored
+                g_debug("  %s MAYBE change category from '%s' to '%s', message from %s", local->mac, category_from_int(local->category), category_from_int(remote->category), access_name);
+                // TODO: Check any here
+            }
         }
     }
 
