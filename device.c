@@ -321,3 +321,4 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
    return true;
 }
 
+

@@ -20,20 +20,9 @@ void update_superseded(struct OverallState* state, struct Device* device);
 
 void send_access_point_udp(struct OverallState* state);
 
-struct AccessPoint* add_access_point(char* client_id, const char* description, const char* platform, 
-    float x, float y, float z, int rssi_one_meter, float rssi_factor, float people_distance);
-
-struct AccessPoint* get_access_point(int id);
-
-/*
-    Iterate over access points
-*/
-void access_points_foreach(void (*f)(struct AccessPoint* ap, void *), void *f_data);
-
-void print_access_points();
 
 struct ClosestTo* get_closest(struct Device* device);
 
-void print_counts_by_closest(struct room* room_list);
+void print_counts_by_closest(struct AccessPoint* access_points_list, struct room* room_list);
 
 #endif

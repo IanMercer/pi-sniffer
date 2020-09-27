@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include "device.h"
+#include "accesspoints.h"
 
 /*
     Rooms
@@ -44,6 +46,6 @@ struct room
 int top_k_by_room_score(struct room* result[], int k, struct room* room_list);
 
 // Initialize the rooms structure on startup
-void get_rooms(struct room** room_list, struct group** group_list);
+void read_configuration_file(struct room** room_list, struct group** group_list, struct AccessPoint** access_points_list);
 
 #endif

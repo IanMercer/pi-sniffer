@@ -21,6 +21,7 @@
 #include "heuristics.h"
 #include "influx.h"
 #include "rooms.h"
+#include "accesspoints.h"
 
 #define G_LOG_USE_STRUCTURED 1
 #include <glib.h>
@@ -246,7 +247,7 @@ void find_latest_observations()
                 // Do we 'own' this device or does someone else
                 columns[col].isClosest = true;
                 struct ClosestTo *closest = get_closest(a);
-                columns[col].isClosest = closest != NULL && closest->access_id == state.local->id;
+                columns[col].isClosest = closest != NULL && closest->access_point != NULL && closest->access_point->id == state.local->id;
             }
         }
     }
@@ -1537,7 +1538,7 @@ void dump_device(struct Device *d)
     if (closest)
     {
         closest_dist = closest->distance;
-        struct AccessPoint *ap = get_access_point(closest->access_id);
+        struct AccessPoint *ap = closest->access_point;
         if (ap)
         {
             closest_ap = ap->client_id;
@@ -1564,7 +1565,7 @@ int report_to_influx_tick(void *parameters)
 
     if (strlen(state.influx_server)==0) return FALSE;  // no need to keep calling this, remove from loop
 
-    print_counts_by_closest(state.rooms);
+    print_counts_by_closest(state.access_points, state.rooms);
 
     //g_debug("Send to influx");
 
@@ -1607,7 +1608,7 @@ int report_to_influx_tick(void *parameters)
 int print_access_points_tick(void *parameters)
 {
     (void)parameters;
-    print_access_points();
+    print_access_points(state.access_points);
     return TRUE;
 }
 
@@ -1842,7 +1843,7 @@ void initialize_state()
     if (s_people_distance != NULL)
         people_distance = atof(s_people_distance);
 
-    state.local = add_access_point(client_id, description, platform,
+    state.local = add_access_point(&state.access_points, client_id, description, platform,
                                    position_x, position_y, position_z,
                                    rssi_one_meter, rssi_factor, people_distance);
 
@@ -1889,7 +1890,11 @@ void initialize_state()
         if (strcmp(verbosity, "details")) state.verbosity = Details;
     }
    
-    get_rooms(&state.rooms, &state.groups);
+    state.rooms = NULL;     // linked list
+    state.groups = NULL;    // linked list
+    state.access_points = state.local; // linked list, starts with the local AP in it, adds any in configuration file or seen later
+
+    read_configuration_file(&state.rooms, &state.groups, &state.access_points);
 }
 
 void display_state()
@@ -1920,7 +1925,12 @@ void display_state()
     g_info("INFLUX_USERNAME='%s'", state.influx_username);
     g_info("INFLUX_PASSWORD='%s'", state.influx_password == NULL ? "(null)" : "*****");
 
-    g_info("ROOMS:%s (first)", state.rooms->name);
+    int count = 0;
+    for (struct room* room = state.rooms; room != NULL; room=room->next){ count ++; }
+    g_info("ROOMS: %i", count);
+    count = 0;
+    for (struct AccessPoint* ap = state.access_points; ap != NULL; ap=ap->next){ count ++; }
+    g_info("ACCESS_POINTS: %i", count);
 }
 
 guint prop_changed;

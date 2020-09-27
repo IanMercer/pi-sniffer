@@ -2,6 +2,7 @@
 #include "udp.h"
 #include "utility.h"
 #include "rooms.h"
+#include "accesspoints.h"
 
 // internal
 #include <stdio.h>
@@ -64,163 +65,6 @@ void udp_send(int port, const char *message, int message_length)
 GCancellable *cancellable;
 pthread_t listen_thread;
 
-// All access points ever seen
-int access_point_count = 0;
-#define N_ACCESS_POINTS 256
-
-// Pointers to access point blocks
-struct AccessPoint* accessPoints[N_ACCESS_POINTS];
-
-static int access_id_sequence = 0;
-
-/*
-   Get or create access point
-*/
-struct AccessPoint* get_or_create_access_point(char *client_id, bool* created)
-{
-    // g_debug("get_or_create %i %s", access_point_count, client_id);
-    *created = false;
-    int found = access_point_count;
-    for (int i = 0; i < access_point_count; i++)
-    {
-        if (strcmp(accessPoints[i]->client_id, client_id) == 0)
-        {
-            // g_debug("  Found %i", i);
-            return accessPoints[i];
-        }
-        else if (strcmp(accessPoints[i]->client_id, client_id) > 0)
-        {
-            found = i;
-            break;
-        }
-    }
-
-    // need to add one
-    *created = true;
-    if (access_point_count == sizeof(accessPoints))
-    {
-        g_warning("  Access point array full");
-        return NULL; // full
-    }
-
-    if (found < access_point_count)
-    {
-        // Make space (moving pointers not data)
-        memmove(&accessPoints[found+1], &accessPoints[found], sizeof(struct AccessPoint*) * (access_point_count - found));
-    }
-    else 
-    {
-        // Put at end
-        found = access_point_count;
-    }
-    accessPoints[found] = malloc(sizeof(struct AccessPoint));
-    accessPoints[found]->id = access_id_sequence++;
-    access_point_count++;
-
-    //g_debug("Adding accesspoint %i", accessPoints[found]->id);
-
-    return accessPoints[found];
-}
-
-
-struct AccessPoint *add_access_point(char *client_id,
-                                     const char *description, const char *platform,
-                                     float x, float y, float z, int rssi_one_meter, float rssi_factor, float people_distance)
-{
-    //g_debug("Check for new access point '%s'\n", client_id);
-    bool created;
-    struct AccessPoint* ap = get_or_create_access_point(client_id, &created);
-    if (ap == NULL) return NULL;   // full
-
-    if (created)
-    {
-        //g_debug("  initializing %i %s", ap->id, client_id);
-        strncpy(ap->client_id, client_id, META_LENGTH);
-        strncpy(ap->description, description, META_LENGTH);
-        strncpy(ap->platform, platform, META_LENGTH);
-        ap->x = x;
-        ap->y = y;
-        ap->z = z;
-        ap->rssi_one_meter = rssi_one_meter;
-        ap->rssi_factor = rssi_factor;
-        ap->people_distance = people_distance;
-        ap->people_closest_count = 0.0;
-        ap->people_in_range_count = 0.0;
-    }
-    time(&ap->last_seen);
-
-    return ap;
-}
-
-void print_access_points()
-{
-    time_t now;
-    time(&now);
-    float people_total = 0.0;
-    g_info("ACCESS POINTS          Platform       Close Range (x,y,z)                 Parameters         Last Seen");
-    for (int k = 0; k < access_point_count; k++)
-    {
-        struct AccessPoint* ap = accessPoints[k];
-        int delta_time = difftime(now, ap->last_seen);
-        g_info("%20s %16s (%4.1f %4.1f) (%6.1f,%6.1f,%6.1f) (%3i, %.1f, %.1fm) %is",
-        ap->client_id, ap->platform,
-        ap->people_closest_count, ap->people_in_range_count,
-        ap->x, ap->y, ap->z, ap->rssi_one_meter, ap->rssi_factor, ap->people_distance,
-        delta_time);
-        //g_print("              %16s %s\n", ap->platform, ap->description);
-        people_total += ap->people_closest_count;
-    }
-    g_info("Total people = %.1f", people_total);
-}
-
-struct AccessPoint *update_accessPoints(struct AccessPoint access_point)
-{
-    struct AccessPoint* ap = add_access_point(access_point.client_id,
-                            access_point.description, access_point.platform,
-                            access_point.x, access_point.y, access_point.z,
-                            access_point.rssi_one_meter, access_point.rssi_factor, access_point.people_distance);
-    ap->people_closest_count = access_point.people_closest_count;
-    ap->people_in_range_count = access_point.people_in_range_count;
-    strncpy(ap->description, access_point.description, META_LENGTH);
-    strncpy(ap->platform, access_point.platform, META_LENGTH);
-    time(&access_point.last_seen);
-    return ap;
-}
-
-/*
-    Get access point by id or -1
-*/
-int get_access_point_index(int id)
-{
-    for (int ap = 0; ap < access_point_count; ap++)
-    {
-        if (accessPoints[ap]->id == id)
-        {
-            return ap;
-        }
-    }
-    return -1;
-}
-
-/*
-    Get access point by id
-*/
-struct AccessPoint *get_access_point(int id)
-{
-    for (int ap = 0; ap < access_point_count; ap++)
-    {
-        if (accessPoints[ap]->id == id)
-        {
-            return accessPoints[ap];
-        }
-    }
-    return NULL;
-}
-
-void access_points_foreach(void (*f)(struct AccessPoint* ap, void *), void *f_data)
-{
-    for(int i = 0; i < access_point_count; i++) f(accessPoints[i], f_data);
-}
 
 #define CLOSEST_N 2048
 
@@ -231,7 +75,7 @@ static struct ClosestTo closest[CLOSEST_N];
 /*
    Mark as superseeded
 */
-void mark_superseded(int access_id, int64_t device_64, int64_t supersededby)
+void mark_superseded(struct AccessPoint* access_point, int64_t device_64, int64_t supersededby)
 {
     if (supersededby != 0)
     {
@@ -242,7 +86,7 @@ void mark_superseded(int access_id, int64_t device_64, int64_t supersededby)
         g_debug("Marking %s in closest as superseded by %s", mac, by);
         for (int j = closest_n; j >= 0; j--)
         {
-            if (closest[j].access_id == access_id && closest[j].device_64 == device_64)
+            if (closest[j].access_point->id == access_point->id && closest[j].device_64 == device_64)
             {
                 closest[j].supersededby = supersededby;
             }
@@ -254,17 +98,16 @@ void mark_superseded(int access_id, int64_t device_64, int64_t supersededby)
 /*
    Add a closest observation (get a lock before you call this)
 */
-void add_closest(int64_t device_64, char* client_id, int access_id, time_t earliest,
+void add_closest(int64_t device_64, struct AccessPoint* access_point, time_t earliest,
     time_t time, float distance, 
     int8_t category, int64_t supersededby, int count)
 {
-    (void)client_id;
     //g_debug("add_closest(%s, %i, %.2fm, %i)", client_id, access_id, distance, count);
     // First scan back, see if this is an update
     for (int j = closest_n; j >= 0; j--)
     {
         if (closest[j].device_64 == device_64 
-            && closest[j].access_id == access_id
+            && closest[j].access_point == access_point
             && closest[j].supersededby != supersededby
             && closest[j].time == time)
         {
@@ -275,7 +118,7 @@ void add_closest(int64_t device_64, char* client_id, int access_id, time_t earli
             char to[18];
             mac_64_to_string(to, 18, supersededby);
 
-            g_debug("*** Received an UPDATE %i, changing %s superseded from %s to %s", access_id, mac, from, to);
+            g_debug("*** Received an UPDATE %s: changing %s superseded from %s to %s", access_point->client_id, mac, from, to);
             closest[j].supersededby = supersededby;
             return;
         }
@@ -288,11 +131,11 @@ void add_closest(int64_t device_64, char* client_id, int access_id, time_t earli
         mac_64_to_string(mac, 18, device_64);
         for (int j = closest_n; j >= 0; j--)
         {
-            if (closest[j].device_64 == device_64 && closest[j].access_id == access_id)
+            if (closest[j].device_64 == device_64 && closest[j].access_point->id == access_point->id)
             {
                 if (closest[j].supersededby != supersededby)
                 {
-                    g_info("Removing %s from closest for %i as it's superseded", mac, access_id);
+                    g_info("Removing %s from closest for %s as it's superseded", mac, access_point->client_id);
                     closest[j].supersededby = supersededby;
                 }
             }
@@ -314,7 +157,7 @@ void add_closest(int64_t device_64, char* client_id, int access_id, time_t earli
         closest_n--;
     }
 
-    closest[closest_n].access_id = access_id;
+    closest[closest_n].access_point = access_point;
     closest[closest_n].device_64 = device_64;
     closest[closest_n].distance = distance;
     closest[closest_n].category = category;
@@ -327,7 +170,7 @@ void add_closest(int64_t device_64, char* client_id, int access_id, time_t earli
     // And now clean the remainder of the array, removing any for same access, same device
     for (int i = closest_n-2; i >= 0; i--)
     {
-        if (closest[i].access_id == access_id && closest[i].device_64 == device_64)
+        if (closest[i].access_point->id == access_point->id && closest[i].device_64 == device_64)
         {
             memmove(&closest[i], &closest[i+1], sizeof(struct ClosestTo) * (closest_n-1 -i));
             closest_n--;
@@ -380,7 +223,7 @@ double room_probability(struct room* r, char * ap_name, double distance)
 }
 
 
-void calculate_location(struct room* room_list, double accessdistances[N_ACCESS_POINTS])
+void calculate_location(struct room* room_list, struct AccessPoint* access_points, double accessdistances[N_ACCESS_POINTS])
 {
     char line[120];
     line[0] = '\0';
@@ -389,10 +232,10 @@ void calculate_location(struct room* room_list, double accessdistances[N_ACCESS_
     {
         double room_score = 1.0;
         //g_debug("  calculating %s", room->name);
-        for (int j = 0; j < access_point_count; j++)
+        for (struct AccessPoint* current = access_points; current!=NULL; current = current->next)
         {
-            double distance = accessdistances[j];
-            double score = room_probability(room, accessPoints[j]->client_id, distance);
+            double distance = accessdistances[current->id];
+            double score = room_probability(room, current->client_id, distance);
             room_score *= score;
             //g_debug("    %s  %s %.2fm s=%.2f", room->name, accessPoints[j].client_id, distance, score);
         }
@@ -447,7 +290,7 @@ void set_count_to_zero(struct AccessPoint* ap, void* extra)
 /*
     Find counts by access point
 */
-void print_counts_by_closest(struct room* room_list)
+void print_counts_by_closest(struct AccessPoint* access_points_list, struct room* room_list)
 {
     float total_count = 0.0;
 
@@ -457,8 +300,6 @@ void print_counts_by_closest(struct room* room_list)
     {
         current->room_total = 0.0;
     }
-
-    access_points_foreach(&set_count_to_zero, NULL);
 
     g_info(" ");
     g_info("COUNTS (closest contains %i)", closest_n);
@@ -477,9 +318,9 @@ void print_counts_by_closest(struct room* room_list)
     {
         // parallel array of distances
         double access_distances[N_ACCESS_POINTS];
-        for (int a = 0; a < access_point_count; a++)
+        for (struct AccessPoint* ap = access_points_list; ap != NULL; ap = ap->next)
         {
-            access_distances[a] = 0.0;
+            access_distances[ap->id] = 0.0;
         }
 
         struct ClosestTo* test = &closest[i];
@@ -548,12 +389,14 @@ void print_counts_by_closest(struct room* room_list)
                     char other_mac[18];
                     mac_64_to_string(other_mac, 18, other->supersededby);
 
-                    struct AccessPoint *ap2 = get_access_point(other->access_id);
+                    struct AccessPoint *ap2 = other->access_point;
+
                     g_debug(" %10s distance %5.1fm at=%3is dt=%3is count=%3i %s%s", ap2->client_id, other->distance, abs_diff, time_diff, other->count,
                         // lazy concat
                         other->supersededby==0 ? "" : "superseeded=", 
                         other->supersededby==0 ? "" : other_mac);
-                    int index = get_access_point_index(other->access_id);
+
+                    int index = other->access_point->id;
                     access_distances[index] = round(other->distance * 10.0) / 10.0;
 
                     // other needs to be better than test by at least as far as test could have moved in that time interval
@@ -570,13 +413,12 @@ void print_counts_by_closest(struct room* room_list)
         char *json = NULL;
         cJSON *jobject = cJSON_CreateObject();
 
-        for (int i = 0; i < access_point_count; i++)
+        for (struct AccessPoint* current = access_points_list; current != NULL; current = current->next)
         {
             // remove 'if' for machine consumption
-            if (access_distances[i] != 0)
+            //if (access_distances[current->id] != 0)
             {
-                struct AccessPoint* ap = accessPoints[i];
-                cJSON_AddNumberToObject(jobject, ap->client_id, access_distances[i]);
+                cJSON_AddNumberToObject(jobject, current->client_id, access_distances[current->id]);
             }
         }
 
@@ -587,7 +429,7 @@ void print_counts_by_closest(struct room* room_list)
         g_debug("%s", json);
         free(json);
 
-        struct AccessPoint *ap = get_access_point(test->access_id);
+        struct AccessPoint *ap = test->access_point;
 
         int delta_time = difftime(now, test->time);
         double score = 0.55 - atan(delta_time / 42.0 - 4.0) / 3.0;
@@ -613,7 +455,8 @@ void print_counts_by_closest(struct room* room_list)
         {
             // SVM model goes here to convert access point distances to locations
 
-            calculate_location(room_list, access_distances);
+
+            calculate_location(room_list, access_points_list, access_distances);
 
             // g_debug("   %s %s is at %16s for %3is at %4.1fm score=%.1f count=%i%s", mac, category, ap->client_id, delta_time, test->distance, score,
             //     count, test->distance > 7.5 ? " * TOO FAR *": "");
@@ -702,7 +545,7 @@ struct ClosestTo *get_closest_64(int64_t device_64)
             {
                 best = test;
             }
-            else if (best->access_id == test->access_id)
+            else if (best->access_point->id == test->access_point->id)
             {
                 // continue, latest hit on access point is most relevant
                 // but if the distance is much better and it's fairly recent,
@@ -717,8 +560,8 @@ struct ClosestTo *get_closest_64(int64_t device_64)
                 // TODO: Check time too, only recent ones
                 double delta_time = difftime(best->time, test->time);
 
-                struct AccessPoint *aptest = get_access_point(test->access_id);
-                struct AccessPoint *apbest = get_access_point(best->access_id);
+                struct AccessPoint *aptest = test->access_point;
+                struct AccessPoint *apbest = best->access_point;
 
                 if (delta_time < 120.0)
                 {
@@ -803,9 +646,7 @@ void *listen_loop(void *param)
 
         if (device_from_json(buffer, &a, &d))
         {
-            struct AccessPoint *actual = update_accessPoints(a);
-            // Replace with the local interned copy of ap
-            a = *actual;
+            struct AccessPoint *actual = update_accessPoints(&state->access_points, a);
 
             // ignore messages from self
             if (strcmp(a.client_id, state->local->client_id) == 0)
@@ -838,7 +679,7 @@ void *listen_loop(void *param)
                     {
                         // remove from closest
                         int64_t id_64 = mac_string_to_int_64(d.mac);
-                        mark_superseded(a.id, id_64, d.supersededby);
+                        mark_superseded(actual, id_64, d.supersededby);
                     }
                     else 
                     {
@@ -868,7 +709,7 @@ void *listen_loop(void *param)
 
                         // Use an int64 version of the mac address
                         int64_t id_64 = mac_string_to_int_64(d.mac);
-                        add_closest(id_64, a.client_id, a.id, d.earliest,
+                        add_closest(id_64, actual, d.earliest,
                             d.latest, d.distance, d.category, d.supersededby, d.count);
                     }
                    
@@ -882,7 +723,7 @@ void *listen_loop(void *param)
                 //g_debug("Add foreign device %s %s\n", d.mac, cat);
 
                 int64_t id_64 = mac_string_to_int_64(d.mac);
-                add_closest(id_64, a.client_id, a.id, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count);
+                add_closest(id_64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count);
             }
 
             pthread_mutex_unlock(&state->lock);
@@ -934,7 +775,7 @@ void update_closest(struct OverallState *state, struct Device *device)
     //g_debug("update_closest(%s, %i, %s)", state->local->client_id, state->local->id, device->mac);
     // Add local observations into the same structure
     int64_t id_64 = mac_string_to_int_64(device->mac);
-    add_closest(id_64, state->local->client_id, state->local->id, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count);
+    add_closest(id_64, state->local, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count);
 }
 
 /*
@@ -945,7 +786,7 @@ void update_superseded(struct OverallState *state, struct Device *device)
     //g_debug("update_superseded(%i, %s)", state->local->id, device->mac);
     // Add local observations into the same structure
     int64_t id_64 = mac_string_to_int_64(device->mac);
-    add_closest(id_64, state->local->client_id, state->local->id, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count);
+    add_closest(id_64, state->local, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count);
 }
 
 /*

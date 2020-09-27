@@ -3,6 +3,7 @@
 */
 
 #include "rooms.h"
+#include "accesspoints.h"
 #include "cJSON.h"
 #include <stdlib.h>
 #include <stdbool.h>
@@ -43,7 +44,7 @@ struct group* get_or_add_group(struct group** group_list, char* group_name)
 /*
     Initalize the rooms database (linked list)
 */
-void get_rooms(struct room** room_list, struct group** group_list)
+void read_configuration_file(struct room** room_list, struct group** group_list, struct AccessPoint** access_points_list)
 {
     // Read from file ...
 
@@ -84,8 +85,6 @@ void get_rooms(struct room** room_list, struct group** group_list)
         exit(EXIT_FAILURE);
     }
 
-    *room_list = NULL;      // linked list
-    *group_list = NULL;    // linked list
     struct room* current_room = NULL;   // current pointer
 
     cJSON* rooms = cJSON_GetObjectItemCaseSensitive(json, "rooms");
@@ -144,6 +143,10 @@ void get_rooms(struct room** room_list, struct group** group_list)
                 we->name = strdup(ap->valuestring);
                 we->weight = w->valuedouble;
                 we->next = NULL;
+
+                // Create empty access points as we parse the configuration so that they all exist up-front
+                bool created;
+                get_or_create_access_point(access_points_list, we->name, &created);
 
                 if (current_weight == NULL)
                 {

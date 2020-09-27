@@ -23,6 +23,9 @@ typedef uint64_t u_int64_t;
 // Max allowed devices across group of sensors
 #define NMAC 8192
 
+// Maximum number of access points (sensors) allowed
+#define N_ACCESS_POINTS 256
+
 #define PUBLIC_ADDRESS_TYPE 1
 #define RANDOM_ADDRESS_TYPE 2
 
@@ -102,7 +105,7 @@ struct Device
 };
 
 /*
-   AccessPoint is another instance of the app sending information to us
+   AccessPoint is another instance of the app sending information to us, aka Sensor
 */
 struct AccessPoint
 {
@@ -124,6 +127,17 @@ struct AccessPoint
    float people_in_range_count;  // E[x] of count of people in range
 
    time_t last_seen;             // Time access point was last seen
+
+   struct AccessPoint* next;     // Linked list
+};
+
+/*
+   Projected to an array with values for calculation purposes
+*/
+struct AccessPointWithValue
+{
+   struct AccessPoint* access_point;
+   double value;
 };
 
 /*
@@ -151,7 +165,7 @@ struct ClosestTo
    // Which device
    int64_t device_64;
    // Which access point
-   int access_id;
+   struct AccessPoint* access_point;
    // How far from the access point was it
    float distance;
    // category of the device
@@ -223,6 +237,8 @@ struct OverallState
    char* influx_username;
    char* influx_password;
 
+   // linked list of access points
+   struct AccessPoint* access_points;
    // linked list of rooms
    struct room* rooms;
    // linked list of groups
