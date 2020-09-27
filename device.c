@@ -58,7 +58,11 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
         }
         else
         {
-            g_warning("Did not update superseded for %s from %lx to %lx", local->mac, local->supersededby, remote->supersededby);
+            char macsuperlocal[18];
+            char macsuperremote[18];
+            mac_64_to_string(macsuperlocal, 18, local->supersededby);
+            mac_64_to_string(macsuperremote, 18, remote->supersededby);
+            g_warning("Did not update superseded for %s from %s to %s (%i, %i)", local->mac, macsuperlocal, macsuperremote, timedelta, safe);
         }
     }
 
