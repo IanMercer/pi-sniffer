@@ -703,17 +703,18 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
             //float average_delta_time = kalman_update(&existing->kalman_interval, (float)delta_time_sent);
 
+            // TODO: Different devices have different signal strengths
+            // iPad seems to be particulary strong. Need to calibrate this and have
+            // a per-device. PowerLevel is supposed to do this but it's not reliably sent.
+            if (strcmp(existing->name, "iPad") == 0 || strcmp(existing->name, "Apple TV") == 0)
+            {
+                rssi = rssi * 1.1;   // e.g. -60 becomes -66, -90 becomes -99
+            }
+
             double exponent = ((state.local->rssi_one_meter - (double)rssi) / (10.0 * state.local->rssi_factor));
 
             double distance = pow(10.0, exponent);
 
-            // TODO: Different devices have different signal strengths
-            // iPad seems to be particulary strong. Need to calibrate this and have
-            // a per-device. PowerLevel is supposed to do this but it's not reliably sent.
-            if (strcmp(existing->name, "iPad") == 0)
-            {
-                distance = distance * 1.4;
-            }
 
             float averaged = kalman_update(&existing->kalman, distance);
 
