@@ -183,6 +183,8 @@ struct ClosestTo
    bool mark;
    // count from access point
    int count;
+   // for debugging
+   char name [META_LENGTH];
 };
 
 int category_to_int(char *category);

@@ -69,10 +69,10 @@ void read_configuration_file(struct room** room_list, struct group** group_list,
 
     fseek (fp, 0, SEEK_SET);
     char* buffer = g_malloc (length+1);
-    buffer[length] = '\0';
 
     long count = fread (buffer, 1, length, fp);
-    buffer[count+1] = '\0';
+    g_assert(count == length);
+    buffer[count] = '\0';
 
     cJSON *json = cJSON_Parse(buffer);
     if (json == NULL)
@@ -178,6 +178,7 @@ void read_configuration_file(struct room** room_list, struct group** group_list,
 
     cJSON_Delete(json);
 
+    g_debug("free buffer");
     g_free(buffer);
 
     fclose(fp);

@@ -41,6 +41,7 @@
 #include <string.h>
 #include <udp.h>
 #include <argp.h>
+#include <unistd.h>    // gethostname
 
 // For LED flash
 #include <fcntl.h>
@@ -1800,13 +1801,21 @@ void initialize_state()
     float people_distance = 7.0; // 7m default range
     state.udp_mesh_port = 7779;
     state.udp_sign_port = 0; // 7778;
+    state.access_points = NULL; // linked list
+    state.rooms = NULL;         // linked list
+    state.groups = NULL;        // linked list
 
     // no devices yet
     state.n = 0;
 
-    gethostname(client_id, META_LENGTH);
+    if (gethostname(client_id, META_LENGTH) != 0)
+    {
+        g_error("Could not get host name");
+        exit(EXIT_FAILURE);
+    }
+    g_debug("Host name: %s", client_id);
 
-    state.network_up = is_any_interface_up();
+    state.network_up = FALSE; // is_any_interface_up();
 
     // Optional metadata about the access point for dashboard
     const char *s_client_id = getenv("HOST_NAME");
@@ -1814,13 +1823,18 @@ void initialize_state()
     const char *s_client_platform = getenv("HOST_PLATFORM");
 
     if (s_client_id != NULL)
+    {
         strncpy(client_id, s_client_id, META_LENGTH);
+        g_debug("Client id: %s", client_id);
+    }
+
     // These two can just be pointers to the constant strings or the supplied metadata
     if (s_client_description != NULL)
         description = s_client_description;
     if (s_client_platform != NULL)
         platform = s_client_platform;
 
+    g_debug("Get position");
     const char *s_position_x = getenv("POSITION_X");
     const char *s_position_y = getenv("POSITION_Y");
     const char *s_position_z = getenv("POSITION_Z");
@@ -1832,6 +1846,7 @@ void initialize_state()
     if (s_position_z != NULL)
         position_z = (float)atof(s_position_z);
 
+    g_debug("Get RSSI factors");
     const char *s_rssi_one_meter = getenv("RSSI_ONE_METER");
     const char *s_rssi_factor = getenv("RSSI_FACTOR");
     const char *s_people_distance = getenv("PEOPLE_DISTANCE");
@@ -1839,10 +1854,11 @@ void initialize_state()
     if (s_rssi_one_meter != NULL)
         rssi_one_meter = atoi(s_rssi_one_meter);
     if (s_rssi_factor != NULL)
-        rssi_factor = atof(s_rssi_factor);
+        rssi_factor = strtof(s_rssi_factor, NULL);
     if (s_people_distance != NULL)
-        people_distance = atof(s_people_distance);
+        people_distance = strtof(s_people_distance, NULL);
 
+    g_debug("Add self as access point");
     state.local = add_access_point(&state.access_points, client_id, description, platform,
                                    position_x, position_y, position_z,
                                    rssi_one_meter, rssi_factor, people_distance);
@@ -1890,10 +1906,6 @@ void initialize_state()
         if (strcmp(verbosity, "details")) state.verbosity = Details;
     }
    
-    state.rooms = NULL;     // linked list
-    state.groups = NULL;    // linked list
-    state.access_points = state.local; // linked list, starts with the local AP in it, adds any in configuration file or seen later
-
     read_configuration_file(&state.rooms, &state.groups, &state.access_points);
 }
 
@@ -1963,6 +1975,7 @@ int main(int argc, char **argv)
         exit(123);
     }
 
+    g_info("initialize_state()");
     initialize_state();
 
     signal(SIGINT, int_handler);
@@ -1978,6 +1991,7 @@ int main(int argc, char **argv)
     }
 
     // Create a UDP listener for mesh messages about devices connected to other access points in same LAN
+    g_info("create_socket_service()");
     socket_service = create_socket_service(&state);
 
     g_info("\n\nStarting\n\n");
