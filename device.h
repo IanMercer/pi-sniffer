@@ -48,6 +48,7 @@ typedef uint64_t u_int64_t;
 #define CATEGORY_FITNESS 16    // Bikes, bike trainers, ergos, ...
 #define CATEGORY_PRINTER 17
 #define CATEGORY_SPEAKERS 18
+#define CATEGORY_CAMERA 19
 
 
 // Max allowed length of names and aliases (plus 1 for null)

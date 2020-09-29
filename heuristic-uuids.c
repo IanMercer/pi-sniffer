@@ -5,10 +5,8 @@
 #include "heuristics.h"
 
 #include <glib.h>
-//#include <gio/gio.h>
 #include <stdbool.h>
 #include <stdio.h>
-//#include <sys/ioctl.h>
 #include <sys/types.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -109,6 +107,10 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         {
             append_text(gatts, gatts_length, "Eddystone, ");
             soft_set_category(&existing->category, CATEGORY_BEACON);
+        }
+        else if (ble_uuid == 0x0000de00ul){
+            append_text(gatts, gatts_length, "Nikon, ");
+            soft_set_category(&existing->category, CATEGORY_CAMERA);
         }
         else if (ble_uuid == 0x0000ffa0ul) append_text(gatts, gatts_length, "Accelerometer, ");
         else if (ble_uuid == 0x0000ffe0ul) append_text(gatts, gatts_length, "Temperature, ");

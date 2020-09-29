@@ -1110,13 +1110,12 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             }
             time(&existing->last_sent);
         }
-        // TODO: Make this 'if send_distance or 30s has elapsed'
+
         // Broadcast what we know about the device to all other listeners
-        //send_device_mqtt(existing);
+        // only send when isUpdate is set, i.e. not for get all devices requests
         if (isUpdate)
         {
             pack_columns();
-            // only send when isUpdate is set, i.e. not for get all devices requests
             send_device_udp(&state, existing);
             update_closest(&state, existing);
         }
@@ -1127,7 +1126,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
 /*
   Report device with lock on data structures
-  NOTE: Free's address when done
+  NOTE: Frees the address when done
 */
 static void report_device(struct OverallState *state, GVariant *properties, char *known_address, bool isUpdate)
 {
@@ -1931,6 +1930,18 @@ void display_state()
     count = 0;
     for (struct AccessPoint* ap = state.access_points; ap != NULL; ap=ap->next){ count ++; }
     g_info("ACCESS_POINTS: %i", count);
+
+    // CSV header
+    char csv[256];
+    csv[0] = '\0';
+    bool found = false;
+    for (struct AccessPoint* current = state.access_points; current != NULL; current = current->next)
+    {
+        found = true;
+        append_text(csv, sizeof(csv), "%s,", current->client_id);
+    }
+    if (found) csv[strlen(csv)-1] = '\0';  // trim trailing comma
+    g_debug("CSV: %s", csv);
 }
 
 guint prop_changed;

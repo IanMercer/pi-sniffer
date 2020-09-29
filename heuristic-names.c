@@ -98,6 +98,12 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     else if (string_starts_with(name, "WYZE"))
         existing->category = CATEGORY_SECURITY; // Smart door lock?
 
+    // Category
+
+    else if (string_starts_with(name, "D3400"))
+        existing->category = CATEGORY_CAMERA; // Nikon
+
+
     // Spriklers
 
     else if (string_starts_with(name, "bhyve"))
@@ -236,6 +242,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_PRINTER; // printer
     else if (string_starts_with(name, "Sony UP-DX"))
         existing->category = CATEGORY_PRINTER; // printer Sony UP-DX100
+    else if (string_starts_with(name, "TS9500"))
+        existing->category = CATEGORY_PRINTER;
 
     // Accessories
     else if (string_starts_with(name, "Apple Pencil"))
@@ -321,5 +329,11 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         optional_set(existing->name, "_Select Comfort", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
+    else if (string_starts_with(existing->mac, "88:c6:26"))
+    {
+        optional_set(existing->name, "_Logitech", NAME_LENGTH);
+        existing->category = CATEGORY_FIXED;
+    }
+
     // TODO: Android device names
 }

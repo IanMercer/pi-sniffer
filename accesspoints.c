@@ -20,12 +20,16 @@ struct AccessPoint *add_access_point(struct AccessPoint** access_point_list, cha
     //g_debug("Check for new access point '%s'\n", client_id);
     bool created;
     struct AccessPoint* ap = get_or_create_access_point(access_point_list, client_id, &created);
+    g_assert(ap != NULL);
     if (ap == NULL) return NULL;   // full
 
-    if (created)
+    g_assert(strcmp(ap->client_id, client_id) == 0);
+
+    // this no longer works, have to assign it if (created)
+    if (strcmp(ap->description, description) != 0)
     {
-        //g_debug("  initializing %i %s", ap->id, client_id);
-        strncpy(ap->client_id, client_id, META_LENGTH);
+        g_debug("  initializing %i %s", ap->id, client_id);
+        //strncpy(ap->client_id, client_id, META_LENGTH);
         strncpy(ap->description, description, META_LENGTH);
         strncpy(ap->platform, platform, META_LENGTH);
         ap->x = x;
@@ -34,9 +38,9 @@ struct AccessPoint *add_access_point(struct AccessPoint** access_point_list, cha
         ap->rssi_one_meter = rssi_one_meter;
         ap->rssi_factor = rssi_factor;
         ap->people_distance = people_distance;
-        ap->people_closest_count = 0.0;
-        ap->people_in_range_count = 0.0;
     }
+    ap->people_closest_count = 0.0;
+    ap->people_in_range_count = 0.0;
     time(&ap->last_seen);
 
     return ap;
@@ -75,6 +79,7 @@ struct AccessPoint *update_accessPoints(struct AccessPoint** access_point_list, 
     ap->people_in_range_count = access_point.people_in_range_count;
     strncpy(ap->description, access_point.description, META_LENGTH);
     strncpy(ap->platform, access_point.platform, META_LENGTH);
+    // TODO: Only if later
     time(&access_point.last_seen);
     return ap;
 }
@@ -113,6 +118,8 @@ struct AccessPoint* get_or_create_access_point(struct AccessPoint** access_point
     struct AccessPoint* ap = g_malloc(sizeof(struct AccessPoint));
     strncpy(ap->client_id, client_id, META_LENGTH);
     strncpy(ap->description, "Not known yet", META_LENGTH);
+    strncpy(ap->platform, "Not known yet", META_LENGTH);
+
     ap->next = NULL;
     ap->id = access_point_id_generator++;
 

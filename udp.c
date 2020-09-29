@@ -84,13 +84,15 @@ void mark_superseded(struct AccessPoint* access_point, int64_t device_64, int64_
         char by[18];
         mac_64_to_string(by, 18, supersededby);
         g_debug("Marking %s in closest as superseded by %s", mac, by);
-        for (int j = closest_n; j >= 0; j--)
+        for (int j = closest_n-1; j >= 0; j--)
         {
+            g_assert(closest[j].access_point != NULL);
             if (closest[j].access_point->id == access_point->id && closest[j].device_64 == device_64)
             {
                 closest[j].supersededby = supersededby;
             }
         }
+        g_debug("Marked superseded");
         return;
     }
 }
@@ -102,12 +104,14 @@ void add_closest(int64_t device_64, struct AccessPoint* access_point, time_t ear
     time_t time, float distance, 
     int8_t category, int64_t supersededby, int count)
 {
+    g_assert(access_point != NULL);
     //g_debug("add_closest(%s, %i, %.2fm, %i)", client_id, access_id, distance, count);
     // First scan back, see if this is an update
-    for (int j = closest_n; j >= 0; j--)
+    for (int j = closest_n-1; j >= 0; j--)
     {
+        g_assert(closest[j].access_point != NULL);
         if (closest[j].device_64 == device_64 
-            && closest[j].access_point == access_point
+            && closest[j].access_point->id == access_point->id
             && closest[j].supersededby != supersededby
             && closest[j].time == time)
         {
@@ -129,8 +133,9 @@ void add_closest(int64_t device_64, struct AccessPoint* access_point, time_t ear
         //g_warning("****************** SHOULD NEVER COME HERE *********************");
         char mac[18];
         mac_64_to_string(mac, 18, device_64);
-        for (int j = closest_n; j >= 0; j--)
+        for (int j = closest_n-1; j >= 0; j--)
         {
+            g_assert(closest[j].access_point != NULL);
             if (closest[j].device_64 == device_64 && closest[j].access_point->id == access_point->id)
             {
                 if (closest[j].supersededby != supersededby)
@@ -157,6 +162,7 @@ void add_closest(int64_t device_64, struct AccessPoint* access_point, time_t ear
         closest_n--;
     }
 
+    g_assert(access_point != NULL);
     closest[closest_n].access_point = access_point;
     closest[closest_n].device_64 = device_64;
     closest[closest_n].distance = distance;
@@ -170,6 +176,7 @@ void add_closest(int64_t device_64, struct AccessPoint* access_point, time_t ear
     // And now clean the remainder of the array, removing any for same access, same device
     for (int i = closest_n-2; i >= 0; i--)
     {
+        g_assert(closest[i].access_point != NULL);
         if (closest[i].access_point->id == access_point->id && closest[i].device_64 == device_64)
         {
             memmove(&closest[i], &closest[i+1], sizeof(struct ClosestTo) * (closest_n-1 -i));
@@ -307,6 +314,7 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
 
     for (int i = closest_n - 1; i >= 0; i--)
     {
+        g_assert(closest[i].access_point != NULL);
         closest[i].mark = false;
     }
 
@@ -316,6 +324,8 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
 
     for (int i = closest_n - 1; i >= 0; i--)
     {
+        g_assert(closest[i].access_point != NULL);
+
         // parallel array of distances
         double access_distances[N_ACCESS_POINTS];
         for (struct AccessPoint* ap = access_points_list; ap != NULL; ap = ap->next)
@@ -343,7 +353,7 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
 
         char* category = category_from_int(test->category);
 
-        g_debug("----------------------------------%s-%s--------------------------", mac, category);
+        g_debug("--------------------------------- %s --- %s ----------------------------", mac, category);
 
         int earliest = difftime(now, test->earliest);
 
@@ -428,6 +438,18 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
         // Summary of access distances
         g_debug("%s", json);
         free(json);
+
+        // CSV
+        char csv[256];
+        csv[0] = '\0';
+        bool found = false;
+        for (struct AccessPoint* current = access_points_list; current != NULL; current = current->next)
+        {
+            found = true;
+            append_text(csv, sizeof(csv), "%.1f,", access_distances[current->id]);
+        }
+        if (found) csv[strlen(csv)-1] = '\0';  // trim trailing comma
+        g_debug("CSV: %s", csv);
 
         struct AccessPoint *ap = test->access_point;
 
@@ -538,6 +560,7 @@ struct ClosestTo *get_closest_64(int64_t device_64)
     for (int i = closest_n - 1; i > 0; i--)
     {
         struct ClosestTo *test = &closest[i];
+        g_assert(test->access_point != NULL);
 
         if (test->device_64 == device_64)
         {
@@ -629,27 +652,29 @@ void *listen_loop(void *param)
         time(&now);
 
         struct Device d;
-        struct AccessPoint a;
-        strncpy(a.client_id, "notset", 7);
-        strncpy(a.description, "notset", 7);
-        strncpy(a.platform, "notset", 7);
-        a.x = -1;
-        a.y = -1;
-        a.z = -1;
-        a.people_distance = 0.0;
-        a.people_closest_count = 0.0;
-        a.people_in_range_count = 0.0;
-        a.rssi_factor = 0.0;
-        a.rssi_one_meter = 0.0;
+        struct AccessPoint dummy;
+        strncpy(dummy.client_id, "notset", 7);
+        strncpy(dummy.description, "notset", 7);
+        strncpy(dummy.platform, "notset", 7);
+        dummy.id = -1;
+        dummy.x = -1;
+        dummy.y = -1;
+        dummy.z = -1;
+        dummy.people_distance = 0.0;
+        dummy.people_closest_count = 0.0;
+        dummy.people_in_range_count = 0.0;
+        dummy.rssi_factor = 0.0;
+        dummy.rssi_one_meter = 0.0;
 
         strncpy(d.mac, "notset", 7);  // access point only messages have no device mac address
 
-        if (device_from_json(buffer, &a, &d))
+        if (device_from_json(buffer, &dummy, &d))
         {
-            struct AccessPoint *actual = update_accessPoints(&state->access_points, a);
+            struct AccessPoint *actual = update_accessPoints(&state->access_points, dummy);
+            g_assert(actual != NULL);
 
             // ignore messages from self
-            if (strcmp(a.client_id, state->local->client_id) == 0)
+            if (strcmp(actual->client_id, state->local->client_id) == 0)
             {
                 //g_print("Ignoring message from self %s : %s\n", a.client_id, d.mac);
                 continue;
@@ -673,7 +698,7 @@ void *listen_loop(void *param)
 
                     int delta_time = difftime(now, d.latest);
 
-                    merge(&state->devices[i], &d, a.client_id, delta_time == 0);
+                    merge(&state->devices[i], &d, actual->client_id, delta_time == 0);
 
                     if (d.supersededby != 0)
                     {
@@ -689,7 +714,7 @@ void *listen_loop(void *param)
                         if (delta_time < 0)
                         {
                             // This is problematic, they are ahead of us
-                            g_warning("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, a.client_id, d.distance, delta_time);
+                            g_warning("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, actual->client_id, d.distance, delta_time);
                         }
                         // Problematic now we send older updates for superseding events
                         // else if (delta_time > 1)
@@ -709,8 +734,8 @@ void *listen_loop(void *param)
 
                         // Use an int64 version of the mac address
                         int64_t id_64 = mac_string_to_int_64(d.mac);
-                        add_closest(id_64, actual, d.earliest,
-                            d.latest, d.distance, d.category, d.supersededby, d.count);
+                        g_assert(actual != NULL);
+                        add_closest(id_64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count);
                     }
                    
                     break;
@@ -723,6 +748,7 @@ void *listen_loop(void *param)
                 //g_debug("Add foreign device %s %s\n", d.mac, cat);
 
                 int64_t id_64 = mac_string_to_int_64(d.mac);
+                g_assert(actual != NULL);
                 add_closest(id_64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count);
             }
 
@@ -786,6 +812,7 @@ void update_superseded(struct OverallState *state, struct Device *device)
     //g_debug("update_superseded(%i, %s)", state->local->id, device->mac);
     // Add local observations into the same structure
     int64_t id_64 = mac_string_to_int_64(device->mac);
+    g_assert(state->local != NULL);
     add_closest(id_64, state->local, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count);
 }
 
