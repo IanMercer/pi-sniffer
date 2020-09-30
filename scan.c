@@ -705,9 +705,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             //float average_delta_time = kalman_update(&existing->kalman_interval, (float)delta_time_sent);
 
             // TODO: Different devices have different signal strengths
-            // iPad seems to be particulary strong. Need to calibrate this and have
+            // iPad, Apple TV, Samsung TV, ... seems to be particulary strong. Need to calibrate this and have
             // a per-device. PowerLevel is supposed to do this but it's not reliably sent.
-            if (strcmp(existing->name, "iPad") == 0 || strcmp(existing->name, "Apple TV") == 0)
+            if (strcmp(existing->name, "iPad") == 0 || strcmp(existing->name, "Apple TV") == 0 || string_starts_with(existing->name, "[TV] Samsung"))
             {
                 rssi = rssi * 1.1;   // e.g. -60 becomes -66, -90 becomes -99
             }
@@ -1581,7 +1581,7 @@ int report_to_influx_tick(void *parameters)
 
         for (struct room* r = state.rooms; r != NULL; r = r->next)
         {
-            r->group->group_total += r->room_total;
+            r->group->group_total += r->phone_total;
         }
 
         char body[4096];
@@ -1590,11 +1590,15 @@ int report_to_influx_tick(void *parameters)
         time_t now = time(0);
         for (struct room* r = state.rooms; r != NULL; r = r->next)
         {
-            append_influx_line(&state, body, sizeof(body), r->group->name, r->name, r->room_total, now);
+            append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "phone", r->phone_total, now);
+            append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "watch", r->watch_total, now);
+            append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "tablet", r->tablet_total, now);
+            append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "computer", r->computer_total, now);
+            append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "beacon", r->beacon_total, now);
         }
         for (struct group* g = state.groups; g != NULL; g = g->next)
         {
-            append_influx_line(&state, body, sizeof(body), "Groups", g->name, g->group_total, now);
+            append_influx_line(&state, body, sizeof(body), "Groups", g->name, "phone", g->group_total, now);
         }
         //g_debug("%s", body);
         post_to_influx(&state, body, strlen(body));

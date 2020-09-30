@@ -7,7 +7,7 @@
 /*
    Append an Influx line message
 */
-void append_influx_line(struct OverallState* state, char* line, int line_length,  const char* group, const char* topic, double value, time_t timestamp);
+void append_influx_line(struct OverallState* state, char* line, int line_length,  const char* group, const char* topic, char* category, double value, time_t timestamp);
 
 /*
     Post formatted line message

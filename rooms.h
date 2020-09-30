@@ -35,7 +35,11 @@ struct room
     struct weight* weights;     // head of chain of weights
     struct room* next;          // next ptr
     double room_score;          // calculated during scan, one ap
-    double room_total;          // across all aps
+    double phone_total;         // how many phones
+    double tablet_total;        // how many tablet
+    double computer_total;      // how many computers
+    double watch_total;         // how many watches
+    double beacon_total;        // how many beacons
 };
 
 #define MAX_ROOMS 200

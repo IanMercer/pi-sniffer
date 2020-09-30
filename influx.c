@@ -105,7 +105,7 @@ struct cache_item
 /*
    Append an Influx line message
 */
-void append_influx_line(struct OverallState* state, char* line, int line_length,  const char* group, const char* topic, double value, time_t timestamp)
+void append_influx_line(struct OverallState* state, char* line, int line_length,  const char* group, const char* topic, char* category, double value, time_t timestamp)
 {
     /* InfluxDB line protocol note:
         measurement name
@@ -115,10 +115,11 @@ void append_influx_line(struct OverallState* state, char* line, int line_length,
     /* InfluxDB line protocol note: ending epoch time missing so InfluxDB greates it */
     int existing_length = strlen(line);
 
-    snprintf(line+existing_length, line_length-existing_length, "%s,host=%s,from=%s %s=%.3f %lu000000000\n",
+    snprintf(line+existing_length, line_length-existing_length, "%s,host=%s,from=%s,category=%s %s=%.3f %lu000000000\n",
         group,                    // A group of rooms
         topic,                    // access point name
         state->local->client_id,  // from = client_id
+        category,
         "count", value,           // count = value
         timestamp);               // nanosecond timestamp
 }

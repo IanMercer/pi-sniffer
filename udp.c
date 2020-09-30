@@ -171,7 +171,7 @@ void add_closest(int64_t device_64, struct AccessPoint* access_point, time_t ear
     closest[closest_n].earliest = earliest;
     closest[closest_n].time = time;
     closest[closest_n].count = count;
-    strncpy(&closest[closest_n].name, name, META_LENGTH);           // debug only, remove this later
+    strncpy(closest[closest_n].name, name, META_LENGTH);           // debug only, remove this later
     closest_n++;
 
     // And now clean the remainder of the array, removing any for same access, same device
@@ -306,7 +306,11 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
 
     for (struct room* current = room_list; current != NULL; current = current->next)
     {
-        current->room_total = 0.0;
+        current->phone_total = 0.0;
+        current->tablet_total = 0.0;
+        current->computer_total = 0.0;
+        current->watch_total = 0.0;
+        current->beacon_total = 0.0;
     }
 
     g_info(" ");
@@ -336,7 +340,7 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
 
         struct ClosestTo* test = &closest[i];
 
-        if (test->category != CATEGORY_PHONE) continue;
+        // moved down to counting ... if (test->category != CATEGORY_PHONE) continue;
 
         count_examined++;
         if (test->mark) continue;  // already claimed
@@ -490,6 +494,38 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
             {
                 g_info("Superseded (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, score);
             }
+            else if (test->category == CATEGORY_TABLET)
+            {
+                for (struct room* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
+                {
+                    rcurrent->tablet_total += rcurrent->room_score * score;        // probability x incidence
+                }
+            }
+            else if (test->category == CATEGORY_COMPUTER)
+            {
+                for (struct room* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
+                {
+                    rcurrent->computer_total += rcurrent->room_score * score;        // probability x incidence
+                }
+            }
+            else if (test->category == CATEGORY_WEARABLE)
+            {
+                for (struct room* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
+                {
+                    rcurrent->watch_total += rcurrent->room_score * score;        // probability x incidence
+                }
+            }
+            else if (test->category == CATEGORY_BEACON)
+            {
+                for (struct room* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
+                {
+                    rcurrent->beacon_total += rcurrent->room_score * score;        // probability x incidence
+                }
+            }
+            else if (test->category != CATEGORY_PHONE)
+            {
+                // only count phones for occupancy
+            }
             else //if (test->distance < 7.5)
             {
                 g_info("Cluster (earliest=%4is, chosen=%4is latest=%4is) count=%i dist=%.1f score=%.2f", -earliest, -delta_time, -age, count, test->distance, score);
@@ -501,7 +537,7 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
                 //g_debug("Update room total %i", room_count);
                 for (struct room* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    rcurrent->room_total += rcurrent->room_score * score;        // probability x incidence
+                    rcurrent->phone_total += rcurrent->room_score * score;        // probability x incidence
                 }
             }
             // else 
@@ -526,9 +562,9 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
 
     for (struct room* r = room_list; r != NULL; r = r->next)
     {
-        if (r->room_total > 0.0)
+        if (r->phone_total > 0.0)
         {
-            cJSON_AddNumberToObject(jobject_rooms, r->name, round(r->room_total*10.0) / 10.0);
+            cJSON_AddNumberToObject(jobject_rooms, r->name, round(r->phone_total*10.0) / 10.0);
         }
     }
 

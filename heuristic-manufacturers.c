@@ -102,6 +102,11 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         optional_set(existing->name, "_Nikon", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
+    else if (manufacturer == 0xc688)
+    {
+        optional_set(existing->name, "_Logitech", NAME_LENGTH);     // not listed on BT website
+        existing->category = CATEGORY_FIXED;
+    }
     else if (manufacturer == 0x0003)
     {
         optional_set(existing->name, "_IBM", NAME_LENGTH);
