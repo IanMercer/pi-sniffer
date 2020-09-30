@@ -58,7 +58,7 @@ void udp_send(int port, const char *message, int message_length)
         close(sockfd);
     }
     else {
-        g_debug("No interface running, skip UDP send");
+        //g_debug("No interface running, skip UDP send");
     }
 }
 
@@ -151,7 +151,7 @@ void add_closest(int64_t device_64, struct AccessPoint* access_point, time_t ear
         return;
     }
 
-    if (distance < 0.1)     // erroneous value
+    if (distance < 0.01)     // erroneous value
         return;
 
     // If the array is full, shuffle it down one

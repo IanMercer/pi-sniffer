@@ -87,6 +87,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_FITNESS; // Massage chair
     else if (string_starts_with(name, "MOLEKULE"))
         existing->category = CATEGORY_APPLIANCE; // Air filter
+    else if (string_starts_with(name, "iFlex_"))
+        existing->category = CATEGORY_APPLIANCE; // Fluke power meter?
 
 
     else if (string_starts_with(name, "Nest Cam"))
@@ -111,6 +113,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
 
     // LIGHTING
 
+    else if (string_starts_with(name, "Hue Lamp"))
+        existing->category = CATEGORY_LIGHTING;
     else if (string_starts_with(name, "Feit Bulb"))
         existing->category = CATEGORY_LIGHTING;
     else if (string_starts_with(name, "Triones"))
@@ -244,6 +248,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_PRINTER; // printer Sony UP-DX100
     else if (string_starts_with(name, "TS9500"))
         existing->category = CATEGORY_PRINTER;
+    else if (string_starts_with(name, "TR8500"))
+        existing->category = CATEGORY_PRINTER;
 
     // Accessories
     else if (string_starts_with(name, "Apple Pencil"))
@@ -279,8 +285,14 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_POS;  // Taiyo Yuden module Beacon? Other?
 
     // Cars
+
     else if (string_starts_with(name, "Audi"))
         existing->category = CATEGORY_CAR;
+    else if (string_starts_with(name, "CalAmp BT"))     // lojack etc.
+        existing->category = CATEGORY_CAR;
+    else if (string_starts_with(name, "DEI-"))     // remote starter
+        existing->category = CATEGORY_CAR;
+
     else if (string_starts_with(name, "VW "))
         existing->category = CATEGORY_CAR;
     else if (strncmp(name, "BMW", 3) == 0)
@@ -333,6 +345,11 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     {
         optional_set(existing->name, "_Logitech", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
+    }
+    else if (string_starts_with(existing->mac, "00:25:52"))
+    {
+        optional_set(existing->name, "_VXI Corp", NAME_LENGTH);
+        existing->category = CATEGORY_HEADPHONES;
     }
 
     // TODO: Android device names
