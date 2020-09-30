@@ -5,9 +5,9 @@
 #include "device.h"
 
 /*
-   Append an Influx line message
+   Append an Influx line message, returns TRUE if successful, FALSE if output is full
 */
-void append_influx_line(struct OverallState* state, char* line, int line_length,  const char* group, const char* topic, char* category, double value, time_t timestamp);
+bool append_influx_line(struct OverallState* state, char* line, int line_length,  const char* group, const char* topic, char* category, double value, time_t timestamp);
 
 /*
     Post formatted line message

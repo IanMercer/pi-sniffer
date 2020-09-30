@@ -709,7 +709,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             // a per-device. PowerLevel is supposed to do this but it's not reliably sent.
             if (strcmp(existing->name, "iPad") == 0 || strcmp(existing->name, "Apple TV") == 0 || string_starts_with(existing->name, "[TV] Samsung"))
             {
-                rssi = rssi * 1.1;   // e.g. -60 becomes -66, -90 becomes -99
+                rssi = rssi * 1.06;   // e.g. -60 becomes -60*1.06
             }
 
             double exponent = ((state.local->rssi_one_meter - (double)rssi) / (10.0 * state.local->rssi_factor));
@@ -1584,25 +1584,32 @@ int report_to_influx_tick(void *parameters)
             r->group->group_total += r->phone_total;
         }
 
-        char body[4096];
+        char body[8192];
         body[0] = '\0';
+
+        bool ok = TRUE;
 
         time_t now = time(0);
         for (struct room* r = state.rooms; r != NULL; r = r->next)
         {
-            append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "phone", r->phone_total, now);
-            append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "watch", r->watch_total, now);
-            append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "tablet", r->tablet_total, now);
-            append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "computer", r->computer_total, now);
-            append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "beacon", r->beacon_total, now);
+            ok = ok && append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "phone", r->phone_total, now);
+            ok = ok && append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "watch", r->watch_total, now);
+            ok = ok && append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "tablet", r->tablet_total, now);
+            ok = ok && append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "computer", r->computer_total, now);
+            ok = ok && append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "beacon", r->beacon_total, now);
         }
+        // And summary by group for just the phones
         for (struct group* g = state.groups; g != NULL; g = g->next)
         {
-            append_influx_line(&state, body, sizeof(body), "Groups", g->name, "phone", g->group_total, now);
+            ok = ok && append_influx_line(&state, body, sizeof(body), "Groups", g->name, "phone", g->group_total, now);
         }
         //g_debug("%s", body);
         post_to_influx(&state, body, strlen(body));
 
+        if (!ok)
+        {
+            g_warning("Influx messages was truncated");
+        }
     }
     return TRUE;
 }

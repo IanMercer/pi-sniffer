@@ -103,9 +103,9 @@ struct cache_item
 
 
 /*
-   Append an Influx line message
+   Append an Influx line message, returns TRUE if successful, FALSE if output is full
 */
-void append_influx_line(struct OverallState* state, char* line, int line_length,  const char* group, const char* topic, char* category, double value, time_t timestamp)
+bool append_influx_line(struct OverallState* state, char* line, int line_length,  const char* group, const char* topic, char* category, double value, time_t timestamp)
 {
     /* InfluxDB line protocol note:
         measurement name
@@ -114,14 +114,17 @@ void append_influx_line(struct OverallState* state, char* line, int line_length,
         ending epoch time missing (3 spaces) so InfluxDB generates the timestamp */
     /* InfluxDB line protocol note: ending epoch time missing so InfluxDB greates it */
     int existing_length = strlen(line);
+    int remainder = line_length - existing_length;
 
-    snprintf(line+existing_length, line_length-existing_length, "%s,host=%s,from=%s,category=%s %s=%.3f %lu000000000\n",
+    int written = snprintf(line+existing_length, remainder, "%s,host=%s,from=%s,category=%s %s=%.3f %lu000000000\n",
         group,                    // A group of rooms
         topic,                    // access point name
         state->local->client_id,  // from = client_id
         category,
         "count", value,           // count = value
         timestamp);               // nanosecond timestamp
+
+    return written > 0 && written < remainder;
 }
 
 void post_to_influx(struct OverallState* state, char* body, int body_length)
