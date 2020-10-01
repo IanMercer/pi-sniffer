@@ -298,7 +298,7 @@ bool string_starts_with(const char *buffer, const char *match)
   string ends with
   TODO: Make this insensitive
 */
-bool string_endswith(const char *buffer, const char *match)
+bool string_ends_with(const char *buffer, const char *match)
 {
     int offset = strlen(buffer) - strlen(match);
     if (offset < 0) return FALSE;

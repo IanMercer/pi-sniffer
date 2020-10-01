@@ -124,7 +124,7 @@ bool append_influx_line(struct OverallState* state, char* line, int line_length,
         "count", value,           // count = value
         timestamp);               // nanosecond timestamp
 
-    return written > 0 && written < remainder;
+    return (written >= 0) && (written < remainder);
 }
 
 void post_to_influx(struct OverallState* state, char* body, int body_length)

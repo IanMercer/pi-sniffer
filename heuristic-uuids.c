@@ -27,6 +27,7 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         uint64_t ble_uuid = strtoul(strCopy, NULL, 16);
 
         // https://www.bluetooth.com/specifications/gatt/characteristics/
+        // See also https://github.com/ghostyguo/BleUuidExplorer/blob/master/app/src/main/java/ghostysoft/bleuuidexplorer/GattAttributes.java
 
         if (ble_uuid == 0x00001000ul) append_text(gatts, gatts_length, "ServiceDiscoveryServer, ");
         else if (ble_uuid == 0x00001001ul) append_text(gatts, gatts_length, "BrowseGroupDescriptor, ");
@@ -99,6 +100,7 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x0000180aul) append_text(gatts, gatts_length, "Device information, ");
         else if (ble_uuid == 0x0000180dul) append_text(gatts, gatts_length, "Heart rate service, ");
         else if (ble_uuid == 0x00002A37ul) append_text(gatts, gatts_length, "Heart rate measurement ");
+        else if (ble_uuid == 0x00006666ul) append_text(gatts, gatts_length, "Bad 0x6666, ");
         else if (ble_uuid == 0x6ada028cul) 
         {
             append_text(gatts, gatts_length, "Nosuch, ");
@@ -114,6 +116,15 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         }
         else if (ble_uuid == 0x0000ffa0ul) append_text(gatts, gatts_length, "Accelerometer, ");
         else if (ble_uuid == 0x0000ffe0ul) append_text(gatts, gatts_length, "Temperature, ");
+
+        else if (ble_uuid == 0x0000feecul) {
+            append_text(gatts, gatts_length, "Tile, ");
+            soft_set_category(&existing->category, CATEGORY_BEACON);
+        }
+        else if (ble_uuid == 0x0000feedul) {
+            append_text(gatts, gatts_length, "Tile, ");
+            soft_set_category(&existing->category, CATEGORY_BEACON);
+        }
         else if (ble_uuid == 0x0000feaful) {
             append_text(gatts, gatts_length, "Nest, ");
             soft_set_category(&existing->category, CATEGORY_FIXED);
@@ -122,9 +133,11 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
             append_text(gatts, gatts_length, "FitbitHR?, ");
             soft_set_category(&existing->category, CATEGORY_WEARABLE);
         }
-        else if (ble_uuid == 0x0000fff0ul) append_text(gatts, gatts_length, "Blood F0, ");
-        else if (ble_uuid == 0x0000fff1ul) append_text(gatts, gatts_length, "Blood F1, ");
-        else if (ble_uuid == 0x0000fff2ul) append_text(gatts, gatts_length, "Blood F2, ");
+        else if (ble_uuid == 0x0000fff0ul) append_text(gatts, gatts_length, "ISSC Transparent Service, ");
+        else if (ble_uuid == 0x0000fff1ul) append_text(gatts, gatts_length, "ISSC Transparent RX, ");
+        else if (ble_uuid == 0x0000fff2ul) append_text(gatts, gatts_length, "ISSC Transparent TX, ");
+        else if (ble_uuid == 0x0000fff6ul) append_text(gatts, gatts_length, "RX, ");
+        else if (ble_uuid == 0x0000fff7ul) append_text(gatts, gatts_length, "TX, ");
         else if (ble_uuid == 0x4e72b490ul) append_text(gatts, gatts_length, "Alexa, ");
         // Apple Notification Center Service
         else if (ble_uuid == 0x7905f431ul) append_text(gatts, gatts_length, "Apple NCS, ");

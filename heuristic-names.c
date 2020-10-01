@@ -11,20 +11,18 @@
 void apply_name_heuristics (struct Device* existing, const char* name)
 {
     if (string_contains_insensitive(name, "iPhone"))
-        existing->category = CATEGORY_PHONE;
-    else if (string_endswith(name, "'s phone"))  // some people name them
     {
-        // Privacy
-        g_strlcpy(existing->name, "*****'s phone", NAME_LENGTH);
         existing->category = CATEGORY_PHONE;
     }
-    else if (string_endswith(name, "s phone"))  // some people name them
+    else if (string_ends_with(name, " phone"))  // some people name them
     {
         // Privacy
         g_strlcpy(existing->name, "*****'s phone", NAME_LENGTH);
         existing->category = CATEGORY_PHONE;
     }
     else if (string_contains_insensitive(name, "Galaxy Note"))
+        existing->category = CATEGORY_PHONE;
+    else if (string_contains_insensitive(name, "Galaxy A10"))
         existing->category = CATEGORY_PHONE;
     else if (string_contains_insensitive(name, "Galaxy A20"))
         existing->category = CATEGORY_PHONE;
@@ -77,6 +75,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_WEARABLE; // Heartrate
     else if (string_starts_with(name, "Alta HR"))
         existing->category = CATEGORY_WEARABLE; // Fitbit Alta Heartrate
+    else if (string_starts_with(name, "Spartan Trainer"))
+        existing->category = CATEGORY_WEARABLE; // Suunto
 
     // FIXED
     else if (string_starts_with(name, "Tacx Neo 2T"))
@@ -99,6 +99,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_SECURITY; // Smart door lock?
     else if (string_starts_with(name, "WYZE"))
         existing->category = CATEGORY_SECURITY; // Smart door lock?
+    else if (string_starts_with(name, "Kuna"))
+        existing->category = CATEGORY_SECURITY;
 
     // Category
 
@@ -132,6 +134,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
 
     // APPLIANCE
 
+    else if (string_starts_with(name, "EssenzaTwo"))
+        existing->category = CATEGORY_APPLIANCE; // Nespresso coffee machine, not a Lamborghini supercar
     else if (string_starts_with(name, "BEDJET"))
         existing->category = CATEGORY_APPLIANCE; // Bed temperature controller!
     else if (string_starts_with(name, "[Refrigerator] Samsung"))
@@ -150,19 +154,25 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_TV;
     else if (string_starts_with(name, "AT&T TV"))       // AT&T TV
         existing->category = CATEGORY_TV;
+    else if (string_ends_with(name, "TV"))
+        existing->category = CATEGORY_TV;
 
     // Beacons
-    else if (strncmp(name, "AprilBeacon", 11) == 0)
+    else if (string_starts_with(name, "AprilBeacon"))
         existing->category = CATEGORY_BEACON;
-    else if (strncmp(name, "abtemp", 6) == 0)
+    else if (string_starts_with(name, "abtemp"))
         existing->category = CATEGORY_BEACON;
-    else if (strncmp(name, "abeacon", 7) == 0)
+    else if (string_starts_with(name, "abeacon"))
         existing->category = CATEGORY_BEACON;
-    else if (strncmp(name, "estimote", 8) == 0)
+    else if (string_starts_with(name, "estimote"))
         existing->category = CATEGORY_BEACON;
-    else if (strncmp(name, "Tile", 4) == 0)
+    else if (string_starts_with(name, "Tile"))
         existing->category = CATEGORY_BEACON;
-    else if (strncmp(name, "LYWSD03MMC", 10) == 0)
+    else if (string_starts_with(name, "iTAG"))
+        existing->category = CATEGORY_BEACON;
+    else if (string_starts_with(name, "LYWSD03MMC"))
+        existing->category = CATEGORY_BEACON;
+    else if (string_ends_with(name, "Beacon"))
         existing->category = CATEGORY_BEACON;
 
     // Headphones or speakers
@@ -197,6 +207,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
 
     // SPEAKERS
 
+    else if (string_starts_with(name, "mini lifejacket jolt"))
+        existing->category = CATEGORY_SPEAKERS;
     else if (string_starts_with(name, "DSW229Dynamo 1100X"))
         existing->category = CATEGORY_SPEAKERS;   // Subwoofer
     else if (string_starts_with(name, "DSW227Dynamo 600X"))
@@ -292,7 +304,10 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_CAR;
     else if (string_starts_with(name, "DEI-"))     // remote starter
         existing->category = CATEGORY_CAR;
-
+    else if (string_starts_with(name, "Nextbase622GW"))     // dash cam
+        existing->category = CATEGORY_CAR;
+    else if (string_starts_with(name, "Aura Pro"))     // LED lights for cars
+        existing->category = CATEGORY_CAR;
     else if (string_starts_with(name, "VW "))
         existing->category = CATEGORY_CAR;
     else if (strncmp(name, "BMW", 3) == 0)
@@ -301,12 +316,18 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_CAR; // maybe the key fob
     else if (strncmp(name, "Subaru", 6) == 0)
         existing->category = CATEGORY_CAR;
+    else if (string_starts_with(name, "DV7100"))
+        existing->category = CATEGORY_CAR;      // aftermarket headunit
     else if (string_starts_with(name, "nuvi"))
         existing->category = CATEGORY_CAR;
     else if (string_starts_with(name, "UberBeacon"))
         existing->category = CATEGORY_CAR; // Uber's dashboard display
     else if (string_starts_with(name, "Lyft Amp"))
         existing->category = CATEGORY_CAR; // Lyft's dashboard display
+    else if (string_starts_with(name, "VHMLite"))
+        existing->category = CATEGORY_CAR; // OBD-II monitor
+    else if (string_starts_with(name, "VEEPEAK"))
+        existing->category = CATEGORY_CAR; // OBD-II monitor
     else if (string_starts_with(name, "LMU3030_BT"))
         existing->category = CATEGORY_CAR; // OBD-II monitor
     else if (string_starts_with(name, "Scosche BTFM4"))
@@ -319,6 +340,39 @@ void apply_name_heuristics (struct Device* existing, const char* name)
 // E0:55:3D
 
     // And some MAC addresses
+    // B8:BC:5B Samsung TV
+    // D4:9D:C0 Samsung TV
+    // F8:3F:51 Samsung __
+    // 5C:C1:D7 Samsung __
+
+// C4:F3:12 Texas Instruments
+
+    else if (string_starts_with(existing->mac, "8C:DE:52"))
+    {
+        // various IoT
+        optional_set(existing->name, "_ISSC Technologies Corp.", NAME_LENGTH);  // Fabless Semi: headsets, car kits, ...
+    }
+
+    else if (string_starts_with(existing->mac, "0C:8C:DC"))
+    {
+        // various IoT
+        optional_set(existing->name, "_Suunto", NAME_LENGTH);
+        existing->category = CATEGORY_WEARABLE;
+    }
+
+    else if (string_starts_with(existing->mac, "CC:93:4A"))
+    {
+        // various IoT
+        optional_set(existing->name, "_Sierra Wireless", NAME_LENGTH);
+        existing->category = CATEGORY_FIXED;
+    }
+
+    else if (string_starts_with(existing->mac, "64:b8:53"))
+    {
+        // Samsung phone
+        optional_set(existing->name, "_Samsung Phone", NAME_LENGTH);
+        existing->category = CATEGORY_PHONE;
+    }
     else if (string_starts_with(existing->mac, "e0:55:3d"))
     {
         // OEM to Sony? HP?
@@ -339,6 +393,11 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     else if (string_starts_with(existing->mac, "64:db:a0"))
     {
         optional_set(existing->name, "_Select Comfort", NAME_LENGTH);
+        existing->category = CATEGORY_FIXED;
+    }
+    else if (string_starts_with(existing->mac, "C0:28:8d"))
+    {
+        optional_set(existing->name, "_Logitech", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
     else if (string_starts_with(existing->mac, "88:c6:26"))

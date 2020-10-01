@@ -28,6 +28,10 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         existing->category = CATEGORY_CAR;
         //    ManufacturerData: {uint16 555: <[byte 0x04, 0x18, 0x77, 0x9d, 0x16, 0xee, 0x04, 0x6c, 0xf9, 0x49, 0x01, 0xf3, 0
     }
+    else if (manufacturer == 0x0000)
+    {
+        optional_set(existing->name, "_Invalid 0x0000", NAME_LENGTH);
+    }
     else if (manufacturer == 0x0006)
     {
         optional_set(existing->name, "_Microsoft", NAME_LENGTH);
@@ -85,6 +89,31 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
 
 
     }
+
+    else if (manufacturer == 0x9479)
+    {
+        optional_set(existing->name, "_Unlisted(0x9479)", NAME_LENGTH);
+    }
+    else if (manufacturer == 0x37bb)
+    {
+        optional_set(existing->name, "_Unlisted(0x37bb)", NAME_LENGTH);
+    }
+    else if (manufacturer == 0x0b01)
+    {
+        optional_set(existing->name, "_Unlisted(0x0b01)", NAME_LENGTH);
+    }
+    else if (manufacturer == 0x0a01)
+    {
+        optional_set(existing->name, "_Unlisted(0x0a01)", NAME_LENGTH);
+    }
+    else if (manufacturer == 0x484d)
+    {
+        optional_set(existing->name, "_Unlisted(0x484d)", NAME_LENGTH);
+    }
+    else if (manufacturer == 0x1010)
+    {
+        optional_set(existing->name, "_Unlisted(0x1010)", NAME_LENGTH);
+    }
     else if (manufacturer == 0xff19)
     {
         optional_set(existing->name, "_Samsung 0xff19", NAME_LENGTH);
@@ -95,7 +124,9 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
     }
     else if (manufacturer == 0x0110)
     {
+        // Manufacturer of car clusters
         optional_set(existing->name, "_Nippon Seiki", NAME_LENGTH);
+        existing->category = CATEGORY_CAR;
     }
     else if (manufacturer == 0x0399)
     {
@@ -110,6 +141,11 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
     else if (manufacturer == 0x0003)
     {
         optional_set(existing->name, "_IBM", NAME_LENGTH);
+        existing->category = CATEGORY_FIXED;
+    }
+    else if (manufacturer == 0x0059)
+    {
+        optional_set(existing->name, "_Nordic Semiconductor", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x0501)
@@ -197,11 +233,18 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         optional_set(existing->name, "_Relations Inc", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
+    else if (manufacturer == 0x0601)
+    {
+        // Make TPMS systems
+        optional_set(existing->name, "_Shrader Electronics", NAME_LENGTH);
+        existing->category = CATEGORY_CAR;
+    }
     else if (manufacturer == 0x0065)
     {
         optional_set(existing->name, "_HP", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
+
     else if (manufacturer == 0x00d2)
     {
         optional_set(existing->name, "_AbTemp", NAME_LENGTH);

@@ -1584,7 +1584,7 @@ int report_to_influx_tick(void *parameters)
             r->group->group_total += r->phone_total;
         }
 
-        char body[8192];
+        char body[4096];
         body[0] = '\0';
 
         bool ok = TRUE;
@@ -1597,14 +1597,27 @@ int report_to_influx_tick(void *parameters)
             ok = ok && append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "tablet", r->tablet_total, now);
             ok = ok && append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "computer", r->computer_total, now);
             ok = ok && append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "beacon", r->beacon_total, now);
+
+            if (strlen(body) + 5 * 100 > sizeof(body)){
+                post_to_influx(&state, body, strlen(body));
+                body[0] = '\0';
+            }
         }
         // And summary by group for just the phones
         for (struct group* g = state.groups; g != NULL; g = g->next)
         {
             ok = ok && append_influx_line(&state, body, sizeof(body), "Groups", g->name, "phone", g->group_total, now);
+
+            if (strlen(body) + 100 > sizeof(body)){
+                post_to_influx(&state, body, strlen(body));
+                body[0] = '\0';
+            }
         }
         //g_debug("%s", body);
-        post_to_influx(&state, body, strlen(body));
+        if (strlen(body) > 0)
+        {
+            post_to_influx(&state, body, strlen(body));
+        }
 
         if (!ok)
         {

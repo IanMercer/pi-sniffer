@@ -72,7 +72,7 @@ bool string_starts_with(const char *buffer, const char *match);
 /*
   string ends with (case sensitive at the moment)
 */
-bool string_endswith(const char *buffer, const char *match);
+bool string_ends_with(const char *buffer, const char *match);
 
 /*
   string contains insensitive (ASCII)
