@@ -1922,6 +1922,12 @@ void initialize_state()
     state.influx_username = getenv("INFLUX_USERNAME");
     state.influx_password = getenv("INFLUX_PASSWORD");
 
+    state.webhook_url = getenv("WEBHOOK_URL");
+    state.webhook_username = getenv("WEBHOOK_USERNAME");
+    state.webhook_password = getenv("WEBHOOK_PASSWORD");
+
+    state.configuration_file_path = getenv("CONFIG");
+
     state.verbosity = Distances; // default verbosity
     char* verbosity = getenv("VERBOSITY");
     if (verbosity){

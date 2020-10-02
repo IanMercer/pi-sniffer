@@ -1,0 +1,8 @@
+{
+    "rooms" : [
+        {"name":"Shoes","group":"Store","weights":[{"n":"sensor1","v":2.0},{"n":"sensor2","v":12.5},{"n":"sensor3","v":-1}]},
+        {"name":"FormalWear","group":"Store","weights":[{"n":"sensor1","v":6.0},{"n":"sensor2","v":6},{"n":"sensor3","v":-1}]},
+        {"name":"Fashion","group":"Store","weights":[{"n":"sensor1","v":12.0},{"n":"sensor2","v":2.0},{"n":"sensor3","v":-1}]},
+        {"name":"Outside","group":"Outside","weights":[{"n":"sensor1","v":-1},{"n":"sensor2","v":-1},{"n":"sensor3","v":3}]}
+    ]
+}

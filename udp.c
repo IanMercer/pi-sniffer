@@ -189,7 +189,7 @@ void add_closest(int64_t device_64, struct AccessPoint* access_point, time_t ear
 
 
 // Mock ML model for calculating which room a set of observations are most likely to be
-double room_probability(struct room* r, char * ap_name, double distance)
+double room_probability(struct room* r, char * ap_name, double distance, double time)
 {
     struct weight* weight = NULL;
     for (weight = r->weights; weight != NULL; weight = weight->next)
@@ -205,17 +205,29 @@ double room_probability(struct room* r, char * ap_name, double distance)
                 if (expected_distance > 8.0) return 0.6;
                 if (expected_distance > 7.5) return 0.5;
                 if (expected_distance > 5.0) return 0.3;
-                return 0.2; // expected a reading, didn't get one, could be faulty sensor
+                if (expected_distance > 2.0) return 0.2;
+                return 0.1; // expected a reading, didn't get one, could be faulty sensor
             }
             else
             {
-                if (expected_distance < 0) return 0.0001;                  // must not be able to see this a/p from this location
+                // should not be able to see this a/p from this location
+                if (expected_distance < 0) 
+                {
+                    // could have move from that location, so use time as a dilution (5% chance after 100s)
+                    double prob = time * time * 0.000005;
+                    if (prob > 0.5) prob = 0.5;
+                    return prob;
+                }
                 double delta_distance = fabs(distance - expected_distance);
-                if (delta_distance < 0.1 * expected_distance) return 0.95;
-                if (delta_distance < 0.2 * expected_distance) return 0.90;
-                if (delta_distance < 0.3 * expected_distance) return 0.80;
-                if (delta_distance < 0.5 * expected_distance) return 0.70;
-                return 0.4; // 1.0 / fabs(distance - r->weights[i].weight);
+                // if this is an old measurement it carries less weight
+                double dilution_of_precision = 0.1 * time;              // 1.4m/s is walking speed 
+                // e.g. 10s after = 1m, 100s after = 10m
+
+                if (delta_distance < 2 + dilution_of_precision) return 0.95;
+                if (delta_distance < 3 + dilution_of_precision) return 0.90;
+                if (delta_distance < 5 + dilution_of_precision) return 0.80;
+                if (delta_distance < 10 + dilution_of_precision) return 0.70;
+                return 0.4;
             }
         }
     }
@@ -231,7 +243,12 @@ double room_probability(struct room* r, char * ap_name, double distance)
 }
 
 
-void calculate_location(struct room* room_list, struct AccessPoint* access_points, double accessdistances[N_ACCESS_POINTS])
+/*
+   Calculates room scores using access point distances
+
+*/
+
+void calculate_location(struct room* room_list, struct AccessPoint* access_points, double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS])
 {
     char line[120];
     line[0] = '\0';
@@ -240,12 +257,14 @@ void calculate_location(struct room* room_list, struct AccessPoint* access_point
     {
         double room_score = 1.0;
         //g_debug("  calculating %s", room->name);
-        for (struct AccessPoint* current = access_points; current!=NULL; current = current->next)
+        for (struct AccessPoint* ap = access_points; ap!=NULL; ap = ap->next)
         {
-            double distance = accessdistances[current->id];
-            double score = room_probability(room, current->client_id, distance);
+            double distance = accessdistances[ap->id];
+            double time = accesstimes[ap->id];
+            double score = room_probability(room, ap->client_id, distance, time);
             room_score *= score;
-            //g_debug("    %s  %s %.2fm s=%.2f", room->name, accessPoints[j].client_id, distance, score);
+
+            //g_debug("    %s  %s %.2fm %.1fs s=%.2f", room->name, ap->client_id, distance, time, score);
         }
         room->room_score = room_score;
     }
@@ -331,11 +350,13 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
     {
         g_assert(closest[i].access_point != NULL);
 
-        // parallel array of distances
-        double access_distances[N_ACCESS_POINTS];
+        // parallel array of distances and times
+        double access_distances[N_ACCESS_POINTS];       // latest observation distance
+        double access_times[N_ACCESS_POINTS];           // latest observation time
         for (struct AccessPoint* ap = access_points_list; ap != NULL; ap = ap->next)
         {
             access_distances[ap->id] = 0.0;
+            access_times[ap->id] = 0.0;
         }
 
         struct ClosestTo* test = &closest[i];
@@ -392,27 +413,27 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
                 // ignore a superseded value if it was a long time ago and we've seen other reports since then from it
                 count_same_mac++;
 
-                if (time_diff > 300)
-                {
-                    g_debug("Skip remainder, delta time %i > 300", time_diff);
-                    skipping = true;
-                    continue;
-                }
-
                 //if (time_diff < 300)      // only interested in where it has been recently // handled above in outer loop
                 {
                     char other_mac[18];
                     mac_64_to_string(other_mac, 18, other->supersededby);
 
                     struct AccessPoint *ap2 = other->access_point;
-
                     g_debug(" %10s distance %5.1fm at=%3is dt=%3is count=%3i %s%s", ap2->client_id, other->distance, abs_diff, time_diff, other->count,
                         // lazy concat
                         other->supersededby==0 ? "" : "superseeded=", 
                         other->supersededby==0 ? "" : other_mac);
 
+                    if (time_diff > 300)
+                    {
+                        g_debug("Skip remainder, delta time %i > 300", time_diff);
+                        skipping = true;
+                        continue;
+                    }
+
                     int index = other->access_point->id;
                     access_distances[index] = round(other->distance * 10.0) / 10.0;
+                    access_times[index] = abs_diff;
 
                     // other needs to be better than test by at least as far as test could have moved in that time interval
                     if (other->distance < test->distance - distance_dilution)
@@ -430,8 +451,8 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
 
         for (struct AccessPoint* current = access_points_list; current != NULL; current = current->next)
         {
-            // remove 'if' for machine consumption
-            //if (access_distances[current->id] != 0)
+            // remove 'if' for analysis consumption if fixed columns are needed
+            if (access_distances[current->id] != 0)
             {
                 cJSON_AddNumberToObject(jobject, current->client_id, access_distances[current->id]);
             }
@@ -483,7 +504,7 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
             // SVM model goes here to convert access point distances to locations
 
 
-            calculate_location(room_list, access_points_list, access_distances);
+            calculate_location(room_list, access_points_list, access_distances, access_times);
 
             // g_debug("   %s %s is at %16s for %3is at %4.1fm score=%.1f count=%i%s", mac, category, ap->client_id, delta_time, test->distance, score,
             //     count, test->distance > 7.5 ? " * TOO FAR *": "");
@@ -528,7 +549,7 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
             }
             else //if (test->distance < 7.5)
             {
-                g_info("Cluster (earliest=%4is, chosen=%4is latest=%4is) count=%i dist=%.1f score=%.2f", -earliest, -delta_time, -age, count, test->distance, score);
+                g_info("Cluster (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, score);
 
                 total_count += score;
                 ap->people_closest_count = ap->people_closest_count + score;

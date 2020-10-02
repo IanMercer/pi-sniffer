@@ -175,7 +175,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     else if (string_ends_with(name, "Beacon"))
         existing->category = CATEGORY_BEACON;
 
-    // Headphones or speakers
+    // Headphones
+
     else if (strncmp(name, "Sesh Evo-LE", 11) == 0)
         existing->category = CATEGORY_HEADPHONES; // Skullcandy
     else if (strncmp(name, "F2", 2) == 0)
@@ -204,6 +205,12 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_HEADPHONES;
     else if (string_contains_insensitive(name, "headphone"))
         existing->category = CATEGORY_HEADPHONES;
+
+    // Hearing aids - todo: separate category
+
+    else if (string_contains_insensitive(name, "Thomas Hearing Aids"))
+        existing->category = CATEGORY_HEADPHONES;
+
 
     // SPEAKERS
 

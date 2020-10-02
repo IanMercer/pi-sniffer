@@ -240,6 +240,14 @@ struct OverallState
    char* influx_username;
    char* influx_password;
 
+   // Optional webhook for posting room counts to digital signage displays
+   char* webhook_url;
+   char* webhook_username;
+   char* webhook_password;
+
+   // path to config.json
+   char* configuration_file_path;
+
    // linked list of access points
    struct AccessPoint* access_points;
    // linked list of rooms
