@@ -94,6 +94,23 @@ Environment="UDP_SCALE_FACTOR=0.5"
 # or by removing this line entirely
 Environment="G_MESSAGES_DEBUG=all"
 
+# You can connect directly to Influx DB
+Environment="INFLUX_SERVER=<influx_server_domain_and_path>"
+Environment="INFLUX_PORT=80"
+Environment="INFLUX_DATABASE=<database_name>"
+Environment="INFLUX_USERNAME=<username>"
+Environment="INFLUX_PASSWORD=<password>"
+
+# You can connect to a webhook passing a JSON object containing room information
+Environment="WEBHOOK_URL=<webhook_url>"
+Environment="WEBHOOK_USERNAME="
+Environment="WEBHOOK_PASSWORD="
+
+# You can define rooms and groups using an optional JSON file, see sample config.json
+# which is typically installed to /etc/signswift/config.json but can be placed anywhere
+Environment="CONFIG=/etc/signswift/config.json"
+
+
 ````
 
 * Alternatively, instead of using `build.sh` you can run the following steps manually:

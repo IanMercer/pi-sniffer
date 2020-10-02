@@ -44,13 +44,13 @@ struct group* get_or_add_group(struct group** group_list, char* group_name)
 /*
     Initalize the rooms database (linked list)
 */
-void read_configuration_file(struct room** room_list, struct group** group_list, struct AccessPoint** access_points_list)
+void read_configuration_file(const char* path, struct room** room_list, struct group** group_list, struct AccessPoint** access_points_list)
 {
     // Read from file ...
 
     FILE *fp;
 
-    fp = fopen("rooms.json", "r");
+    fp = fopen(path, "r");
 
     if (fp == NULL)
     {

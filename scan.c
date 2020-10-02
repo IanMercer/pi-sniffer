@@ -1936,7 +1936,7 @@ void initialize_state()
         if (strcmp(verbosity, "details")) state.verbosity = Details;
     }
    
-    read_configuration_file(&state.rooms, &state.groups, &state.access_points);
+    read_configuration_file(state.configuration_file_path, &state.rooms, &state.groups, &state.access_points);
 }
 
 void display_state()
@@ -1966,6 +1966,13 @@ void display_state()
     g_info("INFLUX_DATABASE='%s'", state.influx_database);
     g_info("INFLUX_USERNAME='%s'", state.influx_username);
     g_info("INFLUX_PASSWORD='%s'", state.influx_password == NULL ? "(null)" : "*****");
+
+    g_info("WEBHOOK_URL='%s'", state.webhook_url == NULL ? "(null)" : state.webhook_url);
+    g_info("WEBHOOK_USERNAME='%s'", state.webhook_username == NULL ? "(null)" : "*****");
+    g_info("WEBHOOK_PASSWORD='%s'", state.webhook_password == NULL ? "(null)" : "*****");
+
+    g_info("CONFIG='%s'", state.configuration_file_path == NULL ? "** Please set a path to config.json **" : state.configuration_file_path);
+
 
     int count = 0;
     for (struct room* room = state.rooms; room != NULL; room=room->next){ count ++; }
