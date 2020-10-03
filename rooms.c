@@ -55,8 +55,8 @@ void read_configuration_file(const char* path, struct room** room_list, struct g
     if (fp == NULL)
     {
         // If no file, calculate from access points
-        g_error("Please create a file 'rooms.json' containg the mapping from sensors to rooms");
-        exit(EXIT_FAILURE);
+        g_error("Please create a file 'rooms.json' containing the mapping from sensors to rooms");
+        return;
     }
 
     fseek (fp, 0, SEEK_END);
