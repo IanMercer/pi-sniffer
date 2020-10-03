@@ -1937,6 +1937,8 @@ void initialize_state()
     }
    
     read_configuration_file(state.configuration_file_path, &state.rooms, &state.groups, &state.access_points);
+
+    g_debug("Completed read of configuration file");
 }
 
 void display_state()
