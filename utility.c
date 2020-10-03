@@ -118,6 +118,34 @@ char* trim(char *str)
 }
 
 
+/*
+  url_slug removes spaces and other bad characters
+*/
+char* url_slug(char *str)
+{
+    char *src = str;
+    char *dest = str;
+
+    if (str == NULL)
+    {
+        return NULL;
+    }
+
+    while (*src != '\0')
+    {
+        if ((*src >= '0' && *src <='9') || (*src >= 'A' && *src <='Z') || (*src >= 'a' && *src <='b') || (*src == '_'))
+        {
+            *dest = *src;
+            ++dest;
+        }
+        ++src;
+    }
+    *dest = '\0';
+
+    return str;
+}
+
+
 void get_path_from_address(char* address, char* path, int pathLength) {
    snprintf(path, pathLength, "/org/bluez/hci0/dev_%s", address);
    path[22] = '_';

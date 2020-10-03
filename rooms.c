@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <glib.h>
 #include <string.h>
-
+#include "utility.h"
 
 /*
     Get or add a group
@@ -105,7 +105,7 @@ void read_configuration_file(const char* path, struct room** room_list, struct g
         cJSON* name = cJSON_GetObjectItemCaseSensitive(room, "name");
         if (cJSON_IsString(name) && (name->valuestring != NULL))
         {
-            r->name = strdup(name->valuestring);
+            r->name = strdup(url_slug(name->valuestring));
         }
         else
         {
@@ -116,7 +116,8 @@ void read_configuration_file(const char* path, struct room** room_list, struct g
         cJSON* group = cJSON_GetObjectItemCaseSensitive(room, "group");
         if (cJSON_IsString(group) && (group->valuestring != NULL))
         {
-            r->group = get_or_add_group(group_list, group->valuestring);
+            // no strdup here, get_or_add_group handles that
+            r->group = get_or_add_group(group_list, url_slug(group->valuestring));
         }
         else
         {

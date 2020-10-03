@@ -21,6 +21,14 @@ void getMemory(
     int* currRealMem, int* peakRealMem,
     int* currVirtMem, int* peakVirtMem);
 
+/*
+  url_slug removes spaces and other bad characters
+*/
+char* url_slug(char *str);
+
+/*
+    trim whitespace off end
+*/
 char* trim(char *str);
 
 void get_path_from_address(char* address, char* path, int pathLength);
