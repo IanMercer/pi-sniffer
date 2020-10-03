@@ -37,13 +37,23 @@ char* category_from_int(uint i)
 */
 void merge(struct Device* local, struct Device* remote, char* access_name, bool safe)
 {
+    local->is_training_beacon = local->is_training_beacon || remote->is_training_beacon;
+
     if (strcmp(local->name, remote->name) != 0 
         && strlen(local->name)>0 && strlen(remote->name)>0
         && remote->name[0] != '_')
     {
-        g_info("Replace local '%s' by remote '%s'?", local->name, remote->name);
+        if (local->is_training_beacon)
+        {
+            g_info("Training beacon changed name '%s' to '%s' because %s", local->name, remote->name, access_name);
+            g_strlcpy(local->name, remote->name, NAME_LENGTH);
+        }
+        else{
+            g_info("Replace local '%s' by remote '%s'?", local->name, remote->name);
+        }
     }
     // TODO: All the NAME rules should be applied here too (e.g. privacy)
+
     optional_set(local->name, remote->name, NAME_LENGTH);
     optional_set(local->alias, remote->alias, NAME_LENGTH);
     soft_set_8(&local->addressType, remote->addressType);

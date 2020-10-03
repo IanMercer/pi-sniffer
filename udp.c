@@ -443,16 +443,16 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
                 {
                     char other_mac[18];
                     mac_64_to_string(other_mac, 18, other->supersededby);
-
+/*
                     struct AccessPoint *ap2 = other->access_point;
                     g_debug(" %10s distance %5.1fm at=%3is dt=%3is count=%3i %s%s", ap2->client_id, other->distance, abs_diff, time_diff, other->count,
                         // lazy concat
                         other->supersededby==0 ? "" : "superseeded=", 
                         other->supersededby==0 ? "" : other_mac);
-
+*/
                     if (time_diff > 300)
                     {
-                        g_debug("Skip remainder, delta time %i > 300", time_diff);
+                        //g_debug("Skip remainder, delta time %i > 300", time_diff);
                         skipping = true;
                         continue;
                     }
