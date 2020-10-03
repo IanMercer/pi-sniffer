@@ -102,7 +102,7 @@ void mark_superseded(struct AccessPoint* access_point, int64_t device_64, int64_
 */
 void add_closest(int64_t device_64, struct AccessPoint* access_point, time_t earliest,
     time_t time, float distance, 
-    int8_t category, int64_t supersededby, int count, char* name)
+    int8_t category, int64_t supersededby, int count, char* name, bool is_training_beacon)
 {
     g_assert(access_point != NULL);
     //g_debug("add_closest(%s, %i, %.2fm, %i)", client_id, access_id, distance, count);
@@ -171,6 +171,7 @@ void add_closest(int64_t device_64, struct AccessPoint* access_point, time_t ear
     closest[closest_n].earliest = earliest;
     closest[closest_n].time = time;
     closest[closest_n].count = count;
+    closest[closest_n].is_training_beacon = is_training_beacon;
     strncpy(closest[closest_n].name, name, META_LENGTH);           // debug only, remove this later
     closest_n++;
 
@@ -214,7 +215,7 @@ double room_probability(struct room* r, char * ap_name, double distance, double 
                 if (expected_distance < 0) 
                 {
                     // could have move from that location, so use time as a dilution (5% chance after 100s)
-                    double prob = time * time * 0.000005;
+                    double prob = time * 0.0005;
                     if (prob > 0.5) prob = 0.5;
                     return prob;
                 }
@@ -248,8 +249,12 @@ double room_probability(struct room* r, char * ap_name, double distance, double 
 
 */
 
-void calculate_location(struct room* room_list, struct AccessPoint* access_points, double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS])
+void calculate_location(struct ClosestTo* closest, struct room* room_list, struct AccessPoint* access_points, double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS])
 {
+    char* device_name = closest->name;
+    const char* category = category_from_int(closest->category);
+    bool is_training_beacon = closest->is_training_beacon;
+
     char line[120];
     line[0] = '\0';
 
@@ -298,6 +303,27 @@ void calculate_location(struct room* room_list, struct AccessPoint* access_point
             append_text(line, sizeof(line), "%s:%.2f, ", room->name, room->room_score);
         }
     }
+
+    // CSV
+    char csv[256];
+    csv[0] = '\0';
+    for (struct AccessPoint* current = access_points; current != NULL; current = current->next)
+    {
+        append_text(csv, sizeof(csv), "%.1f,", accessdistances[current->id]);
+    }
+
+    if (k > 0)
+    {
+        append_text(csv, sizeof(csv), "\"%s\",\"%s\",\"%s\",\"%s\"", device_name, sorted[0]->name, category, is_training_beacon?"TRAIN":"");
+    }
+    else
+    {
+        append_text(csv, sizeof(csv), "\"%s\",\"%s\",\"%s\",\"%s\"", device_name, "unknown", category, is_training_beacon?"TRAIN":"");
+    }
+
+    if (csv[strlen(csv)-1]==',' && strlen(csv)>0) csv[strlen(csv)-1] = '\0';  // trim trailing comma
+
+    g_debug("CSV: %s", csv);
 
     g_debug("Scores: %s", line);
 }
@@ -465,17 +491,6 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
         g_debug("%s", json);
         free(json);
 
-        // CSV
-        char csv[256];
-        csv[0] = '\0';
-        bool found = false;
-        for (struct AccessPoint* current = access_points_list; current != NULL; current = current->next)
-        {
-            found = true;
-            append_text(csv, sizeof(csv), "%.1f,", access_distances[current->id]);
-        }
-        if (found) csv[strlen(csv)-1] = '\0';  // trim trailing comma
-        g_debug("CSV: %s", csv);
 
         struct AccessPoint *ap = test->access_point;
 
@@ -504,7 +519,7 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
             // SVM model goes here to convert access point distances to locations
 
 
-            calculate_location(room_list, access_points_list, access_distances, access_times);
+            calculate_location(test, room_list, access_points_list, access_distances, access_times);
 
             // g_debug("   %s %s is at %16s for %3is at %4.1fm score=%.1f count=%i%s", mac, category, ap->client_id, delta_time, test->distance, score,
             //     count, test->distance > 7.5 ? " * TOO FAR *": "");
@@ -797,7 +812,7 @@ void *listen_loop(void *param)
                         // char* cat = category_from_int(d.category);
                         // g_debug("Update from UDP: %s %s %s\n", d.mac, d.name, cat);
 
-                        add_closest(id_64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count, d.name);
+                        add_closest(id_64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count, d.name, d.is_training_beacon);
                     }
                    
                     break;
@@ -811,7 +826,7 @@ void *listen_loop(void *param)
 
                 int64_t id_64 = mac_string_to_int_64(d.mac);
                 g_assert(actual != NULL);
-                add_closest(id_64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count, d.name);
+                add_closest(id_64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count, d.name, d.is_training_beacon);
             }
 
             pthread_mutex_unlock(&state->lock);
@@ -863,7 +878,7 @@ void update_closest(struct OverallState *state, struct Device *device)
     //g_debug("update_closest(%s, %i, %s)", state->local->client_id, state->local->id, device->mac);
     // Add local observations into the same structure
     int64_t id_64 = mac_string_to_int_64(device->mac);
-    add_closest(id_64, state->local, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count, device->name);
+    add_closest(id_64, state->local, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count, device->name, device->is_training_beacon);
 }
 
 /*
@@ -875,7 +890,7 @@ void update_superseded(struct OverallState *state, struct Device *device)
     // Add local observations into the same structure
     int64_t id_64 = mac_string_to_int_64(device->mac);
     g_assert(state->local != NULL);
-    add_closest(id_64, state->local, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count, device->name);
+    add_closest(id_64, state->local, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count, device->name, device->is_training_beacon);
 }
 
 /*

@@ -1993,7 +1993,7 @@ void display_state()
         append_text(csv, sizeof(csv), "%s,", current->client_id);
     }
     if (found) csv[strlen(csv)-1] = '\0';  // trim trailing comma
-    g_debug("CSV: %s", csv);
+    g_debug("CSV: %s,device,room", csv);
 }
 
 guint prop_changed;

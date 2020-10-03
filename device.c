@@ -182,6 +182,9 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     cJSON_AddNumberToObject(j, "count", device->count);
     cJSON_AddNumberToObject(j, "column", device->column);
     cJSON_AddNumberToObject(j, "try_connect_state", device->try_connect_state);
+    if (device->is_training_beacon){
+        cJSON_AddNumberToObject(j, "training", 1);
+    }
 
     string = cJSON_PrintUnformatted(j);
     cJSON_Delete(j);
@@ -308,6 +311,9 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
         // TODO: Full date time serialization and deserialization
         device->earliest = earliest->valueint;
     }
+
+    cJSON *training = cJSON_GetObjectItemCaseSensitive(djson, "training");
+    device->is_training_beacon = cJSON_IsNumber(training);
 
     device->category = CATEGORY_UNKNOWN;
     cJSON *category = cJSON_GetObjectItemCaseSensitive(djson, "category");

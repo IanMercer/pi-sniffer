@@ -133,7 +133,7 @@ char* url_slug(char *str)
 
     while (*src != '\0')
     {
-        if ((*src >= '0' && *src <='9') || (*src >= 'A' && *src <='Z') || (*src >= 'a' && *src <='b') || (*src == '_'))
+        if ((*src >= '0' && *src <='9') || (*src >= 'A' && *src <='Z') || (*src >= 'a' && *src <='z') || (*src == '_'))
         {
             *dest = *src;
             ++dest;

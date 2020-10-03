@@ -103,6 +103,7 @@ struct Device
    float x;       // Calculated position, will be Kalman filtered
    float y;
    float z;
+   bool is_training_beacon;      // Is this a beacon with "Indoor Positioning" turned on?
 };
 
 /*
@@ -185,6 +186,8 @@ struct ClosestTo
    int count;
    // for debugging
    char name [META_LENGTH];
+   // for training location to room mappings
+   bool is_training_beacon;
 };
 
 int category_to_int(char *category);
