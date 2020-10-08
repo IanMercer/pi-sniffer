@@ -15,6 +15,7 @@
 #include <netinet/in.h>
 #include <math.h>
 #include "cJSON.h"
+#include "knn.h"
 
 #define BLOCK_SIZE 1024
 
@@ -158,7 +159,7 @@ void add_closest(int64_t device_64, struct AccessPoint* access_point, time_t ear
     if (closest_n == CLOSEST_N)
     {
         //g_debug("Trimming closest array");
-        g_memmove(&closest[0], &closest[1], sizeof(struct ClosestTo) * (CLOSEST_N - 1));
+        memmove(&closest[0], &closest[1], sizeof(struct ClosestTo) * (CLOSEST_N - 1));
         closest_n--;
     }
 
@@ -246,14 +247,13 @@ double room_probability(struct room* r, char * ap_name, double distance, double 
 
 /*
    Calculates room scores using access point distances
-
 */
 
 void calculate_location(struct ClosestTo* closest, struct room* room_list, struct AccessPoint* access_points, double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS])
 {
     char* device_name = closest->name;
     const char* category = category_from_int(closest->category);
-    bool is_training_beacon = closest->is_training_beacon;
+    bool is_training_beacon = FALSE;
 
     char line[120];
     line[0] = '\0';
@@ -272,6 +272,9 @@ void calculate_location(struct ClosestTo* closest, struct room* room_list, struc
             //g_debug("    %s  %s %.2fm %.1fs s=%.2f", room->name, ap->client_id, distance, time, score);
         }
         room->room_score = room_score;
+
+        // This becomes a training beacon if the name matches a room exactly
+        if (strcmp(closest->name, room->name) == 0) is_training_beacon = TRUE;
     }
 
     double total_score = 0.00000001;  // non-zero
@@ -323,7 +326,18 @@ void calculate_location(struct ClosestTo* closest, struct room* room_list, struc
 
     if (csv[strlen(csv)-1]==',' && strlen(csv)>0) csv[strlen(csv)-1] = '\0';  // trim trailing comma
 
-    g_debug("CSV: %s", csv);
+    time_t now = time(0);
+    if (difftime(now, closest->time) > 15)
+    {
+        //g_debug("Skip CSV, old data");
+    }
+    else 
+    {
+        g_debug("CSV: %s", csv);
+
+        // RECORD TRAINING DATA
+        record("test.jsonl", accessdistances, access_points, device_name);
+    }
 
     g_debug("Scores: %s", line);
 }
@@ -345,6 +359,7 @@ void set_count_to_zero(struct AccessPoint* ap, void* extra)
 */
 void print_counts_by_closest(struct AccessPoint* access_points_list, struct room* room_list)
 {
+
     float total_count = 0.0;
 
 //    g_debug("Clear room totals");

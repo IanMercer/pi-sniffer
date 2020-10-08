@@ -623,7 +623,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
             if (strncmp(name, existing->name, NAME_LENGTH - 1) != 0)
             {
-                g_info("  %s Name has changed '%s' -> '%s'\n", address, existing->name, name);
+                g_info("  %s changed name '%s' -> '%s'\n", address, existing->name, name);
                 if (state.network_up) send_to_mqtt_single(address, "name", name);
                 g_strlcpy(existing->name, name, NAME_LENGTH);
             }
@@ -831,21 +831,34 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->uuid_hash = uuid_hash & 0xffffffff;
             }
 
-            if ((existing->uuids_length != actualLength) && (actualLength > 0))
+            if ((existing->uuids_length != actualLength))// && (actualLength > 0))
             {
                 char gatts[1024];
                 gatts[0] = '\0';
 
+                bool was = existing->is_training_beacon;
+                existing->is_training_beacon = false;  // will set true if it's still there after (handles beacon stopping on iPhone nRF app)
                 handle_uuids(existing, uuidArray, actualLength, gatts, sizeof(gatts));
 
-                char **allocdata = g_malloc(actualLength * sizeof(char *)); // array of pointers to strings
-                memcpy(allocdata, uuidArray, actualLength * sizeof(char *));
-                g_info ("  %s UUIDs: %s", address, gatts);
-                if (state.network_up && state.verbosity >= Details) {
-                    send_to_mqtt_uuids(address, "uuids", allocdata, actualLength);
+                if (was && !existing->is_training_beacon){
+                    g_warning("%s (%s) is no longer transmitting an Indoor Positioning UUID", existing->mac, existing->name);
+                }
+
+                if (actualLength > 0)
+                {
+                    char **allocdata = g_malloc(actualLength * sizeof(char *)); // array of pointers to strings
+                    memcpy(allocdata, uuidArray, actualLength * sizeof(char *));
+                    g_info ("  %s UUIDs: %s", address, gatts);
+                    if (state.network_up && state.verbosity >= Details) {
+                        send_to_mqtt_uuids(address, "uuids", allocdata, actualLength);
+                    }
+                    g_free(allocdata); // no need to free the actual strings, that happens below
                 }
                 existing->uuids_length = actualLength;
-                g_free(allocdata); // no need to free the actual strings, that happens below
+            }
+            else 
+            {
+                g_debug("  %s UUIDs unchanged", existing->mac);
             }
             // Free up the individual UUID strings after sending them
             for (int i = 0; i < actualLength; i++)
