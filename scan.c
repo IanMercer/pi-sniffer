@@ -707,27 +707,28 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             // TODO: Different devices have different signal strengths
             // iPad, Apple TV, Samsung TV, ... seems to be particulary strong. Need to calibrate this and have
             // a per-device. PowerLevel is supposed to do this but it's not reliably sent.
+            double rangefactor = 1.0;
+
             if (strcmp(existing->name, "iPad") == 0 || 
                 strcmp(existing->name, "Apple TV") == 0
                 )
             {
-                rssi = rssi * 1.06;   // e.g. -60 becomes -60*...
+                rangefactor = 1.2;
             }
 
             if (string_starts_with(existing->name, "[TV] Samsung"))
             {
-                rssi = rssi * 1.2;   // e.g. -60 becomes -60*...
+                rangefactor = 2.0;
             }
 
             if (existing->category == CATEGORY_FIXED)       // tend to be higher power
             {
-                rssi = rssi * 1.4;
+                rangefactor = 1.5;
             }
 
-            double exponent = ((state.local->rssi_one_meter - (double)rssi) / (10.0 * state.local->rssi_factor));
+            double exponent = ((state.local->rssi_one_meter  - (double)rssi) / (10.0 * state.local->rssi_factor));
 
-            double distance = pow(10.0, exponent);
-
+            double distance = pow(10.0, exponent) * rangefactor;
 
             float averaged = kalman_update(&existing->kalman, distance);
 
