@@ -22,8 +22,8 @@ void update_superseded(struct OverallState* state, struct Device* device);
 void send_access_point_udp(struct OverallState* state);
 
 
-struct ClosestTo* get_closest(struct Device* device);
+struct ClosestTo* get_closest(struct OverallState* state, struct Device* device);
 
-void print_counts_by_closest(struct AccessPoint* access_points_list, struct room* room_list);
+void print_counts_by_closest(struct OverallState* state);
 
 #endif

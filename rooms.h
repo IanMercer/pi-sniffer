@@ -27,12 +27,11 @@ struct group
 };
 
 
-// A room with weights mapping to sensor locations
+// A room in a group
 struct room
 {
     const char* name;
     struct group* group;        // identity mapped group
-    struct weight* weights;     // head of chain of weights
     struct room* next;          // next ptr
     double room_score;          // calculated during scan, one ap
     double phone_total;         // how many phones

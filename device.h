@@ -20,6 +20,9 @@ typedef uint64_t u_int64_t;
 // Max allowed devices on this sensor
 #define N 2048
 
+// How many closest observations to track
+#define CLOSEST_N 2048
+
 // Max allowed devices across group of sensors
 #define NMAC 8192
 
@@ -253,10 +256,20 @@ struct OverallState
 
    // linked list of access points
    struct AccessPoint* access_points;
+
    // linked list of rooms
    struct room* rooms;
+
    // linked list of groups
    struct group* groups;
+
+   // linked list of recorded locations for k-means
+   struct recording* recordings;
+
+   // Most recent 2048 closest to observations
+   uint closest_n;
+   
+   struct ClosestTo closest[CLOSEST_N];
 };
 
 #endif

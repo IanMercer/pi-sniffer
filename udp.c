@@ -13,6 +13,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <time.h>
 #include <math.h>
 #include "cJSON.h"
 #include "knn.h"
@@ -67,16 +68,10 @@ GCancellable *cancellable;
 pthread_t listen_thread;
 
 
-#define CLOSEST_N 2048
-
-// Most recent 2048 closest to observations
-static uint closest_n = 0;
-static struct ClosestTo closest[CLOSEST_N];
-
 /*
    Mark as superseeded
 */
-void mark_superseded(struct AccessPoint* access_point, int64_t device_64, int64_t supersededby)
+void mark_superseded(struct OverallState* state, struct AccessPoint* access_point, int64_t device_64, int64_t supersededby)
 {
     if (supersededby != 0)
     {
@@ -85,12 +80,12 @@ void mark_superseded(struct AccessPoint* access_point, int64_t device_64, int64_
         char by[18];
         mac_64_to_string(by, 18, supersededby);
         g_debug("Marking %s in closest as superseded by %s", mac, by);
-        for (int j = closest_n-1; j >= 0; j--)
+        for (int j = state->closest_n-1; j >= 0; j--)
         {
-            g_assert(closest[j].access_point != NULL);
-            if (closest[j].access_point->id == access_point->id && closest[j].device_64 == device_64)
+            g_assert(state->closest[j].access_point != NULL);
+            if (state->closest[j].access_point->id == access_point->id && state->closest[j].device_64 == device_64)
             {
-                closest[j].supersededby = supersededby;
+                state->closest[j].supersededby = supersededby;
             }
         }
         g_debug("Marked superseded");
@@ -101,30 +96,30 @@ void mark_superseded(struct AccessPoint* access_point, int64_t device_64, int64_
 /*
    Add a closest observation (get a lock before you call this)
 */
-void add_closest(int64_t device_64, struct AccessPoint* access_point, time_t earliest,
+void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoint* access_point, time_t earliest,
     time_t time, float distance, 
     int8_t category, int64_t supersededby, int count, char* name, bool is_training_beacon)
 {
     g_assert(access_point != NULL);
     //g_debug("add_closest(%s, %i, %.2fm, %i)", client_id, access_id, distance, count);
     // First scan back, see if this is an update
-    for (int j = closest_n-1; j >= 0; j--)
+    for (int j = state->closest_n-1; j >= 0; j--)
     {
-        g_assert(closest[j].access_point != NULL);
-        if (closest[j].device_64 == device_64 
-            && closest[j].access_point->id == access_point->id
-            && closest[j].supersededby != supersededby
-            && closest[j].time == time)
+        g_assert(state->closest[j].access_point != NULL);
+        if (state->closest[j].device_64 == device_64 
+            && state->closest[j].access_point->id == access_point->id
+            && state->closest[j].supersededby != supersededby
+            && state->closest[j].time == time)
         {
             char mac[18];
             mac_64_to_string(mac, 18, device_64);
             char from[18];
-            mac_64_to_string(from, 18, closest[j].supersededby);
+            mac_64_to_string(from, 18, state->closest[j].supersededby);
             char to[18];
             mac_64_to_string(to, 18, supersededby);
 
             g_debug("*** Received an UPDATE %s: changing %s superseded from %s to %s", access_point->client_id, mac, from, to);
-            closest[j].supersededby = supersededby;
+            state->closest[j].supersededby = supersededby;
             return;
         }
     }
@@ -134,15 +129,15 @@ void add_closest(int64_t device_64, struct AccessPoint* access_point, time_t ear
         //g_warning("****************** SHOULD NEVER COME HERE *********************");
         char mac[18];
         mac_64_to_string(mac, 18, device_64);
-        for (int j = closest_n-1; j >= 0; j--)
+        for (int j = state->closest_n-1; j >= 0; j--)
         {
-            g_assert(closest[j].access_point != NULL);
-            if (closest[j].device_64 == device_64 && closest[j].access_point->id == access_point->id)
+            g_assert(state->closest[j].access_point != NULL);
+            if (state->closest[j].device_64 == device_64 && state->closest[j].access_point->id == access_point->id)
             {
-                if (closest[j].supersededby != supersededby)
+                if (state->closest[j].supersededby != supersededby)
                 {
                     g_info("Removing %s from closest for %s as it's superseded", mac, access_point->client_id);
-                    closest[j].supersededby = supersededby;
+                    state->closest[j].supersededby = supersededby;
                 }
             }
         }
@@ -156,34 +151,34 @@ void add_closest(int64_t device_64, struct AccessPoint* access_point, time_t ear
         return;
 
     // If the array is full, shuffle it down one
-    if (closest_n == CLOSEST_N)
+    if (state->closest_n == CLOSEST_N)
     {
         //g_debug("Trimming closest array");
-        memmove(&closest[0], &closest[1], sizeof(struct ClosestTo) * (CLOSEST_N - 1));
-        closest_n--;
+        memmove(&state->closest[0], &state->closest[1], sizeof(struct ClosestTo) * (CLOSEST_N - 1));
+        state->closest_n--;
     }
 
     g_assert(access_point != NULL);
-    closest[closest_n].access_point = access_point;
-    closest[closest_n].device_64 = device_64;
-    closest[closest_n].distance = distance;
-    closest[closest_n].category = category;
-    closest[closest_n].supersededby = supersededby;
-    closest[closest_n].earliest = earliest;
-    closest[closest_n].time = time;
-    closest[closest_n].count = count;
-    closest[closest_n].is_training_beacon = is_training_beacon;
-    strncpy(closest[closest_n].name, name, META_LENGTH);           // debug only, remove this later
-    closest_n++;
+    state->closest[state->closest_n].access_point = access_point;
+    state->closest[state->closest_n].device_64 = device_64;
+    state->closest[state->closest_n].distance = distance;
+    state->closest[state->closest_n].category = category;
+    state->closest[state->closest_n].supersededby = supersededby;
+    state->closest[state->closest_n].earliest = earliest;
+    state->closest[state->closest_n].time = time;
+    state->closest[state->closest_n].count = count;
+    state->closest[state->closest_n].is_training_beacon = is_training_beacon;
+    strncpy(state->closest[state->closest_n].name, name, META_LENGTH);           // debug only, remove this later
+    state->closest_n++;
 
     // And now clean the remainder of the array, removing any for same access, same device
-    for (int i = closest_n-2; i >= 0; i--)
+    for (int i = state->closest_n-2; i >= 0; i--)
     {
-        g_assert(closest[i].access_point != NULL);
-        if (closest[i].access_point->id == access_point->id && closest[i].device_64 == device_64)
+        g_assert(state->closest[i].access_point != NULL);
+        if (state->closest[i].access_point->id == access_point->id && state->closest[i].device_64 == device_64)
         {
-            memmove(&closest[i], &closest[i+1], sizeof(struct ClosestTo) * (closest_n-1 -i));
-            closest_n--;
+            memmove(&state->closest[i], &state->closest[i+1], sizeof(struct ClosestTo) * (state->closest_n-1 -i));
+            state->closest_n--;
             break;        // if we always do this there will only ever be one
         }
     }
@@ -249,8 +244,11 @@ double room_probability(struct room* r, char * ap_name, double distance, double 
    Calculates room scores using access point distances
 */
 
-void calculate_location(struct ClosestTo* closest, struct room* room_list, struct AccessPoint* access_points, double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS])
+void calculate_location(struct OverallState* state, struct ClosestTo* closest, double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS])
 {
+    struct room* room_list = state->rooms;
+    struct AccessPoint* access_points = state->access_points;
+
     char* device_name = closest->name;
     const char* category = category_from_int(closest->category);
     bool is_training_beacon = FALSE;
@@ -329,17 +327,53 @@ void calculate_location(struct ClosestTo* closest, struct room* room_list, struc
     time_t now = time(0);
     if (difftime(now, closest->time) > 15)
     {
-        //g_debug("Skip CSV, old data");
+        struct top_k best;
+        k_nearest(state->recordings, accessdistances, access_points, &best);
+        g_debug("Old, nearest to '%s' score=%.2f", best.room_name, best.distance);
+        //g_debug("Skip CSV, old data %fs", difftime(now, closest->time));
     }
     else 
     {
-        g_debug("CSV: %s", csv);
+        //g_debug("CSV: %s", csv);
 
         // RECORD TRAINING DATA
-        record("test.jsonl", accessdistances, access_points, device_name);
-    }
+        if (is_training_beacon || closest->category == CATEGORY_BEACON)
+        {
+            struct top_k best;
+            k_nearest(state->recordings, accessdistances, access_points, &best);
 
-    g_debug("Scores: %s", line);
+            if (best.distance < 1.0 && strncmp(best.room_name, device_name, META_LENGTH) == 0)
+            {
+                // skip, we already have a good enough recording with the SAME name
+               g_debug("Skip, nearest to '%s' score=%.2f", best.room_name, best.distance);
+            }
+            else
+            {
+                record(device_name, accessdistances, access_points, device_name);
+
+                // Release old list (TODO: Make this incremental and only re-read entire list occasionally)
+                free_list(&state->recordings);
+
+                // TEST READING IT BACK
+
+                bool ok = read_observations ("recordings", access_points, &state->recordings);
+                if (!ok) g_warning("Failed to read file back");
+                int count = 0;
+                for (struct recording* r = state->recordings; r != NULL; r=r->next)
+                {
+                    count++;
+                }
+                g_debug("Have %i recordings, nearest was '%s', score=%.2f", count, best.room_name, best.distance);
+            }
+        }
+        else
+        {
+            struct top_k best;
+            k_nearest(state->recordings, accessdistances, access_points, &best);
+            g_debug("Nearest to '%s' score=%.2f", best.room_name, best.distance);
+        }
+        g_debug("Scores: %s", line);
+    }
 }
 
 
@@ -357,8 +391,10 @@ void set_count_to_zero(struct AccessPoint* ap, void* extra)
 /*
     Find counts by access point
 */
-void print_counts_by_closest(struct AccessPoint* access_points_list, struct room* room_list)
+void print_counts_by_closest(struct OverallState* state)
 {
+    struct AccessPoint* access_points_list = state->access_points;
+    struct room* room_list = state->rooms;
 
     float total_count = 0.0;
 
@@ -374,22 +410,22 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
     }
 
     g_info(" ");
-    g_info("COUNTS (closest contains %i)", closest_n);
+    g_info("COUNTS (closest contains %i)", state->closest_n);
     time_t now = time(0);
 
-    for (int i = closest_n - 1; i >= 0; i--)
+    for (int i = state->closest_n - 1; i >= 0; i--)
     {
-        g_assert(closest[i].access_point != NULL);
-        closest[i].mark = false;
+        g_assert(state->closest[i].access_point != NULL);
+        state->closest[i].mark = false;
     }
 
     int count_examined = 0;
     int count_not_marked = 0;
     int count_in_age_range = 0;
 
-    for (int i = closest_n - 1; i >= 0; i--)
+    for (int i = state->closest_n - 1; i >= 0; i--)
     {
-        g_assert(closest[i].access_point != NULL);
+        g_assert(state->closest[i].access_point != NULL);
 
         // parallel array of distances and times
         double access_distances[N_ACCESS_POINTS];       // latest observation distance
@@ -400,7 +436,7 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
             access_times[ap->id] = 0.0;
         }
 
-        struct ClosestTo* test = &closest[i];
+        struct ClosestTo* test = &state->closest[i];
 
         // moved down to counting ... if (test->category != CATEGORY_PHONE) continue;
 
@@ -431,9 +467,10 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
         // mark remainder of array as claimed
         for (int j = i; j >= 0; j--)
         {
-            struct ClosestTo* other = &closest[j];
+            struct ClosestTo* other = &state->closest[j];
 
-            if (other->device_64 == test->device_64)
+            // Same MAC and same Name so you can take an iPhone around as a beacon and change name
+            if (other->device_64 == test->device_64 && strcmp(other->name, test->name)==0)
             {
                 // other is test on first iteration
                 other->mark = true;
@@ -531,10 +568,7 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
 
         if (score > 0)
         {
-            // SVM model goes here to convert access point distances to locations
-
-
-            calculate_location(test, room_list, access_points_list, access_distances, access_times);
+            calculate_location(state, test, access_distances, access_times);
 
             // g_debug("   %s %s is at %16s for %3is at %4.1fm score=%.1f count=%i%s", mac, category, ap->client_id, delta_time, test->distance, score,
             //     count, test->distance > 7.5 ? " * TOO FAR *": "");
@@ -579,7 +613,7 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
             }
             else //if (test->distance < 7.5)
             {
-                g_info("Cluster (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, score);
+                //g_info("Cluster (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, score);
 
                 total_count += score;
                 ap->people_closest_count = ap->people_closest_count + score;
@@ -625,7 +659,7 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
     g_info(" ");
     g_info("==============================================================================================");
     g_info(" ");
-    g_debug("Examined %i > %i > %i > %i", closest_n, count_examined, count_not_marked, count_in_age_range);
+    g_debug("Examined %i > %i > %i > %i", state->closest_n, count_examined, count_not_marked, count_in_age_range);
     g_info("Summary by room: %s", json_rooms);
 
     free(json_rooms);
@@ -640,14 +674,14 @@ void print_counts_by_closest(struct AccessPoint* access_points_list, struct room
 /*
     Get the closest recent observation for a device
 */
-struct ClosestTo *get_closest_64(int64_t device_64)
+struct ClosestTo *get_closest_64(struct OverallState* state, int64_t device_64)
 {
     struct ClosestTo *best = NULL;
 
     // Working backwards in time through the array
-    for (int i = closest_n - 1; i > 0; i--)
+    for (int i = state->closest_n - 1; i > 0; i--)
     {
-        struct ClosestTo *test = &closest[i];
+        struct ClosestTo *test = &state->closest[i];
         g_assert(test->access_point != NULL);
 
         if (test->device_64 == device_64)
@@ -700,9 +734,9 @@ struct ClosestTo *get_closest_64(int64_t device_64)
 /*
     Get the closest recent observation for a device
 */
-struct ClosestTo *get_closest(struct Device* device)
+struct ClosestTo *get_closest(struct OverallState* state, struct Device* device)
 {
-    return get_closest_64(mac_string_to_int_64(device->mac));
+    return get_closest_64(state, mac_string_to_int_64(device->mac));
 }
 
 
@@ -792,7 +826,7 @@ void *listen_loop(void *param)
                     {
                         // remove from closest
                         int64_t id_64 = mac_string_to_int_64(d.mac);
-                        mark_superseded(actual, id_64, d.supersededby);
+                        mark_superseded(state, actual, id_64, d.supersededby);
                     }
                     else 
                     {
@@ -827,7 +861,7 @@ void *listen_loop(void *param)
                         // char* cat = category_from_int(d.category);
                         // g_debug("Update from UDP: %s %s %s\n", d.mac, d.name, cat);
 
-                        add_closest(id_64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count, d.name, d.is_training_beacon);
+                        add_closest(state, id_64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count, d.name, d.is_training_beacon);
                     }
                    
                     break;
@@ -841,7 +875,7 @@ void *listen_loop(void *param)
 
                 int64_t id_64 = mac_string_to_int_64(d.mac);
                 g_assert(actual != NULL);
-                add_closest(id_64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count, d.name, d.is_training_beacon);
+                add_closest(state, id_64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count, d.name, d.is_training_beacon);
             }
 
             pthread_mutex_unlock(&state->lock);
@@ -893,7 +927,7 @@ void update_closest(struct OverallState *state, struct Device *device)
     //g_debug("update_closest(%s, %i, %s)", state->local->client_id, state->local->id, device->mac);
     // Add local observations into the same structure
     int64_t id_64 = mac_string_to_int_64(device->mac);
-    add_closest(id_64, state->local, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count, device->name, device->is_training_beacon);
+    add_closest(state, id_64, state->local, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count, device->name, device->is_training_beacon);
 }
 
 /*
@@ -905,7 +939,7 @@ void update_superseded(struct OverallState *state, struct Device *device)
     // Add local observations into the same structure
     int64_t id_64 = mac_string_to_int_64(device->mac);
     g_assert(state->local != NULL);
-    add_closest(id_64, state->local, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count, device->name, device->is_training_beacon);
+    add_closest(state, id_64, state->local, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count, device->name, device->is_training_beacon);
 }
 
 /*

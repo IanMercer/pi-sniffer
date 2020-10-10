@@ -21,7 +21,11 @@ struct recording
 
 // SAVE AND LOAD recordings
 
-bool record (char* filename, double access_distances[N_ACCESS_POINTS], struct AccessPoint* access_points, char* location);
+bool record (const char* device_name, double access_distances[N_ACCESS_POINTS], struct AccessPoint* access_points, char* location);
+
+bool read_observations (const char * dirname, struct AccessPoint* access_points, struct recording** recordings);
+
+void free_list(struct recording** head);
 
 // KNN CLASSIFIER
 
@@ -31,11 +35,11 @@ struct top_k
 {
     float distance;
     char room_name[META_LENGTH];
+    bool used;
 };
 
-char* classify (float* access_point_distances, struct AccessPoint* access_points, struct room* rooms, char* location);
+//char* classify (float* access_point_distances, struct AccessPoint* access_points, struct room* rooms, char* location);
 
-const char* k_nearest(struct recording* recordings, float* access_point_distances, int n_access_point_distances);
-
+void k_nearest(struct recording* recordings, double* access_point_distances, struct AccessPoint* access_points, struct top_k* top_result);
 
 #endif

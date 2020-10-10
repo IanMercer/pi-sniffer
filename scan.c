@@ -247,7 +247,7 @@ void find_latest_observations()
                 columns[col].latest = a->latest;
                 // Do we 'own' this device or does someone else
                 columns[col].isClosest = true;
-                struct ClosestTo *closest = get_closest(a);
+                struct ClosestTo *closest = get_closest(&state, a);
                 columns[col].isClosest = closest != NULL && closest->access_point != NULL && closest->access_point->id == state.local->id;
             }
         }
@@ -1537,7 +1537,7 @@ int clear_cache(void *parameters)
 // Time when service started running (used to print a delta time)
 static time_t started;
 
-void dump_device(struct Device *d)
+void dump_device(struct OverallState* state, struct Device *d)
 {
     // Ignore any that have not been seen recently
     //double delta_time = difftime(now, a->latest);
@@ -1548,7 +1548,7 @@ void dump_device(struct Device *d)
 
     float closest_dist = NAN;
     char *closest_ap = "unknown";
-    struct ClosestTo *closest = get_closest(d);
+    struct ClosestTo *closest = get_closest(state, d);
     if (closest)
     {
         closest_dist = closest->distance;
@@ -1579,7 +1579,7 @@ int report_to_influx_tick(void *parameters)
 
     if (strlen(state.influx_server)==0) return FALSE;  // no need to keep calling this, remove from loop
 
-    print_counts_by_closest(state.access_points, state.rooms);
+    print_counts_by_closest(&state);
 
     //g_debug("Send to influx");
 
@@ -1669,7 +1669,7 @@ int dump_all_devices_tick(void *parameters)
     time(&now);
     for (int i = 0; i < state.n; i++)
     {
-        dump_device(&state.devices[i]);
+        dump_device(&state, &state.devices[i]);
     }
     g_info("---------------------------------------------------------------------------------------------------------------\n");
 
@@ -1841,6 +1841,7 @@ void initialize_state()
     state.access_points = NULL; // linked list
     state.rooms = NULL;         // linked list
     state.groups = NULL;        // linked list
+    state.closest_n = 0;        // count of closest
 
     // no devices yet
     state.n = 0;
