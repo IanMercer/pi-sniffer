@@ -712,12 +712,12 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 string_starts_with(existing->name, "[TV] Samsung")
                 )
             {
-                rssi = rssi * 1.06;   // e.g. -60 becomes -60*1.06
+                rssi = rssi * 1.2;   // e.g. -60 becomes -60*...
             }
 
             if (existing->category == CATEGORY_FIXED)       // tend to be higher power
             {
-                rssi = rssi * 1.09;   // e.g. -60 becomes -60*1.09
+                rssi = rssi * 1.4;
             }
 
             double exponent = ((state.local->rssi_one_meter - (double)rssi) / (10.0 * state.local->rssi_factor));
