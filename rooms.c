@@ -46,6 +46,7 @@ struct group* get_or_add_group(struct group** group_list, char* group_name)
 */
 void read_configuration_file(const char* path, struct room** room_list, struct group** group_list, struct AccessPoint** access_points_list)
 {
+    (void)access_points_list; // unused now
     // Read from file ...
 
     FILE *fp;
@@ -85,6 +86,35 @@ void read_configuration_file(const char* path, struct room** room_list, struct g
         exit(EXIT_FAILURE);
     }
 
+
+    // -------------- access points ---------------
+
+    cJSON* accesspoints = cJSON_GetObjectItemCaseSensitive(json, "sensors");
+    if (!cJSON_IsArray(accesspoints)){
+        g_warning("Could not parse sensors[] from configuration file");
+        // non-fatal
+    }
+    else
+    {
+        cJSON* accesspoint = NULL;
+        cJSON_ArrayForEach(accesspoint, accesspoints)
+        {
+            cJSON* name = cJSON_GetObjectItemCaseSensitive(accesspoint, "name");
+            if (cJSON_IsString(name) && (name->valuestring != NULL))
+            {
+                g_debug("Added sensor %s", name->valuestring);
+                add_access_point(access_points_list, name->valuestring, "not seen yet", "not seen yet", 0.0, 0.0, 0.0, 64, 2.8, 7.5);
+            }
+            else
+            {
+                g_warning("Missing name field on sensor object");
+            }
+        }
+    }
+
+
+    // ------------------- rooms ---------------------
+
     struct room* current_room = NULL;   // current pointer
 
     cJSON* rooms = cJSON_GetObjectItemCaseSensitive(json, "rooms");
@@ -98,9 +128,9 @@ void read_configuration_file(const char* path, struct room** room_list, struct g
     {
         // Parse room from 'room'
 
+        bool ok = TRUE;
         struct room* r = g_malloc(sizeof(struct room));
         r->next = NULL;
-        r->weights = NULL;  // head of chain
 
         cJSON* name = cJSON_GetObjectItemCaseSensitive(room, "name");
         if (cJSON_IsString(name) && (name->valuestring != NULL))
@@ -110,7 +140,7 @@ void read_configuration_file(const char* path, struct room** room_list, struct g
         else
         {
             g_error("Missing name on room object");
-            exit(EXIT_FAILURE);
+            ok = FALSE;
         }
 
         cJSON* group = cJSON_GetObjectItemCaseSensitive(room, "group");
@@ -122,60 +152,55 @@ void read_configuration_file(const char* path, struct room** room_list, struct g
         else
         {
             g_error("Missing group on room '%s' object", r->name);
-            exit(EXIT_FAILURE);
-        }
-
-        struct weight* current_weight = NULL;  // linked list
-
-        cJSON* weights = cJSON_GetObjectItemCaseSensitive(room, "weights");
-        if (!cJSON_IsArray(weights)){
-                g_error("Could not parse weights[] for room '%s'", r->name);
-                exit(EXIT_FAILURE);
-        }
-
-        cJSON* weight = NULL;
-        cJSON_ArrayForEach(weight, weights)
-        {
-            cJSON *ap = cJSON_GetObjectItemCaseSensitive(weight, "n");
-            cJSON *w = cJSON_GetObjectItemCaseSensitive(weight, "v");
-
-            if (cJSON_IsString(ap) && cJSON_IsNumber(w)){
-                struct weight* we = malloc(sizeof(struct weight));
-                we->name = strdup(ap->valuestring);
-                we->weight = w->valuedouble;
-                we->next = NULL;
-
-                // Create empty access points as we parse the configuration so that they all exist up-front
-                bool created;
-                get_or_create_access_point(access_points_list, we->name, &created);
-
-                if (current_weight == NULL)
-                {
-                    r->weights = we;
-                }
-                else
-                {
-                    current_weight->next = we;
-                }
-                current_weight = we;
-            }
-            else {
-                g_error("Could not parse weights for %s in %s", r->name, r->group->name);
-                exit(EXIT_FAILURE);
-            }
+            ok = FALSE;
         }
 
         //g_debug("Parsed room %s in %s", r->name, r->group);
-        if (*room_list == NULL)
+        if (ok)
         {
-            *room_list = r;
+          g_debug("Added room %s", r->name);
+          if (*room_list == NULL)
+          {
+              *room_list = r;
+          }
+          else
+          {
+              current_room->next = r;
+          }
+          current_room = r;
         }
         else
         {
-            current_room->next = r;
+            free(r);
         }
-        current_room = r;
+        
     }
+
+    // ------------------- beacons --------------------
+
+    cJSON* beacons = cJSON_GetObjectItemCaseSensitive(json, "beacons");
+    if (!cJSON_IsArray(beacons)){
+        g_warning("Could not parse beacons[] from configuration file");
+        // non-fatal
+    }
+    else
+    {
+        cJSON* beacon = NULL;
+        cJSON_ArrayForEach(beacon, beacons)
+        {
+            cJSON* name = cJSON_GetObjectItemCaseSensitive(beacon, "name");
+            if (cJSON_IsString(name) && (name->valuestring != NULL))
+            {
+                g_warning("TODO: Add beacon `%s` to list", name->valuestring);
+            }
+            else
+            {
+                g_warning("Missing name field on beacon object in configuration file");
+            }
+        }
+    }
+
+
 
     cJSON_Delete(json);
 

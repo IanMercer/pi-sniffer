@@ -104,7 +104,7 @@ char* trim(char *str)
     char *startp = str;
     while (*frontp)
     {
-        if (*frontp < ' ' || *frontp > 'z'){
+        if (*frontp < ' '){
           frontp++;
           // remove the character instead, some trackers have bad characters in the name *startp++ = '_';
         }

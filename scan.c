@@ -707,9 +707,17 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             // TODO: Different devices have different signal strengths
             // iPad, Apple TV, Samsung TV, ... seems to be particulary strong. Need to calibrate this and have
             // a per-device. PowerLevel is supposed to do this but it's not reliably sent.
-            if (strcmp(existing->name, "iPad") == 0 || strcmp(existing->name, "Apple TV") == 0 || string_starts_with(existing->name, "[TV] Samsung"))
+            if (strcmp(existing->name, "iPad") == 0 || 
+                strcmp(existing->name, "Apple TV") == 0 || 
+                string_starts_with(existing->name, "[TV] Samsung")
+                )
             {
                 rssi = rssi * 1.06;   // e.g. -60 becomes -60*1.06
+            }
+
+            if (existing->category == CATEGORY_FIXED)       // tend to be higher power
+            {
+                rssi = rssi * 1.09;   // e.g. -60 becomes -60*1.09
             }
 
             double exponent = ((state.local->rssi_one_meter - (double)rssi) / (10.0 * state.local->rssi_factor));
@@ -1576,6 +1584,7 @@ void dump_device(struct OverallState* state, struct Device *d)
 int report_to_influx_tick(void *parameters)
 {
     (void)parameters;
+    g_info("Report to Influx %i %i", state.network_up, starting);
 
     if (strlen(state.influx_server)==0) return FALSE;  // no need to keep calling this, remove from loop
 
@@ -1585,6 +1594,7 @@ int report_to_influx_tick(void *parameters)
 
     if (state.network_up && !starting)
     {
+        g_info("Report to Influx - network up and ready");
 
         // Create group summaries
         for (struct group* g = state.groups; g != NULL; g = g->next)
@@ -1656,6 +1666,7 @@ int print_access_points_tick(void *parameters)
 int dump_all_devices_tick(void *parameters)
 {
     starting = FALSE;
+    state.network_up = is_any_interface_up();
 
     (void)parameters; // not used
     if (starting)
@@ -1672,8 +1683,6 @@ int dump_all_devices_tick(void *parameters)
         dump_device(&state, &state.devices[i]);
     }
     g_info("---------------------------------------------------------------------------------------------------------------\n");
-
-    state.network_up = is_any_interface_up();
 
     unsigned long total_minutes = (now - started) / 60; // minutes
     unsigned int minutes = total_minutes % 60;

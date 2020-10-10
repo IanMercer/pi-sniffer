@@ -41,8 +41,6 @@ struct room
     double beacon_total;        // how many beacons
 };
 
-#define MAX_ROOMS 200
-
 /*
   Get top k rooms sorted by total, return count maybe < k
 */
@@ -50,5 +48,17 @@ int top_k_by_room_score(struct room* result[], int k, struct room* room_list);
 
 // Initialize the rooms structure on startup
 void read_configuration_file(const char* path, struct room** room_list, struct group** group_list, struct AccessPoint** access_points_list);
+
+
+// ------------------------------------------------------------------
+
+struct beacon
+{
+    const char* name;
+    const char* mac_address;
+    int64_t mac64;
+    const char* alias;
+};
+
 
 #endif

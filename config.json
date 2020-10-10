@@ -1,8 +1,32 @@
 {
     "rooms" : [
-        {"name":"Shoes","group":"Store","weights":[{"n":"sensor1","v":2.0},{"n":"sensor2","v":12.5},{"n":"sensor3","v":-1}]},
-        {"name":"FormalWear","group":"Store","weights":[{"n":"sensor1","v":6.0},{"n":"sensor2","v":6},{"n":"sensor3","v":-1}]},
-        {"name":"Fashion","group":"Store","weights":[{"n":"sensor1","v":12.0},{"n":"sensor2","v":2.0},{"n":"sensor3","v":-1}]},
-        {"name":"Outside","group":"Outside","weights":[{"n":"sensor1","v":-1},{"n":"sensor2","v":-1},{"n":"sensor3","v":3}]}
+        {"name":"Office","group":"House"},
+        {"name":"Dining","group":"House"},
+        {"name":"Kitchen","group":"House"},
+        {"name":"Living","group":"House"},
+
+        {"name":"Barn","group":"Barn"},
+        {"name":"Arena","group":"Barn"},
+
+        {"name":"Near Barn","group":"Outside"},
+        {"name":"Driveway","group":"Outside"},
+        {"name":"BackLawn","group":"Outside"},
+        {"name":"East","group":"Outside"},
+        {"name":"North","group":"Outside"}
+    ],
+
+    "sensors" : [
+        { "name" : "barn" },
+        { "name" : "barn2" },
+        { "name" : "garage" },
+        { "name" : "kitchen" },
+        { "name" : "livingroom" },
+        { "name" : "mobile" },
+        { "name" : "study" }
+    ],
+
+    "beacons" : [
+        {"name": "AprilBeacon_E1234", "mac": "d0:39:72:e8:04:a2", "alias": "AprilBeacon" },
+        {"name": "Sensoro", "mac": "01:17:c5:34:09:ee", "alias": "Sensoro" }
     ]
 }

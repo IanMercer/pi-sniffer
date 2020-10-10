@@ -184,195 +184,84 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
     }
 }
 
-
-// Mock ML model for calculating which room a set of observations are most likely to be
-double room_probability(struct room* r, char * ap_name, double distance, double time)
-{
-    struct weight* weight = NULL;
-    for (weight = r->weights; weight != NULL; weight = weight->next)
-    {
-        if (strcmp(weight->name, ap_name) == 0)
-        {
-            double expected_distance = weight->weight;
-            // "Activation function"
-            if (distance == 0.0 && expected_distance < 0) return 1.0;       // did not expect to see it and cannot see it
-            else if (distance == 0.0) {
-                // expected a reading, didn't get one
-                if (expected_distance > 10.0) return 0.8;       // far out values are unreliable, may come and go
-                if (expected_distance > 8.0) return 0.6;
-                if (expected_distance > 7.5) return 0.5;
-                if (expected_distance > 5.0) return 0.3;
-                if (expected_distance > 2.0) return 0.2;
-                return 0.1; // expected a reading, didn't get one, could be faulty sensor
-            }
-            else
-            {
-                // should not be able to see this a/p from this location
-                if (expected_distance < 0) 
-                {
-                    // could have move from that location, so use time as a dilution (5% chance after 100s)
-                    double prob = time * 0.0005;
-                    if (prob > 0.5) prob = 0.5;
-                    return prob;
-                }
-                double delta_distance = fabs(distance - expected_distance);
-                // if this is an old measurement it carries less weight
-                double dilution_of_precision = 0.1 * time;              // 1.4m/s is walking speed 
-                // e.g. 10s after = 1m, 100s after = 10m
-
-                if (delta_distance < 2 + dilution_of_precision) return 0.95;
-                if (delta_distance < 3 + dilution_of_precision) return 0.90;
-                if (delta_distance < 5 + dilution_of_precision) return 0.80;
-                if (delta_distance < 10 + dilution_of_precision) return 0.70;
-                return 0.4;
-            }
-        }
-    }
-    // did not match, so we have a reading and didn't expect one for this location
-    // if we didn't have one that's good
-    if (distance == 0) return 1.0;  // wasn't supposed to be here anyway so all good
-    else if (distance > 20.0) return 0.99; // far enough away
-    // closer it is to somewhere it should not be = higher score
-    else if (distance > 10.0) return 0.5;
-    else if (distance > 5.0) return 0.2;
-    // it should not be here
-    else return 0.01;
-}
-
-
 /*
    Calculates room scores using access point distances
 */
-
-void calculate_location(struct OverallState* state, struct ClosestTo* closest, double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS])
+void calculate_location(struct OverallState* state, struct ClosestTo* closest, double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS], float time_score)
 {
+    (void)accesstimes;
+
     struct room* room_list = state->rooms;
     struct AccessPoint* access_points = state->access_points;
 
     char* device_name = closest->name;
-    const char* category = category_from_int(closest->category);
+    //const char* category = category_from_int(closest->category);
     bool is_training_beacon = FALSE;
 
-    char line[120];
-    line[0] = '\0';
+    struct top_k best_three[3];
+    int k_found = k_nearest(state->recordings, accessdistances, access_points, best_three, 3);
+
+    if (k_found == 0) { g_warning("Did not find a nearest k"); }
+
+    struct top_k best = best_three[0];
+    // TODO: Not just top 1, use top few
+
+    bool found = FALSE;
 
     for (struct room* room = room_list; room != NULL; room = room->next)
     {
-        double room_score = 1.0;
-        //g_debug("  calculating %s", room->name);
-        for (struct AccessPoint* ap = access_points; ap!=NULL; ap = ap->next)
+        if (strcmp(room->name, best.room_name) == 0)
         {
-            double distance = accessdistances[ap->id];
-            double time = accesstimes[ap->id];
-            double score = room_probability(room, ap->client_id, distance, time);
-            room_score *= score;
-
-            //g_debug("    %s  %s %.2fm %.1fs s=%.2f", room->name, ap->client_id, distance, time, score);
+            found = TRUE;
+            room->room_score = 1.0;
+            // don't break, need to set rest to zero
         }
-        room->room_score = room_score;
-
-        // This becomes a training beacon if the name matches a room exactly
-        if (strcmp(closest->name, room->name) == 0) is_training_beacon = TRUE;
-    }
-
-    double total_score = 0.00000001;  // non-zero
-    double top = 0.0;
-    for (struct room* room = room_list; room != NULL; room = room->next)
-    {
-        total_score += room->room_score;
-    }
-
-    // Normalize
-    for (struct room* room = room_list; room != NULL; room = room->next)
-    {
-        room->room_score = room->room_score / total_score;
-        if (room->room_score > top) top = room->room_score;
-    }
-
-    // log the results in sorted order so they are easier to read
-
-    struct room* sorted[MAX_ROOMS];
-
-    int k = top_k_by_room_score(sorted, MAX_ROOMS, room_list);
-
-    for (int i = 0; i < k; i++)
-    {
-        struct room* room = sorted[i];    
-        // Log that are at least 30% of top score
-        if (room->room_score > top / 30.0)
+        else
         {
-            append_text(line, sizeof(line), "%s:%.2f, ", room->name, room->room_score);
+            room->room_score = 0.0;
         }
     }
 
-    // CSV
-    char csv[256];
-    csv[0] = '\0';
-    for (struct AccessPoint* current = access_points; current != NULL; current = current->next)
-    {
-        append_text(csv, sizeof(csv), "%.1f,", accessdistances[current->id]);
-    }
+    if (!found) { g_warning("Did not find %s", best.room_name); }
 
-    if (k > 0)
-    {
-        append_text(csv, sizeof(csv), "\"%s\",\"%s\",\"%s\",\"%s\"", device_name, sorted[0]->name, category, is_training_beacon?"TRAIN":"");
-    }
-    else
-    {
-        append_text(csv, sizeof(csv), "\"%s\",\"%s\",\"%s\",\"%s\"", device_name, "unknown", category, is_training_beacon?"TRAIN":"");
-    }
-
-    if (csv[strlen(csv)-1]==',' && strlen(csv)>0) csv[strlen(csv)-1] = '\0';  // trim trailing comma
 
     time_t now = time(0);
-    if (difftime(now, closest->time) > 15)
+    if (difftime(now, closest->time) > 60)
     {
-        struct top_k best;
-        k_nearest(state->recordings, accessdistances, access_points, &best);
-        g_debug("Old, nearest to '%s' score=%.2f", best.room_name, best.distance);
+        g_debug("Old, nearest to '%s' score=%.2f * %.2f", best.room_name, best.distance, time_score);
         //g_debug("Skip CSV, old data %fs", difftime(now, closest->time));
     }
     else 
     {
         //g_debug("CSV: %s", csv);
 
-        // RECORD TRAINING DATA
-        if (is_training_beacon || closest->category == CATEGORY_BEACON)
-        {
-            struct top_k best;
-            k_nearest(state->recordings, accessdistances, access_points, &best);
+        // TODO: Record Beacons separately?
 
+        // RECORD TRAINING DATA
+        if ((is_training_beacon) && (strcmp(closest->name, "iPhone") != 0))
+        {
             if (best.distance < 1.0 && strncmp(best.room_name, device_name, META_LENGTH) == 0)
             {
                 // skip, we already have a good enough recording with the SAME name
-               g_debug("Skip, nearest to '%s' score=%.2f", best.room_name, best.distance);
+               g_debug("Training: Skip, nearest to '%s' score=%.2f * %.2f", best.room_name, best.distance, time_score);
             }
             else
             {
-                record(device_name, accessdistances, access_points, device_name);
-
-                // Release old list (TODO: Make this incremental and only re-read entire list occasionally)
-                free_list(&state->recordings);
-
-                // TEST READING IT BACK
-
-                bool ok = read_observations ("recordings", access_points, &state->recordings);
-                if (!ok) g_warning("Failed to read file back");
-                int count = 0;
-                for (struct recording* r = state->recordings; r != NULL; r=r->next)
-                {
-                    count++;
-                }
-                g_debug("Have %i recordings, nearest was '%s', score=%.2f", count, best.room_name, best.distance);
+                record("recordings", device_name, accessdistances, access_points, device_name);
+                g_debug("Training: Nearest was '%s', score=%.2f * %.2f", best.room_name, best.distance, time_score);
             }
+        }
+        else if (closest->category == CATEGORY_BEACON)
+        {
+            record("beacons", device_name, accessdistances, access_points, device_name);
+            g_debug("Beacon: Nearest was '%s', score=%.2f * %.2f", best.room_name, best.distance, time_score);
         }
         else
         {
-            struct top_k best;
-            k_nearest(state->recordings, accessdistances, access_points, &best);
-            g_debug("Nearest to '%s' score=%.2f", best.room_name, best.distance);
+            g_debug("Nearest to '%s' score=%.2f * %.2f", best.room_name, best.distance, time_score);
         }
-        g_debug("Scores: %s", line);
+        //g_debug("Scores: %s", line);
+
     }
 }
 
@@ -409,8 +298,21 @@ void print_counts_by_closest(struct OverallState* state)
         current->beacon_total = 0.0;
     }
 
+    // TODO: Make this lazy, less often?
+    free_list(&state->recordings);
+    int count_recordings = 0;
+    //if (state->recordings == NULL)
+    {
+        bool ok = read_observations ("recordings", state->access_points, &state->recordings);
+        if (!ok) g_warning("Failed to read file back");
+        for (struct recording* r = state->recordings; r != NULL; r=r->next)
+        {
+            count_recordings++;
+        }
+    }
+
     g_info(" ");
-    g_info("COUNTS (closest contains %i)", state->closest_n);
+    g_info("COUNTS (closest contains %i, recordings contains %i)", state->closest_n, count_recordings);
     time_t now = time(0);
 
     for (int i = state->closest_n - 1; i >= 0; i--)
@@ -469,8 +371,13 @@ void print_counts_by_closest(struct OverallState* state)
         {
             struct ClosestTo* other = &state->closest[j];
 
-            // Same MAC and same Name so you can take an iPhone around as a beacon and change name
-            if (other->device_64 == test->device_64 && strcmp(other->name, test->name)==0)
+            // Same MAC, different name - ignore so you can take an iPhone around as a beacon and change name
+            if (other->device_64 == test->device_64 && strcmp(other->name, test->name)!=0)
+            {
+                other->mark = true;
+                if (skipping) continue;
+            }
+            else if (other->device_64 == test->device_64 && strcmp(other->name, test->name)==0)
             {
                 // other is test on first iteration
                 other->mark = true;
@@ -568,7 +475,7 @@ void print_counts_by_closest(struct OverallState* state)
 
         if (score > 0)
         {
-            calculate_location(state, test, access_distances, access_times);
+            calculate_location(state, test, access_distances, access_times, score);
 
             // g_debug("   %s %s is at %16s for %3is at %4.1fm score=%.1f count=%i%s", mac, category, ap->client_id, delta_time, test->distance, score,
             //     count, test->distance > 7.5 ? " * TOO FAR *": "");
@@ -597,6 +504,8 @@ void print_counts_by_closest(struct OverallState* state)
             {
                 for (struct room* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
+                    if (rcurrent->room_score > 0)
+                        g_debug("Watch in %s +%.2f x %.2f", rcurrent->name, rcurrent->room_score, score);
                     rcurrent->watch_total += rcurrent->room_score * score;        // probability x incidence
                 }
             }
@@ -615,6 +524,7 @@ void print_counts_by_closest(struct OverallState* state)
             {
                 //g_info("Cluster (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, score);
 
+
                 total_count += score;
                 ap->people_closest_count = ap->people_closest_count + score;
                 ap->people_in_range_count = ap->people_in_range_count + score;  // TODO:
@@ -622,6 +532,8 @@ void print_counts_by_closest(struct OverallState* state)
                 //g_debug("Update room total %i", room_count);
                 for (struct room* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
+                    if (rcurrent->room_score > 0)
+                        g_debug("Phone in %s +%.2f x %.2f", rcurrent->name, rcurrent->room_score, score);
                     rcurrent->phone_total += rcurrent->room_score * score;        // probability x incidence
                 }
             }

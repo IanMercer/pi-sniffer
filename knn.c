@@ -70,6 +70,7 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
     //g_debug("Got room %s", room_name->valuestring);
 
     g_utf8_strncpy(r->room_name, room_name->valuestring, META_LENGTH);
+    url_slug(r->room_name);   // strip spaces and any other junk from it
 
     cJSON* distances = cJSON_GetObjectItemCaseSensitive(json, "distances");
 
@@ -99,6 +100,8 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
     if (count < 1)
     {
         g_warning("No values found in %s", buffer);
+        cJSON_Delete(json);
+        return FALSE;
     }
 
     //g_debug("free buffer");
@@ -131,7 +134,7 @@ float score (struct recording* recording, double access_points_distance[N_ACCESS
   NB You must free() the returned string
 
 */
-void k_nearest(struct recording* recordings, double* access_point_distances, struct AccessPoint* access_points, struct top_k* top_result)
+int k_nearest(struct recording* recordings, double* access_point_distances, struct AccessPoint* access_points, struct top_k* top_result, int top_count)
 {
     struct top_k result[TOP_K_N];
     int k = 0;
@@ -172,10 +175,10 @@ void k_nearest(struct recording* recordings, double* access_point_distances, str
     if (k == 0) {
         top_result->distance = 100000;
         g_utf8_strncpy(top_result->room_name, "unknown", META_LENGTH);
-        return;
+        return 0;
     };
 
-    *top_result = result[0];
+    top_result[0] = result[0];
     float best_score = 0.0;
 
     // Find the most common in the top_k weighted by distance
@@ -201,10 +204,16 @@ void k_nearest(struct recording* recordings, double* access_point_distances, str
 
         if (score > best_score)
         {
-            *top_result = result[i];                        // copy name and distance (for first)
-            top_result->distance = sqrt(best_distance);     // overwrite with best distance
+            g_debug("Replace %s by %s in best score %.2f", top_result[0].room_name, result[i].room_name, score);
+            best_score = score;
+            top_result[0] = result[i];                        // copy name and distance (for first)
+            top_result[0].distance = sqrt(best_distance);     // overwrite with best distance
+            // do something with top_count
+            (void)top_count;
         }
     }
+
+    return 1;       // just the top result for now
 }
 
 
@@ -240,6 +249,7 @@ bool read_observations_file (const char * dirname, const char* filename, struct 
 	GDataInputStream * input = g_data_input_stream_new (G_INPUT_STREAM (is));
 
 	/* read file line by line */
+    int line_count = 0;
 	while (TRUE) {
 		gchar *line;
         gsize length;
@@ -247,19 +257,29 @@ bool read_observations_file (const char * dirname, const char* filename, struct 
 		if (line == NULL)
 			break;
 
-        //g_debug("%s", line);
-        struct recording r;
-        bool ok = json_to_recording(line, access_points, &r);
-        if (ok)
+        line_count++;
+
+        trim(line);
+        if (strlen(line) > 0)
         {
-            //g_debug("Got a valid recording for %s", r.room_name);
-            // Append it to the front of the recordings list
-            // TODO: Remove duplicates
-            // NB Only allocate if ok
-            struct recording* ralloc = malloc(sizeof(struct recording));
-            *ralloc = r;
-            ralloc->next = *recordings;
-            *recordings = ralloc;
+            //g_debug("%s", line);
+            struct recording r;
+            bool ok = json_to_recording(line, access_points, &r);
+            if (ok)
+            {
+                //g_debug("Got a valid recording for %s", r.room_name);
+                // Append it to the front of the recordings list
+                // TODO: Remove duplicates
+                // NB Only allocate if ok
+                struct recording* ralloc = malloc(sizeof(struct recording));
+                *ralloc = r;
+                ralloc->next = *recordings;
+                *recordings = ralloc;
+            }
+            else
+            {
+                g_warning("Could not use '%s' in %s (%i)", line, filename, line_count);
+            }
         }
         g_free(line);
 	}
@@ -323,21 +343,19 @@ bool read_observations (const char * dirname, struct AccessPoint* access_points,
     record_observation
 */
 
-#define RECORDINGS "recordings"
-
-bool record (const char* device_name, double access_distances[N_ACCESS_POINTS], struct AccessPoint* access_points, char* location)
+bool record (const char* directory, const char* device_name, double access_distances[N_ACCESS_POINTS], struct AccessPoint* access_points, char* location)
 {
 	GError *error_local = NULL;
 
-    GFile* dir2 = g_file_new_for_path(RECORDINGS);
+    GFile* dir2 = g_file_new_for_path(directory);
     if (g_file_make_directory(dir2, NULL, &error_local))
     {
-        g_info("Created recordings directory '%s'", RECORDINGS);
+        g_info("Created recordings directory '%s'", directory);
     }
     g_object_unref(dir2);
 
     char fullpath[128];
-    g_snprintf(fullpath, sizeof(fullpath), "%s/%s.jsonl", RECORDINGS,  device_name);
+    g_snprintf(fullpath, sizeof(fullpath), "%s/%s.jsonl", directory,  device_name);
 
     GFile *file = g_file_new_for_path (fullpath);
 

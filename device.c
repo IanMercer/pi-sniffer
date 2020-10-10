@@ -49,7 +49,8 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
             g_strlcpy(local->name, remote->name, NAME_LENGTH);
         }
         else{
-            g_info("Replace local '%s' by remote '%s'? IGNORED", local->name, remote->name);
+            g_warning("Remote changed name '%s' by remote '%s' IGNORE?", local->name, remote->name);
+            g_strlcpy(local->name, remote->name, NAME_LENGTH);
         }
     }
     // TODO: All the NAME rules should be applied here too (e.g. privacy)
