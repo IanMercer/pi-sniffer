@@ -708,9 +708,13 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             // iPad, Apple TV, Samsung TV, ... seems to be particulary strong. Need to calibrate this and have
             // a per-device. PowerLevel is supposed to do this but it's not reliably sent.
             if (strcmp(existing->name, "iPad") == 0 || 
-                strcmp(existing->name, "Apple TV") == 0 || 
-                string_starts_with(existing->name, "[TV] Samsung")
+                strcmp(existing->name, "Apple TV") == 0
                 )
+            {
+                rssi = rssi * 1.06;   // e.g. -60 becomes -60*...
+            }
+
+            if (string_starts_with(existing->name, "[TV] Samsung"))
             {
                 rssi = rssi * 1.2;   // e.g. -60 becomes -60*...
             }
