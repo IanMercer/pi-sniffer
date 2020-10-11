@@ -1601,49 +1601,50 @@ int report_to_influx_tick(void *parameters)
     {
         g_info("Report to Influx - network up and ready");
 
-        // Create group summaries
-        for (struct group* g = state.groups; g != NULL; g = g->next)
-        {
-            g->group_total = 0.0;
-        }
-
-        for (struct room* r = state.rooms; r != NULL; r = r->next)
-        {
-            r->group->group_total += r->phone_total;
-        }
-
         char body[4096];
         body[0] = '\0';
 
         bool ok = TRUE;
 
         time_t now = time(0);
+
+        // Create group summaries (a flat list of a hierarchy of groups)
+        for (struct area* g = state.groups; g != NULL; g = g->next)
+        {
+            g->beacon_total = 0.0;
+            g->computer_total = 0.0;
+            g->phone_total = 0.0;
+            g->tablet_total = 0.0;
+            g->watch_total = 0.0;
+        }
+
         for (struct room* r = state.rooms; r != NULL; r = r->next)
         {
-            ok = ok && append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "phone", r->phone_total, now);
-            ok = ok && append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "watch", r->watch_total, now);
-            ok = ok && append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "tablet", r->tablet_total, now);
-            ok = ok && append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "computer", r->computer_total, now);
-            ok = ok && append_influx_line(&state, body, sizeof(body), r->group->name, r->name, "beacon", r->beacon_total, now);
+            struct area* g = r->area;
+            g->beacon_total += r->beacon_total;
+            g->computer_total += r->computer_total;
+            g->phone_total += r->phone_total;
+            g->tablet_total += r->tablet_total;
+            g->watch_total += r->watch_total;
+        }
+
+        for (struct area* g = state.groups; g != NULL; g = g->next)
+        {
+            char field[120];
+            snprintf(field, sizeof(field), "beacon=%.2f,computer=%.2f,phone=%.2f,tablet=%.2f,watch=%.2f",
+                g->beacon_total, g->computer_total, g->phone_total, g->tablet_total, g->watch_total);
+
+            ok = ok && append_influx_line(body, sizeof(body), g->category, g->tags, field, now);
 
             if (strlen(body) + 5 * 100 > sizeof(body)){
+                //g_debug("%s", body);
                 post_to_influx(&state, body, strlen(body));
                 body[0] = '\0';
             }
         }
-        // And summary by group for just the phones
-        for (struct group* g = state.groups; g != NULL; g = g->next)
-        {
-            ok = ok && append_influx_line(&state, body, sizeof(body), "Groups", g->name, "phone", g->group_total, now);
-
-            if (strlen(body) + 100 > sizeof(body)){
-                post_to_influx(&state, body, strlen(body));
-                body[0] = '\0';
-            }
-        }
-        //g_debug("%s", body);
         if (strlen(body) > 0)
         {
+            //g_debug("%s", body);
             post_to_influx(&state, body, strlen(body));
         }
 

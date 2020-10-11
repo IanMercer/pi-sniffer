@@ -18,20 +18,24 @@ struct weight
     struct weight* next;  // next ptr
 };
 
-// A group
-struct group
+// An area 
+struct area
 {
-    const char* name;
-    struct group* next;         // next ptr
-    double group_total;         // across all aps and rooms
+    const char* category;       // category for Influx or other db
+    const char* tags;           // CSV tags with no spaces
+    struct area* next;          // next ptr
+    double phone_total;         // how many phones
+    double tablet_total;        // how many tablet
+    double computer_total;      // how many computers
+    double watch_total;         // how many watches
+    double beacon_total;        // how many beacons
 };
 
-
-// A room in a group
+// An area with roughly equivalent distances from the sensors
 struct room
 {
     const char* name;
-    struct group* group;        // identity mapped group
+    struct area* area;          // Group with category and tags
     struct room* next;          // next ptr
     double room_score;          // calculated during scan, one ap
     double phone_total;         // how many phones
@@ -47,7 +51,7 @@ struct room
 int top_k_by_room_score(struct room* result[], int k, struct room* room_list);
 
 // Initialize the rooms structure on startup
-void read_configuration_file(const char* path, struct room** room_list, struct group** group_list, struct AccessPoint** access_points_list);
+void read_configuration_file(const char* path, struct room** room_list, struct area** group_list, struct AccessPoint** access_points_list);
 
 
 // ------------------------------------------------------------------

@@ -15,16 +15,17 @@
 /*
     Get or add a group
 */
-struct group* get_or_add_group(struct group** group_list, char* group_name)
+struct area* get_or_add_area(struct area** group_list, char* group_name, char* tags)
 {
-    for (struct group* current = *group_list; current != NULL; current = current->next)
+    for (struct area* current = *group_list; current != NULL; current = current->next)
     {
-        if (strcmp(current->name, group_name) == 0) return current;
+        if (strcmp(current->category, group_name) == 0 &&
+            strcmp(current->tags, tags) == 0) return current;
     }
     // Otherwise add a new group
-    struct group* group = g_malloc(sizeof(struct group));
-    group->group_total = 0.;
-    group->name = strdup(group_name);
+    struct area* group = g_malloc(sizeof(struct area));
+    group->category = strdup(group_name);
+    group->tags = strdup(tags);
     group->next = NULL;
 
     if (*group_list == NULL)
@@ -44,7 +45,7 @@ struct group* get_or_add_group(struct group** group_list, char* group_name)
 /*
     Initalize the rooms database (linked list)
 */
-void read_configuration_file(const char* path, struct room** room_list, struct group** group_list, struct AccessPoint** access_points_list)
+void read_configuration_file(const char* path, struct room** room_list, struct area** group_list, struct AccessPoint** access_points_list)
 {
     (void)access_points_list; // unused now
     // Read from file ...
@@ -117,7 +118,7 @@ void read_configuration_file(const char* path, struct room** room_list, struct g
 
     struct room* current_room = NULL;   // current pointer
 
-    cJSON* rooms = cJSON_GetObjectItemCaseSensitive(json, "rooms");
+    cJSON* rooms = cJSON_GetObjectItemCaseSensitive(json, "areas");
     if (!cJSON_IsArray(rooms)){
         g_error("Could not parse rooms[] from 'rooms.json'");
         exit(EXIT_FAILURE);
@@ -131,34 +132,49 @@ void read_configuration_file(const char* path, struct room** room_list, struct g
         bool ok = TRUE;
         struct room* r = g_malloc(sizeof(struct room));
         r->next = NULL;
+        r->area = NULL;
 
         cJSON* name = cJSON_GetObjectItemCaseSensitive(room, "name");
-        if (cJSON_IsString(name) && (name->valuestring != NULL))
+        if (!cJSON_IsString(name) || (name->valuestring == NULL))
         {
-            r->name = strdup(url_slug(name->valuestring));
-        }
-        else
-        {
-            g_error("Missing name on room object");
+            if (cJSON_GetObjectItemCaseSensitive(room, "comment")) continue;
+            g_error("Missing 'name' on room object");
             ok = FALSE;
+            continue;
         }
 
-        cJSON* group = cJSON_GetObjectItemCaseSensitive(room, "group");
-        if (cJSON_IsString(group) && (group->valuestring != NULL))
+        cJSON* category = cJSON_GetObjectItemCaseSensitive(room, "group");
+        if (!cJSON_IsString(category) || (category->valuestring == NULL))
         {
-            // no strdup here, get_or_add_group handles that
-            r->group = get_or_add_group(group_list, url_slug(group->valuestring));
-        }
-        else
-        {
-            g_error("Missing group on room '%s' object", r->name);
+            g_error("Missing 'group' on area '%s'", name->valuestring);
             ok = FALSE;
+            continue;
         }
+
+        cJSON* tags = cJSON_GetObjectItemCaseSensitive(room, "tags");
+        if (!cJSON_IsString(tags) || (tags->valuestring == NULL))
+        {
+            g_warning("Missing 'tags' on area '%s'", name->valuestring);
+            ok = FALSE;
+            continue;
+        }
+
+        if (string_contains_insensitive(tags->valuestring, " "))
+        {
+            g_warning("Spaces not allowed in tags for area '%s'", name->valuestring);
+            ok = FALSE;
+            continue;
+        }
+
+        r->name = strdup(url_slug(name->valuestring));
+
+        // no strdup here, get_or_add_group handles that
+        r->area = get_or_add_area(group_list, url_slug(category->valuestring), tags->valuestring);
 
         //g_debug("Parsed room %s in %s", r->name, r->group);
         if (ok)
         {
-          g_debug("Added room %s", r->name);
+          g_debug("Added room %s in %s with tags %s", r->name, r->area->category, r->area->tags);
           if (*room_list == NULL)
           {
               *room_list = r;

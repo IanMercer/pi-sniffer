@@ -181,18 +181,20 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
     top_result[0] = result[0];
     float best_score = 0.0;
 
+    float smoothing = 0.1;
+
     // Find the most common in the top_k weighted by distance
     for (int i = 0; i < k; i++)
     {
         if (result[i].used) continue;
 
         float best_distance = result[i].distance;
-        float score = 1.0 / result[i].distance;
+        float score = 1.0 / (smoothing + result[i].distance);
         for (int j = i+1; j < k; j++)
         {
             if (strcmp(result[i].room_name, result[j].room_name) == 0 && result[j].distance > 0)
             {
-                score += 1.0 / result[j].distance;
+                score += 1.0 / (smoothing + result[j].distance);
                 result[i].used = TRUE;
 
                 if (result[j].distance < best_distance)
@@ -204,7 +206,7 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
 
         if (score > best_score)
         {
-            g_debug("Replace %s by %s in best score %.2f", top_result[0].room_name, result[i].room_name, score);
+            //g_debug("Replace %s by %s in best score %.2f", top_result[0].room_name, result[i].room_name, score);
             best_score = score;
             top_result[0] = result[i];                        // copy name and distance (for first)
             top_result[0].distance = sqrt(best_distance);     // overwrite with best distance

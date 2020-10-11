@@ -261,7 +261,7 @@ struct OverallState
    struct room* rooms;
 
    // linked list of groups
-   struct group* groups;
+   struct area* groups;
 
    // linked list of recorded locations for k-means
    struct recording* recordings;

@@ -80,16 +80,18 @@ void post_to_influx_body(struct OverallState* state, char body[BUFSIZE], int len
         /* It worked if you get "HTTP/1.1 204 No Content" and some other fluff */
         ret = read(sockfd, result, sizeof(result));
         if (ret < 0) g_warning("Reading the result from InfluxDB failed");
-        
-        //result[ret] = 0; /* terminate string */
-        // g_info("Result returned %i bytes from InfluxDB.",ret);
-        // for (int j = 0; j < ret; j++){
-        //     if (result[j] < 32) result[j] = 32;
-        //     if (j < 32)
-        //         g_debug("%02x : %c", result[j], result[j]);
-        // }
 
-        //g_info("->|%s|<-\n", result);
+#if 0
+        result[ret] = 0; /* terminate string */
+        g_info("Result returned %i bytes from InfluxDB.",ret);
+        for (int j = 0; j < ret; j++){
+            if (result[j] < 32) result[j] = 32;
+            if (j < 32)
+                g_debug("%02x : %c", result[j], result[j]);
+        }
+
+        g_info("->|%s|<-\n", result);
+#endif
 
     close(sockfd);
 }
@@ -105,7 +107,7 @@ struct cache_item
 /*
    Append an Influx line message, returns TRUE if successful, FALSE if output is full
 */
-bool append_influx_line(struct OverallState* state, char* line, int line_length,  const char* group, const char* topic, char* category, double value, time_t timestamp)
+bool append_influx_line(char* line, int line_length,  const char* area_category, const char* tags, char* fields, time_t timestamp)
 {
     /* InfluxDB line protocol note:
         measurement name
@@ -116,12 +118,10 @@ bool append_influx_line(struct OverallState* state, char* line, int line_length,
     int existing_length = strlen(line);
     int remainder = line_length - existing_length;
 
-    int written = snprintf(line+existing_length, remainder, "%s,host=%s,from=%s,category=%s %s=%.3f %lu000000000\n",
-        group,                    // A group of rooms
-        topic,                    // access point name
-        state->local->client_id,  // from = client_id
-        category,
-        "count", value,           // count = value
+    int written = snprintf(line+existing_length, remainder, "%s,%s %s %lu000000000\n",
+        area_category,            // A group of areas sums to a category
+        tags,                     // CSV tags
+        fields,
         timestamp);               // nanosecond timestamp
 
     return (written >= 0) && (written < remainder);

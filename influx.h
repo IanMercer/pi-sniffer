@@ -7,7 +7,7 @@
 /*
    Append an Influx line message, returns TRUE if successful, FALSE if output is full
 */
-bool append_influx_line(struct OverallState* state, char* line, int line_length,  const char* group, const char* topic, char* category, double value, time_t timestamp);
+bool append_influx_line(char* line, int line_length,  const char* area_category, const char* tags, char* fields, time_t timestamp);
 
 /*
     Post formatted line message
