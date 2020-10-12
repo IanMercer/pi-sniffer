@@ -31,7 +31,7 @@ following the instructions [here](RaspberrySetup.md).
 
 * clone this repository
 
-`git clone https://github.com/ianmercer/pi-sniffer.service`
+`git clone https://github.com/ianmercer/pi-sniffer`
 
 * edit the .service file to point to the scan executable location by editing the `ExecStart` and `WorkingDirectory` lines:
 

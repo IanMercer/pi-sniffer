@@ -98,7 +98,7 @@ You can find instructions for adding a real-time clock chip [here](https://pimyl
 
 `sudo sh -c "echo none > /sys/class/leds/led0/trigger"`
 
-19. Now return to the main instructions [README.md](README.md)
+19. Now return to the main instructions [GettingStarted.md](GettingStarted.md)
 
 
 
