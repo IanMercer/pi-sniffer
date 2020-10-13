@@ -822,6 +822,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             char *str;
 
             int uuid_hash = 0;
+            int existing_uuid_hash = existing->uuid_hash;
 
             g_variant_get(prop_val, "as", &iter_array);
 
@@ -844,7 +845,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->uuid_hash = uuid_hash & 0xffffffff;
             }
 
-            if ((existing->uuids_length != actualLength))// && (actualLength > 0))
+            if ((existing->uuid_hash != existing_uuid_hash))
             {
                 char gatts[1024];
                 gatts[0] = '\0';
@@ -854,7 +855,11 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 handle_uuids(existing, uuidArray, actualLength, gatts, sizeof(gatts));
 
                 if (was && !existing->is_training_beacon){
-                    g_warning("%s (%s) is no longer transmitting an Indoor Positioning UUID", existing->mac, existing->name);
+                    g_warning("  %s (%s) is no longer transmitting an Indoor Positioning UUID", existing->mac, existing->name);
+                }
+                else if (!was && existing->is_training_beacon)
+                {
+                    g_warning("  %s (%s) is now transmitting an Indoor Positioning UUID", existing->mac, existing->name);
                 }
 
                 if (actualLength > 0)
@@ -871,7 +876,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             }
             else 
             {
-                g_debug("  %s UUIDs unchanged", existing->mac);
+               // g_debug("  %s UUIDs unchanged", existing->mac);
             }
             // Free up the individual UUID strings after sending them
             for (int i = 0; i < actualLength; i++)
@@ -1631,7 +1636,8 @@ int report_to_influx_tick(void *parameters)
         for (struct area* g = state.groups; g != NULL; g = g->next)
         {
             char field[120];
-            snprintf(field, sizeof(field), "beacon=%.2f,computer=%.2f,phone=%.2f,tablet=%.2f,watch=%.2f",
+
+            snprintf(field, sizeof(field), "beacon=%.1f,computer=%.1f,phone=%.1f,tablet=%.1f,watch=%.1f",
                 g->beacon_total, g->computer_total, g->phone_total, g->tablet_total, g->watch_total);
 
             ok = ok && append_influx_line(body, sizeof(body), g->category, g->tags, field, now);

@@ -53,6 +53,10 @@ int top_k_by_room_score(struct room* result[], int k, struct room* room_list);
 // Initialize the rooms structure on startup
 void read_configuration_file(const char* path, struct room** room_list, struct area** group_list, struct AccessPoint** access_points_list);
 
+/*
+   get or create a room and update any existing group also
+*/
+struct room* get_or_create_room(char* room_name, char* group_name, char* tags, struct room** rooms_list, struct area** groups_list);
 
 // ------------------------------------------------------------------
 

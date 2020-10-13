@@ -42,6 +42,74 @@ struct area* get_or_add_area(struct area** group_list, char* group_name, char* t
     }
 }
 
+
+/*
+   get or create a room and update any existing group also
+*/
+struct room* get_or_create_room(char* room_name, char* group_name, char* tags, struct room** rooms_list, struct area** groups_list)
+{
+    if (string_contains_insensitive(tags, " "))
+    {
+        g_warning("Spaces not allowed in tags for area '%s' (removed)", room_name);
+        url_slug(tags);
+    }
+
+    if (string_contains_insensitive(room_name, " "))
+    {
+        g_warning("Spaces not allowed in room name '%s' (removed)", room_name);
+        url_slug(room_name);   // destructive
+    }
+
+    struct room* found = NULL;
+    for (struct room* r = *rooms_list; r != NULL; r=r->next)
+    {
+        if (strcmp(r->name, room_name) == 0)
+        {
+            found = r;
+            break;
+        }
+    }
+
+    if (found == NULL)
+    {
+        found = g_malloc(sizeof(struct room));
+        found->name = strdup(room_name);
+        found->next = NULL;
+        found->area = NULL;
+        g_info("Added room %s in %s with tags %s", found->name, group_name, tags);
+
+        if (*rooms_list == NULL)
+        {
+            // First item in chain
+            *rooms_list = found;
+        }
+        else
+        {
+            // Insert at front of chain
+            found->next = *rooms_list;
+            *rooms_list = found;
+        }
+
+        // no strdup here, get_or_add_group handles that
+        found->area = get_or_add_area(groups_list, url_slug(group_name), tags);
+    }
+    else
+    {
+        if (strcmp(found->area->category, group_name) != 0)
+        {
+            g_warning("TODO: Room '%s' changing group from '%s' to '%s'", room_name, found->area->category, group_name);
+        }
+
+        if (strcmp(found->area->tags, tags) != 0)
+        {
+            g_warning("TODO: Room '%s' changing tags from '%s' to '%s'", room_name, found->area->tags, tags);
+        }
+    }
+
+    return found;
+}
+
+
 /*
     Initalize the rooms database (linked list)
 */
@@ -57,7 +125,7 @@ void read_configuration_file(const char* path, struct room** room_list, struct a
     if (fp == NULL)
     {
         // If no file, calculate from access points
-        g_warning("Please create a file 'rooms.json' containing the mapping from sensors to rooms");
+        g_warning("Please create a file 'rooms.json' (configured path using systemctl edit) mapping room names to groups");
         return;
     }
 
@@ -65,7 +133,7 @@ void read_configuration_file(const char* path, struct room** room_list, struct a
     long length = ftell (fp);
 
     if (length < 1){
-        g_error("The 'rooms.json' file must contain entries for each room mapping to distances");
+        g_error("The 'rooms.json' file must contain entries for each room");
         exit(EXIT_FAILURE);
     }
 
@@ -116,8 +184,6 @@ void read_configuration_file(const char* path, struct room** room_list, struct a
 
     // ------------------- rooms ---------------------
 
-    struct room* current_room = NULL;   // current pointer
-
     cJSON* rooms = cJSON_GetObjectItemCaseSensitive(json, "areas");
     if (!cJSON_IsArray(rooms)){
         g_error("Could not parse rooms[] from 'rooms.json'");
@@ -129,17 +195,11 @@ void read_configuration_file(const char* path, struct room** room_list, struct a
     {
         // Parse room from 'room'
 
-        bool ok = TRUE;
-        struct room* r = g_malloc(sizeof(struct room));
-        r->next = NULL;
-        r->area = NULL;
-
         cJSON* name = cJSON_GetObjectItemCaseSensitive(room, "name");
         if (!cJSON_IsString(name) || (name->valuestring == NULL))
         {
             if (cJSON_GetObjectItemCaseSensitive(room, "comment")) continue;
             g_error("Missing 'name' on room object");
-            ok = FALSE;
             continue;
         }
 
@@ -147,7 +207,6 @@ void read_configuration_file(const char* path, struct room** room_list, struct a
         if (!cJSON_IsString(category) || (category->valuestring == NULL))
         {
             g_error("Missing 'group' on area '%s'", name->valuestring);
-            ok = FALSE;
             continue;
         }
 
@@ -155,41 +214,17 @@ void read_configuration_file(const char* path, struct room** room_list, struct a
         if (!cJSON_IsString(tags) || (tags->valuestring == NULL))
         {
             g_warning("Missing 'tags' on area '%s'", name->valuestring);
-            ok = FALSE;
             continue;
         }
 
         if (string_contains_insensitive(tags->valuestring, " "))
         {
             g_warning("Spaces not allowed in tags for area '%s'", name->valuestring);
-            ok = FALSE;
             continue;
         }
 
-        r->name = strdup(url_slug(name->valuestring));
-
-        // no strdup here, get_or_add_group handles that
-        r->area = get_or_add_area(group_list, url_slug(category->valuestring), tags->valuestring);
-
-        //g_debug("Parsed room %s in %s", r->name, r->group);
-        if (ok)
-        {
-          g_debug("Added room %s in %s with tags %s", r->name, r->area->category, r->area->tags);
-          if (*room_list == NULL)
-          {
-              *room_list = r;
-          }
-          else
-          {
-              current_room->next = r;
-          }
-          current_room = r;
-        }
-        else
-        {
-            free(r);
-        }
-        
+        g_debug("Get or create room '%s', '%s', '%s'", name->valuestring, category->valuestring, tags->valuestring);
+        get_or_create_room(name->valuestring, category->valuestring, tags->valuestring, room_list, group_list);        
     }
 
     // ------------------- beacons --------------------
@@ -215,8 +250,6 @@ void read_configuration_file(const char* path, struct room** room_list, struct a
             }
         }
     }
-
-
 
     cJSON_Delete(json);
 

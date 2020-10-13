@@ -1457,6 +1457,8 @@ const char *company_id_to_string(int company_id, int8_t* category)
 		return "Orlan LLC";
 	case 588:
 		return "Blue Clover Devices";
+	case 0x058e:
+		return "Oculus";
 	default:
 		return NULL;
 	}

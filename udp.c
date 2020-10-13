@@ -303,7 +303,7 @@ void print_counts_by_closest(struct OverallState* state)
     int count_recordings = 0;
     //if (state->recordings == NULL)
     {
-        bool ok = read_observations ("recordings", state->access_points, &state->recordings);
+        bool ok = read_observations ("recordings", state->access_points, &state->recordings, &state->rooms, &state->groups);
         if (!ok) g_warning("Failed to read file back");
         for (struct recording* r = state->recordings; r != NULL; r=r->next)
         {
@@ -402,13 +402,13 @@ void print_counts_by_closest(struct OverallState* state)
                 {
                     char other_mac[18];
                     mac_64_to_string(other_mac, 18, other->supersededby);
-/*
+
                     struct AccessPoint *ap2 = other->access_point;
                     g_debug(" %10s distance %5.1fm at=%3is dt=%3is count=%3i %s%s", ap2->client_id, other->distance, abs_diff, time_diff, other->count,
                         // lazy concat
                         other->supersededby==0 ? "" : "superseeded=", 
                         other->supersededby==0 ? "" : other_mac);
-*/
+
                     if (time_diff > 300)
                     {
                         //g_debug("Skip remainder, delta time %i > 300", time_diff);
@@ -423,7 +423,7 @@ void print_counts_by_closest(struct OverallState* state)
                     // other needs to be better than test by at least as far as test could have moved in that time interval
                     if (other->distance < test->distance - distance_dilution)
                     {
-                        // g_debug("   Moving %s from %.1fm to %.1fm dop=%.2fm dot=%is", mac, test->distance, closest[j].distance, distance_dilution, time_diff);
+                        //g_debug("   Moving %s from %.1fm to %.1fm dop=%.2fm dot=%is", mac, test->distance, closest[j].distance, distance_dilution, time_diff);
                         test = other;
                     }
                 }
@@ -462,15 +462,15 @@ void print_counts_by_closest(struct OverallState* state)
         // Model the uncertainty when a new device arrives. On first tick it could
         if (count < 2)
         {
-            score = score * 0.25;
+            score = score * 0.5;
         }
         else if (count < 3)
         {
-            score = score * 0.5;
+            score = score * 0.75;
         }
         else if (count < 4)
         {
-            score = score * 0.75;
+            score = score * 0.95;
         }
 
         if (score > 0)

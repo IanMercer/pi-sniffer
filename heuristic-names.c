@@ -77,6 +77,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_WEARABLE; // Fitbit Alta Heartrate
     else if (string_starts_with(name, "Spartan Trainer"))
         existing->category = CATEGORY_WEARABLE; // Suunto
+    else if (string_starts_with(name, "Oculus"))
+        existing->category = CATEGORY_WEARABLE; //Oculus Quest etc.
 
     // FIXED
     else if (string_starts_with(name, "Tacx Neo 2T"))
@@ -135,11 +137,16 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     // APPLIANCE
 
     else if (string_starts_with(name, "EssenzaTwo"))
-        existing->category = CATEGORY_APPLIANCE; // Nespresso coffee machine, not a Lamborghini supercar
+        existing->category = CATEGORY_APPLIANCE;    // Nespresso coffee machine, not a Lamborghini supercar
     else if (string_starts_with(name, "BEDJET"))
-        existing->category = CATEGORY_APPLIANCE; // Bed temperature controller!
+        existing->category = CATEGORY_APPLIANCE;    // Bed temperature controller!
     else if (string_starts_with(name, "[Refrigerator] Samsung"))
-        existing->category = CATEGORY_APPLIANCE; // Fridge!
+        existing->category = CATEGORY_APPLIANCE;    // Fridge!
+    else if (string_starts_with(name, "Levolor"))
+        existing->category = CATEGORY_APPLIANCE;    // Shades
+    else if (string_starts_with(name, "RIDGID Battery"))
+        existing->category = CATEGORY_APPLIANCE;    // Batteries!
+
 
     // TVs
     else if (strcmp(name, "AppleTV") == 0)
@@ -224,6 +231,10 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_SPEAKERS;   // LG Soundbar?
     else if (string_starts_with(name, "HTC BS"))
         existing->category = CATEGORY_SPEAKERS;   // Conference speaker
+    else if (string_ends_with(name, "speaker"))
+        existing->category = CATEGORY_SPEAKERS;   // e.g. Master Bedroom speaker
+    else if (string_ends_with(name, "speak"))
+        existing->category = CATEGORY_SPEAKERS;   // e.g. Master Bedroom speaker
 
     // BT Speakers
     else if (string_starts_with(name, "Venue-Tile"))
@@ -416,6 +427,11 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     {
         optional_set(existing->name, "_VXI Corp", NAME_LENGTH);
         existing->category = CATEGORY_HEADPHONES;
+    }
+    else if (string_starts_with(existing->mac, "cc:70:ed"))
+    {
+        optional_set(existing->name, "_Cisco Systems", NAME_LENGTH);
+        existing->category = CATEGORY_FIXED;
     }
 
     // TODO: Android device names

@@ -9,7 +9,7 @@ because it has the best Bluetooth range of all the models tested. You'll also ne
 
 3. Create a `wpa_supplicant.conf` following the instructions here: https://www.raspberrypi.org/documentation/configuration/wireless/headless.md
 
-4. Add a blank file called `ssh` with no extension in the root directory too.
+4. Add a blank file called `ssh` with no extension in the root directory. This will allow remote access over SSH.
 
 5. Plug the Pi in and find what IP address it was allocated. You can probably find it at `raspberrypi.ocal` or you can connect a monitor and keyboard, or you can look at your router to see what IP was allocated, or you can do a portscan on the local network to find it (change the base address to match your local network in this nmap command.)
 ````
@@ -31,11 +31,19 @@ sudo nmap -sn 192.168.0.0/24
 
 7. The first time you connect use `pi` as the user and `raspberry` as the password.
 
-8. Change the default password for the pi user.
+8. Change the default password for the pi user using `passwd`.
 
-9. Run `raspi-config` and resize the partition to fill the SD card.
+9. Run `raspi-config` and perform the following steps:
 
-10. Change the hostname and hosts by replacing `raspberrypi` with your chosen name
+    a. resize the partition to fill the SD card.
+    b. change the host name
+    c. set the timezone
+
+Reboot after this.
+
+10. Some of the above steps can be carried out at the command line instead, e.g.
+
+    a. Change the hostname and hosts by replacing `raspberrypi` with your chosen name
  in both of these locations, and reboot:
 
 ````
@@ -44,14 +52,23 @@ sudo nano \hosts
 sudo reboot
 ````
 
+    b. Set you local time zone and check it
+````
+sudo timedatectl set-timezone America/Los_Angeles
+timedatectl status
+````
+
+
 11. Reconnect and add a new root user (and delete the pi user later).
 
 ````
 sudo adduser <username>
-sudo usermod -aG sudo <username>
+
+# view all the groups the 'pi' user is in:
 sudo groups pi
-sudo adduser <username> adm
-# repeat for any other groups pi was in that you want this user to be in
+
+# add the user to all the linux groups you need, here's a full set like the 'pi' user:
+sudo usermod -aG sudo,adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev,spi,i2c,gpio <username>
 ````
 
 12. Optionally add password-less SSH access from your controlling computer
@@ -67,12 +84,6 @@ ssh-copy-id -i ~/.ssh/id_rsa.pub ian@192.168.0.178
 ````
 sudo apt-get update
 sudo apt-get upgrade
-````
-
-15. Set you local time zone and check it
-````
-sudo timedatectl set-timezone America/Los_Angeles
-timedatectl status
 ````
 
 16. Optionally allow `journalctl` to persist logs between boots:

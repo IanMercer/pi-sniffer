@@ -13,6 +13,7 @@
 #include <glib.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
 // UTILITY METHODS
 
@@ -24,8 +25,17 @@ char* recording_to_json (struct recording* r, struct AccessPoint* access_points)
     char *string = NULL;
     cJSON *j = cJSON_CreateObject();
 
-    // TODO: Add date time stamp
     cJSON_AddStringToObject(j, "room", r->room_name);
+
+    // time
+
+    time_t rawtime;
+    time (&rawtime);
+    char buf[64];
+    strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", localtime(&rawtime));
+    cJSON_AddStringToObject(j, "time", buf);
+
+    // distances
 
     cJSON *distances = cJSON_AddObjectToObject(j, "distances");
     for (struct AccessPoint* ap = access_points; ap != NULL; ap = ap->next)
@@ -39,7 +49,10 @@ char* recording_to_json (struct recording* r, struct AccessPoint* access_points)
         }
     }
 
+
     string = cJSON_PrintUnformatted(j);
+    g_warning("%s", string);
+
     cJSON_Delete(j);
     return string;
 }
@@ -47,7 +60,7 @@ char* recording_to_json (struct recording* r, struct AccessPoint* access_points)
 /*
     Convert JSON lines value back to a recording value using current order of access points
 */
-bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct recording* r)
+bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct recording* r, struct room** rooms_list, struct area** areas_list)
 {
     cJSON *json = cJSON_Parse(buffer);
     if (json == NULL)
@@ -69,6 +82,19 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
 
     //g_debug("Got room %s", room_name->valuestring);
 
+    // META {"room":"Sunroom","group":"Home","tags":"zone=LivingRoom,use=living"}
+
+    bool has_meta = FALSE;
+    cJSON* group_name = cJSON_GetObjectItemCaseSensitive(json, "group");
+    cJSON* tags = cJSON_GetObjectItemCaseSensitive(json, "tags");
+    if (cJSON_IsString(group_name) && cJSON_IsString(tags))
+    {
+        g_info("Group name '%s', tags '%s'", group_name->valuestring, tags->valuestring);
+        get_or_create_room(room_name->valuestring, group_name->valuestring, tags->valuestring, rooms_list, areas_list);
+        has_meta = TRUE;
+    }
+
+    // Set values on recording object
     g_utf8_strncpy(r->room_name, room_name->valuestring, META_LENGTH);
     url_slug(r->room_name);   // strip spaces and any other junk from it
 
@@ -76,9 +102,12 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
 
     if (!cJSON_IsObject(distances))
     {
-        g_error("Missing distances in saved recording");
+        if (!has_meta)
+        {
+            g_warning("Missing distances or meta data (group and tags) in saved recording '%s'", buffer);
+        }
         cJSON_Delete(json);
-        return FALSE;
+        return TRUE;  // ignore it
     }
 
     int count = 0;
@@ -116,7 +145,15 @@ float score (struct recording* recording, double access_points_distance[N_ACCESS
     float sum_delta_squared = 0.0;
     for (struct AccessPoint* ap = access_points; ap != NULL; ap=ap->next)
     {
-        float delta = access_points_distance[ap->id] - recording->access_point_distances[ap->id];
+        float recording_distance = recording->access_point_distances[ap->id];
+        float measured_distance = access_points_distance[ap->id];
+
+        // A missing distance is treated as being off at infinity (50.0)
+        // If both are zero this cancels out, but if it was expected to be here and isn't or vice-versa a long reading is better
+        if (recording_distance == 0.0) recording_distance = 35.0;
+        if (measured_distance == 0.0) measured_distance = 35.0;
+
+        float delta = measured_distance - recording_distance;
         sum_delta_squared += delta*delta;
     }
 
@@ -221,8 +258,8 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
 
 // FILE OPERATIONS
 
-
-bool read_observations_file (const char * dirname, const char* filename, struct AccessPoint* access_points, struct recording** recordings)
+bool read_observations_file (const char * dirname, const char* filename, struct AccessPoint* access_points, struct recording** recordings,
+    struct room** rooms_list, struct area** areas_list)
 {
 	g_return_val_if_fail (filename != NULL, FALSE);
 
@@ -266,7 +303,7 @@ bool read_observations_file (const char * dirname, const char* filename, struct 
         {
             //g_debug("%s", line);
             struct recording r;
-            bool ok = json_to_recording(line, access_points, &r);
+            bool ok = json_to_recording(line, access_points, &r, rooms_list, areas_list);
             if (ok)
             {
                 //g_debug("Got a valid recording for %s", r.room_name);
@@ -318,7 +355,8 @@ void free_list(struct recording** head)
  * Return value: %TRUE if there were no errors.
  *
  **/
-bool read_observations (const char * dirname, struct AccessPoint* access_points, struct recording** recordings)
+bool read_observations (const char * dirname, struct AccessPoint* access_points, struct recording** recordings,
+    struct room** rooms_list, struct area** areas_list)
 {
 
     GDir *dir;
@@ -331,7 +369,7 @@ bool read_observations (const char * dirname, struct AccessPoint* access_points,
 
     while ((filename = g_dir_read_name(dir)))
     {
-        ok = read_observations_file(dirname, filename, access_points, recordings) && ok;
+        ok = read_observations_file(dirname, filename, access_points, recordings, rooms_list, areas_list) && ok;
     }
     g_dir_close(dir);
 
