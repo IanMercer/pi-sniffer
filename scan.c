@@ -563,6 +563,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         existing->count = 0;
         existing->try_connect_state = TRY_CONNECT_ZERO;
         existing->try_connect_attempts = 0;
+        existing->is_training_beacon = false;
 
         // RSSI values are stored with kalman filtering
         kalman_initialize(&existing->kalman);
