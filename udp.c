@@ -283,6 +283,7 @@ void set_count_to_zero(struct AccessPoint* ap, void* extra)
 void print_counts_by_closest(struct OverallState* state)
 {
     struct AccessPoint* access_points_list = state->access_points;
+    struct Beacon* beacon_list = state->beacons;
     struct room* room_list = state->rooms;
 
     float total_count = 0.0;
@@ -511,19 +512,33 @@ void print_counts_by_closest(struct OverallState* state)
             }
             else if (test->category == CATEGORY_BEACON)
             {
+                // Is this a known access point
+                struct Beacon* beacon = NULL;
+                for (struct Beacon* b = beacon_list; b != NULL; b=b->next)
+                {
+                    if (strcmp(b->name, test->name) == 0 || b->mac64 == test->device_64)
+                    {
+                        beacon = b;
+                        break;
+                    }
+                }
+
+                double best_room = 0.0; // for beacon
                 for (struct room* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
                     rcurrent->beacon_total += rcurrent->room_score * score;        // probability x incidence
+
+                    // If this is a known beacon and the score is > best, place it in this room
+                    if (beacon != NULL && rcurrent->room_score > best_room)
+                    {
+                        best_room = rcurrent->room_score;
+                        beacon->room = rcurrent;
+                    }
                 }
             }
-            else if (test->category != CATEGORY_PHONE)
-            {
-                // only count phones for occupancy
-            }
-            else //if (test->distance < 7.5)
+            else if (test->category == CATEGORY_PHONE)
             {
                 //g_info("Cluster (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, score);
-
 
                 total_count += score;
                 ap->people_closest_count = ap->people_closest_count + score;
@@ -536,6 +551,10 @@ void print_counts_by_closest(struct OverallState* state)
                         g_debug("Phone in %s +%.2f x %.2f", rcurrent->name, rcurrent->room_score, score);
                     rcurrent->phone_total += rcurrent->room_score * score;        // probability x incidence
                 }
+            }
+            else //if (test->distance < 7.5)
+            {
+                // only count phones for occupancy
             }
             // else 
             // {
@@ -567,6 +586,16 @@ void print_counts_by_closest(struct OverallState* state)
 
     json_rooms = cJSON_PrintUnformatted(jobject_rooms);
     cJSON_Delete(jobject_rooms);
+    g_info(" ");
+    g_info("==============================================================================================");
+
+    g_info ("  Beacon              Area             Zone");
+    for (struct Beacon* b = state->beacons; b != NULL; b=b->next)
+    {
+        g_info("  %20s  %18s  %18s", b->alias, 
+            (b->room == NULL) ? "---" : b->room->name, 
+            (b->room == NULL) ? "---" : ((b->room->area == NULL) ? "???" : b->room->area->category));
+    }
 
     g_info(" ");
     g_info("==============================================================================================");

@@ -4,6 +4,8 @@
     Access Points
 */
 
+#include "device.h"
+
 struct AccessPoint* get_or_create_access_point(struct AccessPoint** access_points_list, const char* client_id, bool* created);
 
 struct AccessPoint* add_access_point(struct AccessPoint** access_points_list, char* client_id, const char* description, const char* platform, 

@@ -1864,6 +1864,7 @@ void initialize_state()
     state.rooms = NULL;         // linked list
     state.groups = NULL;        // linked list
     state.closest_n = 0;        // count of closest
+    state.beacons = NULL;       // linked list
 
     // no devices yet
     state.n = 0;
@@ -1972,7 +1973,7 @@ void initialize_state()
         if (strcmp(verbosity, "details")) state.verbosity = Details;
     }
    
-    read_configuration_file(state.configuration_file_path, &state.rooms, &state.groups, &state.access_points);
+    read_configuration_file(state.configuration_file_path, &state.access_points, &state.rooms, &state.groups, &state.beacons);
 
     g_debug("Completed read of configuration file");
 }

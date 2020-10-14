@@ -19,14 +19,14 @@ int category_values[] = { CATEGORY_UNKNOWN, CATEGORY_PHONE, CATEGORY_WEARABLE, C
 
 int category_to_int(char* category)
 {
-    for (uint i = 0; i < sizeof(categories); i++) {
+    for (uint8_t i = 0; i < sizeof(categories); i++) {
        if (category_values[i] != (int)i) g_info("Category does not match %i %i", i, category_values[i]);
        if (strcmp(category, categories[i]) == 0) return category_values[i];
     }
     return 0;
 }
 
-char* category_from_int(uint i)
+char* category_from_int(uint8_t i)
 {
   if (i >= sizeof(categories)) return categories[0];
   return categories[i];

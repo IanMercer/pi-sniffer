@@ -3,7 +3,6 @@
 
 #define G_LOG_USE_STRUCTURED 1
 
-#include "rooms.h"
 #include "kalman.h"
 #include <pthread.h>
 #include <string.h>
@@ -137,21 +136,16 @@ struct AccessPoint
 };
 
 /*
-   Projected to an array with values for calculation purposes
+   A named beacon to track and report on
 */
-struct AccessPointWithValue
+struct Beacon
 {
-   struct AccessPoint* access_point;
-   double value;
-};
-
-/*
-   Mapping from a mac address string to an integer value
-*/
-struct MacAddress
-{
-   char mac[18]; // mac address string
-   int id;       // local id
+   char* name;
+   int64_t mac64;
+   char* alias;
+   struct Beacon* next;
+   // Which room it is currently in (or NULL)
+   struct room* room;
 };
 
 /*
@@ -195,7 +189,7 @@ struct ClosestTo
 
 int category_to_int(char *category);
 
-char *category_from_int(uint i);
+char *category_from_int(uint8_t i);
 
 char *device_to_json(struct AccessPoint *a, struct Device *device);
 
@@ -222,7 +216,6 @@ struct OverallState
    bool network_up;        // Is the network up
    pthread_mutex_t lock;
    struct Device devices[N];
-   struct MacAddress mac_addresses[NMAC];
 
    struct AccessPoint *local; // the local access point (in the access points struct)
 
@@ -267,9 +260,12 @@ struct OverallState
    struct recording* recordings;
 
    // Most recent 2048 closest to observations
-   uint closest_n;
+   int closest_n;
    
    struct ClosestTo closest[CLOSEST_N];
+
+   // linked list of beacons
+   struct Beacon* beacons;
 };
 
 #endif

@@ -113,9 +113,9 @@ struct room* get_or_create_room(char* room_name, char* group_name, char* tags, s
 /*
     Initalize the rooms database (linked list)
 */
-void read_configuration_file(const char* path, struct room** room_list, struct area** group_list, struct AccessPoint** access_points_list)
+void read_configuration_file(const char* path, struct AccessPoint** accesspoint_list, struct room** room_list, struct area** group_list, struct Beacon** beacon_list)
 {
-    (void)access_points_list; // unused now
+    //struct AccessPoint** = state.access_points_list;    // unused now
     // Read from file ...
 
     FILE *fp;
@@ -172,7 +172,7 @@ void read_configuration_file(const char* path, struct room** room_list, struct a
             if (cJSON_IsString(name) && (name->valuestring != NULL))
             {
                 g_debug("Added sensor %s", name->valuestring);
-                add_access_point(access_points_list, name->valuestring, "not seen yet", "not seen yet", 0.0, 0.0, 0.0, 64, 2.8, 7.5);
+                add_access_point(accesspoint_list, name->valuestring, "not seen yet", "not seen yet", 0.0, 0.0, 0.0, 64, 2.8, 7.5);
             }
             else
             {
@@ -240,9 +240,20 @@ void read_configuration_file(const char* path, struct room** room_list, struct a
         cJSON_ArrayForEach(beacon, beacons)
         {
             cJSON* name = cJSON_GetObjectItemCaseSensitive(beacon, "name");
-            if (cJSON_IsString(name) && (name->valuestring != NULL))
+            cJSON* mac = cJSON_GetObjectItemCaseSensitive(beacon, "mac");
+            cJSON* alias = cJSON_GetObjectItemCaseSensitive(beacon, "alias");
+            if (cJSON_IsString(name) && name->valuestring != NULL && 
+                cJSON_IsString(mac) && mac->valuestring != NULL &&
+                cJSON_IsString(alias) && alias->valuestring != NULL)
             {
                 g_warning("TODO: Add beacon `%s` to list", name->valuestring);
+                struct Beacon* beacon = malloc(sizeof(struct Beacon));
+                beacon->name = strdup(name->valuestring);
+                beacon->mac64 = mac_string_to_int_64(mac->valuestring);
+                beacon->alias = strdup(alias->valuestring);
+                beacon->next = *beacon_list;
+
+                *beacon_list = beacon;
             }
             else
             {

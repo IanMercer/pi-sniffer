@@ -2,7 +2,7 @@
     Access Points
 */
 
-#include "device.h"
+#include "accesspoints.h"
 #include "utility.h"
 #include <glib.h>
 #include <string.h>
@@ -10,8 +10,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/types.h>
-
-
 
 struct AccessPoint *add_access_point(struct AccessPoint** access_point_list, char *client_id,
                                      const char *description, const char *platform,
@@ -155,26 +153,6 @@ struct AccessPoint* get_or_create_access_point(struct AccessPoint** access_point
         return ap;
     }
 }
-
-
-/*
-    Convert linked list to array with value
-*/
-int get_augmented_access_points(struct AccessPointWithValue a[], int array_size, struct AccessPoint* head)
-{
-    int count = 0;
-    for (struct AccessPoint* current = head; current != NULL; current = current->next)
-    {
-        a[count].access_point = current;
-        a[count].value = 0.0;
-        count++;
-        if (count > array_size){
-            g_error("Array not large enough to hold all access points");
-        }
-    }
-    return count;
-}
-
 
 /*
     Convert an id into an index
