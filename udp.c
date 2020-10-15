@@ -191,7 +191,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest, d
 {
     (void)accesstimes;
 
-    struct room* room_list = state->rooms;
+    struct patch* room_list = state->patches;
     struct AccessPoint* access_points = state->access_points;
 
     char* device_name = closest->name;
@@ -208,27 +208,27 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest, d
 
     bool found = FALSE;
 
-    for (struct room* room = room_list; room != NULL; room = room->next)
+    for (struct patch* room = room_list; room != NULL; room = room->next)
     {
-        if (strcmp(room->name, best.room_name) == 0)
+        if (strcmp(room->name, best.patch_name) == 0)
         {
             found = TRUE;
-            room->room_score = 1.0;
+            room->knn_score = 1.0;
             // don't break, need to set rest to zero
         }
         else
         {
-            room->room_score = 0.0;
+            room->knn_score = 0.0;
         }
     }
 
-    if (!found) { g_warning("Did not find %s", best.room_name); }
+    if (!found) { g_warning("Did not find %s", best.patch_name); }
 
 
     time_t now = time(0);
     if (difftime(now, closest->time) > 60)
     {
-        g_debug("Old, nearest to '%s' score=%.2f * %.2f", best.room_name, best.distance, time_score);
+        g_debug("Old, nearest to '%s' score=%.2f * %.2f", best.patch_name, best.distance, time_score);
         //g_debug("Skip CSV, old data %fs", difftime(now, closest->time));
     }
     else 
@@ -240,25 +240,25 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest, d
         // RECORD TRAINING DATA
         if ((is_training_beacon) && (strcmp(closest->name, "iPhone") != 0))
         {
-            if (best.distance < 1.0 && strncmp(best.room_name, device_name, META_LENGTH) == 0)
+            if (best.distance < 1.0 && strncmp(best.patch_name, device_name, META_LENGTH) == 0)
             {
                 // skip, we already have a good enough recording with the SAME name
-               g_debug("Training: Skip, nearest to '%s' score=%.2f * %.2f", best.room_name, best.distance, time_score);
+               g_debug("Training: Skip, nearest to '%s' score=%.2f * %.2f", best.patch_name, best.distance, time_score);
             }
             else
             {
                 record("recordings", device_name, accessdistances, access_points, device_name);
-                g_debug("Training: Nearest was '%s', score=%.2f * %.2f", best.room_name, best.distance, time_score);
+                g_debug("Training: Nearest was '%s', score=%.2f * %.2f", best.patch_name, best.distance, time_score);
             }
         }
         else if (closest->category == CATEGORY_BEACON)
         {
             record("beacons", device_name, accessdistances, access_points, device_name);
-            g_debug("Beacon: Nearest was '%s', score=%.2f * %.2f", best.room_name, best.distance, time_score);
+            g_debug("Beacon: Nearest was '%s', score=%.2f * %.2f", best.patch_name, best.distance, time_score);
         }
         else
         {
-            g_debug("Nearest to '%s' score=%.2f * %.2f", best.room_name, best.distance, time_score);
+            g_debug("Nearest to '%s' score=%.2f * %.2f", best.patch_name, best.distance, time_score);
         }
         //g_debug("Scores: %s", line);
 
@@ -291,7 +291,7 @@ void update_group_summaries(struct OverallState* state)
         g->watch_total = 0.0;
     }
 
-    for (struct room* r = state->rooms; r != NULL; r = r->next)
+    for (struct patch* r = state->patches; r != NULL; r = r->next)
     {
         struct area* g = r->area;
         g->beacon_total += r->beacon_total;
@@ -319,13 +319,13 @@ void print_counts_by_closest(struct OverallState* state)
 {
     struct AccessPoint* access_points_list = state->access_points;
     struct Beacon* beacon_list = state->beacons;
-    struct room* room_list = state->rooms;
+    struct patch* room_list = state->patches;
 
     float total_count = 0.0;
 
 //    g_debug("Clear room totals");
 
-    for (struct room* current = room_list; current != NULL; current = current->next)
+    for (struct patch* current = room_list; current != NULL; current = current->next)
     {
         current->phone_total = 0.0;
         current->tablet_total = 0.0;
@@ -339,7 +339,7 @@ void print_counts_by_closest(struct OverallState* state)
     int count_recordings = 0;
     //if (state->recordings == NULL)
     {
-        bool ok = read_observations ("recordings", state->access_points, &state->recordings, &state->rooms, &state->groups);
+        bool ok = read_observations ("recordings", state->access_points, &state->recordings, &state->patches, &state->groups);
         if (!ok) g_warning("Failed to read file back");
         for (struct recording* r = state->recordings; r != NULL; r=r->next)
         {
@@ -523,32 +523,32 @@ void print_counts_by_closest(struct OverallState* state)
             }
             else if (test->category == CATEGORY_TABLET)
             {
-                for (struct room* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
+                for (struct patch* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    rcurrent->tablet_total += rcurrent->room_score * score;        // probability x incidence
+                    rcurrent->tablet_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
             else if (test->category == CATEGORY_COMPUTER)
             {
-                for (struct room* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
+                for (struct patch* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    rcurrent->computer_total += rcurrent->room_score * score;        // probability x incidence
+                    rcurrent->computer_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
             else if (test->category == CATEGORY_WEARABLE)
             {
-                for (struct room* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
+                for (struct patch* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    if (rcurrent->room_score > 0)
-                        g_debug("Watch in %s +%.2f x %.2f", rcurrent->name, rcurrent->room_score, score);
-                    rcurrent->watch_total += rcurrent->room_score * score;        // probability x incidence
+                    if (rcurrent->knn_score > 0)
+                        g_debug("Watch in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
+                    rcurrent->watch_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
             else if (test->category == CATEGORY_BEACON)
             {
-                for (struct room* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
+                for (struct patch* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    rcurrent->beacon_total += rcurrent->room_score * score;        // probability x incidence
+                    rcurrent->beacon_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
             else if (test->category == CATEGORY_PHONE)
@@ -560,11 +560,11 @@ void print_counts_by_closest(struct OverallState* state)
                 ap->people_in_range_count = ap->people_in_range_count + score;  // TODO:
 
                 //g_debug("Update room total %i", room_count);
-                for (struct room* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
+                for (struct patch* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    if (rcurrent->room_score > 0)
-                        g_debug("Phone in %s +%.2f x %.2f", rcurrent->name, rcurrent->room_score, score);
-                    rcurrent->phone_total += rcurrent->room_score * score;        // probability x incidence
+                    if (rcurrent->knn_score > 0)
+                        g_debug("Phone in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
+                    rcurrent->phone_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
             else //if (test->distance < 7.5)
@@ -592,13 +592,13 @@ void print_counts_by_closest(struct OverallState* state)
             if (beacon != NULL)
             {
                 double best_room = 0.0; // for beacon
-                for (struct room* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
+                for (struct patch* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
                     // If this is a known beacon and the score is > best, place it in this room
-                    if (rcurrent->room_score > best_room)
+                    if (rcurrent->knn_score > best_room)
                     {
-                        best_room = rcurrent->room_score;
-                        beacon->room = rcurrent;
+                        best_room = rcurrent->knn_score;
+                        beacon->patch = rcurrent;
                         beacon->last_seen = test->time;
                     }
                 }
@@ -623,7 +623,7 @@ void print_counts_by_closest(struct OverallState* state)
     cJSON *jzones = cJSON_AddArrayToObject(jobject, "categories");
     cJSON *jbeacons = cJSON_AddArrayToObject(jobject, "assets");
 
-    for (struct room* r = room_list; r != NULL; r = r->next)
+    for (struct patch* r = room_list; r != NULL; r = r->next)
     {
         if (r->phone_total + r->computer_total + r->tablet_total + r->watch_total == 0.0) continue;
 
@@ -665,7 +665,7 @@ void print_counts_by_closest(struct OverallState* state)
     g_info("----------------------------------------------------------------------------------------------");
     for (struct Beacon* b = state->beacons; b != NULL; b=b->next)
     {
-        if (b->room != NULL)
+        if (b->patch != NULL)
         {
             char ago[20];
             double diff = b->last_seen == 0 ? -1 : difftime(now, b->last_seen) / 60.0;
@@ -674,8 +674,8 @@ void print_counts_by_closest(struct OverallState* state)
             else if (diff < 24*60) snprintf(ago, sizeof(ago), "%.1f hours ago", diff / 60.0);
             else snprintf(ago, sizeof(ago), "%.1f days ago", diff / 24.0 / 60.0);
 
-            const char* room_name =  (b->room == NULL) ? "---" : b->room->name;
-            const char* category = (b->room == NULL) ? "---" : ((b->room->area == NULL) ? "???" : b->room->area->category);
+            const char* room_name =  (b->patch == NULL) ? "---" : b->patch->name;
+            const char* category = (b->patch == NULL) ? "---" : ((b->patch->area == NULL) ? "???" : b->patch->area->category);
 
             g_info("%20s  %18s %16s        %s",
                 b->alias, room_name, 

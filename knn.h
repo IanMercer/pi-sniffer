@@ -13,7 +13,7 @@
 */
 struct recording
 {
-    char room_name[META_LENGTH];
+    char patch_name[META_LENGTH];
     float access_point_distances[N_ACCESS_POINTS];
     struct recording* next;
 };
@@ -24,7 +24,7 @@ struct recording
 bool record (const char* directory, const char* device_name, double access_distances[N_ACCESS_POINTS], struct AccessPoint* access_points, char* location);
 
 bool read_observations (const char * dirname, struct AccessPoint* access_points, struct recording** recordings,
-    struct room** rooms_list, struct area** areas_list);
+    struct patch** patch_list, struct area** areas_list);
 
 void free_list(struct recording** head);
 
@@ -35,11 +35,9 @@ void free_list(struct recording** head);
 struct top_k
 {
     float distance;
-    char room_name[META_LENGTH];
+    char patch_name[META_LENGTH];
     bool used;
 };
-
-//char* classify (float* access_point_distances, struct AccessPoint* access_points, struct room* rooms, char* location);
 
 int k_nearest(struct recording* recordings, double* access_point_distances, struct AccessPoint* access_points, struct top_k* top_result, int top_count);
 

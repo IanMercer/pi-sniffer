@@ -1869,7 +1869,7 @@ void initialize_state()
     state.udp_mesh_port = 7779;
     state.udp_sign_port = 0; // 7778;
     state.access_points = NULL; // linked list
-    state.rooms = NULL;         // linked list
+    state.patches = NULL;         // linked list
     state.groups = NULL;        // linked list
     state.closest_n = 0;        // count of closest
     state.beacons = NULL;       // linked list
@@ -1985,7 +1985,7 @@ void initialize_state()
         if (strcmp(verbosity, "details")) state.verbosity = Details;
     }
    
-    read_configuration_file(state.configuration_file_path, &state.access_points, &state.rooms, &state.groups, &state.beacons);
+    read_configuration_file(state.configuration_file_path, &state.access_points, &state.patches, &state.groups, &state.beacons);
 
     g_debug("Completed read of configuration file");
 }
@@ -2026,7 +2026,7 @@ void display_state()
 
 
     int count = 0;
-    for (struct room* room = state.rooms; room != NULL; room=room->next){ count ++; }
+    for (struct patch* room = state.patches; room != NULL; room=room->next){ count ++; }
     g_info("ROOMS: %i", count);
     count = 0;
     for (struct AccessPoint* ap = state.access_points; ap != NULL; ap=ap->next){ count ++; }

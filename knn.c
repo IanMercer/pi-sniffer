@@ -25,7 +25,7 @@ char* recording_to_json (struct recording* r, struct AccessPoint* access_points)
     char *string = NULL;
     cJSON *j = cJSON_CreateObject();
 
-    cJSON_AddStringToObject(j, "room", r->room_name);
+    cJSON_AddStringToObject(j, "patch", r->patch_name);
 
     // time
 
@@ -60,7 +60,7 @@ char* recording_to_json (struct recording* r, struct AccessPoint* access_points)
 /*
     Convert JSON lines value back to a recording value using current order of access points
 */
-bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct recording* r, struct room** rooms_list, struct area** areas_list)
+bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct recording* r, struct patch** patch_list, struct area** areas_list)
 {
     cJSON *json = cJSON_Parse(buffer);
     if (json == NULL)
@@ -73,16 +73,21 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
         return FALSE;
     }
 
-    cJSON* room_name = cJSON_GetObjectItemCaseSensitive(json, "room");
-    if (!cJSON_IsString(room_name))
+    cJSON* patch_name = cJSON_GetObjectItemCaseSensitive(json, "patch");
+    cJSON* room_name = cJSON_GetObjectItemCaseSensitive(json, "room");      // backward compatibility
+    if (cJSON_IsString(patch_name))
+    {
+        g_utf8_strncpy(r->patch_name, patch_name->valuestring, META_LENGTH);
+    }
+    else if (cJSON_IsString(room_name))
+    {
+        g_utf8_strncpy(r->patch_name, room_name->valuestring, META_LENGTH);
+    }
+    else
     {
         cJSON_Delete(json);
         return FALSE;
     }
-
-    //g_debug("Got room %s", room_name->valuestring);
-
-    // META {"room":"Sunroom","group":"Home","tags":"zone=LivingRoom,use=living"}
 
     bool has_meta = FALSE;
     cJSON* group_name = cJSON_GetObjectItemCaseSensitive(json, "group");
@@ -90,13 +95,12 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
     if (cJSON_IsString(group_name) && cJSON_IsString(tags))
     {
         g_info("Group name '%s', tags '%s'", group_name->valuestring, tags->valuestring);
-        get_or_create_room(room_name->valuestring, group_name->valuestring, tags->valuestring, rooms_list, areas_list);
+        get_or_create_patch(patch_name->valuestring, group_name->valuestring, tags->valuestring, patch_list, areas_list);
         has_meta = TRUE;
     }
 
     // Set values on recording object
-    g_utf8_strncpy(r->room_name, room_name->valuestring, META_LENGTH);
-    url_slug(r->room_name);   // strip spaces and any other junk from it
+    url_slug(r->patch_name);   // strip spaces and any other junk from it
 
     cJSON* distances = cJSON_GetObjectItemCaseSensitive(json, "distances");
 
@@ -181,7 +185,7 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
         float distance = score(recording, access_point_distances, access_points);
 
         struct top_k current;
-        g_utf8_strncpy(current.room_name, recording->room_name, META_LENGTH);
+        g_utf8_strncpy(current.patch_name, recording->patch_name, META_LENGTH);
         current.distance = distance;
         current.used = FALSE;
 
@@ -211,7 +215,7 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
 
     if (k == 0) {
         top_result->distance = 100000;
-        g_utf8_strncpy(top_result->room_name, "unknown", META_LENGTH);
+        g_utf8_strncpy(top_result->patch_name, "unknown", META_LENGTH);
         return 0;
     };
 
@@ -229,7 +233,7 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
         float score = 1.0 / (smoothing + result[i].distance);
         for (int j = i+1; j < k; j++)
         {
-            if (strcmp(result[i].room_name, result[j].room_name) == 0 && result[j].distance > 0)
+            if (strcmp(result[i].patch_name, result[j].patch_name) == 0 && result[j].distance > 0)
             {
                 score += 1.0 / (smoothing + result[j].distance);
                 result[i].used = TRUE;
@@ -243,7 +247,7 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
 
         if (score > best_score)
         {
-            //g_debug("Replace %s by %s in best score %.2f", top_result[0].room_name, result[i].room_name, score);
+            //g_debug("Replace %s by %s in best score %.2f", top_result[0].patch_name, result[i].patch_name, score);
             best_score = score;
             top_result[0] = result[i];                        // copy name and distance (for first)
             top_result[0].distance = sqrt(best_distance);     // overwrite with best distance
@@ -259,7 +263,7 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
 // FILE OPERATIONS
 
 bool read_observations_file (const char * dirname, const char* filename, struct AccessPoint* access_points, struct recording** recordings,
-    struct room** rooms_list, struct area** areas_list)
+    struct patch** patchs_list, struct area** areas_list)
 {
 	g_return_val_if_fail (filename != NULL, FALSE);
 
@@ -303,10 +307,10 @@ bool read_observations_file (const char * dirname, const char* filename, struct 
         {
             //g_debug("%s", line);
             struct recording r;
-            bool ok = json_to_recording(line, access_points, &r, rooms_list, areas_list);
+            bool ok = json_to_recording(line, access_points, &r, patchs_list, areas_list);
             if (ok)
             {
-                //g_debug("Got a valid recording for %s", r.room_name);
+                //g_debug("Got a valid recording for %s", r.patch_name);
                 // Append it to the front of the recordings list
                 // TODO: Remove duplicates
                 // NB Only allocate if ok
@@ -356,7 +360,7 @@ void free_list(struct recording** head)
  *
  **/
 bool read_observations (const char * dirname, struct AccessPoint* access_points, struct recording** recordings,
-    struct room** rooms_list, struct area** areas_list)
+    struct patch** patch_list, struct area** areas_list)
 {
 
     GDir *dir;
@@ -369,7 +373,7 @@ bool read_observations (const char * dirname, struct AccessPoint* access_points,
 
     while ((filename = g_dir_read_name(dir)))
     {
-        ok = read_observations_file(dirname, filename, access_points, recordings, rooms_list, areas_list) && ok;
+        ok = read_observations_file(dirname, filename, access_points, recordings, patch_list, areas_list) && ok;
     }
     g_dir_close(dir);
 
@@ -416,7 +420,7 @@ bool record (const char* directory, const char* device_name, double access_dista
     {
         r.access_point_distances[i] = access_distances[i];
     }
-    g_utf8_strncpy(r.room_name, location, META_LENGTH);
+    g_utf8_strncpy(r.patch_name, location, META_LENGTH);
 
     char* buffer = recording_to_json(&r, access_points);
     if (buffer != NULL)

@@ -144,8 +144,8 @@ struct Beacon
    int64_t mac64;
    char* alias;
    struct Beacon* next;
-   // Which room it is currently in (or NULL)
-   struct room* room;
+   // Which patch it is currently in (or NULL)
+   struct patch* patch;
    time_t last_seen;
 };
 
@@ -184,7 +184,7 @@ struct ClosestTo
    int count;
    // for debugging
    char name [META_LENGTH];
-   // for training location to room mappings
+   // for training location to patch mappings
    bool is_training_beacon;
 };
 
@@ -254,7 +254,7 @@ struct OverallState
    struct AccessPoint* access_points;
 
    // linked list of rooms
-   struct room* rooms;
+   struct patch* patches;
 
    // linked list of groups
    struct area* groups;

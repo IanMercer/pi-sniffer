@@ -8,8 +8,8 @@ CFLAGS = -Wall -Wextra -g `pkg-config --cflags glib-2.0 gio-2.0 gio-unix-2.0` -I
 
 LIBS = -lm -lpaho-mqtt3as `pkg-config --libs glib-2.0 gio-2.0 gio-unix-2.0`
 
-DEPS = utility.h mqtt_send.h kalman.h bluetooth.h udp.h cJSON.h sniffer-generated.h heuristics.h influx.h rooms.h accesspoints.h knn.h sniffer-generated.h http.h webhook.h
-SRC = scan.c utility.c bluetooth.c mqtt_send.c kalman.c udp.c cJSON.c device.c heuristic-apple.c heuristic-manufacturers.c heuristic-names.c heuristic-uuids.c influx.c rooms.c accesspoints.c knn.c sniffer-generated.c http.c webhook.c
+DEPS = utility.h mqtt_send.h kalman.h bluetooth.h udp.h cJSON.h sniffer-generated.h heuristics.h influx.h rooms.h accesspoints.h knn.h sniffer-generated.h http.h webhook.h model/*.h
+SRC = scan.c utility.c bluetooth.c mqtt_send.c kalman.c udp.c cJSON.c device.c heuristic-apple.c heuristic-manufacturers.c heuristic-names.c heuristic-uuids.c influx.c rooms.c accesspoints.c knn.c sniffer-generated.c http.c webhook.c model/*.c
 MQTTSRC = mqtt.c udp.c utility.c device.c cJSON.c mqtt_send.c sniffer-generated.c influx.c
 CGIJSON = cgijson.c sniffer-generated.c
 

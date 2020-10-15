@@ -1,5 +1,5 @@
 /*
-    Rooms
+    Rooms aka Patches
 */
 
 #include "rooms.h"
@@ -46,24 +46,24 @@ struct area* get_or_add_area(struct area** group_list, char* group_name, char* t
 /*
    get or create a room and update any existing group also
 */
-struct room* get_or_create_room(char* room_name, char* group_name, char* tags, struct room** rooms_list, struct area** groups_list)
+struct patch* get_or_create_patch(char* patch_name, char* group_name, char* tags, struct patch** patch_list, struct area** groups_list)
 {
     if (string_contains_insensitive(tags, " "))
     {
-        g_warning("Spaces not allowed in tags for area '%s' (removed)", room_name);
+        g_warning("Spaces not allowed in tags for area '%s' (removed)", patch_name);
         url_slug(tags);
     }
 
-    if (string_contains_insensitive(room_name, " "))
+    if (string_contains_insensitive(patch_name, " "))
     {
-        g_warning("Spaces not allowed in room name '%s' (removed)", room_name);
-        url_slug(room_name);   // destructive
+        g_warning("Spaces not allowed in patch names '%s' (removed)", patch_name);
+        url_slug(patch_name);   // destructive
     }
 
-    struct room* found = NULL;
-    for (struct room* r = *rooms_list; r != NULL; r=r->next)
+    struct patch* found = NULL;
+    for (struct patch* r = *patch_list; r != NULL; r=r->next)
     {
-        if (strcmp(r->name, room_name) == 0)
+        if (strcmp(r->name, patch_name) == 0)
         {
             found = r;
             break;
@@ -72,22 +72,22 @@ struct room* get_or_create_room(char* room_name, char* group_name, char* tags, s
 
     if (found == NULL)
     {
-        found = g_malloc(sizeof(struct room));
-        found->name = strdup(room_name);
+        found = g_malloc(sizeof(struct patch));
+        found->name = strdup(patch_name);
         found->next = NULL;
         found->area = NULL;
-        g_info("Added room %s in %s with tags %s", found->name, group_name, tags);
+        g_info("Added patch %s in %s with tags %s", found->name, group_name, tags);
 
-        if (*rooms_list == NULL)
+        if (*patch_list == NULL)
         {
             // First item in chain
-            *rooms_list = found;
+            *patch_list = found;
         }
         else
         {
             // Insert at front of chain
-            found->next = *rooms_list;
-            *rooms_list = found;
+            found->next = *patch_list;
+            *patch_list = found;
         }
 
         // no strdup here, get_or_add_group handles that
@@ -97,12 +97,12 @@ struct room* get_or_create_room(char* room_name, char* group_name, char* tags, s
     {
         if (strcmp(found->area->category, group_name) != 0)
         {
-            g_warning("TODO: Room '%s' changing group from '%s' to '%s'", room_name, found->area->category, group_name);
+            g_warning("TODO: Patch '%s' changing group from '%s' to '%s'", patch_name, found->area->category, group_name);
         }
 
         if (strcmp(found->area->tags, tags) != 0)
         {
-            g_warning("TODO: Room '%s' changing tags from '%s' to '%s'", room_name, found->area->tags, tags);
+            g_warning("TODO: Patch '%s' changing tags from '%s' to '%s'", patch_name, found->area->tags, tags);
         }
     }
 
@@ -111,9 +111,9 @@ struct room* get_or_create_room(char* room_name, char* group_name, char* tags, s
 
 
 /*
-    Initalize the rooms database (linked list)
+    Initalize the patches database (linked lists)
 */
-void read_configuration_file(const char* path, struct AccessPoint** accesspoint_list, struct room** room_list, struct area** group_list, struct Beacon** beacon_list)
+void read_configuration_file(const char* path, struct AccessPoint** accesspoint_list, struct patch** patch_list, struct area** group_list, struct Beacon** beacon_list)
 {
     //struct AccessPoint** = state.access_points_list;    // unused now
     // Read from file ...
@@ -124,8 +124,9 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
 
     if (fp == NULL)
     {
+        g_warning("Did not find configuration file '%s'", path);
         // If no file, calculate from access points
-        g_warning("Please create a file 'rooms.json' (configured path using systemctl edit) mapping room names to groups");
+        g_warning("Please create a coniguration file 'rooms.json' (configured path using systemctl edit) mapping patch names to groups");
         return;
     }
 
@@ -133,7 +134,7 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
     long length = ftell (fp);
 
     if (length < 1){
-        g_error("The 'rooms.json' file must contain entries for each room");
+        g_error("The '%s' file must contain entries for each patch, sensor and beacon", path);
         exit(EXIT_FAILURE);
     }
 
@@ -150,7 +151,7 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
         const char *error_ptr = cJSON_GetErrorPtr();
         if (error_ptr != NULL)
         {
-            g_error("Error reading 'rooms.json' before: %s", error_ptr);
+            g_error("Error reading '%s' before: %s", path, error_ptr);
         }
         exit(EXIT_FAILURE);
     }
@@ -182,49 +183,47 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
     }
 
 
-    // ------------------- rooms ---------------------
+    // ------------------- patches ---------------------
 
-    cJSON* rooms = cJSON_GetObjectItemCaseSensitive(json, "areas");
-    if (!cJSON_IsArray(rooms)){
-        g_error("Could not parse rooms[] from 'rooms.json'");
+    cJSON* patches = cJSON_GetObjectItemCaseSensitive(json, "patches");
+    if (!cJSON_IsArray(patches)){
+        g_error("Could not parse patches[] from configuration file '%s'", path);
         exit(EXIT_FAILURE);
     }
 
-    cJSON* room = NULL;
-    cJSON_ArrayForEach(room, rooms)
+    cJSON* patch = NULL;
+    cJSON_ArrayForEach(patch, patches)
     {
-        // Parse room from 'room'
-
-        cJSON* name = cJSON_GetObjectItemCaseSensitive(room, "name");
+        cJSON* name = cJSON_GetObjectItemCaseSensitive(patch, "name");
         if (!cJSON_IsString(name) || (name->valuestring == NULL))
         {
-            if (cJSON_GetObjectItemCaseSensitive(room, "comment")) continue;
-            g_error("Missing 'name' on room object");
+            if (cJSON_GetObjectItemCaseSensitive(patch, "comment")) continue;
+            g_error("Missing 'name' on patch object");
             continue;
         }
 
-        cJSON* category = cJSON_GetObjectItemCaseSensitive(room, "group");
+        cJSON* category = cJSON_GetObjectItemCaseSensitive(patch, "category");
         if (!cJSON_IsString(category) || (category->valuestring == NULL))
         {
-            g_error("Missing 'group' on area '%s'", name->valuestring);
+            g_error("Missing 'category' on patch '%s'", name->valuestring);
             continue;
         }
 
-        cJSON* tags = cJSON_GetObjectItemCaseSensitive(room, "tags");
+        cJSON* tags = cJSON_GetObjectItemCaseSensitive(patch, "tags");
         if (!cJSON_IsString(tags) || (tags->valuestring == NULL))
         {
-            g_warning("Missing 'tags' on area '%s'", name->valuestring);
+            g_warning("Missing 'tags' on patch '%s'", name->valuestring);
             continue;
         }
 
         if (string_contains_insensitive(tags->valuestring, " "))
         {
-            g_warning("Spaces not allowed in tags for area '%s'", name->valuestring);
+            g_warning("Spaces not allowed in tags for patch '%s'", name->valuestring);
             continue;
         }
 
-        g_debug("Get or create room '%s', '%s', '%s'", name->valuestring, category->valuestring, tags->valuestring);
-        get_or_create_room(name->valuestring, category->valuestring, tags->valuestring, room_list, group_list);        
+        g_debug("Get or create patch '%s', '%s', '%s'", name->valuestring, category->valuestring, tags->valuestring);
+        get_or_create_patch(name->valuestring, category->valuestring, tags->valuestring, patch_list, group_list);        
     }
 
     // ------------------- beacons --------------------
@@ -251,7 +250,7 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
                 beacon->mac64 = mac_string_to_int_64(mac->valuestring);
                 beacon->alias = strdup(alias->valuestring);
                 beacon->last_seen = 0;
-                beacon->room = NULL;
+                beacon->patch = NULL;
                 beacon->next = *beacon_list;
                 *beacon_list = beacon;
                 g_warning("Added beacon `%s` = '%s' to list", beacon->name, beacon->alias);
@@ -273,9 +272,9 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
 
 
 /*
-    Get top k rooms sorted by total, return count found
+    Get top k patches sorted by total, return count found
 */
-int top_k_by_room_score(struct room* result[], int k, struct room* room_list)
+int top_k_by_patch_score(struct patch* result[], int k, struct patch* patch_list)
 {
     for (int i = 0; i < k; i++)
     {
@@ -283,9 +282,9 @@ int top_k_by_room_score(struct room* result[], int k, struct room* room_list)
     }
 
     int count = 0;
-    for (struct room* room = room_list; room != NULL; room = room->next)
+    for (struct patch* patch = patch_list; patch != NULL; patch = patch->next)
     {
-        struct room* current = room;  // take a copy before we mangle it
+        struct patch* current = patch;  // take a copy before we mangle it
         for (int i = 0; i < k; i++)
         {
             if (i == count)
@@ -295,10 +294,10 @@ int top_k_by_room_score(struct room* result[], int k, struct room* room_list)
                 result[i] = current;
                 break;
             }
-            else if (result[i]->room_score < current->room_score)
+            else if (result[i]->knn_score < current->knn_score)
             {
                 // Insert at this position, pick up current and move it down
-                struct room* temp = result[i];
+                struct patch* temp = result[i];
                 result[i] = current;
                 current = temp;
             }

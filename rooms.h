@@ -9,16 +9,8 @@
 #include <math.h>
 
 /*
-    Rooms
+    rooms.h defines patches, zones, areas, ...
 */
-
-// A weight for a sensor in a room
-struct weight
-{
-    const char* name;
-    double weight;
-    struct weight* next;  // next ptr
-};
 
 // An area 
 struct area
@@ -34,13 +26,13 @@ struct area
 };
 
 
-// An area with roughly equivalent distances from the sensors
-struct room
+// A patch with roughly equivalent distances from the sensors
+struct patch
 {
     const char* name;
-    struct area* area;          // Group with category and tags
-    struct room* next;          // next ptr
-    double room_score;          // calculated during scan, one ap
+    struct area* area;          // Area that owns this patch
+    struct patch* next;         // next ptr
+    double knn_score;          // calculated during scan, one ap
     double phone_total;         // how many phones
     double tablet_total;        // how many tablet
     double computer_total;      // how many computers
@@ -49,17 +41,17 @@ struct room
 };
 
 /*
-  Get top k rooms sorted by total, return count maybe < k
+  Get top k patches sorted by total, return count maybe < k
 */
-int top_k_by_room_score(struct room* result[], int k, struct room* room_list);
+int top_k_by_patch_score(struct patch* result[], int k, struct patch* patch_list);
 
-// Initialize the rooms structure on startup
-void read_configuration_file(const char* path, struct AccessPoint** accesspoint_list, struct room** room_list, struct area** group_list, struct Beacon** beacon_list);
+// Initialize the configuration on startup
+void read_configuration_file(const char* path, struct AccessPoint** accesspoint_list, struct patch** room_list, struct area** group_list, struct Beacon** beacon_list);
 
 /*
-   get or create a room and update any existing group also
+   get or create a patch and update any existing group also
 */
-struct room* get_or_create_room(char* room_name, char* group_name, char* tags, struct room** rooms_list, struct area** groups_list);
+struct patch* get_or_create_patch(char* patch_name, char* group_name, char* tags, struct patch** patch_list, struct area** groups_list);
 
 // ------------------------------------------------------------------
 
