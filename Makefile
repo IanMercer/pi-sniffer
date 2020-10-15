@@ -19,8 +19,9 @@ scan: $(SRC)
 mqtt: $(MQTTSRC)
 	gcc -o $@ $^ $(CFLAGS) $(LIBS)
 
-sniffer-generated.h sniffer-generated.c: sniffer.xml
-	gdbus-codegen --generate-c-code sniffer-generated --c-namespace pi --interface-prefix com.signswift sniffer.xml
+# run codegen.sh instead, this isn't needed most of the time, only when the xml definition is updated
+#sniffer-generated.h sniffer-generated.c: sniffer.xml
+#	gdbus-codegen --generate-c-code sniffer-generated --c-namespace pi --interface-prefix com.signswift sniffer.xml
 
 cgijson: $(CGIJSON)
 	gcc -o $@ $^ $(CFLAGS) $(LIBS)
