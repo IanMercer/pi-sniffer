@@ -4,14 +4,14 @@
 # See https://github.com/eclipse/paho.mqtt.c for details as to which paho lib to use
 CC = gcc -g
 
-CFLAGS = -Wall -Wextra -g `pkg-config --cflags glib-2.0 gio-2.0 gio-unix-2.0` -I.
+CFLAGS = -Wall -Wextra -g `pkg-config --cflags glib-2.0 gio-2.0 gio-unix-2.0` -Isrc -Isrc/model -Isrc/dbus -Isrc/bluetooth -Isrc/core 
 
 LIBS = -lm -lpaho-mqtt3as `pkg-config --libs glib-2.0 gio-2.0 gio-unix-2.0`
 
-DEPS = utility.h mqtt_send.h kalman.h bluetooth.h udp.h cJSON.h sniffer-generated.h heuristics.h influx.h rooms.h accesspoints.h knn.h sniffer-generated.h http.h webhook.h model/*.h
-SRC = scan.c utility.c bluetooth.c mqtt_send.c kalman.c udp.c cJSON.c device.c heuristic-apple.c heuristic-manufacturers.c heuristic-names.c heuristic-uuids.c influx.c rooms.c accesspoints.c knn.c sniffer-generated.c http.c webhook.c model/*.c
-MQTTSRC = mqtt.c udp.c utility.c device.c cJSON.c mqtt_send.c sniffer-generated.c influx.c
-CGIJSON = cgijson.c sniffer-generated.c
+DEPS = src/*.h src/model/*.h src/core/*.h bluetooth/*.h
+SRC = src/scan.c src/mqtt_send.c src/udp.c src/influx.c src/knn.c src/webhook.c src/core/*.c src/model/*.c src/bluetooth/*.c src/dbus/*.c
+MQTTSRC = src/mqtt.c src/udp.c src/mqtt_send.c src/influx.c src/core/*.c src/model/*.c src/dbus/*.c
+CGIJSON = src/cgijson.c src/dbus/sniffer-generated.c
 
 scan: $(SRC)
 	gcc -o $@ $^ $(CFLAGS) $(LIBS)
