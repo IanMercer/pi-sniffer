@@ -12,7 +12,7 @@
  *  See Makefile and Github
  *
  */
-#include "utility.h"
+#include "core/utility.h"
 #include "mqtt_send.h"
 #include "udp.h"
 #include "kalman.h"
