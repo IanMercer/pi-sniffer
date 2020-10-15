@@ -246,14 +246,15 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
                 cJSON_IsString(mac) && mac->valuestring != NULL &&
                 cJSON_IsString(alias) && alias->valuestring != NULL)
             {
-                g_warning("TODO: Add beacon `%s` to list", name->valuestring);
                 struct Beacon* beacon = malloc(sizeof(struct Beacon));
                 beacon->name = strdup(name->valuestring);
                 beacon->mac64 = mac_string_to_int_64(mac->valuestring);
                 beacon->alias = strdup(alias->valuestring);
+                beacon->last_seen = 0;
+                beacon->room = NULL;
                 beacon->next = *beacon_list;
-
                 *beacon_list = beacon;
+                g_warning("Added beacon `%s` = '%s' to list", beacon->name, beacon->alias);
             }
             else
             {

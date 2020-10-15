@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include "device.h"
 #include "accesspoints.h"
+#include <string.h>
+#include <math.h>
 
 /*
     Rooms
@@ -30,6 +32,7 @@ struct area
     double watch_total;         // how many watches
     double beacon_total;        // how many beacons
 };
+
 
 // An area with roughly equivalent distances from the sensors
 struct room

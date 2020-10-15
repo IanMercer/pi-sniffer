@@ -276,6 +276,41 @@ void set_count_to_zero(struct AccessPoint* ap, void* extra)
     ap->people_in_range_count = 0;
 }
 
+/*
+    update_group_summaries combines all the room totals into area totals
+*/
+void update_group_summaries(struct OverallState* state)
+{
+    // Create group summaries (a flat list of a hierarchy of groups)
+    for (struct area* g = state->groups; g != NULL; g = g->next)
+    {
+        g->beacon_total = 0.0;
+        g->computer_total = 0.0;
+        g->phone_total = 0.0;
+        g->tablet_total = 0.0;
+        g->watch_total = 0.0;
+    }
+
+    for (struct room* r = state->rooms; r != NULL; r = r->next)
+    {
+        struct area* g = r->area;
+        g->beacon_total += r->beacon_total;
+        g->computer_total += r->computer_total;
+        g->phone_total += r->phone_total;
+        g->tablet_total += r->tablet_total;
+        g->watch_total += r->watch_total;
+    }
+}
+
+/*
+    Add a one decimal value to a JSON object
+*/
+void cJSON_AddRounded(cJSON * item, const char* label, double value)
+{
+    char print_num[18];
+    snprintf(print_num, 18, "%.1f", value);
+    cJSON_AddRawToObject(item, label, print_num);
+}
 
 /*
     Find counts by access point
@@ -451,7 +486,6 @@ void print_counts_by_closest(struct OverallState* state)
         g_debug("%s", json);
         free(json);
 
-
         struct AccessPoint *ap = test->access_point;
 
         int delta_time = difftime(now, test->time);
@@ -512,28 +546,9 @@ void print_counts_by_closest(struct OverallState* state)
             }
             else if (test->category == CATEGORY_BEACON)
             {
-                // Is this a known access point
-                struct Beacon* beacon = NULL;
-                for (struct Beacon* b = beacon_list; b != NULL; b=b->next)
-                {
-                    if (strcmp(b->name, test->name) == 0 || b->mac64 == test->device_64)
-                    {
-                        beacon = b;
-                        break;
-                    }
-                }
-
-                double best_room = 0.0; // for beacon
                 for (struct room* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
                     rcurrent->beacon_total += rcurrent->room_score * score;        // probability x incidence
-
-                    // If this is a known beacon and the score is > best, place it in this room
-                    if (beacon != NULL && rcurrent->room_score > best_room)
-                    {
-                        best_room = rcurrent->room_score;
-                        beacon->room = rcurrent;
-                    }
                 }
             }
             else if (test->category == CATEGORY_PHONE)
@@ -562,6 +577,33 @@ void print_counts_by_closest(struct OverallState* state)
             //     g_info("%s Far %s (earliest=%4is, chosen=%4is latest=%4is) count=%i dist=%.1f score=%.2f", mac, category, -earliest, -delta_time, -age, count, test->distance, score);
             //     g_info("  %s", json);
             // }
+
+            // Is this a known Device that we want to track?
+            struct Beacon* beacon = NULL;
+            for (struct Beacon* b = beacon_list; b != NULL; b=b->next)
+            {
+                if (strcmp(b->name, test->name) == 0 || b->mac64 == test->device_64)
+                {
+                    beacon = b;
+                    break;
+                }
+            }
+
+            if (beacon != NULL)
+            {
+                double best_room = 0.0; // for beacon
+                for (struct room* rcurrent = room_list; rcurrent != NULL; rcurrent = rcurrent->next)
+                {
+                    // If this is a known beacon and the score is > best, place it in this room
+                    if (rcurrent->room_score > best_room)
+                    {
+                        best_room = rcurrent->room_score;
+                        beacon->room = rcurrent;
+                        beacon->last_seen = test->time;
+                    }
+                }
+            }
+
         }
         else
         {
@@ -572,39 +614,102 @@ void print_counts_by_closest(struct OverallState* state)
     }
 
     // Now display totals
+    update_group_summaries(state);
 
     char *json_rooms = NULL;
-    cJSON *jobject_rooms = cJSON_CreateObject();
+    cJSON *jobject = cJSON_CreateObject();
+
+    cJSON *jareas = cJSON_AddArrayToObject(jobject, "areas");
+    cJSON *jzones = cJSON_AddArrayToObject(jobject, "categories");
+    cJSON *jbeacons = cJSON_AddArrayToObject(jobject, "assets");
 
     for (struct room* r = room_list; r != NULL; r = r->next)
     {
-        if (r->phone_total > 0.0)
-        {
-            cJSON_AddNumberToObject(jobject_rooms, r->name, round(r->phone_total*10.0) / 10.0);
-        }
+        if (r->phone_total + r->computer_total + r->tablet_total + r->watch_total == 0.0) continue;
+
+        cJSON* item = cJSON_CreateObject();
+        cJSON_AddStringToObject(item, "name", r->name);
+        cJSON_AddStringToObject(item, "category", r->area->category);
+        cJSON_AddStringToObject(item, "tags", r->area->tags);
+
+        cJSON_AddRounded(item, "phones", r->phone_total);
+        cJSON_AddRounded(item, "watches", r->watch_total);
+        cJSON_AddRounded(item, "tablets", r->tablet_total);
+        cJSON_AddRounded(item, "computers", r->computer_total);
+        cJSON_AddItemToArray(jareas, item);
     }
 
-    json_rooms = cJSON_PrintUnformatted(jobject_rooms);
-    cJSON_Delete(jobject_rooms);
+    struct summary* summary = NULL;
+
+    for (struct area* a = state->groups; a != NULL; a = a->next)
+    {
+        g_debug("%s %.2f", a->category, a->phone_total);
+        //if (a->phone_total + a->computer_total + a->tablet_total + a->watch_total == 0.0) continue;
+        update_summary(&summary, a->category, a->phone_total);
+    }
+
+    for (struct summary* s = summary; s != NULL; s = s->next)
+    {
+        cJSON* item = cJSON_CreateObject();
+        cJSON_AddStringToObject(item, "name", s->category);
+        cJSON_AddRounded(item, "phones", s->total);
+        cJSON_AddItemToArray(jzones, item);
+    }
+
+    free_summary(&summary);
+
     g_info(" ");
     g_info("==============================================================================================");
 
-    g_info ("  Beacon              Area             Zone");
+    g_info ("              Beacon                Area             Zone        When");
+    g_info("----------------------------------------------------------------------------------------------");
     for (struct Beacon* b = state->beacons; b != NULL; b=b->next)
     {
-        g_info("  %20s  %18s  %18s", b->alias, 
-            (b->room == NULL) ? "---" : b->room->name, 
-            (b->room == NULL) ? "---" : ((b->room->area == NULL) ? "???" : b->room->area->category));
+        if (b->room != NULL)
+        {
+            char ago[20];
+            double diff = b->last_seen == 0 ? -1 : difftime(now, b->last_seen) / 60.0;
+            if (diff < 2) snprintf(ago, sizeof(ago), "now");
+            else if (diff < 60) snprintf(ago, sizeof(ago), "%.0f min ago", diff);
+            else if (diff < 24*60) snprintf(ago, sizeof(ago), "%.1f hours ago", diff / 60.0);
+            else snprintf(ago, sizeof(ago), "%.1f days ago", diff / 24.0 / 60.0);
+
+            const char* room_name =  (b->room == NULL) ? "---" : b->room->name;
+            const char* category = (b->room == NULL) ? "---" : ((b->room->area == NULL) ? "???" : b->room->area->category);
+
+            g_info("%20s  %18s %16s        %s",
+                b->alias, room_name, 
+                category,
+                ago);
+            
+            cJSON* item = cJSON_CreateObject();
+            cJSON_AddStringToObject(item, "alias", b->alias);
+            cJSON_AddStringToObject(item, "room", room_name);
+            cJSON_AddStringToObject(item, "category", category);
+            cJSON_AddStringToObject(item, "ago", ago);
+            cJSON_AddNumberToObject(item, "t", b->last_seen);
+
+            cJSON_AddItemToArray(jbeacons, item);
+        }
     }
 
     g_info(" ");
     g_info("==============================================================================================");
     g_info(" ");
     g_debug("Examined %i > %i > %i > %i", state->closest_n, count_examined, count_not_marked, count_in_age_range);
+
+    json_rooms = cJSON_PrintUnformatted(jobject);
+    //json_rooms = cJSON_Print(jobject);
+    cJSON_Delete(jobject);
+
+    if (state->json != NULL)
+    {
+        // free(json_rooms); but on next cycle
+        free(state->json);
+    }
+    state->json = json_rooms;
+
     g_info("Summary by room: %s", json_rooms);
-
-    free(json_rooms);
-
     g_info(" ");
     g_info("Total people present %.2f", total_count);
     g_info(" ");

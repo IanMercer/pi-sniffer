@@ -439,3 +439,40 @@ bool is_any_interface_up()
     return count_connected > 0;
 }
 
+
+/*
+   free summary linked list
+*/
+void free_summary(struct summary** head)
+{
+   struct summary* tmp;
+
+   while (*head != NULL)
+    {
+       tmp = *head;
+       *head = (*head)->next;
+       free(tmp);
+    }
+}
+
+/*
+   update_summary linked list
+*/
+void update_summary(struct summary** summary, const char* category, double value)
+{
+    for (struct summary* s = *summary; s != NULL; s = s->next)
+    {
+        if (strcmp(s->category, category) == 0)
+        {
+            s->total += value;
+            return;
+        }
+    }
+
+    struct summary* s = malloc(sizeof(struct summary));
+    s->category = category;
+    s->total = value;
+    s->next = *summary;
+    *summary = s;
+}
+

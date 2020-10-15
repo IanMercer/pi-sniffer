@@ -146,6 +146,7 @@ struct Beacon
    struct Beacon* next;
    // Which room it is currently in (or NULL)
    struct room* room;
+   time_t last_seen;
 };
 
 /*
@@ -240,7 +241,9 @@ struct OverallState
    char* influx_password;
 
    // Optional webhook for posting room counts to digital signage displays
-   char* webhook_url;
+   char* webhook_domain;
+   int webhook_port;
+   char* webhook_path;
    char* webhook_username;
    char* webhook_password;
 
@@ -266,6 +269,9 @@ struct OverallState
 
    // linked list of beacons
    struct Beacon* beacons;
+
+   // Latest JSON for sending over DBUS on request
+   char* json;
 };
 
 #endif

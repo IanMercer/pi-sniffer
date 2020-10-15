@@ -28,6 +28,8 @@ sudo systemctl stop pi-sniffer.service
 fi
 
 echo installing service
+# DBUS configuration necessary to allow name to be registered on bus
+sudo cp com.signswift.sniffer.conf /etc/dbus-1/system.d/
 sudo cp pi-sniffer.service /etc/systemd/system/
 sudo chmod 644 /etc/systemd/system/pi-sniffer.service
 sudo systemctl enable pi-sniffer.service

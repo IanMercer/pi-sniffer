@@ -539,6 +539,7 @@ pi_sniffer_complete_status (
     GDBusMethodInvocation *invocation,
     const gchar *json)
 {
+  (void)object;
   g_dbus_method_invocation_return_value (invocation,
     g_variant_new ("(s)",
                    json));

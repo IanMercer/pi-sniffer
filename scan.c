@@ -22,6 +22,8 @@
 #include "influx.h"
 #include "rooms.h"
 #include "accesspoints.h"
+#include "sniffer-generated.h"
+#include "webhook.h"
 
 #define G_LOG_USE_STRUCTURED 1
 #include <glib.h>
@@ -422,7 +424,7 @@ void report_devices_count()
 
     GError *error = NULL;
     gboolean ret = g_dbus_connection_emit_signal(conn, 
-        NULL,                           // bus name
+        NULL,                           // 
         "/com/signswift/sniffer",       // path
         "com.signswift.sniffer",        // interface name
         "People",                       // signal_name
@@ -1590,6 +1592,33 @@ void dump_device(struct OverallState* state, struct Device *d)
 
 
 /*
+    Report access point counts to HttpPost
+*/
+int report_to_http_post_tick(void *parameters)
+{
+    (void)parameters;
+    g_info("Report to webhook url %i %i", state.network_up, starting);
+
+    // no need to keep calling this, remove from loop
+    if (state.webhook_domain == NULL) return FALSE;
+    if (state.webhook_path == NULL) return FALSE;
+    if (strlen(state.webhook_domain)==0) return FALSE;  
+
+    if (!state.network_up) return TRUE;
+    if (starting) return TRUE;
+
+    print_counts_by_closest(&state);
+
+    g_info("Report to webhook - network up and ready");
+
+    post_to_webhook(&state);
+
+    return TRUE;
+}
+
+
+
+/*
     Report access point counts to InfluxDB
 */
 int report_to_influx_tick(void *parameters)
@@ -1598,67 +1627,46 @@ int report_to_influx_tick(void *parameters)
     g_info("Report to Influx %i %i", state.network_up, starting);
 
     if (strlen(state.influx_server)==0) return FALSE;  // no need to keep calling this, remove from loop
+    if (!state.network_up) return TRUE;
+    if (starting) return TRUE;
 
     print_counts_by_closest(&state);
 
     //g_debug("Send to influx");
 
-    if (state.network_up && !starting)
+    g_info("Report to Influx - network up and ready");
+
+    char body[4096];
+    body[0] = '\0';
+
+    bool ok = TRUE;
+
+    time_t now = time(0);
+
+    for (struct area* g = state.groups; g != NULL; g = g->next)
     {
-        g_info("Report to Influx - network up and ready");
+        char field[120];
 
-        char body[4096];
-        body[0] = '\0';
+        snprintf(field, sizeof(field), "beacon=%.1f,computer=%.1f,phone=%.1f,tablet=%.1f,watch=%.1f",
+            g->beacon_total, g->computer_total, g->phone_total, g->tablet_total, g->watch_total);
 
-        bool ok = TRUE;
+        ok = ok && append_influx_line(body, sizeof(body), g->category, g->tags, field, now);
 
-        time_t now = time(0);
-
-        // Create group summaries (a flat list of a hierarchy of groups)
-        for (struct area* g = state.groups; g != NULL; g = g->next)
-        {
-            g->beacon_total = 0.0;
-            g->computer_total = 0.0;
-            g->phone_total = 0.0;
-            g->tablet_total = 0.0;
-            g->watch_total = 0.0;
-        }
-
-        for (struct room* r = state.rooms; r != NULL; r = r->next)
-        {
-            struct area* g = r->area;
-            g->beacon_total += r->beacon_total;
-            g->computer_total += r->computer_total;
-            g->phone_total += r->phone_total;
-            g->tablet_total += r->tablet_total;
-            g->watch_total += r->watch_total;
-        }
-
-        for (struct area* g = state.groups; g != NULL; g = g->next)
-        {
-            char field[120];
-
-            snprintf(field, sizeof(field), "beacon=%.1f,computer=%.1f,phone=%.1f,tablet=%.1f,watch=%.1f",
-                g->beacon_total, g->computer_total, g->phone_total, g->tablet_total, g->watch_total);
-
-            ok = ok && append_influx_line(body, sizeof(body), g->category, g->tags, field, now);
-
-            if (strlen(body) + 5 * 100 > sizeof(body)){
-                //g_debug("%s", body);
-                post_to_influx(&state, body, strlen(body));
-                body[0] = '\0';
-            }
-        }
-        if (strlen(body) > 0)
-        {
+        if (strlen(body) + 5 * 100 > sizeof(body)){
             //g_debug("%s", body);
             post_to_influx(&state, body, strlen(body));
+            body[0] = '\0';
         }
+    }
+    if (strlen(body) > 0)
+    {
+        //g_debug("%s", body);
+        post_to_influx(&state, body, strlen(body));
+    }
 
-        if (!ok)
-        {
-            g_warning("Influx messages was truncated");
-        }
+    if (!ok)
+    {
+        g_warning("Influx messages was truncated");
     }
     return TRUE;
 }
@@ -1865,6 +1873,7 @@ void initialize_state()
     state.groups = NULL;        // linked list
     state.closest_n = 0;        // count of closest
     state.beacons = NULL;       // linked list
+    state.json = NULL;          // DBUS JSON message
 
     // no devices yet
     state.n = 0;
@@ -1959,7 +1968,10 @@ void initialize_state()
     state.influx_username = getenv("INFLUX_USERNAME");
     state.influx_password = getenv("INFLUX_PASSWORD");
 
-    state.webhook_url = getenv("WEBHOOK_URL");
+    state.webhook_domain = getenv("WEBHOOK_DOMAIN");
+    const char *s_webhook_port = getenv("WEBHOOK_PORT");
+    state.webhook_port = (s_webhook_port != NULL) ? atoi(s_webhook_port) : 80;
+    state.webhook_path = getenv("WEBHOOK_PATH");
     state.webhook_username = getenv("WEBHOOK_USERNAME");
     state.webhook_password = getenv("WEBHOOK_PASSWORD");
 
@@ -2006,7 +2018,7 @@ void display_state()
     g_info("INFLUX_USERNAME='%s'", state.influx_username);
     g_info("INFLUX_PASSWORD='%s'", state.influx_password == NULL ? "(null)" : "*****");
 
-    g_info("WEBHOOK_URL='%s'", state.webhook_url == NULL ? "(null)" : state.webhook_url);
+    g_info("WEBHOOK_URL='%s:%i%s'", state.webhook_domain == NULL ? "(null)" : state.webhook_domain, state.webhook_port, state.webhook_path);
     g_info("WEBHOOK_USERNAME='%s'", state.webhook_username == NULL ? "(null)" : "*****");
     g_info("WEBHOOK_PASSWORD='%s'", state.webhook_password == NULL ? "(null)" : "*****");
 
@@ -2039,6 +2051,35 @@ guint iface_removed;
 GMainLoop *loop;
 
 GCancellable *socket_service;
+
+
+static gboolean on_handle_status_request (piSniffer *interface,
+                       GDBusMethodInvocation  *invocation,
+                       gpointer                user_data)
+{
+    struct OverallState* state = (struct OverallState*)user_data;
+    gchar *response;
+    response = state->json;
+    pi_sniffer_complete_status(interface, invocation, response);
+    // g_free (response);
+    return TRUE;
+}
+
+
+static void on_name_acquired (GDBusConnection *connection, const gchar *name, gpointer user_data)
+{
+    (void)connection;
+    (void)user_data;
+    g_warning("NAME ACQUIRED '%s'", name);
+}
+
+static void on_name_lost (GDBusConnection *connection, const gchar *name, gpointer user_data)
+{
+    (void)connection;
+    (void)user_data;
+    g_warning("NAME LOST '%s'", name);
+}
+
 
 int main(int argc, char **argv)
 {
@@ -2082,6 +2123,42 @@ int main(int argc, char **argv)
     // Grab zero time = time when started
     time(&started);
 
+    g_warning("calling g_bus_own_name");
+
+    piSniffer * sniffer = pi_sniffer_skeleton_new ();
+
+   // g_warning("Name acquired '%s'", name);
+
+    // TODO: Sample of setting properties
+    pi_sniffer_set_distance_limit(sniffer, 7.5);
+
+    // TODO: Experimental DBus
+    g_signal_connect(sniffer, "handle-status", G_CALLBACK(on_handle_status_request), &state);
+
+    GError* error = NULL;
+    if (!g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (sniffer),
+                                         conn,
+                                         "/com/signswift/sniffer",
+                                         &error))
+    {
+        g_warning("Failed to export skeleton");
+    }
+    else
+    {
+        g_warning("Exported skeleton, DBUS ready!");
+    }
+
+//    on_name_acquired(conn, "NOT REALLY", NULL);
+
+    g_bus_own_name_on_connection(conn,
+        "com.signswift.sniffer",
+        G_BUS_NAME_OWNER_FLAGS_ALLOW_REPLACEMENT,
+        on_name_acquired,
+        on_name_lost,
+        NULL,
+        NULL);
+
+
     loop = g_main_loop_new(NULL, FALSE);
 
     prop_changed = g_dbus_connection_signal_subscribe(conn,
@@ -2120,24 +2197,24 @@ int main(int argc, char **argv)
     rc = bluez_adapter_set_property(conn, "Powered", g_variant_new("b", TRUE));
     if (rc)
     {
-        g_warning("Not able to enable the adapter\n");
+        g_warning("Not able to enable the adapter");
         goto fail;
     }
 
     rc = bluez_set_discovery_filter(conn);
     if (rc)
     {
-        g_warning("Not able to set discovery filter\n");
+        g_warning("Not able to set discovery filter");
         goto fail;
     }
 
     rc = bluez_adapter_call_method(conn, "StartDiscovery", NULL, NULL);
     if (rc)
     {
-        g_warning("Not able to scan for new devices\n");
+        g_warning("Not able to scan for new devices");
         goto fail;
     }
-    g_info("Started discovery\n");
+    g_info("Started discovery");
 
     prepare_mqtt(state.mqtt_server, state.mqtt_topic, 
         state.local->client_id, 
@@ -2160,7 +2237,10 @@ int main(int argc, char **argv)
     g_timeout_add_seconds(29, dump_all_devices_tick, loop);
 
     // Every 10s report devices by access point to InfluxDB
-    g_timeout_add_seconds(10, report_to_influx_tick, loop);
+    g_timeout_add_seconds(20, report_to_influx_tick, loop);
+
+    // Every 10s report devices by webhook url
+    g_timeout_add_seconds(10, report_to_http_post_tick, loop);
 
     // Every 5 min dump access point metadata
     g_timeout_add_seconds(301, print_access_points_tick, loop);
@@ -2187,12 +2267,12 @@ int main(int argc, char **argv)
     {
         rc = bluez_adapter_call_method(conn, "SetDiscoveryFilter", NULL, NULL);
         if (rc)
-            g_warning("Not able to remove discovery filter\n");
+            g_warning("Not able to remove discovery filter");
     }
 
     rc = bluez_adapter_call_method(conn, "StopDiscovery", NULL, NULL);
     if (rc)
-        g_warning("Not able to stop scanning\n");
+        g_warning("Not able to stop scanning");
     g_usleep(100);
 
     rc = bluez_adapter_set_property(conn, "Powered", g_variant_new("b", FALSE));

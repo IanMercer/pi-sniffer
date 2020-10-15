@@ -572,7 +572,7 @@ void send_device_mqtt(struct Device* device)
         return;
     }
 
-    g_debug("    MQTT %s device %s '%s'\n", MESH_TOPIC, device->mac, device->name);
+    g_debug("    MQTT %s device %s '%s'", MESH_TOPIC, device->mac, device->name);
 
     char buffer[2048];
     memcpy(buffer, access_point_name, strlen(access_point_name)+1);  // assume this is <32 characters

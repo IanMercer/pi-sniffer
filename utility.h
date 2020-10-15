@@ -98,4 +98,23 @@ void soft_set_category(int8_t* field, int8_t field_new);
 
 void soft_set_u16(uint16_t* field, uint16_t field_new);
 
+// A summary list
+struct summary
+{
+    const char* category;
+    double total;
+    struct summary* next;
+};
+
+/*
+   free summary linked list
+*/
+void free_summary(struct summary** head);
+
+/*
+   update_summary linked list
+*/
+void update_summary(struct summary** summary, const char* category, double value);
+
+
 #endif
