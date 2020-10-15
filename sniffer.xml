@@ -1,0 +1,17 @@
+<node>
+  <interface name="com.signswift.sniffer">
+
+    <!-- Not very 'dbus' GVariant-like but json is what's needed for web interface -->
+    <method name="Status">
+      <arg name="json" direction="out" type="s"/>
+    </method>
+
+    <signal name="Notification">
+      <arg name="json" type="s"/>
+    </signal>
+
+    <!-- <property name="RSSIFactor" type="d" access="readwrite"/>
+    <property name="RSSIOneMeter" type="d" access="readwrite"/> -->
+    <property name="DistanceLimit" type="d" access="readwrite"/>
+  </interface>
+</node>
