@@ -358,6 +358,7 @@ bool string_contains_insensitive(const char *buffer, const char *match)
 */
 void optional_set(char* name, char* value, int max_length) {
   if (strlen(name) && name[0]!='_') return;
+  if (name[0] == '_' && strcmp(value, "_Beacon") == 0) return;  // don't overwrite with a less specific name
   g_strlcpy(name, value, max_length);
 }
 
