@@ -129,7 +129,7 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
     {
         g_warning("Did not find configuration file '%s'", path);
         // If no file, calculate from access points
-        g_warning("Please create a coniguration file 'rooms.json' (configured path using systemctl edit) mapping patch names to groups");
+        g_warning("Please create a configuration file 'rooms.json' (configured path using systemctl edit) mapping patch names to groups");
         return;
     }
 
