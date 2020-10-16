@@ -58,7 +58,7 @@ char* recording_to_json (struct recording* r, struct AccessPoint* access_points)
 }
 
 /*
-    Convert JSON lines value back to a recording value using current order of access points
+    Convert JSON lines value back to a recording value
 */
 bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct recording* r, struct patch** patch_list, struct area** areas_list)
 {
@@ -78,10 +78,12 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
     if (cJSON_IsString(patch_name))
     {
         g_utf8_strncpy(r->patch_name, patch_name->valuestring, META_LENGTH);
+        url_slug(r->patch_name);   // strip spaces and any other junk from it
     }
     else if (cJSON_IsString(room_name))
     {
         g_utf8_strncpy(r->patch_name, room_name->valuestring, META_LENGTH);
+        url_slug(r->patch_name);   // strip spaces and any other junk from it
     }
     else
     {
@@ -95,12 +97,11 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
     if (cJSON_IsString(group_name) && cJSON_IsString(tags))
     {
         g_info("Group name '%s', tags '%s'", group_name->valuestring, tags->valuestring);
-        get_or_create_patch(patch_name->valuestring, group_name->valuestring, tags->valuestring, patch_list, areas_list);
+        get_or_create_patch(r->patch_name, group_name->valuestring, tags->valuestring, patch_list, areas_list);
         has_meta = TRUE;
     }
 
     // Set values on recording object
-    url_slug(r->patch_name);   // strip spaces and any other junk from it
 
     cJSON* distances = cJSON_GetObjectItemCaseSensitive(json, "distances");
 

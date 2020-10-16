@@ -12,7 +12,7 @@
  *  See Makefile and Github
  *
  */
-#include "core/utility.h"
+#include "utility.h"
 #include "mqtt_send.h"
 #include "udp.h"
 #include "kalman.h"
@@ -778,7 +778,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             {
                 g_debug("  %s Paired has changed        ", address);
 #ifdef MQTT
-                if (state.verbosity >= Details) {
+                if (state.verbosity >= Details) 
+                {
                     if (state.network_up) send_to_mqtt_single_value(address, "paired", paired ? 1 : 0);
                 }
 #endif
@@ -809,11 +810,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             if (existing->trusted != trusted)
             {
                 g_debug("  %s Trusted has changed       ", address);
-#ifdef MQTT
                 if (state.verbosity >= Details) {
                     if (state.network_up) send_to_mqtt_single_value(address, "trusted", trusted ? 1 : 0);
                 }
-#endif
                 existing->trusted = trusted;
             }
         }
@@ -1413,9 +1412,8 @@ int mqtt_refresh(void *parameters)
     (void)parameters;
     //GMainLoop *loop = (GMainLoop *)parameters;
     // Send any MQTT messages
-#ifdef MQTT
     mqtt_sync();
-#endif
+
     return TRUE;
 }
 
@@ -1743,11 +1741,7 @@ int dump_all_devices_tick(void *parameters)
     float people_in_range = state.local->people_in_range_count;
 
     const char* connected = is_any_interface_up() ? "" : "NETWORK DOWN ";
-#ifdef MQTT    
     const char* m_state = mqtt_state();
-#else
-    const char* m_state = "";
-#endif
 
     if (days > 1)
         g_info("People %.2f (%.2f in range) Uptime: %i days %02i:%02i %s%s", people_closest, people_in_range, days, hours, minutes, connected, m_state);
@@ -2248,12 +2242,14 @@ int main(int argc, char **argv)
         goto fail;
     }
     g_info("Started discovery");
+
 #ifdef MQTT
     prepare_mqtt(state.mqtt_server, state.mqtt_topic, 
         state.local->client_id, 
         "",  // no suffix on client id for MQTT
         state.mqtt_username, state.mqtt_password);
 #endif
+
     // Periodically ask Bluez for every device including ones that are long departed
     // but only do updates to devices we have seen, do no not create a device for each
     // as there are too many and most are old, random mac addresses
@@ -2333,9 +2329,8 @@ void int_handler(int dummy)
     g_dbus_connection_close_sync(conn, NULL, NULL);
     g_object_unref(conn);
 
-#ifdef MQTT
     exit_mqtt();
-#endif
+
     close_socket_service(socket_service);
 
     pthread_mutex_destroy(&state.lock);

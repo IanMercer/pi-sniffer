@@ -1,3 +1,4 @@
+#ifdef MQTT
 #ifndef MQTTSEND_FILE
 #define MQTTSEND_FILE
 /*
@@ -46,4 +47,5 @@ void send_device_mqtt(struct Device* device);
 */
 const char* mqtt_state();
 
+#endif
 #endif

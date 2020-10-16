@@ -48,6 +48,9 @@ struct area* get_or_add_area(struct area** group_list, char* group_name, char* t
 */
 struct patch* get_or_create_patch(char* patch_name, char* group_name, char* tags, struct patch** patch_list, struct area** groups_list)
 {
+    g_assert(tags != NULL);
+    g_assert(patch_name != NULL);
+
     if (string_contains_insensitive(tags, " "))
     {
         g_warning("Spaces not allowed in tags for area '%s' (removed)", patch_name);
@@ -95,6 +98,7 @@ struct patch* get_or_create_patch(char* patch_name, char* group_name, char* tags
     }
     else
     {
+        g_info("Got patch");
         if (strcmp(found->area->category, group_name) != 0)
         {
             g_warning("TODO: Patch '%s' changing group from '%s' to '%s'", patch_name, found->area->category, group_name);
@@ -113,7 +117,7 @@ struct patch* get_or_create_patch(char* patch_name, char* group_name, char* tags
 /*
     Initalize the patches database (linked lists)
 */
-void read_configuration_file(const char* path, struct AccessPoint** accesspoint_list, struct patch** patch_list, struct area** group_list, struct Beacon** beacon_list)
+void read_configuration_file(const char* path, struct AccessPoint** accesspoint_list, struct patch** patch_list, struct area** area_list, struct Beacon** beacon_list)
 {
     //struct AccessPoint** = state.access_points_list;    // unused now
     // Read from file ...
@@ -223,7 +227,7 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
         }
 
         g_debug("Get or create patch '%s', '%s', '%s'", name->valuestring, category->valuestring, tags->valuestring);
-        get_or_create_patch(name->valuestring, category->valuestring, tags->valuestring, patch_list, group_list);        
+        get_or_create_patch(name->valuestring, category->valuestring, tags->valuestring, patch_list, area_list);        
     }
 
     // ------------------- beacons --------------------

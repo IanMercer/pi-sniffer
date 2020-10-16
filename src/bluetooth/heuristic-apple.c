@@ -26,8 +26,8 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
         // Aprilbeacon temperature sensor sends temperature in manufacturer data
         if (strncmp(existing->name, "abtemp", 6) == 0)
         {
-            uint8_t temperature = allocdata[21];
-            send_to_mqtt_single_value(existing->mac, "temperature", temperature);
+            //uint8_t temperature = allocdata[21];
+            //send_to_mqtt_single_value(existing->mac, "temperature", temperature);
         }
     }
     else if (apple_device_type == 0x03)     // On user action

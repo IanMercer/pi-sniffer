@@ -1,4 +1,3 @@
-#ifdef MQTT
 /*
     MQTT code to send BLE status
     And utility functions
@@ -688,7 +687,9 @@ void send_to_mqtt_single_float(char *mac_address, char *key, float value)
     char packet[2048];
     json_float(packet, sizeof(packet), mac_address, key, value);
 
+    #ifdef MQTT
     send_to_mqtt(topic, packet, MQTT_PUBLISH_QOS_1, 0);
+    #endif
 }
 
 // This is called every 5 seconds
@@ -731,4 +732,3 @@ void mqtt_sync()
         skipped_messages = 0;
     }
 }
-#endif
