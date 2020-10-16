@@ -118,9 +118,6 @@ struct AccessPoint
    char description[META_LENGTH]; // optional description for dashboard
    char platform[META_LENGTH];    // optional platform (e.g. Pi3, Pi4, ...) for dashboard
 
-   float x;
-   float y;
-   float z;
    // Put a device 1m away and measure the average RSSI
    int rssi_one_meter; // RSSI at one meter for test device (-64 dbm typical)
    // 2.0 to 4.0, lower for indoor or cluttered environments, default is 3.5

@@ -825,9 +825,6 @@ void *listen_loop(void *param)
         strncpy(dummy.description, "notset", 7);
         strncpy(dummy.platform, "notset", 7);
         dummy.id = -1;
-        dummy.x = -1;
-        dummy.y = -1;
-        dummy.z = -1;
         dummy.people_distance = 0.0;
         dummy.people_closest_count = 0.0;
         dummy.people_in_range_count = 0.0;

@@ -1893,9 +1893,6 @@ void initialize_state()
     // Default values if not set in environment variables
     const char *description = "Please set a HOST_DESCRIPTION in the environment variables";
     const char *platform = "Please set a HOST_PLATFORM in the environment variables";
-    float position_x = -1.0;
-    float position_y = -1.0;
-    float position_z = -1.0;
     int rssi_one_meter = -64;    // fairly typical RPI3 and iPhone
     float rssi_factor = 3.5;     // fairly cluttered indoor default
     float people_distance = 7.0; // 7m default range
@@ -1937,18 +1934,6 @@ void initialize_state()
     if (s_client_platform != NULL)
         platform = s_client_platform;
 
-    g_debug("Get position");
-    const char *s_position_x = getenv("POSITION_X");
-    const char *s_position_y = getenv("POSITION_Y");
-    const char *s_position_z = getenv("POSITION_Z");
-
-    if (s_position_x != NULL)
-        position_x = (float)atof(s_position_x);
-    if (s_position_y != NULL)
-        position_y = (float)atof(s_position_y);
-    if (s_position_z != NULL)
-        position_z = (float)atof(s_position_z);
-
     g_debug("Get RSSI factors");
     const char *s_rssi_one_meter = getenv("RSSI_ONE_METER");
     const char *s_rssi_factor = getenv("RSSI_FACTOR");
@@ -1963,7 +1948,6 @@ void initialize_state()
 
     g_debug("Add self as access point");
     state.local = add_access_point(&state.access_points, client_id, description, platform,
-                                   position_x, position_y, position_z,
                                    rssi_one_meter, rssi_factor, people_distance);
 
     // UDP Settings
@@ -2028,7 +2012,6 @@ void display_state()
     g_info("HOST_NAME = %s", state.local->client_id);
     g_info("HOST_DESCRIPTION = %s", state.local->description);
     g_info("HOST_PLATFORM = %s", state.local->platform);
-    g_info("Position: (%.1f,%.1f,%.1f)", state.local->x, state.local->y, state.local->z);
 
     g_info("RSSI_ONE_METER Power at 1m : %i", state.local->rssi_one_meter);
     g_info("RSSI_FACTOR to distance : %.1f   (typically 2.0 (indoor, cluttered) to 4.0 (outdoor, no obstacles)", state.local->rssi_factor);

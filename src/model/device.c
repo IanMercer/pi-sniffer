@@ -132,9 +132,6 @@ char* access_point_to_json (struct AccessPoint* a)
     cJSON_AddStringToObject(j, "from", a->client_id);
     cJSON_AddStringToObject(j, "description", a->description);
     cJSON_AddStringToObject(j, "platform", a->platform);
-    cJSON_AddNumberToObject(j, "from_x", a->x);
-    cJSON_AddNumberToObject(j, "from_y", a->y);
-    cJSON_AddNumberToObject(j, "from_z", a->z);
     cJSON_AddNumberToObject(j, "rssi_one_meter", a->rssi_one_meter);
     cJSON_AddNumberToObject(j, "rssi_factor", a->rssi_factor);
     cJSON_AddNumberToObject(j, "people_distance", a->people_distance);
@@ -155,9 +152,6 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     cJSON_AddStringToObject(j, "from", a->client_id);
     cJSON_AddStringToObject(j, "description", a->description);
     cJSON_AddStringToObject(j, "platform", a->platform);
-    cJSON_AddNumberToObject(j, "from_x", a->x);
-    cJSON_AddNumberToObject(j, "from_y", a->y);
-    cJSON_AddNumberToObject(j, "from_z", a->z);
     cJSON_AddNumberToObject(j, "rssi_one_meter", a->rssi_one_meter);
     cJSON_AddNumberToObject(j, "rssi_factor", a->rssi_factor);
     cJSON_AddNumberToObject(j, "people_distance", a->people_distance);
@@ -207,24 +201,6 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
     cJSON *djson = cJSON_Parse(json);
 
     // ACCESS POINT
-
-    cJSON *from_x = cJSON_GetObjectItemCaseSensitive(djson, "from_x");
-    if (cJSON_IsNumber(from_x))
-    {
-        access_point->x = (float)from_x->valuedouble;
-    }
-
-    cJSON *from_y = cJSON_GetObjectItemCaseSensitive(djson, "from_y");
-    if (cJSON_IsNumber(from_y))
-    {
-        access_point->y = (float)from_y->valuedouble;
-    }
-
-    cJSON *from_z = cJSON_GetObjectItemCaseSensitive(djson, "from_z");
-    if (cJSON_IsNumber(from_z))
-    {
-        access_point->z = (float)from_z->valuedouble;
-    }
 
     cJSON *fromj = cJSON_GetObjectItemCaseSensitive(djson, "from");
     if (cJSON_IsString(fromj) && (fromj->valuestring != NULL))
