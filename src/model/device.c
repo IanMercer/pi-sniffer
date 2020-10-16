@@ -11,11 +11,11 @@
 // These must be in same order as enum values
 char* categories[] = { "unknown", "phone", "wearable", "tablet", "headphones", "computer", 
     "tv", "fixed", "beacon", "car", "audio", "lighting", "sprinklers", "sales", "appliance", "security", "fitness", "printer",
-    "speakers", "camera" };
+    "speakers", "camera", "watch" };
 
 int category_values[] = { CATEGORY_UNKNOWN, CATEGORY_PHONE, CATEGORY_WEARABLE, CATEGORY_TABLET, CATEGORY_HEADPHONES, CATEGORY_COMPUTER, 
     CATEGORY_TV, CATEGORY_FIXED, CATEGORY_BEACON, CATEGORY_CAR, CATEGORY_AUDIO_CARD, CATEGORY_LIGHTING, CATEGORY_SPRINKLERS, CATEGORY_POS, 
-    CATEGORY_APPLIANCE, CATEGORY_SECURITY, CATEGORY_FITNESS, CATEGORY_PRINTER, CATEGORY_SPEAKERS, CATEGORY_CAMERA };
+    CATEGORY_APPLIANCE, CATEGORY_SECURITY, CATEGORY_FITNESS, CATEGORY_PRINTER, CATEGORY_SPEAKERS, CATEGORY_CAMERA, CATEGORY_WATCH };
 
 int category_to_int(char* category)
 {
@@ -84,8 +84,7 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
             g_info("  %s Set category to '%s', message from %s", local->mac, category_from_int(remote->category), access_name);
             local->category = remote->category;
         }
-        else if (local->category == CATEGORY_PHONE && 
-            (remote->category == CATEGORY_TABLET || remote->category == CATEGORY_WEARABLE))
+        else if (local->category == CATEGORY_PHONE && (remote->category == CATEGORY_TABLET || remote->category == CATEGORY_WATCH))
         {
             // TABLET/WATCH overrides PHONE because we assume phone when someone unlocks or uses an Apple device
             g_info("  %s Override category from '%s' to '%s', message from %s", local->mac, category_from_int(local->category), category_from_int(remote->category), access_name);

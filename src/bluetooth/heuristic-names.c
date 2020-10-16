@@ -1,9 +1,7 @@
 // name heuristics
 
-// TODO: Allocate categories by name automatically
-// for(int i = 0; i < sizeof(phones); i++){
-//     if (strcmp(name, phones[i] == 0)) existing->category = CATEGORY_PHONE;
-// }
+//17 88:6B:0F:59:50:4A    2 pub   6.3m   15      90-   443        00201AD73AMKE       kitchen   2.3m beacon    MILWAUKE
+
 
 #include "device.h"
 #include "utility.h"
@@ -40,17 +38,22 @@ void apply_name_heuristics (struct Device* existing, const char* name)
 
     // Watches
     else if (string_starts_with(name, "iWatch"))
-        existing->category = CATEGORY_WEARABLE;
+        existing->category = CATEGORY_WATCH;
     else if (string_starts_with(name, "Apple Watch"))
-        existing->category = CATEGORY_WEARABLE;
+        existing->category = CATEGORY_WATCH;
     else if (string_starts_with(name, "Galaxy Watch"))
-        existing->category = CATEGORY_WEARABLE;
+        existing->category = CATEGORY_WATCH;
+    else if (string_starts_with(name, "Spartan Trainer"))
+        existing->category = CATEGORY_WATCH; // Suunto
+    else if (string_starts_with(name, "Gear S3"))
+        existing->category = CATEGORY_WATCH;
+    else if (string_starts_with(name, "Approach S20"))
+        existing->category = CATEGORY_WATCH; // Garmin Golf Watch
+
     else if (string_starts_with(name, "Galaxy Fit"))
         existing->category = CATEGORY_WEARABLE;
-    else if (string_starts_with(name, "Gear S3"))
-        existing->category = CATEGORY_WEARABLE;
     else if (string_starts_with(name, "fenix"))
-        existing->category = CATEGORY_WEARABLE;
+        existing->category = CATEGORY_WATCH;
     else if (string_starts_with(name, "Ionic"))
         existing->category = CATEGORY_WEARABLE; // FITBIT
     else if (string_starts_with(name, "Versa"))
@@ -59,8 +62,6 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_WEARABLE; // FITBIT
     else if (string_starts_with(name, "Inspire HR"))
         existing->category = CATEGORY_WEARABLE; // FITBIT
-    else if (string_starts_with(name, "Approach S20"))
-        existing->category = CATEGORY_WEARABLE; // Garmin Golf Watch
     else if (string_starts_with(name, "Mi Smart Band"))
         existing->category = CATEGORY_WEARABLE; // Fitness
     else if (string_starts_with(name, "TICKR X"))
@@ -75,8 +76,6 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_WEARABLE; // Heartrate
     else if (string_starts_with(name, "Alta HR"))
         existing->category = CATEGORY_WEARABLE; // Fitbit Alta Heartrate
-    else if (string_starts_with(name, "Spartan Trainer"))
-        existing->category = CATEGORY_WEARABLE; // Suunto
     else if (string_starts_with(name, "Oculus"))
         existing->category = CATEGORY_WEARABLE; //Oculus Quest etc.
 
@@ -432,6 +431,11 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     {
         optional_set(existing->name, "_Cisco Systems", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
+    }
+    else if (string_starts_with(existing->mac, "88:6b:0f"))
+    {
+        optional_set(existing->name, "_Milwaukee", NAME_LENGTH);
+        existing->category = CATEGORY_BEACON;
     }
 
     // TODO: Android device names

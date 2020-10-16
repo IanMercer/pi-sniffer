@@ -787,7 +787,7 @@ const char *company_id_to_string(int company_id, int8_t* category)
 	case 253:
 		return "ValenceTech Limited";
 	case 254:
-		return "Reserved";
+		return "DeWalt"; // Stanley Black and Decker
 	case 255:
 		return "Typo Products, LLC";
 	case 256:
@@ -1459,6 +1459,9 @@ const char *company_id_to_string(int company_id, int8_t* category)
 		return "Blue Clover Devices";
 	case 0x058e:
 		return "Oculus";
+	case 0x6501:
+		*category = CATEGORY_BEACON;
+		return "Milwaukee";
 	default:
 		return NULL;
 	}

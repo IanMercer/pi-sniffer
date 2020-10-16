@@ -98,7 +98,6 @@ struct patch* get_or_create_patch(char* patch_name, char* group_name, char* tags
     }
     else
     {
-        g_info("Got patch");
         if (strcmp(found->area->category, group_name) != 0)
         {
             g_warning("TODO: Patch '%s' changing group from '%s' to '%s'", patch_name, found->area->category, group_name);

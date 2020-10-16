@@ -33,6 +33,7 @@ typedef uint64_t u_int64_t;
 
 #define CATEGORY_UNKNOWN 0
 #define CATEGORY_PHONE 1
+// Wearable other than watch
 #define CATEGORY_WEARABLE 2
 #define CATEGORY_TABLET 3
 #define CATEGORY_HEADPHONES 4
@@ -45,12 +46,16 @@ typedef uint64_t u_int64_t;
 #define CATEGORY_LIGHTING 11
 #define CATEGORY_SPRINKLERS 12
 #define CATEGORY_POS 13
-#define CATEGORY_APPLIANCE 14   // fridge, bed, air filter, ...
-#define CATEGORY_SECURITY 15    // NestCam etc.
-#define CATEGORY_FITNESS 16    // Bikes, bike trainers, ergos, ...
+// fridge, bed, air filter, ...
+#define CATEGORY_APPLIANCE 14
+// NestCam etc.
+#define CATEGORY_SECURITY 15
+// Bikes, bike trainers, ergos, ...
+#define CATEGORY_FITNESS 16    
 #define CATEGORY_PRINTER 17
 #define CATEGORY_SPEAKERS 18
 #define CATEGORY_CAMERA 19
+#define CATEGORY_WATCH 20     
 
 
 // Max allowed length of names and aliases (plus 1 for null)

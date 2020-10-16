@@ -94,7 +94,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
         // Sent when watch has lost pairing to phone?
         optional_set(existing->name, "iWatch", NAME_LENGTH);
         g_info("  %s '%s' Magic Switch", existing->mac, existing->name);
-        soft_set_category(&existing->category, CATEGORY_WEARABLE);
+        soft_set_category(&existing->category, CATEGORY_WATCH);
     }
     else if (apple_device_type == 0x0c)     // Handoff
     {

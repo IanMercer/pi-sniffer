@@ -289,6 +289,7 @@ void update_group_summaries(struct OverallState* state)
         g->phone_total = 0.0;
         g->tablet_total = 0.0;
         g->watch_total = 0.0;
+        g->wearable_total = 0.0;
     }
 
     for (struct patch* r = state->patches; r != NULL; r = r->next)
@@ -299,6 +300,7 @@ void update_group_summaries(struct OverallState* state)
         g->phone_total += r->phone_total;
         g->tablet_total += r->tablet_total;
         g->watch_total += r->watch_total;
+        g->wearable_total += r->wearable_total;
     }
 }
 
@@ -330,8 +332,9 @@ void print_counts_by_closest(struct OverallState* state)
         current->phone_total = 0.0;
         current->tablet_total = 0.0;
         current->computer_total = 0.0;
-        current->watch_total = 0.0;
         current->beacon_total = 0.0;
+        current->watch_total = 0.0;
+        current->wearable_total = 0.0;
     }
 
     // TODO: Make this lazy, less often?
@@ -536,13 +539,22 @@ void print_counts_by_closest(struct OverallState* state)
                     rcurrent->computer_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
-            else if (test->category == CATEGORY_WEARABLE)
+            else if (test->category == CATEGORY_WATCH)
             {
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
                     if (rcurrent->knn_score > 0)
                         g_debug("Watch in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
                     rcurrent->watch_total += rcurrent->knn_score * score;        // probability x incidence
+                }
+            }
+            else if (test->category == CATEGORY_WEARABLE)
+            {
+                for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
+                {
+                    if (rcurrent->knn_score > 0)
+                        g_debug("Wearable in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
+                    rcurrent->wearable_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
             else if (test->category == CATEGORY_BEACON)
@@ -635,6 +647,7 @@ void print_counts_by_closest(struct OverallState* state)
 
         cJSON_AddRounded(item, "phones", r->phone_total);
         cJSON_AddRounded(item, "watches", r->watch_total);
+        cJSON_AddRounded(item, "wearables", r->wearable_total);
         cJSON_AddRounded(item, "tablets", r->tablet_total);
         cJSON_AddRounded(item, "computers", r->computer_total);
         cJSON_AddItemToArray(jareas, item);

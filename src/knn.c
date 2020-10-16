@@ -96,7 +96,7 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
     cJSON* tags = cJSON_GetObjectItemCaseSensitive(json, "tags");
     if (cJSON_IsString(group_name) && cJSON_IsString(tags))
     {
-        g_info("Group name '%s', tags '%s'", group_name->valuestring, tags->valuestring);
+        //g_info("Group name '%s', tags '%s'", group_name->valuestring, tags->valuestring);
         get_or_create_patch(r->patch_name, group_name->valuestring, tags->valuestring, patch_list, areas_list);
         has_meta = TRUE;
     }

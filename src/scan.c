@@ -1676,8 +1676,8 @@ int report_to_influx_tick(void *parameters)
     {
         char field[120];
 
-        snprintf(field, sizeof(field), "beacon=%.1f,computer=%.1f,phone=%.1f,tablet=%.1f,watch=%.1f",
-            g->beacon_total, g->computer_total, g->phone_total, g->tablet_total, g->watch_total);
+        snprintf(field, sizeof(field), "beacon=%.1f,computer=%.1f,phone=%.1f,tablet=%.1f,watch=%.1f,wear=%.1f",
+            g->beacon_total, g->computer_total, g->phone_total, g->tablet_total, g->watch_total, g->wearable_total);
 
         ok = ok && append_influx_line(body, sizeof(body), g->category, g->tags, field, now);
 
