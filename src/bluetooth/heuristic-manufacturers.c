@@ -40,7 +40,8 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
     else if (manufacturer == 0x0087)
     {
         optional_set(existing->name, "_Garmin", NAME_LENGTH);
-        existing->category = CATEGORY_WEARABLE; // could be fitness tracker
+		if (existing->category == CATEGORY_UNKNOWN)
+	        existing->category = CATEGORY_WEARABLE; // could be fitness tracker if not a watch
     }
     else if (manufacturer == 0x0141)
     {

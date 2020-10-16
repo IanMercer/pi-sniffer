@@ -1623,12 +1623,8 @@ void dump_device(struct OverallState* state, struct Device *d)
 /*
     Report access point counts to HttpPost
 */
-int report_to_http_post_tick(void *parameters)
+int report_to_http_post_tick()
 {
-    (void)parameters;
-    g_info("Report to webhook url %i %i", state.network_up, starting);
-
-    // no need to keep calling this, remove from loop
     if (state.webhook_domain == NULL) return FALSE;
     if (state.webhook_path == NULL) return FALSE;
     if (strlen(state.webhook_domain)==0) return FALSE;  
@@ -1636,9 +1632,7 @@ int report_to_http_post_tick(void *parameters)
     if (!state.network_up) return TRUE;
     if (starting) return TRUE;
 
-    print_counts_by_closest(&state);
-
-    g_info("Report to webhook - network up and ready");
+    g_info("Report to webhook url");
 
     post_to_webhook(&state);
 
@@ -1650,16 +1644,13 @@ int report_to_http_post_tick(void *parameters)
 /*
     Report access point counts to InfluxDB
 */
-int report_to_influx_tick(void *parameters)
+int report_to_influx_tick()
 {
-    (void)parameters;
-    g_info("Report to Influx %i %i", state.network_up, starting);
-
-    if (strlen(state.influx_server)==0) return FALSE;  // no need to keep calling this, remove from loop
+    if (strlen(state.influx_server)==0) return FALSE;
     if (!state.network_up) return TRUE;
     if (starting) return TRUE;
 
-    print_counts_by_closest(&state);
+    g_info("Report to Influx");
 
     //g_debug("Send to influx");
 
@@ -1697,6 +1688,22 @@ int report_to_influx_tick(void *parameters)
     {
         g_warning("Influx messages was truncated");
     }
+    return TRUE;
+}
+
+/*
+    Report access point counts to InfluxDB
+*/
+int report_counts(void *parameters)
+{
+    (void)parameters;
+
+    // Set JSON for all ways to receive it (GET, POST, INFLUX, MQTT)
+    print_counts_by_closest(&state);
+
+    report_to_influx_tick();
+    report_to_http_post_tick();
+
     return TRUE;
 }
 
@@ -2252,11 +2259,8 @@ int main(int argc, char **argv)
     // Also clear starting flag
     g_timeout_add_seconds(29, dump_all_devices_tick, loop);
 
-    // Every 10s report devices by access point to InfluxDB
-    g_timeout_add_seconds(20, report_to_influx_tick, loop);
-
-    // Every 10s report devices by webhook url
-    g_timeout_add_seconds(10, report_to_http_post_tick, loop);
+    // Every 30s report counts
+    g_timeout_add_seconds(20, report_counts, loop);
 
     // Every 5 min dump access point metadata
     g_timeout_add_seconds(301, print_access_points_tick, loop);
