@@ -16,6 +16,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x02)
     {
+        if ()
         optional_set(existing->name, "_Beacon", NAME_LENGTH);
         if (existing->category != CATEGORY_BEACON)
         {

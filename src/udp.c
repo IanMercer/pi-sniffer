@@ -55,7 +55,7 @@ void udp_send(int port, const char *message, int message_length)
         if (sent < message_length)
         {
             // Need some way to detect network is not connected
-            //g_print("    Incomplete message sent to port %i - %i bytes.\n", port, sent);
+            g_warning("    Incomplete message sent to port %i - %i bytes.", port, sent);
         }
         close(sockfd);
     }
