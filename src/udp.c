@@ -191,7 +191,6 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest, d
 {
     (void)accesstimes;
 
-    struct patch* patch_list = state->patches;
     struct AccessPoint* access_points = state->access_points;
 
     char* device_name = closest->name;
@@ -208,7 +207,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest, d
 
     bool found = FALSE;
 
-    for (struct patch* patch = patch_list; patch != NULL; patch = patch->next)
+    for (struct patch* patch = state->patches; patch != NULL; patch = patch->next)
     {
         if (strcmp(patch->name, best.patch_name) == 0)
         {
@@ -225,7 +224,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest, d
     if (!found) 
     { 
         g_warning("Did not find a patch called %s, creating one on the fly", best.patch_name); 
-        struct patch* patch = get_or_create_patch(best.patch_name, "World", "zone=here", &patch_list, &state->areas);
+        struct patch* patch = get_or_create_patch(best.patch_name, "World", "zone=here", &state->patches, &state->areas);
         patch->knn_score = 1.0;
         best.distance = 1.0;
         strncpy(best.patch_name, patch->name, META_LENGTH);
