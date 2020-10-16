@@ -406,6 +406,8 @@ bool record (const char* directory, const char* device_name, double access_dista
 
 	g_return_val_if_fail (G_IS_FILE (file), FALSE);
 
+    bool is_new = !g_file_query_exists(file, NULL);
+
 	GFileOutputStream* os = g_file_append_to (file, G_FILE_CREATE_NONE, NULL, &error_local);
 	if (os == NULL) {
         g_warning("Could not open %s for writing recordings: %s", fullpath, error_local->message);
@@ -415,6 +417,14 @@ bool record (const char* directory, const char* device_name, double access_dista
 	}
 
 	GDataOutputStream * output = g_data_output_stream_new (G_OUTPUT_STREAM (os));
+
+    if (is_new)
+    {
+        char header[128];
+        snprintf(header, sizeof(header), "{\"patch\":\"%s\",\"category\":\"House\",\"tags\":\"tags\"}", device_name);
+        g_data_output_stream_put_string(output, header, NULL, &error_local);
+        g_data_output_stream_put_string(output, "\n", NULL, &error_local);
+    }
 
     struct recording r;
     for (int i = 0; i < N_ACCESS_POINTS; i++)

@@ -31,3 +31,5 @@ mqtt: $(MQTTSRC)
 
 cgijson: $(CGIJSON)
 	gcc -o $@ $^ $(CFLAGS) $(LIBS)
+	echo assuming you have apache set up on your Raspberry Pi
+	cp cgijson /usr/lib/cgi-bin/
