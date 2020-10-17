@@ -15,6 +15,7 @@ struct recording
 {
     // A confirmed recording has been moved from the beacons directory to the recordings directory
     bool confirmed;
+    // patch name is copied into a fixed length string because the recording object keeps getting recreated
     char patch_name[META_LENGTH];
     float access_point_distances[N_ACCESS_POINTS];
     struct recording* next;

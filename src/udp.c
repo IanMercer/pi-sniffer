@@ -230,7 +230,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest, d
 
     if (!found) 
     { 
-        g_warning("Did not find a patch called %s, creating one on the fly", best->patch_name); 
+        g_warning("Did not find a patch called %s, creating one on the fly", best->patch_name);
         char* world = strdup("World");
         char* tags = strdup("zone=here");
         struct patch* patch = get_or_create_patch(best->patch_name, best->patch_name, world, tags, &state->patches, &state->groups);

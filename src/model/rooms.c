@@ -99,14 +99,11 @@ struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group
     }
     else
     {
-        if (strcmp(found->group->name, group_name) != 0)
+        if (strcmp(found->group->name, group_name) != 0 || strcmp(found->group->tags, tags) != 0)
         {
-            g_warning("TODO: Patch '%s' changing group from '%s' to '%s'", patch_name, found->group->name, group_name);
-        }
-
-        if (strcmp(found->group->tags, tags) != 0)
-        {
-            g_warning("TODO: Patch '%s' changing tags from '%s' to '%s'", patch_name, found->group->tags, tags);
+            g_warning("Patch '%s' changing group from '%s' to '%s'", patch_name, found->group->name, group_name);
+            struct group* group = get_or_add_area(groups_list, group_name, tags);
+            found->group = group;
         }
     }
 
@@ -119,7 +116,9 @@ struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group
 */
 void read_configuration_file(const char* path, struct AccessPoint** accesspoint_list, struct patch** patch_list, struct group** area_list, struct Beacon** beacon_list)
 {
-    //struct AccessPoint** = state.access_points_list;    // unused now
+    (void)patch_list;
+    (void)area_list;
+
     // Read from file ...
 
     FILE *fp;
