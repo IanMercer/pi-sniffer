@@ -67,7 +67,8 @@ int main(int argc, char **argv)
 
     if (pi_sniffer_call_status_sync(proxy, &json, NULL, &error))
     {
-        g_print("%s", json);
+        g_print("Content-type:application/json\r\n\r\n");
+        g_print("%s\n", json);
     }
     else
     {

@@ -1650,11 +1650,9 @@ int report_to_influx_tick()
     if (!state.network_up) return TRUE;
     if (starting) return TRUE;
 
-    g_info("Report to Influx");
-
     //g_debug("Send to influx");
 
-    g_info("Report to Influx - network up and ready");
+    g_info("Report to Influx");
 
     char body[4096];
     body[0] = '\0';
@@ -1663,14 +1661,17 @@ int report_to_influx_tick()
 
     time_t now = time(0);
 
-    for (struct area* g = state.areas; g != NULL; g = g->next)
+    struct summary* summary = NULL;
+    summarize_by_group(state.patches, &summary);
+
+    for (struct summary* s = summary; s != NULL; s = s->next)
     {
         char field[120];
 
         snprintf(field, sizeof(field), "beacon=%.1f,computer=%.1f,phone=%.1f,tablet=%.1f,watch=%.1f,wear=%.1f",
-            g->beacon_total, g->computer_total, g->phone_total, g->tablet_total, g->watch_total, g->wearable_total);
+            s->beacon_total, s->computer_total, s->phone_total, s->tablet_total, s->watch_total, s->wearable_total);
 
-        ok = ok && append_influx_line(body, sizeof(body), g->category, g->tags, field, now);
+        ok = ok && append_influx_line(body, sizeof(body), s->category, s->extra, field, now);
 
         if (strlen(body) + 5 * 100 > sizeof(body)){
             //g_debug("%s", body);
@@ -1678,6 +1679,10 @@ int report_to_influx_tick()
             body[0] = '\0';
         }
     }
+
+    free_summary(&summary);
+
+
     if (strlen(body) > 0)
     {
         //g_debug("%s", body);
@@ -2000,6 +2005,7 @@ void initialize_state()
     state.webhook_password = getenv("WEBHOOK_PASSWORD");
 
     state.configuration_file_path = getenv("CONFIG");
+    if (state.configuration_file_path == NULL) state.configuration_file_path = "/etc/signswift/config.json";
 
     state.verbosity = Distances; // default verbosity
     char* verbosity = getenv("VERBOSITY");

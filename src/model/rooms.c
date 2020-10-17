@@ -46,7 +46,8 @@ struct area* get_or_add_area(struct area** group_list, char* group_name, char* t
 /*
    get or create a room and update any existing group also
 */
-struct patch* get_or_create_patch(char* patch_name, char* group_name, char* tags, struct patch** patch_list, struct area** groups_list)
+struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group_name, char* tags,
+    struct patch** patch_list, struct area** groups_list)
 {
     g_assert(tags != NULL);
     g_assert(patch_name != NULL);
@@ -79,6 +80,9 @@ struct patch* get_or_create_patch(char* patch_name, char* group_name, char* tags
         found->name = strdup(patch_name);
         found->next = NULL;
         found->area = NULL;
+        found->room = strdup(url_slug(room_name));
+        // no strdup here, get_or_add_group handles that
+        found->area = get_or_add_area(groups_list, url_slug(group_name), tags);
         g_info("Added patch %s in %s with tags %s", found->name, group_name, tags);
 
         if (*patch_list == NULL)
@@ -92,9 +96,6 @@ struct patch* get_or_create_patch(char* patch_name, char* group_name, char* tags
             found->next = *patch_list;
             *patch_list = found;
         }
-
-        // no strdup here, get_or_add_group handles that
-        found->area = get_or_add_area(groups_list, url_slug(group_name), tags);
     }
     else
     {
@@ -186,48 +187,48 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
     }
 
 
-    // ------------------- patches ---------------------
+    // // ------------------- patches ---------------------
 
-    cJSON* patches = cJSON_GetObjectItemCaseSensitive(json, "patches");
-    if (!cJSON_IsArray(patches)){
-        g_error("Could not parse patches[] from configuration file '%s'", path);
-        exit(EXIT_FAILURE);
-    }
+    // cJSON* patches = cJSON_GetObjectItemCaseSensitive(json, "patches");
+    // if (!cJSON_IsArray(patches)){
+    //     g_error("Could not parse patches[] from configuration file '%s'", path);
+    //     exit(EXIT_FAILURE);
+    // }
 
-    cJSON* patch = NULL;
-    cJSON_ArrayForEach(patch, patches)
-    {
-        cJSON* name = cJSON_GetObjectItemCaseSensitive(patch, "name");
-        if (!cJSON_IsString(name) || (name->valuestring == NULL))
-        {
-            if (cJSON_GetObjectItemCaseSensitive(patch, "comment")) continue;
-            g_error("Missing 'name' on patch object");
-            continue;
-        }
+    // cJSON* patch = NULL;
+    // cJSON_ArrayForEach(patch, patches)
+    // {
+    //     cJSON* name = cJSON_GetObjectItemCaseSensitive(patch, "name");
+    //     if (!cJSON_IsString(name) || (name->valuestring == NULL))
+    //     {
+    //         if (cJSON_GetObjectItemCaseSensitive(patch, "comment")) continue;
+    //         g_error("Missing 'name' on patch object");
+    //         continue;
+    //     }
 
-        cJSON* category = cJSON_GetObjectItemCaseSensitive(patch, "category");
-        if (!cJSON_IsString(category) || (category->valuestring == NULL))
-        {
-            g_error("Missing 'category' on patch '%s'", name->valuestring);
-            continue;
-        }
+    //     cJSON* category = cJSON_GetObjectItemCaseSensitive(patch, "category");
+    //     if (!cJSON_IsString(category) || (category->valuestring == NULL))
+    //     {
+    //         g_error("Missing 'category' on patch '%s'", name->valuestring);
+    //         continue;
+    //     }
 
-        cJSON* tags = cJSON_GetObjectItemCaseSensitive(patch, "tags");
-        if (!cJSON_IsString(tags) || (tags->valuestring == NULL))
-        {
-            g_warning("Missing 'tags' on patch '%s'", name->valuestring);
-            continue;
-        }
+    //     cJSON* tags = cJSON_GetObjectItemCaseSensitive(patch, "tags");
+    //     if (!cJSON_IsString(tags) || (tags->valuestring == NULL))
+    //     {
+    //         g_warning("Missing 'tags' on patch '%s'", name->valuestring);
+    //         continue;
+    //     }
 
-        if (string_contains_insensitive(tags->valuestring, " "))
-        {
-            g_warning("Spaces not allowed in tags for patch '%s'", name->valuestring);
-            continue;
-        }
+    //     if (string_contains_insensitive(tags->valuestring, " "))
+    //     {
+    //         g_warning("Spaces not allowed in tags for patch '%s'", name->valuestring);
+    //         continue;
+    //     }
 
-        g_debug("Get or create patch '%s', '%s', '%s'", name->valuestring, category->valuestring, tags->valuestring);
-        get_or_create_patch(name->valuestring, category->valuestring, tags->valuestring, patch_list, area_list);        
-    }
+    //     g_debug("Get or create patch '%s', '%s', '%s'", name->valuestring, category->valuestring, tags->valuestring);
+    //     get_or_create_patch(name->valuestring, room_name->valuestring, category->valuestring, tags->valuestring, patch_list, area_list);        
+    // }
 
     // ------------------- beacons --------------------
 
@@ -311,4 +312,27 @@ int top_k_by_patch_score(struct patch* result[], int k, struct patch* patch_list
         }
     }
     return count;
+}
+
+/*
+    summarize_by_room
+*/
+void summarize_by_room(struct patch* patches, struct summary** summary)
+{
+    for (struct patch* p = patches; p != NULL; p = p->next)
+    {
+        update_summary(summary, p->room, p->area->tags, p->phone_total, p->tablet_total, p->computer_total, p->watch_total, p->wearable_total, p->beacon_total);
+    }
+}
+
+
+/*
+    summarize_by_area
+*/
+void summarize_by_group(struct patch* patches, struct summary** summary)
+{
+    for (struct patch* p = patches; p != NULL; p = p->next)
+    {
+        update_summary(summary, p->area->category, p->area->tags, p->phone_total, p->tablet_total, p->computer_total, p->watch_total, p->wearable_total, p->beacon_total);
+    }
 }

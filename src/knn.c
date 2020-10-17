@@ -74,30 +74,24 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
     }
 
     cJSON* patch_name = cJSON_GetObjectItemCaseSensitive(json, "patch");
-    cJSON* room_name = cJSON_GetObjectItemCaseSensitive(json, "room");      // backward compatibility
-    if (cJSON_IsString(patch_name))
-    {
-        g_utf8_strncpy(r->patch_name, patch_name->valuestring, META_LENGTH);
-        url_slug(r->patch_name);   // strip spaces and any other junk from it
-    }
-    else if (cJSON_IsString(room_name))
-    {
-        g_utf8_strncpy(r->patch_name, room_name->valuestring, META_LENGTH);
-        url_slug(r->patch_name);   // strip spaces and any other junk from it
-    }
-    else
+
+    if (!cJSON_IsString(patch_name))
     {
         cJSON_Delete(json);
         return FALSE;
     }
 
+    g_utf8_strncpy(r->patch_name, patch_name->valuestring, META_LENGTH);
+    url_slug(r->patch_name);   // strip spaces and any other junk from it
+
     bool has_meta = FALSE;
+    cJSON* room_name = cJSON_GetObjectItemCaseSensitive(json, "room");
     cJSON* group_name = cJSON_GetObjectItemCaseSensitive(json, "group");
     cJSON* tags = cJSON_GetObjectItemCaseSensitive(json, "tags");
-    if (cJSON_IsString(group_name) && cJSON_IsString(tags))
+    if (cJSON_IsString(room_name) && cJSON_IsString(group_name) && cJSON_IsString(tags))
     {
         //g_info("Group name '%s', tags '%s'", group_name->valuestring, tags->valuestring);
-        get_or_create_patch(r->patch_name, group_name->valuestring, tags->valuestring, patch_list, areas_list);
+        get_or_create_patch(r->patch_name, room_name->valuestring, group_name->valuestring, tags->valuestring, patch_list, areas_list);
         has_meta = TRUE;
     }
 
@@ -294,6 +288,7 @@ bool read_observations_file (const char * dirname, const char* filename, struct 
 
 	/* read file line by line */
     int line_count = 0;
+
 	while (TRUE) {
 		gchar *line;
         gsize length;
@@ -381,13 +376,9 @@ bool read_observations (const char * dirname, struct AccessPoint* access_points,
     return TRUE;
 }
 
-
-// TODO MULTIPLE FILES IN DIRECTORY
-
 /*
     record_observation
 */
-
 bool record (const char* directory, const char* device_name, double access_distances[N_ACCESS_POINTS], struct AccessPoint* access_points, char* location)
 {
 	GError *error_local = NULL;

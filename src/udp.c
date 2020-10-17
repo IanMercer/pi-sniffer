@@ -187,7 +187,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
 /*
    Calculates room scores using access point distances
 */
-void calculate_location(struct OverallState* state, struct ClosestTo* closest, double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS], float time_score)
+void calculate_location(struct OverallState* state, struct ClosestTo* closest, double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS], float time_score, struct top_k* best)
 {
     (void)accesstimes;
 
@@ -202,14 +202,14 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest, d
 
     if (k_found == 0) { g_warning("Did not find a nearest k"); }
 
-    struct top_k best = best_three[0];
+    *best = best_three[0];
     // TODO: Not just top 1, use top few
 
     bool found = FALSE;
 
     for (struct patch* patch = state->patches; patch != NULL; patch = patch->next)
     {
-        if (strcmp(patch->name, best.patch_name) == 0)
+        if (strcmp(patch->name, best->patch_name) == 0)
         {
             found = TRUE;
             patch->knn_score = 1.0;
@@ -223,20 +223,20 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest, d
 
     if (!found) 
     { 
-        g_warning("Did not find a patch called %s, creating one on the fly", best.patch_name); 
+        g_warning("Did not find a patch called %s, creating one on the fly", best->patch_name); 
         char* world = strdup("World");
         char* tags = strdup("zone=here");
-        struct patch* patch = get_or_create_patch(best.patch_name, world, tags, &state->patches, &state->areas);
+        struct patch* patch = get_or_create_patch(best->patch_name, best->patch_name, world, tags, &state->patches, &state->areas);
         patch->knn_score = 1.0;
-        best.distance = 1.0;
-        strncpy(best.patch_name, patch->name, META_LENGTH);
+        best->distance = 1.0;
+        strncpy(best->patch_name, patch->name, META_LENGTH);
     }
 
 
     time_t now = time(0);
     if (difftime(now, closest->time) > 60)
     {
-        g_debug("Old, nearest to '%s' score=%.2f * %.2f", best.patch_name, best.distance, time_score);
+        g_debug("Old, nearest to '%s' score=%.2f * %.2f", best->patch_name, best->distance, time_score);
         //g_debug("Skip CSV, old data %fs", difftime(now, closest->time));
     }
     else 
@@ -248,25 +248,25 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest, d
         // RECORD TRAINING DATA
         if ((is_training_beacon) && (strcmp(closest->name, "iPhone") != 0))
         {
-            if (best.distance < 1.0 && strncmp(best.patch_name, device_name, META_LENGTH) == 0)
+            if (best->distance < 1.0 && strncmp(best->patch_name, device_name, META_LENGTH) == 0)
             {
                 // skip, we already have a good enough recording with the SAME name
-               g_debug("Training: Skip, nearest to '%s' score=%.2f * %.2f", best.patch_name, best.distance, time_score);
+               g_debug("Training: Skip, nearest to '%s' score=%.2f * %.2f", best->patch_name, best->distance, time_score);
             }
             else
             {
                 record("recordings", device_name, accessdistances, access_points, device_name);
-                g_debug("Training: Nearest was '%s', score=%.2f * %.2f", best.patch_name, best.distance, time_score);
+                g_debug("Training: Nearest was '%s', score=%.2f * %.2f", best->patch_name, best->distance, time_score);
             }
         }
         else if (closest->category == CATEGORY_BEACON)
         {
             record("beacons", device_name, accessdistances, access_points, device_name);
-            g_debug("Beacon: Nearest was '%s', score=%.2f * %.2f", best.patch_name, best.distance, time_score);
+            g_debug("Beacon: Nearest was '%s', score=%.2f * %.2f", best->patch_name, best->distance, time_score);
         }
         else
         {
-            g_debug("Nearest to '%s' score=%.2f * %.2f", best.patch_name, best.distance, time_score);
+            g_debug("Nearest to '%s' score=%.2f * %.2f", best->patch_name, best->distance, time_score);
         }
         //g_debug("Scores: %s", line);
 
@@ -285,34 +285,6 @@ void set_count_to_zero(struct AccessPoint* ap, void* extra)
 }
 
 /*
-    update_group_summaries combines all the room totals into area totals
-*/
-void update_group_summaries(struct OverallState* state)
-{
-    // Create group summaries (a flat list of a hierarchy of groups)
-    for (struct area* g = state->areas; g != NULL; g = g->next)
-    {
-        g->beacon_total = 0.0;
-        g->computer_total = 0.0;
-        g->phone_total = 0.0;
-        g->tablet_total = 0.0;
-        g->watch_total = 0.0;
-        g->wearable_total = 0.0;
-    }
-
-    for (struct patch* r = state->patches; r != NULL; r = r->next)
-    {
-        struct area* g = r->area;
-        g->beacon_total += r->beacon_total;
-        g->computer_total += r->computer_total;
-        g->phone_total += r->phone_total;
-        g->tablet_total += r->tablet_total;
-        g->watch_total += r->watch_total;
-        g->wearable_total += r->wearable_total;
-    }
-}
-
-/*
     Add a one decimal value to a JSON object
 */
 void cJSON_AddRounded(cJSON * item, const char* label, double value)
@@ -320,6 +292,19 @@ void cJSON_AddRounded(cJSON * item, const char* label, double value)
     char print_num[18];
     snprintf(print_num, 18, "%.1f", value);
     cJSON_AddRawToObject(item, label, print_num);
+}
+
+/*
+    Add a summary count of phones, watches, ... to a cJSON object
+*/
+void cJSON_AddSummary(cJSON * item, struct summary* s)
+{
+    if (s->phone_total > 0) cJSON_AddRounded(item, "phones", s->phone_total);
+    if (s->watch_total > 0) cJSON_AddRounded(item, "watches", s->watch_total);
+    if (s->wearable_total > 0) cJSON_AddRounded(item, "wearables", s->wearable_total);
+    if (s->computer_total > 0) cJSON_AddRounded(item, "computers", s->computer_total);
+    if (s->tablet_total > 0) cJSON_AddRounded(item, "tablets", s->tablet_total);
+    if (s->beacon_total > 0) cJSON_AddRounded(item, "beacons", s->beacon_total);
 }
 
 /*
@@ -478,26 +463,6 @@ void print_counts_by_closest(struct OverallState* state)
             }
         }
 
-        // JSON
-        char *json = NULL;
-        cJSON *jobject = cJSON_CreateObject();
-
-        for (struct AccessPoint* current = access_points_list; current != NULL; current = current->next)
-        {
-            // remove 'if' for analysis consumption if fixed columns are needed
-            if (access_distances[current->id] != 0)
-            {
-                cJSON_AddNumberToObject(jobject, current->client_id, access_distances[current->id]);
-            }
-        }
-
-        json = cJSON_PrintUnformatted(jobject);
-        cJSON_Delete(jobject);
-
-        // Summary of access distances
-        g_debug("%s", json);
-        free(json);
-
         struct AccessPoint *ap = test->access_point;
 
         int delta_time = difftime(now, test->time);
@@ -522,10 +487,35 @@ void print_counts_by_closest(struct OverallState* state)
 
         if (score > 0)
         {
-            calculate_location(state, test, access_distances, access_times, score);
+            struct top_k best;
+            calculate_location(state, test, access_distances, access_times, score, &best);
 
-            // g_debug("   %s %s is at %16s for %3is at %4.1fm score=%.1f count=%i%s", mac, category, ap->client_id, delta_time, test->distance, score,
-            //     count, test->distance > 7.5 ? " * TOO FAR *": "");
+            // JSON - in a suitable format for copying into a recording
+            char *json = NULL;
+            cJSON *jobject = cJSON_CreateObject();
+
+            cJSON_AddStringToObject(jobject, "patch", best.patch_name);
+            char buf[64];
+            strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", localtime(&now));
+            cJSON_AddStringToObject(jobject, "time", buf);
+            cJSON *jdistances = cJSON_AddObjectToObject(jobject, "distances");
+ 
+            for (struct AccessPoint* current = access_points_list; current != NULL; current = current->next)
+            {
+                // remove 'if' for analysis consumption if fixed columns are needed
+                if (access_distances[current->id] != 0)
+                {
+                    cJSON_AddNumberToObject(jdistances, current->client_id, access_distances[current->id]);
+                }
+            }
+
+            cJSON_AddRounded(jobject, "quality", best.distance);
+
+            json = cJSON_PrintUnformatted(jobject);
+            cJSON_Delete(jobject);
+            // Summary of access distances
+            g_debug("%s", json);
+            free(json);
 
             // Several observations, some have it superseded, some don't either because they know it
             // wasn't or because they didn't see the later mac address.
@@ -634,49 +624,40 @@ void print_counts_by_closest(struct OverallState* state)
 
     }
 
-    // Now display totals
-    update_group_summaries(state);
-
     char *json_rooms = NULL;
     cJSON *jobject = cJSON_CreateObject();
 
-    cJSON *jareas = cJSON_AddArrayToObject(jobject, "areas");
-    cJSON *jzones = cJSON_AddArrayToObject(jobject, "categories");
+    cJSON *jrooms = cJSON_AddArrayToObject(jobject, "rooms");
+    cJSON *jzones = cJSON_AddArrayToObject(jobject, "groups");
     cJSON *jbeacons = cJSON_AddArrayToObject(jobject, "assets");
 
-    for (struct patch* r = patch_list; r != NULL; r = r->next)
-    {
-        if (r->phone_total + r->computer_total + r->tablet_total + r->watch_total == 0.0) continue;
-
-        cJSON* item = cJSON_CreateObject();
-        cJSON_AddStringToObject(item, "name", r->name);
-        cJSON_AddStringToObject(item, "category", r->area->category);
-        cJSON_AddStringToObject(item, "tags", r->area->tags);
-
-        cJSON_AddRounded(item, "phones", r->phone_total);
-        cJSON_AddRounded(item, "watches", r->watch_total);
-        cJSON_AddRounded(item, "wearables", r->wearable_total);
-        cJSON_AddRounded(item, "tablets", r->tablet_total);
-        cJSON_AddRounded(item, "computers", r->computer_total);
-        cJSON_AddItemToArray(jareas, item);
-    }
+    // Summarize by room
 
     struct summary* summary = NULL;
+    summarize_by_room(patch_list, &summary);
 
-    for (struct area* a = state->areas; a != NULL; a = a->next)
-    {
-        // Include zeros - easier for some to parse
-        update_summary(&summary, a->category, a->phone_total);
-    }
-
-    for (struct summary* s = summary; s != NULL; s = s->next)
+    for (struct summary* s=summary; s!=NULL; s=s->next)
     {
         cJSON* item = cJSON_CreateObject();
-        cJSON_AddStringToObject(item, "name", s->category);
-        cJSON_AddRounded(item, "phones", s->total);
+        cJSON_AddStringToObject(item, "room", s->category);
+        cJSON_AddSummary(item, s);
+        cJSON_AddItemToArray(jrooms, item);
+    }
+    free_summary(&summary);
+
+    // Summarize by group
+
+    summary = NULL;
+    summarize_by_group(patch_list, &summary);
+
+    for (struct summary* s=summary; s!=NULL; s=s->next)
+    {
+        cJSON* item = cJSON_CreateObject();
+        cJSON_AddStringToObject(item, "group", s->category);
+        cJSON_AddStringToObject(item, "tag", s->extra);
+        cJSON_AddSummary(item, s);
         cJSON_AddItemToArray(jzones, item);
     }
-
     free_summary(&summary);
 
     g_info(" ");

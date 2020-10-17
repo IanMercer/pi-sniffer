@@ -459,21 +459,31 @@ void free_summary(struct summary** head)
 /*
    update_summary linked list
 */
-void update_summary(struct summary** summary, const char* category, double value)
+void update_summary(struct summary** summary, const char* category, const char* extra, double phone_value, double tablet_value, double computer_value, double watch_value, double wearable_value, double beacon_value)
 {
     for (struct summary* s = *summary; s != NULL; s = s->next)
     {
         if (strcmp(s->category, category) == 0)
         {
-            s->total += value;
+            s->phone_total += phone_value;
+            s->tablet_total += tablet_value;
+            s->computer_total += computer_value;
+            s->watch_total += watch_value;
+            s->wearable_total += wearable_value;
+            s->beacon_total += beacon_value;
             return;
         }
     }
 
     struct summary* s = malloc(sizeof(struct summary));
     s->category = category;
-    s->total = value;
+    s->extra = extra;
+    s->phone_total = phone_value;
+    s->tablet_total = tablet_value;
+    s->computer_total = computer_value;
+    s->watch_total = watch_value;
+    s->wearable_total = wearable_value;
+    s->beacon_total = beacon_value;
     s->next = *summary;
     *summary = s;
 }
-

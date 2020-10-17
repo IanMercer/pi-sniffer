@@ -102,8 +102,14 @@ void soft_set_u16(uint16_t* field, uint16_t field_new);
 struct summary
 {
     const char* category;
-    double total;
+    const char* extra;          // extra object
     struct summary* next;
+    double phone_total;         // how many phones
+    double tablet_total;        // how many tablet
+    double computer_total;      // how many computers
+    double watch_total;         // how many watches
+    double wearable_total;      // how many wearable
+    double beacon_total;        // how many beacons
 };
 
 /*
@@ -114,7 +120,7 @@ void free_summary(struct summary** head);
 /*
    update_summary linked list
 */
-void update_summary(struct summary** summary, const char* category, double value);
+void update_summary(struct summary** summary, const char* category, const char* extra, double phone_value, double tablet_value, double computer_value, double watch_value, double wearable_value, double beacon_value);
 
 
 #endif
