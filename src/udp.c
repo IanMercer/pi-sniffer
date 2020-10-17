@@ -198,7 +198,14 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest, d
     bool is_training_beacon = FALSE;
 
     struct top_k best_three[3];
-    int k_found = k_nearest(state->recordings, accessdistances, access_points, best_three, 3);
+    // try confirmed
+    int k_found = k_nearest(state->recordings, accessdistances, access_points, best_three, 3, TRUE);
+
+    if (k_found < 3)
+    {
+        // Try again including unconfirmed recordings (beacon subdirectory)
+        k_found = k_nearest(state->recordings, accessdistances, access_points, best_three, 3, FALSE);
+    }
 
     if (k_found == 0) { g_warning("Did not find a nearest k"); }
 
@@ -261,7 +268,11 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest, d
         }
         else if (closest->category == CATEGORY_BEACON)
         {
-            record("beacons", device_name, accessdistances, access_points, device_name);
+            if (best->distance > 10.0)
+            {
+                g_warning("Adding a possible recording");
+                record("beacons", device_name, accessdistances, access_points, device_name);
+            }
             g_debug("Beacon: Nearest was '%s', score=%.2f * %.2f", best->patch_name, best->distance, time_score);
         }
         else
@@ -336,8 +347,10 @@ void print_counts_by_closest(struct OverallState* state)
     //if (state->recordings == NULL)
     {
         g_info("Re-read observations files");
-        bool ok = read_observations ("recordings", state->access_points, &state->recordings, &state->patches, &state->areas);
-        if (!ok) g_warning("Failed to read file back");
+        bool ok = read_observations ("recordings", state->access_points, &state->recordings, &state->patches, &state->areas, TRUE);
+        if (!ok) g_warning("Failed to read recordings files back");
+        ok = read_observations ("beacons", state->access_points, &state->recordings, &state->patches, &state->areas, FALSE);
+        if (!ok) g_warning("Failed to read beacon files back");
         for (struct recording* r = state->recordings; r != NULL; r=r->next)
         {
             count_recordings++;

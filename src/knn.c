@@ -170,12 +170,13 @@ float score (struct recording* recording, double access_points_distance[N_ACCESS
   NB You must free() the returned string
 
 */
-int k_nearest(struct recording* recordings, double* access_point_distances, struct AccessPoint* access_points, struct top_k* top_result, int top_count)
+int k_nearest(struct recording* recordings, double* access_point_distances, struct AccessPoint* access_points, struct top_k* top_result, int top_count, bool confirmed)
 {
     struct top_k result[TOP_K_N];
     int k = 0;
     for (struct recording* recording = recordings; recording != NULL; recording = recording->next)
     {
+        if (confirmed && !recording->confirmed) continue;
         // Insert recording into the list if it's a better match
         float distance = score(recording, access_point_distances, access_points);
 
@@ -258,7 +259,7 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
 // FILE OPERATIONS
 
 bool read_observations_file (const char * dirname, const char* filename, struct AccessPoint* access_points, struct recording** recordings,
-    struct patch** patchs_list, struct area** areas_list)
+    struct patch** patchs_list, struct area** areas_list, bool confirmed)
 {
 	g_return_val_if_fail (filename != NULL, FALSE);
 
@@ -306,6 +307,7 @@ bool read_observations_file (const char * dirname, const char* filename, struct 
             bool ok = json_to_recording(line, access_points, &r, patchs_list, areas_list);
             if (ok)
             {
+                r.confirmed = confirmed;
                 //g_debug("Got a valid recording for %s", r.patch_name);
                 // Append it to the front of the recordings list
                 // TODO: Remove duplicates
@@ -356,7 +358,7 @@ void free_list(struct recording** head)
  *
  **/
 bool read_observations (const char * dirname, struct AccessPoint* access_points, struct recording** recordings,
-    struct patch** patch_list, struct area** areas_list)
+    struct patch** patch_list, struct area** areas_list, bool confirmed)
 {
 
     GDir *dir;
@@ -369,7 +371,7 @@ bool read_observations (const char * dirname, struct AccessPoint* access_points,
 
     while ((filename = g_dir_read_name(dir)))
     {
-        ok = read_observations_file(dirname, filename, access_points, recordings, patch_list, areas_list) && ok;
+        ok = read_observations_file(dirname, filename, access_points, recordings, patch_list, areas_list, confirmed) && ok;
     }
     g_dir_close(dir);
 

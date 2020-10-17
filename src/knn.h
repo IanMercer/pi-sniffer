@@ -13,6 +13,8 @@
 */
 struct recording
 {
+    // A confirmed recording has been moved from the beacons directory to the recordings directory
+    bool confirmed;
     char patch_name[META_LENGTH];
     float access_point_distances[N_ACCESS_POINTS];
     struct recording* next;
@@ -24,7 +26,7 @@ struct recording
 bool record (const char* directory, const char* device_name, double access_distances[N_ACCESS_POINTS], struct AccessPoint* access_points, char* location);
 
 bool read_observations (const char * dirname, struct AccessPoint* access_points, struct recording** recordings,
-    struct patch** patch_list, struct area** areas_list);
+    struct patch** patch_list, struct area** areas_list, bool confirmed);
 
 void free_list(struct recording** head);
 
@@ -39,6 +41,6 @@ struct top_k
     bool used;
 };
 
-int k_nearest(struct recording* recordings, double* access_point_distances, struct AccessPoint* access_points, struct top_k* top_result, int top_count);
+int k_nearest(struct recording* recordings, double* access_point_distances, struct AccessPoint* access_points, struct top_k* top_result, int top_count, bool confirmed);
 
 #endif
