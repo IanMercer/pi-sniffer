@@ -2,7 +2,7 @@
 
 //17 88:6B:0F:59:50:4A    2 pub   6.3m   15      90-   443        00201AD73AMKE       kitchen   2.3m beacon    MILWAUKE
 
-
+#include <stdio.h>
 #include "device.h"
 #include "utility.h"
 
@@ -434,7 +434,13 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     }
     else if (string_starts_with(existing->mac, "88:6b:0f"))
     {
-        optional_set(existing->name, "_Milwaukee", NAME_LENGTH);
+        char beaconName[NAME_LENGTH];
+        snprintf(beaconName, sizeof(beaconName), "%s %.2x:%.x2:%.2x", "Milwaukee",
+            (int8_t)(existing->mac64 >> 16) & 0xff,
+            (int8_t)(existing->mac64 >> 8) & 0xff,
+            (int8_t)(existing->mac64 >> 0) & 0xff);
+
+        optional_set(existing->name, beaconName, NAME_LENGTH);
         existing->category = CATEGORY_BEACON;
     }
 

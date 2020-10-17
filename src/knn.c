@@ -402,11 +402,12 @@ bool record (const char* directory, const char* device_name, double access_dista
         return FALSE;
     }
 
-    if (device_name[0] == '_')
-    {
-        g_debug("Temporary device name passed to record method, skipped");
-        return FALSE;
-    }
+    // Some beacons never make it past _beacon
+    //if (device_name[0] == '_')
+    //{
+    //    g_debug("Temporary device name passed to record method, skipped");
+    //    return FALSE;
+    //}
 
     char fullpath[128];
     g_snprintf(fullpath, sizeof(fullpath), "%s/%s.jsonl", directory,  device_name);
