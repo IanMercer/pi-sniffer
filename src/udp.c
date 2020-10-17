@@ -712,7 +712,7 @@ void print_counts_by_closest(struct OverallState* state)
     g_info(" ");
     g_info("==============================================================================================");
     g_info(" ");
-    g_debug("Examined %i > %i > %i > %i", state->closest_n, count_examined, count_not_marked, count_in_age_range);
+    //g_debug("Examined %i > %i > %i > %i", state->closest_n, count_examined, count_not_marked, count_in_age_range);
 
     json_rooms = cJSON_PrintUnformatted(jobject);
     //json_rooms = cJSON_Print(jobject);
@@ -725,8 +725,8 @@ void print_counts_by_closest(struct OverallState* state)
     }
     state->json = json_rooms;
 
-    g_info("Summary by room: %s", json_rooms);
-    g_info(" ");
+    //g_info("Summary by room: %s", json_rooms);
+    //g_info(" ");
     g_info("Total people present %.2f", total_count);
     g_info(" ");
 }

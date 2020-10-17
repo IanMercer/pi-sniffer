@@ -110,7 +110,7 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
 
     if (has_meta)
     {
-        g_info("Heading: Patch '%s' Group name '%s', tags '%s'", patch_name->valuestring, group_name->valuestring, tags->valuestring);
+        //g_info("Heading: Patch '%s' Group name '%s', tags '%s'", patch_name->valuestring, group_name->valuestring, tags->valuestring);
         *current_patch = get_or_create_patch(patch_name->valuestring, room_name->valuestring, group_name->valuestring, tags->valuestring, patch_list, areas_list);
     }
 
@@ -436,7 +436,7 @@ bool record (const char* directory, const char* device_name, double access_dista
     if (is_new)
     {
         char header[128];
-        snprintf(header, sizeof(header), "{\"patch\":\"%s\",\"room\":\"Unknown\",\"group\":\"House\",\"tags\":\"tags\"}\n\n", device_name);
+        snprintf(header, sizeof(header), "{\"patch\":\"%s\",\"room\":\"%s\",\"group\":\"House\",\"tags\":\"tags\"}\n\n", device_name, device_name);
         g_data_output_stream_put_string(output, header, NULL, &error_local);
     }
 
