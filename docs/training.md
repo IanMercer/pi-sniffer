@@ -25,10 +25,10 @@ number of recordings of actual distances that were received for this beacon:
 ````
 {"patch":"DEWALT-TAG","room":"Unknown","group":"House","tags":"tags"}
 
-{"patch":"DEWALT-TAG","time":"2020-10-17T09:45:04","distances":{"officepiw":10.30,"store":7.40}}
-{"patch":"DEWALT-TAG","time":"2020-10-17T09:45:24","distances":{"officepiw":10.30,"store":7.40,"study":3.90}}
-{"patch":"DEWALT-TAG","time":"2020-10-17T09:45:44","distances":{"kitchenpi4":0.70,"officepiw":10.30,"store":7.40,"study":3.90}}
-{"patch":"DEWALT-TAG","time":"2020-10-17T09:46:44","distances":{"garage":5.80,"kitchenpi4":0.70,"officepiw":9.60,"store":8.10,"study":3.90}}
+{"time":"2020-10-17T09:45:04","distances":{"officepiw":10.30,"store":7.40}}
+{"time":"2020-10-17T09:45:24","distances":{"officepiw":10.30,"store":7.40,"study":3.90}}
+{"time":"2020-10-17T09:45:44","distances":{"kitchenpi4":0.70,"officepiw":10.30,"store":7.40,"study":3.90}}
+{"time":"2020-10-17T09:46:44","distances":{"garage":5.80,"kitchenpi4":0.70,"officepiw":9.60,"store":8.10,"study":3.90}}
 
 ````
 
@@ -39,15 +39,15 @@ patch called `FarBay`:
     mv beacons/DEWALT-TAG.jsonl recordings/farbay.jsonl 
 ````
 
-Now edit that file, replace all occurrences of `DEWALT-TAG` with `FarBay` and add room and group metadata and any tags you want to pass to Grafana or any
+Now edit that file, replace `DEWALT-TAG` with `FarBay` and add room and group metadata and any tags you want to pass to Grafana or any
 other reporting software.
 
 e.g.
 ````
     {"patch":"FarBay","room":"Driveway","group":"Office","tags":"use=parking"}
 
-    {"patch":"FarBay","time":"2020-10-17T09:45:04","distances":{"officepiw":10.30,"store":7.40}}
-    {"patch":"FarBay","time":"2020-10-17T09:45:24","distances":{"officepiw":10.30,"store":7.40,"study":3.90}}
+    {"time":"2020-10-17T09:45:04","distances":{"officepiw":10.30,"store":7.40}}
+    {"time":"2020-10-17T09:45:24","distances":{"officepiw":10.30,"store":7.40,"study":3.90}}
 
 ````
 

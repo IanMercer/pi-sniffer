@@ -187,7 +187,8 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
 /*
    Calculates room scores using access point distances
 */
-void calculate_location(struct OverallState* state, struct ClosestTo* closest, double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS], float time_score, struct top_k* best)
+void calculate_location(struct OverallState* state, struct ClosestTo* closest, double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS], float time_score, 
+    struct top_k* best, bool is_training_beacon)
 {
     (void)accesstimes;
 
@@ -195,7 +196,6 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest, d
 
     char* device_name = closest->name;
     //const char* category = category_from_int(closest->category);
-    bool is_training_beacon = FALSE;
 
     struct top_k best_three[3];
     // try confirmed
@@ -253,7 +253,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest, d
         // TODO: Record Beacons separately?
 
         // RECORD TRAINING DATA
-        if ((is_training_beacon) && (strcmp(closest->name, "iPhone") != 0))
+        if ((is_training_beacon) && (strcmp(closest->name, "iPhone") != 0) && (strcmp(closest->name, "Off") != 0))
         {
             if (best->distance < 1.0 && strncmp(best->patch_name, device_name, META_LENGTH) == 0)
             {
@@ -501,7 +501,7 @@ void print_counts_by_closest(struct OverallState* state)
         if (score > 0)
         {
             struct top_k best;
-            calculate_location(state, test, access_distances, access_times, score, &best);
+            calculate_location(state, test, access_distances, access_times, score, &best, test->is_training_beacon);
 
             // JSON - in a suitable format for copying into a recording
             char *json = NULL;

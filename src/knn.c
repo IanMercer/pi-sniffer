@@ -463,7 +463,7 @@ bool record (const char* directory, const char* device_name, double access_dista
 
     if (is_new)
     {
-        g_chmod(fullpath, 666);
+        chmod(fullpath, 666);
     }
 
     return TRUE;
