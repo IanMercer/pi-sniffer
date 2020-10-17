@@ -1912,7 +1912,7 @@ void initialize_state()
     state.udp_sign_port = 0; // 7778;
     state.access_points = NULL; // linked list
     state.patches = NULL;         // linked list
-    state.areas = NULL;        // linked list
+    state.groups = NULL;        // linked list
     state.closest_n = 0;        // count of closest
     state.beacons = NULL;       // linked list
     state.json = NULL;          // DBUS JSON message
@@ -2015,7 +2015,7 @@ void initialize_state()
         if (strcmp(verbosity, "details")) state.verbosity = Details;
     }
    
-    read_configuration_file(state.configuration_file_path, &state.access_points, &state.patches, &state.areas, &state.beacons);
+    read_configuration_file(state.configuration_file_path, &state.access_points, &state.patches, &state.groups, &state.beacons);
 
     g_debug("Completed read of configuration file");
 }

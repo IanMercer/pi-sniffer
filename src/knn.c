@@ -60,7 +60,7 @@ char* recording_to_json (struct recording* r, struct AccessPoint* access_points)
 /*
     Convert JSON lines value back to a recording value
 */
-bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct recording* r, struct patch** patch_list, struct area** areas_list)
+bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct recording* r, struct patch** patch_list, struct group** areas_list)
 {
     cJSON *json = cJSON_Parse(buffer);
     if (json == NULL)
@@ -259,7 +259,7 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
 // FILE OPERATIONS
 
 bool read_observations_file (const char * dirname, const char* filename, struct AccessPoint* access_points, struct recording** recordings,
-    struct patch** patchs_list, struct area** areas_list, bool confirmed)
+    struct patch** patchs_list, struct group** areas_list, bool confirmed)
 {
 	g_return_val_if_fail (filename != NULL, FALSE);
 
@@ -358,7 +358,7 @@ void free_list(struct recording** head)
  *
  **/
 bool read_observations (const char * dirname, struct AccessPoint* access_points, struct recording** recordings,
-    struct patch** patch_list, struct area** areas_list, bool confirmed)
+    struct patch** patch_list, struct group** areas_list, bool confirmed)
 {
 
     GDir *dir;
@@ -391,6 +391,17 @@ bool record (const char* directory, const char* device_name, double access_dista
         g_info("Created recordings directory '%s'", directory);
     }
     g_object_unref(dir2);
+
+    if (strlen(device_name) == 0) {
+        g_debug("Empty device name passed to record method, skipped");
+        return FALSE;
+    }
+
+    if (device_name[0] == '_')
+    {
+        g_debug("Temporary device name passed to record method, skipped");
+        return FALSE;
+    }
 
     char fullpath[128];
     g_snprintf(fullpath, sizeof(fullpath), "%s/%s.jsonl", directory,  device_name);

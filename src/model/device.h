@@ -259,7 +259,7 @@ struct OverallState
    struct patch* patches;
 
    // linked list of groups
-   struct area* areas;
+   struct group* groups;
 
    // linked list of recorded locations for k-means
    struct recording* recordings;

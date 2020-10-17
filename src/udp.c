@@ -233,7 +233,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest, d
         g_warning("Did not find a patch called %s, creating one on the fly", best->patch_name); 
         char* world = strdup("World");
         char* tags = strdup("zone=here");
-        struct patch* patch = get_or_create_patch(best->patch_name, best->patch_name, world, tags, &state->patches, &state->areas);
+        struct patch* patch = get_or_create_patch(best->patch_name, best->patch_name, world, tags, &state->patches, &state->groups);
         patch->knn_score = 1.0;
         best->distance = 1.0;
         strncpy(best->patch_name, patch->name, META_LENGTH);
@@ -347,9 +347,9 @@ void print_counts_by_closest(struct OverallState* state)
     //if (state->recordings == NULL)
     {
         g_info("Re-read observations files");
-        bool ok = read_observations ("recordings", state->access_points, &state->recordings, &state->patches, &state->areas, TRUE);
+        bool ok = read_observations ("recordings", state->access_points, &state->recordings, &state->patches, &state->groups, TRUE);
         if (!ok) g_warning("Failed to read recordings files back");
-        ok = read_observations ("beacons", state->access_points, &state->recordings, &state->patches, &state->areas, FALSE);
+        ok = read_observations ("beacons", state->access_points, &state->recordings, &state->patches, &state->groups, FALSE);
         if (!ok) g_warning("Failed to read beacon files back");
         for (struct recording* r = state->recordings; r != NULL; r=r->next)
         {
@@ -691,7 +691,7 @@ void print_counts_by_closest(struct OverallState* state)
             else snprintf(ago, sizeof(ago), "%.1f days ago", diff / 24.0 / 60.0);
 
             const char* room_name =  (b->patch == NULL) ? "---" : b->patch->name;
-            const char* category = (b->patch == NULL) ? "---" : ((b->patch->area == NULL) ? "???" : b->patch->area->category);
+            const char* category = (b->patch == NULL) ? "---" : ((b->patch->group == NULL) ? "???" : b->patch->group->name);
 
             g_info("%20s  %18s %16s        %s",
                 b->alias, room_name, 
@@ -701,7 +701,7 @@ void print_counts_by_closest(struct OverallState* state)
             cJSON* item = cJSON_CreateObject();
             cJSON_AddStringToObject(item, "alias", b->alias);
             cJSON_AddStringToObject(item, "room", room_name);
-            cJSON_AddStringToObject(item, "category", category);
+            cJSON_AddStringToObject(item, "group", category);
             cJSON_AddStringToObject(item, "ago", ago);
             cJSON_AddNumberToObject(item, "t", b->last_seen);
 

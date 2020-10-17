@@ -1,30 +1,5 @@
 {
     "comment1":"Remember to set a configuration entry pointing to this file.",
-    "comment2":"Define 'patches' of about 3m diameter where you will train the system to recognize that location", 
-    "comment3":"These named patches can then be combined into zones and categories for reporting. You can also tag each of them with",
-    "comment4":"Additional tags that will be passed through to whatever reporting system you are using allowing for totals by 'use'",
-    "comment5":"or some other attribute.",
-
-    "patches" : [
-
-        {"name":"Office","category":"House","tags":"zone=Office,use=work"},
-        {"name":"Dining","category":"House","tags":"zone=Dining,use=living"},
-        {"name":"Kitchen","category":"House","tags":"zone=Kitchen,use=living"},
-        {"name":"LivingRoomCouch","category":"House","tags":"zone=Living,use=living"},
-        {"name":"LivingRoomNearTV","category":"House","tags":"zone=Living,use=living"},
-        {"name":"Bedroom1","category":"House","tags":"zone=Upstairs,use=sleeping"},
-        {"name":"Bedroom2","category":"House","tags":"zone=Upstairs,use=sleeping"},
-        {"name":"Bedroom3","category":"House","tags":"zone=Upstairs,use=sleeping"},
-
-        {"name":"Barn","category":"Barn","tags":"zone=Barn,use=horses"},
-        {"name":"Arena","category":"Barn","tags":"zone=Barn,use=horses"},
-
-        {"name":"Near Barn","category":"Outside","tags":"zone=NearBarn"},
-        {"name":"Driveway","category":"Outside","tags":"zone=NearHouse"},
-        {"name":"BackLawn","category":"Outside","tags":"zone=NearHouse"},
-        {"name":"East","category":"Outside","tags":"zone=NearHouse"},
-        {"name":"North","category":"Outside","tags":"zone=NearHouse"}
-    ],
 
     "sensors" : [
         { "name" : "barn" },

@@ -15,16 +15,16 @@
 /*
     Get or add a group
 */
-struct area* get_or_add_area(struct area** group_list, char* group_name, char* tags)
+struct group* get_or_add_area(struct group** group_list, char* group_name, char* tags)
 {
-    for (struct area* current = *group_list; current != NULL; current = current->next)
+    for (struct group* current = *group_list; current != NULL; current = current->next)
     {
-        if (strcmp(current->category, group_name) == 0 &&
+        if (strcmp(current->name, group_name) == 0 &&
             strcmp(current->tags, tags) == 0) return current;
     }
     // Otherwise add a new group
-    struct area* group = g_malloc(sizeof(struct area));
-    group->category = strdup(group_name);
+    struct group* group = g_malloc(sizeof(struct group));
+    group->name = strdup(group_name);
     group->tags = strdup(tags);
     group->next = NULL;
 
@@ -47,7 +47,7 @@ struct area* get_or_add_area(struct area** group_list, char* group_name, char* t
    get or create a room and update any existing group also
 */
 struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group_name, char* tags,
-    struct patch** patch_list, struct area** groups_list)
+    struct patch** patch_list, struct group** groups_list)
 {
     g_assert(tags != NULL);
     g_assert(patch_name != NULL);
@@ -79,10 +79,10 @@ struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group
         found = g_malloc(sizeof(struct patch));
         found->name = strdup(patch_name);
         found->next = NULL;
-        found->area = NULL;
+        found->group = NULL;
         found->room = strdup(url_slug(room_name));
         // no strdup here, get_or_add_group handles that
-        found->area = get_or_add_area(groups_list, url_slug(group_name), tags);
+        found->group = get_or_add_area(groups_list, url_slug(group_name), tags);
         g_info("Added patch %s in %s with tags %s", found->name, group_name, tags);
 
         if (*patch_list == NULL)
@@ -99,14 +99,14 @@ struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group
     }
     else
     {
-        if (strcmp(found->area->category, group_name) != 0)
+        if (strcmp(found->group->name, group_name) != 0)
         {
-            g_warning("TODO: Patch '%s' changing group from '%s' to '%s'", patch_name, found->area->category, group_name);
+            g_warning("TODO: Patch '%s' changing group from '%s' to '%s'", patch_name, found->group->name, group_name);
         }
 
-        if (strcmp(found->area->tags, tags) != 0)
+        if (strcmp(found->group->tags, tags) != 0)
         {
-            g_warning("TODO: Patch '%s' changing tags from '%s' to '%s'", patch_name, found->area->tags, tags);
+            g_warning("TODO: Patch '%s' changing tags from '%s' to '%s'", patch_name, found->group->tags, tags);
         }
     }
 
@@ -117,7 +117,7 @@ struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group
 /*
     Initalize the patches database (linked lists)
 */
-void read_configuration_file(const char* path, struct AccessPoint** accesspoint_list, struct patch** patch_list, struct area** area_list, struct Beacon** beacon_list)
+void read_configuration_file(const char* path, struct AccessPoint** accesspoint_list, struct patch** patch_list, struct group** area_list, struct Beacon** beacon_list)
 {
     //struct AccessPoint** = state.access_points_list;    // unused now
     // Read from file ...
@@ -321,7 +321,7 @@ void summarize_by_room(struct patch* patches, struct summary** summary)
 {
     for (struct patch* p = patches; p != NULL; p = p->next)
     {
-        update_summary(summary, p->room, p->area->tags, p->phone_total, p->tablet_total, p->computer_total, p->watch_total, p->wearable_total, p->beacon_total);
+        update_summary(summary, p->room, p->group->tags, p->phone_total, p->tablet_total, p->computer_total, p->watch_total, p->wearable_total, p->beacon_total);
     }
 }
 
@@ -333,6 +333,6 @@ void summarize_by_group(struct patch* patches, struct summary** summary)
 {
     for (struct patch* p = patches; p != NULL; p = p->next)
     {
-        update_summary(summary, p->area->category, p->area->tags, p->phone_total, p->tablet_total, p->computer_total, p->watch_total, p->wearable_total, p->beacon_total);
+        update_summary(summary, p->group->name, p->group->tags, p->phone_total, p->tablet_total, p->computer_total, p->watch_total, p->wearable_total, p->beacon_total);
     }
 }

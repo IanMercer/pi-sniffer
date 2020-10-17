@@ -1670,14 +1670,14 @@ int report_to_influx_tick(void *parameters)
 
     time_t now = time(0);
 
-    for (struct area* g = state.areas; g != NULL; g = g->next)
+    for (struct group* g = state.groups; g != NULL; g = g->next)
     {
         char field[120];
 
         snprintf(field, sizeof(field), "beacon=%.1f,computer=%.1f,phone=%.1f,tablet=%.1f,watch=%.1f",
             g->beacon_total, g->computer_total, g->phone_total, g->tablet_total, g->watch_total);
 
-        ok = ok && append_influx_line(body, sizeof(body), g->category, g->tags, field, now);
+        ok = ok && append_influx_line(body, sizeof(body), g->name, g->tags, field, now);
 
         if (strlen(body) + 5 * 100 > sizeof(body)){
             //g_debug("%s", body);
@@ -1897,7 +1897,7 @@ void initialize_state()
     state.udp_sign_port = 0; // 7778;
     state.access_points = NULL; // linked list
     state.patches = NULL;         // linked list
-    state.areas = NULL;        // linked list
+    state.groups = NULL;        // linked list
     state.closest_n = 0;        // count of closest
     state.beacons = NULL;       // linked list
     state.json = NULL;          // DBUS JSON message
@@ -2012,7 +2012,7 @@ void initialize_state()
         if (strcmp(verbosity, "details")) state.verbosity = Details;
     }
    
-    read_configuration_file(state.configuration_file_path, &state.access_points, &state.patches, &state.areas, &state.beacons);
+    read_configuration_file(state.configuration_file_path, &state.access_points, &state.patches, &state.groups, &state.beacons);
 
     g_debug("Completed read of configuration file");
 }
