@@ -412,7 +412,7 @@ bool record (const char* directory, const char* device_name, double access_dista
     if (is_new)
     {
         char header[128];
-        snprintf(header, sizeof(header), "{\"patch\":\"%s\",\"category\":\"House\",\"tags\":\"tags\"}\n\n", device_name);
+        snprintf(header, sizeof(header), "{\"patch\":\"%s\",\"room\":\"Unknown\",\"category\":\"House\",\"tags\":\"tags\"}\n\n", device_name);
         g_data_output_stream_put_string(output, header, NULL, &error_local);
     }
 

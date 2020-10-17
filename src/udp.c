@@ -495,6 +495,7 @@ void print_counts_by_closest(struct OverallState* state)
             cJSON *jobject = cJSON_CreateObject();
 
             cJSON_AddStringToObject(jobject, "patch", best.patch_name);
+
             char buf[64];
             strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", localtime(&now));
             cJSON_AddStringToObject(jobject, "time", buf);
