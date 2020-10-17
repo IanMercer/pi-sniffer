@@ -653,7 +653,7 @@ void print_counts_by_closest(struct OverallState* state)
     for (struct summary* s=summary; s!=NULL; s=s->next)
     {
         cJSON* item = cJSON_CreateObject();
-        cJSON_AddStringToObject(item, "room", s->category);
+        cJSON_AddStringToObject(item, "name", s->category);
         cJSON_AddSummary(item, s);
         cJSON_AddItemToArray(jrooms, item);
     }
@@ -667,7 +667,7 @@ void print_counts_by_closest(struct OverallState* state)
     for (struct summary* s=summary; s!=NULL; s=s->next)
     {
         cJSON* item = cJSON_CreateObject();
-        cJSON_AddStringToObject(item, "group", s->category);
+        cJSON_AddStringToObject(item, "name", s->category);
         cJSON_AddStringToObject(item, "tag", s->extra);
         cJSON_AddSummary(item, s);
         cJSON_AddItemToArray(jzones, item);
@@ -677,7 +677,7 @@ void print_counts_by_closest(struct OverallState* state)
     g_info(" ");
     g_info("==============================================================================================");
 
-    g_info ("              Beacon                Area             Zone        When");
+    g_info ("              Beacon                Area             Group        When");
     g_info("----------------------------------------------------------------------------------------------");
     for (struct Beacon* b = state->beacons; b != NULL; b=b->next)
     {
@@ -699,11 +699,12 @@ void print_counts_by_closest(struct OverallState* state)
                 ago);
             
             cJSON* item = cJSON_CreateObject();
-            cJSON_AddStringToObject(item, "alias", b->alias);
+            cJSON_AddStringToObject(item, "name", b->alias);
             cJSON_AddStringToObject(item, "room", room_name);
             cJSON_AddStringToObject(item, "group", category);
             cJSON_AddStringToObject(item, "ago", ago);
             cJSON_AddNumberToObject(item, "t", b->last_seen);
+            cJSON_AddNumberToObject(item, "d", diff);
 
             cJSON_AddItemToArray(jbeacons, item);
         }
