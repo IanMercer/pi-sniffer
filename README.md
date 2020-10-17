@@ -80,10 +80,10 @@ Given delays in MQTT transmit, receive and re-transmit to the receiving applicat
 
 # getting started
 
-* Set up instructions can be found [here](GettingStarted.md).
+* Set up instructions can be found [here](docs/GettingStarted.md).
 
 
 # FAQ
 
-Please see the [FAQ](FAQ.md) for more information.
+Please see the [FAQ](docs/FAQ.md) for more information.
 

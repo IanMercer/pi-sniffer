@@ -15,6 +15,12 @@
 #include <math.h>
 #include <time.h>
 
+#include <glib.h>
+#include <glib/gstdio.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
 // UTILITY METHODS
 
 /*
@@ -25,7 +31,7 @@ char* recording_to_json (struct recording* r, struct AccessPoint* access_points)
     char *string = NULL;
     cJSON *j = cJSON_CreateObject();
 
-    cJSON_AddStringToObject(j, "patch", r->patch_name);
+//    cJSON_AddStringToObject(j, "patch", r->patch_name);
 
     // time
 
@@ -60,8 +66,10 @@ char* recording_to_json (struct recording* r, struct AccessPoint* access_points)
 /*
     Convert JSON lines value back to a recording value
 */
-bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct recording* r, struct patch** patch_list, struct group** areas_list)
+bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct recording** recordings, struct patch** patch_list, struct group** areas_list, struct patch** current_patch, bool confirmed)
 {
+    if (strlen(buffer) == 0) return TRUE;
+
     cJSON *json = cJSON_Parse(buffer);
     if (json == NULL)
     {
@@ -73,71 +81,78 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
         return FALSE;
     }
 
+    // META
     cJSON* patch_name = cJSON_GetObjectItemCaseSensitive(json, "patch");
-
-    if (!cJSON_IsString(patch_name))
-    {
-        cJSON_Delete(json);
-        return FALSE;
-    }
-
-    g_utf8_strncpy(r->patch_name, patch_name->valuestring, META_LENGTH);
-    url_slug(r->patch_name);   // strip spaces and any other junk from it
-
-    bool has_meta = FALSE;
     cJSON* room_name = cJSON_GetObjectItemCaseSensitive(json, "room");
     cJSON* group_name = cJSON_GetObjectItemCaseSensitive(json, "group");
     cJSON* tags = cJSON_GetObjectItemCaseSensitive(json, "tags");
-    if (cJSON_IsString(room_name) && cJSON_IsString(group_name) && cJSON_IsString(tags))
-    {
-        //g_info("Group name '%s', tags '%s'", group_name->valuestring, tags->valuestring);
-        get_or_create_patch(r->patch_name, room_name->valuestring, group_name->valuestring, tags->valuestring, patch_list, areas_list);
-        has_meta = TRUE;
-    }
 
-    // Set values on recording object
-
+    // RECORDING
     cJSON* distances = cJSON_GetObjectItemCaseSensitive(json, "distances");
 
-    if (!cJSON_IsObject(distances))
-    {
-        if (!has_meta)
-        {
-            char missing[128];
-            missing[0]='\0';
-            if (!cJSON_IsString(room_name)) append_text(missing, sizeof(missing), "'%s',", "room");
-            if (!cJSON_IsString(group_name)) append_text(missing, sizeof(missing), "'%s',", "group");
-            if (!cJSON_IsString(tags)) append_text(missing, sizeof(missing), "'%s',", "tags");
-            g_warning("Missing metatdata (%s) in '%s'", missing, buffer);
-        }
-        cJSON_Delete(json);
-        return TRUE;  // ignore it
-    }
+    bool has_meta = cJSON_IsString(patch_name) && cJSON_IsString(room_name) && cJSON_IsString(group_name) && cJSON_IsString(tags);
+    bool has_distances = cJSON_IsObject(distances);
 
-    int count = 0;
-
-    for (struct AccessPoint* ap = access_points; ap != NULL; ap = ap->next)
+    if (!has_meta && !has_distances)
     {
-        cJSON* dist = cJSON_GetObjectItem(distances, ap->client_id);
-        if (cJSON_IsNumber(dist))
-        {
-            r->access_point_distances[ap->id] = dist->valuedouble;
-            count++;
-        }
-        else
-        {
-            r->access_point_distances[ap->id]=0;
-        }
-    }
-
-    if (count < 1)
-    {
-        g_warning("No values found in %s", buffer);
+        char missing[128];
+        missing[0]='\0';
+        if (!cJSON_IsString(room_name)) append_text(missing, sizeof(missing), "'%s',", "room");
+        if (!cJSON_IsString(group_name)) append_text(missing, sizeof(missing), "'%s',", "group");
+        if (!cJSON_IsString(tags)) append_text(missing, sizeof(missing), "'%s',", "tags");
+        if (!cJSON_IsObject(distances)) append_text(missing, sizeof(missing), "'%s',", "distances");
+        g_warning("Missing metatdata or distances (%s) in '%s'", missing, buffer);
         cJSON_Delete(json);
         return FALSE;
     }
 
-    //g_debug("free buffer");
+    // A recording should be either metadata or distances but if combined, no problem
+
+    if (has_meta)
+    {
+        g_info("Heading: Patch '%s' Group name '%s', tags '%s'", patch_name->valuestring, group_name->valuestring, tags->valuestring);
+        *current_patch = get_or_create_patch(patch_name->valuestring, room_name->valuestring, group_name->valuestring, tags->valuestring, patch_list, areas_list);
+    }
+
+    if (has_distances)
+    {
+        if (*current_patch == NULL)
+        {
+            g_warning("Missing metadata heding before distances");
+            cJSON_Delete(json);
+            return FALSE;
+        }
+
+        int count = 0;
+
+        struct recording* ralloc = malloc(sizeof(struct recording));
+        ralloc->confirmed = confirmed;
+        g_utf8_strncpy(ralloc->patch_name, (*current_patch)->name, META_LENGTH);
+        ralloc->next = *recordings;
+        *recordings = ralloc;
+
+        for (struct AccessPoint* ap = access_points; ap != NULL; ap = ap->next)
+        {
+            cJSON* dist = cJSON_GetObjectItem(distances, ap->client_id);
+            if (cJSON_IsNumber(dist))
+            {
+                ralloc->access_point_distances[ap->id] = dist->valuedouble;
+                count++;
+            }
+            else
+            {
+                ralloc->access_point_distances[ap->id]=0;
+            }
+        }
+
+        if (count < 1)
+        {
+            g_warning("No values found in %s", buffer);
+            cJSON_Delete(json);
+            return FALSE;
+        }
+    }
+
     cJSON_Delete(json);
     return TRUE;
 }
@@ -295,6 +310,9 @@ bool read_observations_file (const char * dirname, const char* filename, struct 
 	/* read file line by line */
     int line_count = 0;
 
+    // Track the current patch from a heading and apply to recordings in same file
+    struct patch* current_patch = NULL;
+
 	while (TRUE) {
 		gchar *line;
         gsize length;
@@ -308,21 +326,8 @@ bool read_observations_file (const char * dirname, const char* filename, struct 
         if (strlen(line) > 0)
         {
             //g_debug("%s", line);
-            struct recording r;
-            bool ok = json_to_recording(line, access_points, &r, patchs_list, areas_list);
-            if (ok)
-            {
-                r.confirmed = confirmed;
-                //g_debug("Got a valid recording for %s", r.patch_name);
-                // Append it to the front of the recordings list
-                // TODO: Remove duplicates
-                // NB Only allocate if ok
-                struct recording* ralloc = malloc(sizeof(struct recording));
-                *ralloc = r;
-                ralloc->next = *recordings;
-                *recordings = ralloc;
-            }
-            else
+            bool ok = json_to_recording(line, access_points, recordings, patchs_list, areas_list, &current_patch, confirmed);
+            if (!ok)
             {
                 g_warning("Could not use '%s' in %s (%i)", line, filename, line_count);
             }
@@ -455,6 +460,11 @@ bool record (const char* directory, const char* device_name, double access_dista
     g_object_unref(output);
     g_object_unref(os);
     g_object_unref(file);
+
+    if (is_new)
+    {
+        g_chmod(fullpath, 666);
+    }
 
     return TRUE;
 }
