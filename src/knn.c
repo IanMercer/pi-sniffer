@@ -103,7 +103,12 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
     {
         if (!has_meta)
         {
-            g_warning("Missing distances or meta data (group and tags) in saved recording '%s'", buffer);
+            char missing[128];
+            missing[0]='\0';
+            if (!cJSON_IsString(room_name)) append_text(missing, sizeof(missing), "'%s',", "room");
+            if (!cJSON_IsString(group_name)) append_text(missing, sizeof(missing), "'%s',", "group");
+            if (!cJSON_IsString(tags)) append_text(missing, sizeof(missing), "'%s',", "tags");
+            g_warning("Missing metatdata (%s) in '%s'", missing, buffer);
         }
         cJSON_Delete(json);
         return TRUE;  // ignore it
