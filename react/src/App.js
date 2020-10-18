@@ -41,7 +41,7 @@ class App extends Component {
     fetch('http://192.168.0.154:80/cgi-bin/cgijson.cgi')
     .then(res => res.json())
     .then((data) => {
-      self.setState({ rooms: data.rooms })
+      self.setState({ rooms: data.rooms.sort((a, b) => (''+a.group+'_'+a.name).localeCompare(b.group+'_'+b.name)) })
       self.setState({ assets: data.assets })
       self.setState({ groups: data.groups })
 
@@ -86,12 +86,14 @@ class App extends Component {
           <div className="card" style={{width: '18rem'}} key={x.name}>
             <div className={"card-header "+ ((x.phones ==null || x.phones < 2.5) ? "bg-success":"bg-danger")}>{x.name}</div>
             <div className="card-body">
-              <h6 className="card-subtitle mb-2 text-muted">
+            <h6 className="card-subtitle mb-2 text-muted">
                 {this.repeat(cellphone, x.phones)}
                 {this.repeat(clock, x.watches)}
                 {this.repeat(wearable, x.wearables)}
                 {this.repeat(computer, x.computers)}
-                {/* {this.repeat(beacon, x.beacons)} */}
+              </h6>
+              <h6 className="card-subtitle mb-2 text-muted">
+                {this.repeat(beacon, x.beacons)}
               </h6>
             </div>
           </div>
@@ -105,7 +107,7 @@ class App extends Component {
             <div className={"card-header "+ ((x.phones ==null || x.phones < 2.5) ? "bg-success":"bg-danger")}>{x.name}</div>
             <div className="card-body">
               <h6 className="card-subtitle mb-2 text-muted">
-              {x.phones > 0 ? <span>{cellphone}{Math.round(x.phones+.5)}&nbsp;</span> : ''} 
+              {x.phones > 0 ? <span>{cellphone}{Math.round(x.phones)}&nbsp;</span> : ''} 
               {x.watches > 0 ? <span>{clock}{Math.round(x.watches)}&nbsp;</span> : ''} 
               {x.wearables > 0 ? <span>{wearable}{Math.round(x.wearables)}&nbsp;</span> : ''} 
               {x.computers > 0 ? <span>{computer}{Math.round(x.computers)}&nbsp;</span> : ''} 
