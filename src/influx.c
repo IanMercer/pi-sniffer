@@ -133,3 +133,4 @@ void post_to_influx(struct OverallState* state, char* body, int body_length)
     post_to_influx_body(state, body, body_length);
     //g_info("Posted %s", body);
 }
+
