@@ -55,7 +55,7 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
     }
     // TODO: All the NAME rules should be applied here too (e.g. privacy)
 
-    optional_set(local->name, remote->name, NAME_LENGTH);
+    //optional_set(local->name, remote->name, NAME_LENGTH);
     optional_set(local->alias, remote->alias, NAME_LENGTH);
     soft_set_8(&local->addressType, remote->addressType);
 

@@ -463,7 +463,11 @@ bool record (const char* directory, const char* device_name, double access_dista
 
     if (is_new)
     {
-        chmod(fullpath, 666);
+        g_warning("Change '%s' to chmod 666", fullpath);
+        if (chmod(fullpath, S_IRUSR|S_IRGRP|S_IROTH|S_IWUSR|S_IWGRP|S_IWOTH) < 0)
+        {
+            g_warning("Could not CHMOD file");
+        }
     }
 
     return TRUE;
