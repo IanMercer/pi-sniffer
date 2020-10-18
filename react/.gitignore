@@ -8,8 +8,8 @@
 # testing
 /coverage
 
-# production
-/build
+# production (normally this would be excluded but for demo purposes we need it)
+#/build
 
 # misc
 .DS_Store
