@@ -77,3 +77,8 @@ Check how much the log is taking `journalctl --disk-usage`
 Clean up any excess log files in `/var/log`; remove all the old gzipped log files.
 
 Use `sudo nano /etc/systemd/journald.conf` to change `SystemKeepFree=` to 1GB.
+
+# Error message "error: insufficient permission for adding an object to repository database .git/objects"
+
+If you accidentally run git under `sudo` the `.git` files may move to being owned by the `root` user. Move them all back
+to your account using `sudo chown -R <yourname> *` and/or `sudo chown -R <yourname> .git/*`.

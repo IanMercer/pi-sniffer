@@ -49,7 +49,7 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
             g_strlcpy(local->name, remote->name, NAME_LENGTH);
         }
         else{
-            g_warning("Remote changed name '%s' by remote '%s' IGNORE?", local->name, remote->name);
+            g_info("Remote changed name '%s' by remote '%s'", local->name, remote->name);
             g_strlcpy(local->name, remote->name, NAME_LENGTH);
         }
     }

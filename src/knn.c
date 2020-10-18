@@ -110,7 +110,9 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
 
     if (has_meta)
     {
-        if (current_patch != NULL)
+        //g_debug("Meta OK %s", buffer);
+
+        if ((*current_patch) != NULL)
         {
             // Not critical, if someone leaves headings in file from beacons, that's OK to make it easier to operate
             g_debug("Ignoring second heading '%s' in file for '%s'; please remove it", patch_name->valuestring, (*current_patch)->name);
@@ -124,6 +126,8 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
 
     if (has_distances)
     {
+        //g_debug("Distances OK %s", buffer);
+
         if (*current_patch == NULL)
         {
             g_warning("Missing metadata heding before distances");
@@ -395,6 +399,8 @@ bool read_observations (const char * dirname, struct AccessPoint* access_points,
 {
     ensure_directory(dirname);
 
+    //g_info("Reading directory '%s'",dirname);
+
     GDir *dir;
     GError *error;
     const gchar *filename;
@@ -407,6 +413,7 @@ bool read_observations (const char * dirname, struct AccessPoint* access_points,
     {
         while ((filename = g_dir_read_name(dir)))
         {
+            //g_debug("Reading file '%s'",filename);
             ok = read_observations_file(dirname, filename, access_points, recordings, patch_list, areas_list, confirmed) && ok;
         }
         g_dir_close(dir);
@@ -423,7 +430,7 @@ bool record (const char* directory, const char* device_name, double access_dista
 	GError *error_local = NULL;
 
     ensure_directory(directory);
-    
+
     if (strlen(device_name) == 0) {
         g_debug("Empty device name passed to record method, skipped");
         return FALSE;
