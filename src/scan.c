@@ -402,11 +402,11 @@ void report_devices_count()
             people_closest += score;
     }
 
-    if (fabs(people_in_range - state.local->people_in_range_count) > 0.01 || fabs(people_closest - state.local->people_closest_count) > 0.01)
+    if (fabs(people_in_range - state.local->people_in_range_count) > 0.1 || fabs(people_closest - state.local->people_closest_count) > 0.1)
     {
         state.local->people_closest_count = people_closest;
         state.local->people_in_range_count = people_in_range;
-        g_info("Local people count = %.2f (%.2f in range)\n", people_closest, people_in_range);
+        g_debug("Local people count = %.2f (%.2f in range)", people_closest, people_in_range);
 
         // And send access point to everyone over UDP
         send_access_point_udp(&state);
@@ -628,7 +628,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
             if (strncmp(name, existing->name, NAME_LENGTH - 1) != 0)
             {
-                g_info("  %s changed name '%s' -> '%s'\n", address, existing->name, name);
+                g_debug("  %s changed name '%s' -> '%s'\n", address, existing->name, name);
 #ifdef MQTT
                 if (state.network_up) send_to_mqtt_single(address, "name", name);
 #endif
@@ -1072,24 +1072,25 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
             g_variant_iter_init(&i, prop_val);
             while (g_variant_iter_next(&i, "{qv}", &manufacturer, &s_value))
-            { // Just one
+            { // Just one, well ... not always
+                uint8_t hash;
+                int actualLength;
+                unsigned char *allocdata = read_byte_array(s_value, &actualLength, &hash);
 
                 if (existing->manufacturer != manufacturer)
                 {
-                    if (manufacturer == 0x4c){
-                        g_info("  %s Manufacturer Apple  ", address);
+                    if (manufacturer == 0x4c && allocdata[0] == 0x02){
+                        g_debug("  %s iBeacon  ", address);
+                    } else if (manufacturer == 0x4c){
+                        g_debug("  %s Manufacturer Apple  ", address);
                     } else {
-                        g_info("  %s Manufacturer 0x%4x  ", address, manufacturer);
+                        g_debug("  %s Manufacturer 0x%4x  ", address, manufacturer);
                     }
 #ifdef MQTT
                     send_to_mqtt_single_value(address, "manufacturer", manufacturer);
 #endif
                     existing->manufacturer = manufacturer;
                 }
-
-                uint8_t hash;
-                int actualLength;
-                unsigned char *allocdata = read_byte_array(s_value, &actualLength, &hash);
 
                 if (existing->manufacturer_data_hash != hash)
                 {
@@ -2271,9 +2272,9 @@ int main(int argc, char **argv)
     // Every 5s look see if any records have expired and should be removed
     g_timeout_add_seconds(5, clear_cache, loop);
 
-    // Every 29s dump all devices
+    // Every 59s dump all devices
     // Also clear starting flag
-    g_timeout_add_seconds(29, dump_all_devices_tick, loop);
+    g_timeout_add_seconds(59, dump_all_devices_tick, loop);
 
     // Every 30s report counts
     g_timeout_add_seconds(20, report_counts, loop);

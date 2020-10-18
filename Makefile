@@ -12,7 +12,7 @@ CFLAGS = -Wall -Wextra -g `pkg-config --cflags glib-2.0 gio-2.0 gio-unix-2.0` -I
 LIBS = -lm `pkg-config --libs glib-2.0 gio-2.0 gio-unix-2.0`
 
 DEPS = src/*.h src/model/*.h src/core/*.h src/bluetooth/*.h src/dbus/*.h
-SRC = src/scan.c src/mqtt_send.c src/udp.c src/influx.c src/knn.c src/webhook.c src/core/*.c src/model/*.c src/bluetooth/*.c src/dbus/*.c
+SRC = src/scan.c src/udp.c src/influx.c src/knn.c src/webhook.c src/core/*.c src/model/*.c src/bluetooth/*.c src/dbus/*.c
 MQTTSRC = src/mqtt.c src/udp.c src/mqtt_send.c src/influx.c src/core/*.c src/model/*.c src/dbus/*.c
 CGIJSON = src/cgijson.c src/dbus/sniffer-generated.c
 
