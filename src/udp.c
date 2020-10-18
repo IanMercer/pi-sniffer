@@ -715,6 +715,11 @@ void print_counts_by_closest(struct OverallState* state)
     g_info(" ");
     //g_debug("Examined %i > %i > %i > %i", state->closest_n, count_examined, count_not_marked, count_in_age_range);
 
+    // Add metadata for the sign to consume (so that signage can be adjusted remotely)
+    cJSON* sign_meta = cJSON_AddObjectToObject(jobject, "signage");
+    // TODO: More levels etc. settable remotely
+    cJSON_AddNumberToObject(sign_meta, "scale_factor", state->udp_scale_factor);
+
     json_rooms = cJSON_PrintUnformatted(jobject);
     //json_rooms = cJSON_Print(jobject);
     cJSON_Delete(jobject);

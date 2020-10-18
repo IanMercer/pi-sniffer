@@ -230,6 +230,7 @@ struct OverallState
    int udp_sign_port;      // The display for this group of sensors
    int udp_mesh_port;      // The mesh port for this group of sensors
    float udp_scale_factor; // Scale factor to multiply people by to send to screen
+   // TODO: Settable parameters for the display
 
    char *mqtt_topic;
    char *mqtt_server;

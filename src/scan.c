@@ -260,43 +260,6 @@ void find_latest_observations()
 static int32_t ranges[N_RANGES] = {1, 2, 5, 10, 15, 20, 25, 30, 35, 100};
 static int8_t reported_ranges[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 
-/*
-    COMMUNICATION WITH DISPLAYS OVER UDP
-*/
-
-static char udp_last_sent = -1;
-
-void send_to_udp_display(struct OverallState *state, float people_closest, float people_in_range)
-{
-    // This adjusts how people map to lights which are on a 0.0-3.0 range
-    double scale_factor = state->udp_scale_factor;
-    // 0.0 = green
-    // 1.5 = blue
-    // 3.0 = red (but starts going red anywhere above 2.0)
-
-    // NB This sends constantly even if value is unchanged because UDP is unreliable
-    // and because a display may become unplugged and then reconnected
-    if (state->network_up && state->udp_sign_port > 0)
-    {
-        char msg[4];
-        msg[0] = 0;
-        // send as ints for ease of consumption on ESP8266
-        msg[1] = (int)(people_closest * scale_factor * 10.0);
-        msg[2] = (int)(people_in_range * scale_factor * 10.0);
-        msg[3] = 0;
-
-        // TODO: Move to JSON for more flexibility sending names too
-
-        udp_send(state->udp_sign_port, msg, sizeof(msg));
-
-        // Log only when it changes
-        if (udp_last_sent != msg[1])
-        {
-            g_info("UDP Sent %i", msg[1]);
-            udp_last_sent = msg[1];
-        }
-    }
-}
 
 /*
     Find best packing of device time ranges into columns
@@ -436,8 +399,6 @@ void report_devices_count()
     {
         print_and_free_error(error);
     }
-
-    send_to_udp_display(&state, people_closest, people_in_range);
 }
 
 /*
@@ -1699,7 +1660,19 @@ int report_to_influx_tick()
 }
 
 /*
-    Report access point counts to InfluxDB
+    COMMUNICATION WITH DISPLAYS OVER UDP
+*/
+
+void send_to_udp_display(struct OverallState *state)
+{
+    if (state->network_up && state->udp_sign_port > 0)
+    {
+        udp_send(state->udp_sign_port, state->json, strlen(state->json));
+    }
+}
+
+/*
+    Report access point counts to InfluxDB, Web, UDP
 */
 int report_counts(void *parameters)
 {
@@ -1708,12 +1681,13 @@ int report_counts(void *parameters)
     if (!state.network_up) return TRUE;
     if (starting) return TRUE;
 
-    if (influx_is_configured() || webhook_is_configured() || state.web_polling)
+    if (influx_is_configured() || webhook_is_configured() || state.web_polling || state.udp_sign_port > 0)
     {
         // Set JSON for all ways to receive it (GET, POST, INFLUX, MQTT)
         print_counts_by_closest(&state);
         report_to_influx_tick();
         report_to_http_post_tick();
+        send_to_udp_display(&state);
         return TRUE;
     }
     else

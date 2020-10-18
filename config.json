@@ -1,5 +1,5 @@
 {
-    "comment1":"Remember to set a configuration entry pointing to this file.",
+    "comment1":"Remember to set a configuration entry pointing to this file if it's not placed in /etc/signswift/config.json.",
 
     "sensors" : [
         { "name" : "barn" },

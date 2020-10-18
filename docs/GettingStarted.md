@@ -17,17 +17,9 @@ following the instructions [here](RaspberrySetup.md).
 
 `sudo apt-get install libssl-dev`
 
-* clone the Eclipse PAHO MQTT C source
+* optionally install and build MQTT
 
-`git clone https://github.com/eclipse/paho.mqtt.c.git`
-
-* build and install it
-
-`cd paho.mqtt.c`
-
-`sudo make install`
-
-`cd ..`
+See [MQTT.md](MQTT.md). You do not need to do this if you are not using MQTT.
 
 * clone this repository
 
@@ -43,13 +35,19 @@ following the instructions [here](RaspberrySetup.md).
 
 `./build/sh`
 
+Watch the logs for a while and you should see it start to discover devices. Every minute it will dump a table to the logs showing all the devices present.
+To report any issues, please include as much of the log as possible, e.g. to grab the last hour of logs and place it in a file:
+
+`sudo journaltctl - u pi-sniffer.service -S -1h > log.txt`
+
+To transfer files back and forth from PC to Raspberry Pi try using `WinSCP` which is a free download for Windows.
+
+
+
 * build the optional CGI script
 
 `make cgijson`
 
-* build a version with MQTT (optional)
-
-`make mqtt`
 
 * edit the systemd configuration overrides according to the environment
 
@@ -69,23 +67,9 @@ following the instructions [here](RaspberrySetup.md).
 [Service]
 Environment="RSSI_FACTOR=3.5"
 Environment="RSSI_ONE_METER=-64"
-Environment="POSITION_X=53.0"
-Environment="POSITION_Y=20.0"
-Environment="POSITION_Z=-6.0"
 Environment="HOST_NAME=<room name>"
 Environment="HOST_DESCRIPTION=<description>"
 Environment="HOST_PLATFORM=Pi3b+"
-
-# Server is formatted: [ssl://]mqtt server:[port]
-# For Azure you MUST use ssl:// and :8833
-
-Environment="MQTT_SERVER=192.168.0.52:1883"
-Environment="MQTT_TOPIC=BLF"
-Environment="MQTT_USERNAME="
-Environment="MQTT_PASSWORD="
-
-# Set the level of MQTT messages to ONE of these:
-Environment="VERBOSITY=counts|distances|details"
 
 # Port on which to communicate with sensors in the same group in mesh mode
 Environment="UDP_MESH_PORT=7779"
@@ -116,8 +100,8 @@ Environment="WEBHOOK_PATH=<path>"
 Environment="WEBHOOK_USERNAME="
 Environment="WEBHOOK_PASSWORD="
 
-# You can define patches, areas and other metadata using an optional JSON file, see sample config.json
-# which is typically installed to /etc/signswift/config.json but can be placed anywhere
+# You can define other sensors in the mesh and named beacons in a config file. Copy the sample one to `/etc/signswift/config.json`
+# Optionally you can point to a different location using this setting:
 Environment="CONFIG=/etc/signswift/config.json"
 
 
@@ -128,7 +112,6 @@ Environment="CONFIG=/etc/signswift/config.json"
 
 `make`
 * copy the service file to systemd:
-
 
 `sudo cp pi-sniffer.service /etc/systemd/system/pi-sniffer.service`
 * enable the service to restart after a reboot:
@@ -141,7 +124,7 @@ Environment="CONFIG=/etc/signswift/config.json"
 
 `sudo systemctl status pi-sniffer.service`
 
-* [optional, on Ubuntu in particular] open firewall so multiple instances can communicate
+* [optional] For Ubuntu and some other Linx distributions open a firewall port so multiple instances can communicate
 
 `sudo ufw allow 7779/udp`
 
