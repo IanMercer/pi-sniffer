@@ -1708,7 +1708,7 @@ int report_counts(void *parameters)
     if (!state.network_up) return TRUE;
     if (starting) return TRUE;
 
-    if (influx_is_configured() || webhook_is_configured())
+    if (influx_is_configured() || webhook_is_configured() || state.web_polling)
     {
         // Set JSON for all ways to receive it (GET, POST, INFLUX, MQTT)
         print_counts_by_closest(&state);
@@ -1938,6 +1938,7 @@ void initialize_state()
     g_debug("Host name: %s", client_id);
 
     state.network_up = FALSE; // is_any_interface_up();
+    state.web_polling = FALSE; // until first request
 
     // Optional metadata about the access point for dashboard
     const char *s_client_id = getenv("HOST_NAME");
@@ -2091,13 +2092,16 @@ GMainLoop *loop;
 
 GCancellable *socket_service;
 
-
+/*
+    incoming request on DBUS, probably from web CGI
+*/
 static gboolean on_handle_status_request (piSniffer *interface,
                        GDBusMethodInvocation  *invocation,
                        gpointer                user_data)
 {
     struct OverallState* state = (struct OverallState*)user_data;
     gchar *response;
+    state->web_polling = TRUE;
     response = state->json;
     if (response == NULL) response = "NOT READY";
     pi_sniffer_complete_status(interface, invocation, response);

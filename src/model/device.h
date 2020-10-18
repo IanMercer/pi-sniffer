@@ -217,6 +217,7 @@ struct OverallState
 {
    int n; // current devices
    bool network_up;        // Is the network up
+   bool web_polling;        // website is running locally
    pthread_mutex_t lock;
    struct Device devices[N];
 
