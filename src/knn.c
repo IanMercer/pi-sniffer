@@ -365,6 +365,21 @@ void free_list(struct recording** head)
     }
 }
 
+/*
+  Create the recordings or beacon directory
+*/
+void ensure_directory(const char* directory)
+{
+	GError *error_local = NULL;
+
+    GFile* dir2 = g_file_new_for_path(directory);
+    if (g_file_make_directory(dir2, NULL, &error_local))
+    {
+        g_info("Created recordings directory '%s'", directory);
+    }
+    g_object_unref(dir2);
+}
+
 /**
  * Read observations
  * @file: observations file name
@@ -378,6 +393,7 @@ void free_list(struct recording** head)
 bool read_observations (const char * dirname, struct AccessPoint* access_points, struct recording** recordings,
     struct patch** patch_list, struct group** areas_list, bool confirmed)
 {
+    ensure_directory(dirname);
 
     GDir *dir;
     GError *error;
@@ -387,11 +403,14 @@ bool read_observations (const char * dirname, struct AccessPoint* access_points,
 
     dir = g_dir_open(dirname, 0, &error);
 
-    while ((filename = g_dir_read_name(dir)))
+    if (dir != NULL)
     {
-        ok = read_observations_file(dirname, filename, access_points, recordings, patch_list, areas_list, confirmed) && ok;
+        while ((filename = g_dir_read_name(dir)))
+        {
+            ok = read_observations_file(dirname, filename, access_points, recordings, patch_list, areas_list, confirmed) && ok;
+        }
+        g_dir_close(dir);
     }
-    g_dir_close(dir);
 
     return TRUE;
 }
@@ -403,13 +422,8 @@ bool record (const char* directory, const char* device_name, double access_dista
 {
 	GError *error_local = NULL;
 
-    GFile* dir2 = g_file_new_for_path(directory);
-    if (g_file_make_directory(dir2, NULL, &error_local))
-    {
-        g_info("Created recordings directory '%s'", directory);
-    }
-    g_object_unref(dir2);
-
+    ensure_directory(directory);
+    
     if (strlen(device_name) == 0) {
         g_debug("Empty device name passed to record method, skipped");
         return FALSE;
