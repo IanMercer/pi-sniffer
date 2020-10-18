@@ -2089,6 +2089,7 @@ static gboolean on_handle_status_request (piSniffer *interface,
     struct OverallState* state = (struct OverallState*)user_data;
     gchar *response;
     response = state->json;
+    if (response == NULL) response = "NOT READY";
     pi_sniffer_complete_status(interface, invocation, response);
     // g_free (response);
     return TRUE;

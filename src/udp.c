@@ -449,11 +449,12 @@ void print_counts_by_closest(struct OverallState* state)
                     char other_mac[18];
                     mac_64_to_string(other_mac, 18, other->supersededby);
 
-                    struct AccessPoint *ap2 = other->access_point;
-                    g_debug(" %10s distance %5.1fm at=%3is dt=%3is count=%3i %s%s", ap2->client_id, other->distance, abs_diff, time_diff, other->count,
+                    // Verbose logging
+                    //struct AccessPoint *ap2 = other->access_point;
+                    //g_debug(" %10s distance %5.1fm at=%3is dt=%3is count=%3i %s%s", ap2->client_id, other->distance, abs_diff, time_diff, other->count,
                         // lazy concat
-                        other->supersededby==0 ? "" : "superseeded=", 
-                        other->supersededby==0 ? "" : other_mac);
+//                        other->supersededby==0 ? "" : "superseeded=", 
+//                        other->supersededby==0 ? "" : other_mac);
 
                     if (time_diff > 300)
                     {
@@ -654,6 +655,7 @@ void print_counts_by_closest(struct OverallState* state)
     {
         cJSON* item = cJSON_CreateObject();
         cJSON_AddStringToObject(item, "name", s->category);
+        cJSON_AddStringToObject(item, "group", s->extra);
         cJSON_AddSummary(item, s);
         cJSON_AddItemToArray(jrooms, item);
     }
