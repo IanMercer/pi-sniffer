@@ -47,7 +47,7 @@ struct group* get_or_add_area(struct group** group_list, char* group_name, char*
    get or create a room and update any existing group also
 */
 struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group_name, char* tags,
-    struct patch** patch_list, struct group** groups_list)
+    struct patch** patch_list, struct group** groups_list, bool confirmed)
 {
     g_assert(tags != NULL);
     g_assert(patch_name != NULL);
@@ -81,6 +81,7 @@ struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group
         found->next = NULL;
         found->group = NULL;
         found->room = strdup(url_slug(room_name));
+        found->confirmed = confirmed;
         // no strdup here, get_or_add_group handles that
         found->group = get_or_add_area(groups_list, url_slug(group_name), tags);
         g_info("Added patch %s in %s with tags %s", found->name, group_name, tags);
@@ -114,11 +115,8 @@ struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group
 /*
     Initalize the patches database (linked lists)
 */
-void read_configuration_file(const char* path, struct AccessPoint** accesspoint_list, struct patch** patch_list, struct group** area_list, struct Beacon** beacon_list)
+void read_configuration_file(const char* path, struct AccessPoint** accesspoint_list, struct Beacon** beacon_list)
 {
-    (void)patch_list;
-    (void)area_list;
-
     // Read from file ...
 
     FILE *fp;
@@ -184,50 +182,6 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
             }
         }
     }
-
-
-    // // ------------------- patches ---------------------
-
-    // cJSON* patches = cJSON_GetObjectItemCaseSensitive(json, "patches");
-    // if (!cJSON_IsArray(patches)){
-    //     g_error("Could not parse patches[] from configuration file '%s'", path);
-    //     exit(EXIT_FAILURE);
-    // }
-
-    // cJSON* patch = NULL;
-    // cJSON_ArrayForEach(patch, patches)
-    // {
-    //     cJSON* name = cJSON_GetObjectItemCaseSensitive(patch, "name");
-    //     if (!cJSON_IsString(name) || (name->valuestring == NULL))
-    //     {
-    //         if (cJSON_GetObjectItemCaseSensitive(patch, "comment")) continue;
-    //         g_error("Missing 'name' on patch object");
-    //         continue;
-    //     }
-
-    //     cJSON* category = cJSON_GetObjectItemCaseSensitive(patch, "category");
-    //     if (!cJSON_IsString(category) || (category->valuestring == NULL))
-    //     {
-    //         g_error("Missing 'category' on patch '%s'", name->valuestring);
-    //         continue;
-    //     }
-
-    //     cJSON* tags = cJSON_GetObjectItemCaseSensitive(patch, "tags");
-    //     if (!cJSON_IsString(tags) || (tags->valuestring == NULL))
-    //     {
-    //         g_warning("Missing 'tags' on patch '%s'", name->valuestring);
-    //         continue;
-    //     }
-
-    //     if (string_contains_insensitive(tags->valuestring, " "))
-    //     {
-    //         g_warning("Spaces not allowed in tags for patch '%s'", name->valuestring);
-    //         continue;
-    //     }
-
-    //     g_debug("Get or create patch '%s', '%s', '%s'", name->valuestring, category->valuestring, tags->valuestring);
-    //     get_or_create_patch(name->valuestring, room_name->valuestring, category->valuestring, tags->valuestring, patch_list, area_list);        
-    // }
 
     // ------------------- beacons --------------------
 

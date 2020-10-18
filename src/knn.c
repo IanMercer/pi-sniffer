@@ -110,8 +110,16 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
 
     if (has_meta)
     {
-        //g_info("Heading: Patch '%s' Group name '%s', tags '%s'", patch_name->valuestring, group_name->valuestring, tags->valuestring);
-        *current_patch = get_or_create_patch(patch_name->valuestring, room_name->valuestring, group_name->valuestring, tags->valuestring, patch_list, areas_list);
+        if (current_patch != NULL)
+        {
+            // Not critical, if someone leaves headings in file from beacons, that's OK to make it easier to operate
+            g_debug("Ignoring second heading '%s' in file for '%s'; please remove it", patch_name->valuestring, (*current_patch)->name);
+        }
+        else
+        {
+            //g_info("Heading: Patch '%s' Group name '%s', tags '%s'", patch_name->valuestring, group_name->valuestring, tags->valuestring);
+            *current_patch = get_or_create_patch(patch_name->valuestring, room_name->valuestring, group_name->valuestring, tags->valuestring, patch_list, areas_list, confirmed);
+        }
     }
 
     if (has_distances)

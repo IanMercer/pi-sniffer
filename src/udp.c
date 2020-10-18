@@ -233,7 +233,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest, d
         g_warning("Did not find a patch called %s, creating one on the fly", best->patch_name);
         char* world = strdup("World");
         char* tags = strdup("zone=here");
-        struct patch* patch = get_or_create_patch(best->patch_name, best->patch_name, world, tags, &state->patches, &state->groups);
+        struct patch* patch = get_or_create_patch(best->patch_name, best->patch_name, world, tags, &state->patches, &state->groups, FALSE);
         patch->knn_score = 1.0;
         best->distance = 1.0;
         strncpy(best->patch_name, patch->name, META_LENGTH);
@@ -249,8 +249,6 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest, d
     else 
     {
         //g_debug("CSV: %s", csv);
-
-        // TODO: Record Beacons separately?
 
         // RECORD TRAINING DATA
         if ((is_training_beacon) && (strcmp(closest->name, "iPhone") != 0) && (strcmp(closest->name, "Off") != 0))

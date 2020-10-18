@@ -41,7 +41,15 @@ following the instructions [here](RaspberrySetup.md).
 
 * build and deploy the code:
 
-`sudo ./build/sh`
+`./build/sh`
+
+* build the optional CGI script
+
+`make cgijson`
+
+* build a version with MQTT (optional)
+
+`make mqtt`
 
 * edit the systemd configuration overrides according to the environment
 

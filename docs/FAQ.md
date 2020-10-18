@@ -66,4 +66,14 @@ Yes, simply configure the communication port so that they are isolated into two 
 
 
 
+# My Raspberry Pi has run out of disk space
 
+Take a look at available disk space on `/dev/root` using `df -h`.
+
+Find where the majority of the disk space is being used `sudo du -hsx * | sort -rh`.
+
+Check how much the log is taking `journalctl --disk-usage`
+
+Clean up any excess log files in `/var/log`; remove all the old gzipped log files.
+
+Use `sudo nano /etc/systemd/journald.conf` to change `SystemKeepFree=` to 1GB.

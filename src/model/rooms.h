@@ -28,6 +28,9 @@ struct patch
     const char* room;           // Room that owns this patch
     struct group* group;        // Group/area that owns this patch (parent of room)
     struct patch* next;         // next ptr
+    bool confirmed;             // confirmed came from recordings subdirectory not beacons subdirectory
+
+    // MUTABLE DATA BELOW HERE
     double knn_score;           // calculated during scan, one ap
     double phone_total;         // how many phones
     double tablet_total;        // how many tablet
@@ -43,13 +46,12 @@ struct patch
 int top_k_by_patch_score(struct patch* result[], int k, struct patch* patch_list);
 
 // Initialize the configuration on startup
-void read_configuration_file(const char* path, struct AccessPoint** accesspoint_list, 
-    struct patch** patch_list, struct group** group_list, struct Beacon** beacon_list);
+void read_configuration_file(const char* path, struct AccessPoint** accesspoint_list, struct Beacon** beacon_list);
 
 /*
    get or create a patch and update any existing group also
 */
-struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group_name, char* tags, struct patch** patch_list, struct group** groups_list);
+struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group_name, char* tags, struct patch** patch_list, struct group** groups_list, bool confirmed);
 
 // ------------------------------------------------------------------
 

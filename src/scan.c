@@ -1620,25 +1620,31 @@ void dump_device(struct OverallState* state, struct Device *d)
 }
 
 
+bool webhook_is_configured()
+{
+    if (state.webhook_domain == NULL) return FALSE;
+    if (state.webhook_path == NULL) return FALSE;
+    if (strlen(state.webhook_domain)==0) return FALSE;  
+    return TRUE;
+}
+
+bool influx_is_configured()
+{
+    if (state.influx_server == NULL) return FALSE;
+    if (strlen(state.influx_server)==0) return FALSE;
+    return TRUE;
+}
+
 /*
     Report access point counts to HttpPost
 */
 int report_to_http_post_tick()
 {
-    if (state.webhook_domain == NULL) return FALSE;
-    if (state.webhook_path == NULL) return FALSE;
-    if (strlen(state.webhook_domain)==0) return FALSE;  
-
-    if (!state.network_up) return TRUE;
-    if (starting) return TRUE;
-
+    if (!webhook_is_configured()) return FALSE;
     g_info("Report to webhook url");
-
     post_to_webhook(&state);
-
     return TRUE;
 }
-
 
 
 /*
@@ -1646,12 +1652,7 @@ int report_to_http_post_tick()
 */
 int report_to_influx_tick()
 {
-    if (strlen(state.influx_server)==0) return FALSE;
-    if (!state.network_up) return TRUE;
-    if (starting) return TRUE;
-
-    //g_debug("Send to influx");
-
+    if (!influx_is_configured()) return FALSE;
     g_info("Report to Influx");
 
     char body[4096];
@@ -1703,13 +1704,21 @@ int report_counts(void *parameters)
 {
     (void)parameters;
 
-    // Set JSON for all ways to receive it (GET, POST, INFLUX, MQTT)
-    print_counts_by_closest(&state);
+    if (!state.network_up) return TRUE;
+    if (starting) return TRUE;
 
-    report_to_influx_tick();
-    report_to_http_post_tick();
-
-    return TRUE;
+    if (influx_is_configured() || webhook_is_configured())
+    {
+        // Set JSON for all ways to receive it (GET, POST, INFLUX, MQTT)
+        print_counts_by_closest(&state);
+        report_to_influx_tick();
+        report_to_http_post_tick();
+        return TRUE;
+    }
+    else
+    {
+        return FALSE;  // remove from loop
+    }
 }
 
 /*
@@ -2015,7 +2024,7 @@ void initialize_state()
         if (strcmp(verbosity, "details")) state.verbosity = Details;
     }
    
-    read_configuration_file(state.configuration_file_path, &state.access_points, &state.patches, &state.groups, &state.beacons);
+    read_configuration_file(state.configuration_file_path, &state.access_points, &state.beacons);
 
     g_debug("Completed read of configuration file");
 }

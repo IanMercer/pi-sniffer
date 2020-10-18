@@ -61,10 +61,13 @@ distances listed you may need more sensors, or you may need to move the ones you
 
 
 If conditions change and the beacon is left in the same location further recordings will be placed in the beacon directory. You can append these to
-an existing patch and edit them to remove the extra metadata and rename each of the patch names from the beacon name to the patch name:
+an existing patch. After appending them, edit the file to remove the heading line with the metadata for the beacon leaving just the distance observations.
+
+e.g.
 
 ````
     cat beacons/DEWALT-TAG.jsonl >> recordings/farbay.jsonl
     nano recordings/farbay.jsonl
 ````
 
+In the file, find the line with `"patch":"DEWALT-TAG"` and delete it using `Ctrl-K`.
