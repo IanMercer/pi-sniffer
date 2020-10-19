@@ -215,7 +215,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
 			if (existing->addressType == PUBLIC_ADDRESS_TYPE)
 			{
 				// Use last six in name
-				snprintf(underscored, sizeof(underscored), "_%s %s", manuf, (existing->mac+8));  // Skip 8 characters XX:XX:XX
+				snprintf(underscored, sizeof(underscored), "_%s %s", manuf, (existing->mac+9));  // Skip 9 characters XX:XX:XX:
 			}
 			else
 			{

@@ -510,6 +510,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
         // dummy struct filled with unmatched values
         existing->name[0] = '\0';
+        existing->is_temporary_name = TRUE;
         existing->alias[0] = '\0';
         existing->addressType = 0;
         existing->category = CATEGORY_UNKNOWN;
@@ -595,6 +596,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 if (state.network_up) send_to_mqtt_single(address, "name", name);
 #endif
                 g_strlcpy(existing->name, name, NAME_LENGTH);
+                existing->is_temporary_name = FALSE;
             }
             else
             {

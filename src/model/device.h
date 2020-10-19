@@ -78,8 +78,9 @@ struct Device
    uint8_t ttl;            // time to live count down during removal process
    char mac[18];           // mac address string
    int64_t mac64;          // mac address (moving off string)
-   int64_t supersededby;  // mac address of previous mac in same column
+   int64_t supersededby;   // mac address of previous mac in same column
    char name[NAME_LENGTH];
+   bool is_temporary_name; // Will replace '_' with this flag
    char alias[NAME_LENGTH];
    int8_t addressType; // 0, 1, 2
    int8_t category;    // Reasoned guess at what kind of device it is
