@@ -76,8 +76,6 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_WEARABLE; // Heartrate
     else if (string_starts_with(name, "Alta HR"))
         existing->category = CATEGORY_WEARABLE; // Fitbit Alta Heartrate
-    else if (string_starts_with(name, "Oculus"))
-        existing->category = CATEGORY_WEARABLE; //Oculus Quest etc.
 
     // FIXED
     else if (string_starts_with(name, "Tacx Neo 2T"))
@@ -285,6 +283,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_FIXED;  // Not really fixed
     else if (string_starts_with(name, "SPEN 02"))
         existing->category = CATEGORY_FIXED;  // Not really fixed WACOM
+    else if (string_starts_with(name, "Oculus"))
+        existing->category = CATEGORY_FIXED; //Oculus Quest etc.
 
     // POS
 

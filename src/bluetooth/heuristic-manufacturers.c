@@ -32,11 +32,6 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
     {
         optional_set(existing->name, "_Invalid 0x0000", NAME_LENGTH);
     }
-    else if (manufacturer == 0x0006)
-    {
-        optional_set(existing->name, "_Microsoft", NAME_LENGTH);
-        existing->category = CATEGORY_COMPUTER; // maybe?
-    }
     else if (manufacturer == 0x0087)
     {
         optional_set(existing->name, "_Garmin", NAME_LENGTH);
@@ -128,25 +123,9 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
     {
         optional_set(existing->name, "_Cypress Semi", NAME_LENGTH);
     }
-    else if (manufacturer == 0x0110)
-    {
-        // Manufacturer of car clusters
-        optional_set(existing->name, "_Nippon Seiki", NAME_LENGTH);
-        existing->category = CATEGORY_CAR;
-    }
-    else if (manufacturer == 0x0399)
-    {
-        optional_set(existing->name, "_Nikon", NAME_LENGTH);
-        existing->category = CATEGORY_FIXED;
-    }
     else if (manufacturer == 0xc688)
     {
         optional_set(existing->name, "_Logitech", NAME_LENGTH);     // not listed on BT website
-        existing->category = CATEGORY_FIXED;
-    }
-    else if (manufacturer == 0x0003)
-    {
-        optional_set(existing->name, "_IBM", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x0059)
@@ -180,10 +159,6 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         optional_set(existing->name, "_CUBE Technolgies", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
-    else if (manufacturer == 0x00e0)
-    {
-        optional_set(existing->name, "_Google", NAME_LENGTH);
-    }
     else if (manufacturer == 0x0085)
     {
         optional_set(existing->name, "_BlueRadios ODM", NAME_LENGTH);
@@ -198,25 +173,10 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         optional_set(existing->name, "_Anhui Huami", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
-    else if (manufacturer == 0x001d)
-    {
-        optional_set(existing->name, "_Qualcomm", NAME_LENGTH);
-    }
     else if (manufacturer == 0x015e)
     {
         // Locks
         optional_set(existing->name, "_Unikey Technologies", NAME_LENGTH);
-        existing->category = CATEGORY_FIXED;
-    }
-    else if (manufacturer == 0x0183)
-    {
-        optional_set(existing->name, "_Disney", NAME_LENGTH);
-        existing->category = CATEGORY_WEARABLE;  // no idea!
-    }
-    else if (manufacturer == 0x01d1)
-    {
-        // Locks and home automation
-        optional_set(existing->name, "_August Home", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
     }
     else if (manufacturer == 0x01a5)
@@ -233,12 +193,6 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
     {
         optional_set(existing->name, "_Relations Inc", NAME_LENGTH);
         existing->category = CATEGORY_FIXED;
-    }
-    else if (manufacturer == 0x0601)
-    {
-        // Make TPMS systems
-        optional_set(existing->name, "_Shrader Electronics", NAME_LENGTH);
-        existing->category = CATEGORY_CAR;
     }
     else if (manufacturer == 0x00d2)
     {
@@ -285,12 +239,14 @@ const char *company_id_to_string(int company_id, int8_t* category)
 	case 0x0002:
 		return "Intel Corp.";
 	case 0x0003:
+        *category = CATEGORY_FIXED;
 		return "IBM Corp.";
 	case 0x0004:
 		return "Toshiba Corp.";
 	case 0x0005:
 		return "3Com";
 	case 0x0006:
+		*category = CATEGORY_COMPUTER; // probably, but could be mouse etc.
 		return "Microsoft";
 	case 0x0007:
 		return "Lucent";
@@ -727,83 +683,83 @@ const char *company_id_to_string(int company_id, int8_t* category)
 		return "Muzik LLC";
 	case 223:
 		return "Misfit Wearables Corp";
-	case 224:
+    case 0x00e0:
 		return "Google";
-	case 225:
+	case 0x00e1:
 		return "Danlers Ltd";
-	case 226:
+	case 0x00e2:
 		return "Semilink Inc";
-	case 227:
+	case 0x00e3:
 		return "inMusic Brands, Inc";
-	case 228:
+	case 0x00e4:
 		return "L.S. Research Inc.";
-	case 229:
+	case 0x00e5:
 		return "Eden Software Consultants Ltd.";
-	case 230:
+	case 0x00e6:
 		return "Freshtemp";
-	case 231:
+	case 0x00e7:
 		return "KS Technologies";
-	case 232:
+	case 0x00e8:
 		return "ACTS Technologies";
-	case 233:
+	case 0x00e9:
 		return "Vtrack Systems";
-	case 234:
+	case 0x00ea:
 		return "Nielsen-Kellerman Company";
-	case 235:
+	case 0x00eb:
 		return "Server Technology, Inc.";
-	case 236:
+	case 0x00ec:
 		return "BioResearch Associates";
-	case 237:
+	case 0x00ed:
 		return "Jolly Logic, LLC";
-	case 238:
+	case 0x00ee:
 		return "Above Average Outcomes, Inc.";
-	case 239:
+	case 0x00ef:
 		return "Bitsplitters GmbH";
-	case 240:
+	case 0x00f0:
 		return "PayPal, Inc.";
-	case 241:
+	case 0x00f1:
 		return "Witron Technology Limited";
-	case 242:
+	case 0x00f2:
 		return "Aether Things Inc. (formerly Morse Project Inc.)";
-	case 243:
+	case 0x00f3:
 		return "Kent Displays Inc.";
-	case 244:
+	case 0x00f4:
 		return "Nautilus Inc.";
-	case 245:
+	case 0x00f5:
 		return "Smartifier Oy";
-	case 246:
+	case 0x00f6:
 		return "Elcometer Limited";
-	case 247:
+	case 0x00f7:
 		return "VSN Technologies Inc.";
-	case 248:
+	case 0x00f8:
 		return "AceUni Corp., Ltd.";
-	case 249:
+	case 0x00f9:
 		return "StickNFind";
-	case 250:
+	case 0x00fa:
 		return "Crystal Code AB";
-	case 251:
+	case 0x00fb:
 		return "KOUKAAM a.s.";
-	case 252:
+	case 0x00fc:
 		return "Delphi Corporation";
-	case 253:
+	case 0x00fd:
 		return "ValenceTech Limited";
-	case 254:
+	case 0x00fe:
 		return "DeWalt"; // Stanley Black and Decker
-	case 255:
+	case 0x00ff:
 		return "Typo Products, LLC";
-	case 256:
+	case 0x0100:
 		return "TomTom International BV";
-	case 257:
+	case 0x0101:
 		return "Fugoo, Inc";
-	case 258:
+	case 0x0102:
 		return "Keiser Corporation";
-	case 259:
+	case 0x0103:
 		return "Bang & Olufsen A/S";
-	case 260:
+	case 0x0104:
 		return "PLUS Locations Systems Pty Ltd";
-	case 261:
+	case 0x0105:
 		return "Ubiquitous Computing Technology Corporation";
-	case 262:
+	case 0x0106:
 		return "Innovative Yachtter Solutions";
 	case 263:
 		return "William Demant Holding A/S";
@@ -823,8 +779,10 @@ const char *company_id_to_string(int company_id, int8_t* category)
 		return "Audi AG";
 	case 271:
 		return "HiSilicon Technologies Co., Ltd.";
-	case 272:
-		return "Nippon Seiki Co., Ltd.";
+    case 0x0110:
+        // Manufacturer of car clusters
+        *category = CATEGORY_CAR;
+        return "Nippon Seiki"; // Co., Ltd.
 	case 273:
 		return "Steelseries ApS";
 	case 274:
@@ -1053,8 +1011,9 @@ const char *company_id_to_string(int company_id, int8_t* category)
 		return "Gecko Health Innovations, Inc.";
 	case 386:
 		return "HOP Ubiquitous";
-	case 387:
-		return "To Be Assigned";
+	case 0x0183:
+        *category = CATEGORY_WEARABLE;  // Kids tracker
+		return "Disney";
 	case 388:
 		return "Nectar";
 	case 389:
@@ -1209,8 +1168,10 @@ const char *company_id_to_string(int company_id, int8_t* category)
 		return "BSH";
 	case 464:
 		return "Primus Inter Pares Ltd";
-	case 465:
-		return "August";
+    case 0x01d1:
+        // Locks and home automation
+        *category = CATEGORY_FIXED;
+        return "August Home";
 	case 466:
 		return "Gill Electronics";
 	case 467:
@@ -1458,11 +1419,18 @@ const char *company_id_to_string(int company_id, int8_t* category)
 		return "Orlan LLC";
 	case 588:
 		return "Blue Clover Devices";
+
 	case 0x058e:
 		return "Oculus";
+    case 0x0601:
+        *category = CATEGORY_CAR;  // TPMS
+		return "Shrader Electronics";
 	case 0x6501:
 		*category = CATEGORY_BEACON;
 		return "Milwaukee";
+    case 0x0399:
+        *category = CATEGORY_FIXED;
+		return "Nikon";
 	default:
 		return NULL;
 	}

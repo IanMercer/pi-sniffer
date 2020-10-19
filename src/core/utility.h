@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include "cJSON.h"
 
 /*
  * Measures the current (and peak) resident and virtual memories
@@ -121,6 +122,16 @@ void free_summary(struct summary** head);
    update_summary linked list
 */
 void update_summary(struct summary** summary, const char* category, const char* extra, double phone_value, double tablet_value, double computer_value, double watch_value, double wearable_value, double beacon_value);
+
+/*
+    Add a summary count of phones, watches, ... to a cJSON object
+*/
+void cJSON_AddSummary(cJSON * item, struct summary* s);
+
+/*
+    Add a one decimal value to a JSON object
+*/
+void cJSON_AddRounded(cJSON * item, const char* label, double value);
 
 
 #endif

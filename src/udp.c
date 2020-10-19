@@ -294,29 +294,6 @@ void set_count_to_zero(struct AccessPoint* ap, void* extra)
 }
 
 /*
-    Add a one decimal value to a JSON object
-*/
-void cJSON_AddRounded(cJSON * item, const char* label, double value)
-{
-    char print_num[18];
-    snprintf(print_num, 18, "%.1f", value);
-    cJSON_AddRawToObject(item, label, print_num);
-}
-
-/*
-    Add a summary count of phones, watches, ... to a cJSON object
-*/
-void cJSON_AddSummary(cJSON * item, struct summary* s)
-{
-    if (s->phone_total > 0) cJSON_AddRounded(item, "phones", s->phone_total);
-    if (s->watch_total > 0) cJSON_AddRounded(item, "watches", s->watch_total);
-    if (s->wearable_total > 0) cJSON_AddRounded(item, "wearables", s->wearable_total);
-    if (s->computer_total > 0) cJSON_AddRounded(item, "computers", s->computer_total);
-    if (s->tablet_total > 0) cJSON_AddRounded(item, "tablets", s->tablet_total);
-    if (s->beacon_total > 0) cJSON_AddRounded(item, "beacons", s->beacon_total);
-}
-
-/*
     Find counts by access point
 */
 void print_counts_by_closest(struct OverallState* state)
@@ -704,7 +681,7 @@ void print_counts_by_closest(struct OverallState* state)
             cJSON_AddStringToObject(item, "group", category);
             cJSON_AddStringToObject(item, "ago", ago);
             cJSON_AddNumberToObject(item, "t", b->last_seen);
-            cJSON_AddNumberToObject(item, "d", diff);
+            cJSON_AddRounded(item, "d", diff);
 
             cJSON_AddItemToArray(jbeacons, item);
         }

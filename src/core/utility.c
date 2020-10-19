@@ -491,3 +491,28 @@ void update_summary(struct summary** summary, const char* category, const char* 
     s->next = *summary;
     *summary = s;
 }
+
+/*
+    Add a summary count of phones, watches, ... to a cJSON object
+*/
+void cJSON_AddSummary(cJSON * item, struct summary* s)
+{
+    if (s->phone_total > 0) cJSON_AddRounded(item, "phones", s->phone_total);
+    if (s->watch_total > 0) cJSON_AddRounded(item, "watches", s->watch_total);
+    if (s->wearable_total > 0) cJSON_AddRounded(item, "wearables", s->wearable_total);
+    if (s->computer_total > 0) cJSON_AddRounded(item, "computers", s->computer_total);
+    if (s->tablet_total > 0) cJSON_AddRounded(item, "tablets", s->tablet_total);
+    if (s->beacon_total > 0) cJSON_AddRounded(item, "beacons", s->beacon_total);
+}
+
+/*
+    Add a one decimal value to a JSON object
+*/
+void cJSON_AddRounded(cJSON * item, const char* label, double value)
+{
+    char print_num[18];
+    snprintf(print_num, 18, "%.1f", value);
+    cJSON_AddRawToObject(item, label, print_num);
+}
+
+

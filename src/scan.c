@@ -49,6 +49,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
+#include <cJSON.h>
 
 static struct OverallState state;
 // contains ... static struct Device devices[N];
@@ -1161,6 +1162,9 @@ static void report_device(struct OverallState *state, GVariant *properties, char
     pthread_mutex_unlock(&state->lock);
 }
 
+/*
+   BLUETOOTH DEVICE APPEARED
+*/
 static void bluez_device_appeared(GDBusConnection *sig,
                                   const gchar *sender_name,
                                   const gchar *object_path,
@@ -1279,6 +1283,10 @@ static void bluez_device_appeared(GDBusConnection *sig,
 }
 
 #define BT_ADDRESS_STRING_SIZE 18
+
+/*
+    BLUETOOTH DEVICE DISAPPEARED
+*/
 static void bluez_device_disappeared(GDBusConnection *sig,
                                      const gchar *sender_name,
                                      const gchar *object_path,
@@ -1319,10 +1327,8 @@ static void bluez_device_disappeared(GDBusConnection *sig,
 }
 
 /*
-
-                          ADAPTER CHANGED
+    BLUETOOTH ADAPTER CHANGED
 */
-
 static void bluez_signal_adapter_changed(GDBusConnection *conn,
                                          const gchar *sender,
                                          const gchar *path,
@@ -1661,13 +1667,35 @@ int report_to_influx_tick()
 
 /*
     COMMUNICATION WITH DISPLAYS OVER UDP
+    NB this needs to a smaller message to go over UDP
 */
-
 void send_to_udp_display(struct OverallState *state)
 {
     if (state->network_up && state->udp_sign_port > 0)
     {
-        udp_send(state->udp_sign_port, state->json, strlen(state->json));
+        cJSON *jobject = cJSON_CreateObject();
+
+        struct summary* summary = NULL;
+
+        summarize_by_group(state->patches, &summary);
+
+        for (struct summary* s=summary; s!=NULL; s=s->next)
+        {
+            cJSON_AddRounded(jobject, s->category, s->phone_total);
+        }
+        free_summary(&summary);
+
+        // Add metadata for the sign to consume (so that signage can be adjusted remotely)
+        // TODO: More levels etc. settable remotely
+        cJSON_AddNumberToObject(jobject, "sf", state->udp_scale_factor);
+
+        char* json = cJSON_PrintUnformatted(jobject);
+        cJSON_Delete(jobject);
+
+        g_warning("%s", json);
+
+        // +1 for the NULL terminator
+        udp_send(state->udp_sign_port, json, strlen(json)+1);        
     }
 }
 
@@ -2027,7 +2055,7 @@ void display_state()
     g_info("MQTT_PASSWORD='%s'", state.mqtt_password == NULL ? "(null)" : "*****");
 
     g_info("INFLUX_SERVER='%s'", state.influx_server);
-    g_info("INFLUX_PORT='%i'", state.influx_port);
+    g_info("INFLUX_PORT=%i", state.influx_port);
     g_info("INFLUX_DATABASE='%s'", state.influx_database);
     g_info("INFLUX_USERNAME='%s'", state.influx_username);
     g_info("INFLUX_PASSWORD='%s'", state.influx_password == NULL ? "(null)" : "*****");
@@ -2038,11 +2066,7 @@ void display_state()
 
     g_info("CONFIG='%s'", state.configuration_file_path == NULL ? "** Please set a path to config.json **" : state.configuration_file_path);
 
-
     int count = 0;
-    for (struct patch* room = state.patches; room != NULL; room=room->next){ count ++; }
-    g_info("ROOMS: %i", count);
-    count = 0;
     for (struct AccessPoint* ap = state.access_points; ap != NULL; ap=ap->next){ count ++; }
     g_info("ACCESS_POINTS: %i", count);
 
@@ -2083,22 +2107,30 @@ static gboolean on_handle_status_request (piSniffer *interface,
     return TRUE;
 }
 
-
+/*
+   DBUS name acquired
+*/
 static void on_name_acquired (GDBusConnection *connection, const gchar *name, gpointer user_data)
 {
     (void)connection;
     (void)user_data;
-    g_warning("NAME ACQUIRED '%s'", name);
+    g_warning("DBUS name aquired '%s'", name);
 }
 
+/*
+   DBUS name lost
+   TODO: Should we restart if this happens?
+*/
 static void on_name_lost (GDBusConnection *connection, const gchar *name, gpointer user_data)
 {
     (void)connection;
     (void)user_data;
-    g_warning("NAME LOST '%s'", name);
+    g_warning("DBUS name lost '%s'", name);
 }
 
-
+/*
+    MAIN
+*/
 int main(int argc, char **argv)
 {
     (void)argv;
@@ -2145,8 +2177,6 @@ int main(int argc, char **argv)
 
     piSniffer * sniffer = pi_sniffer_skeleton_new ();
 
-   // g_warning("Name acquired '%s'", name);
-
     // TODO: Sample of setting properties
     pi_sniffer_set_distance_limit(sniffer, 7.5);
 
@@ -2166,9 +2196,7 @@ int main(int argc, char **argv)
         g_warning("Exported skeleton, DBUS ready!");
     }
 
-//    on_name_acquired(conn, "NOT REALLY", NULL);
-
-    g_bus_own_name_on_connection(conn,
+    guint name_connection_id = g_bus_own_name_on_connection(conn,
         "com.signswift.sniffer",
         G_BUS_NAME_OWNER_FLAGS_ALLOW_REPLACEMENT,
         on_name_acquired,
@@ -2294,6 +2322,8 @@ int main(int argc, char **argv)
     if (rc)
         g_warning("Not able to disable the adapter\n");
 fail:
+    g_bus_unown_name(name_connection_id);
+
     g_dbus_connection_signal_unsubscribe(conn, prop_changed);
     g_dbus_connection_signal_unsubscribe(conn, iface_added);
     g_dbus_connection_signal_unsubscribe(conn, iface_removed);

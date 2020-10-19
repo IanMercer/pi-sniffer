@@ -86,6 +86,13 @@ struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group
         found->group = get_or_add_area(groups_list, url_slug(group_name), tags);
         g_info("Added patch %s in %s with tags %s", found->name, group_name, tags);
 
+        found->phone_total = 0;
+        found->beacon_total = 0;
+        found->computer_total = 0;
+        found->tablet_total = 0;
+        found->watch_total = 0;
+        found->wearable_total = 0;
+
         if (*patch_list == NULL)
         {
             // First item in chain

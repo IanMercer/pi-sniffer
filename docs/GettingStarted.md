@@ -146,7 +146,7 @@ If you have more than one sensor in the system you can train it to recognize are
 
 # Web Page
 
-The softare includes a web site where you can view the status of the system, monitor crowded rooms and track assets. See [apache](apache.md) for details on
+The software includes a web site where you can view the status of the system, monitor crowded rooms and track assets. See [apache](apache.md) for details on
 setting this up. This setup also includes an API that you can call to get the status of the system from any other system. The API is exposed at `/cgi-bin/cgijson.cgi`
 within the web site.
 
@@ -175,4 +175,12 @@ Environment="INFLUX_USERNAME=<username>"
 Environment="INFLUX_PASSWORD=<password>"
 ````
 
+# UDP Send
+
+The software sends a high-level summary (groups) as a small JSON message over UDP along with a scale factor (metadata) that can be used to adjust the sign display
+without having to update the sign itself. e.g.
+````
+{"Unknown":0.0,"Barn":0.0,"Outside":4.6,"House":2.8,"sf":3}
+````
+This is designed to be easy to parse using ArduinoJSON or equivalent on a microcontroller.
 
