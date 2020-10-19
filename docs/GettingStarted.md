@@ -138,3 +138,41 @@ Environment="CONFIG=/etc/signswift/config.json"
 
 A comparison of the costs and benefits of these different display approaches will be added shortly. Some displays may display details of crowding in different areas, some may display only an aggregate, some may show detailed numbers, some may display based on a single aggregate cut off number. Displays may also apply blending, hysteresis, transitions and other effects to improve their overall impact.
 
+
+# Training
+
+If you have more than one sensor in the system you can train it to recognize areas in different rooms. See [training](training.md).
+
+
+# Web Page
+
+The softare includes a web site where you can view the status of the system, monitor crowded rooms and track assets. See [apache](apache.md) for details on
+setting this up. This setup also includes an API that you can call to get the status of the system from any other system. The API is exposed at `/cgi-bin/cgijson.cgi`
+within the web site.
+
+# Webhook
+
+The software includes the capability send the current status whenever it changes over HTPP. Configure this using `sudo systemctl edit pi-sniffer.service` and add
+your webhook details:
+
+````
+Environment="WEBHOOK_DOMAIN=192.168.0.202"
+Environment="WEBHOOK_PORT=8087"
+Environment="WEBHOOK_PATH=/api/bluetooth/update"
+Environment="WEBHOOK_USERNAME="
+Environment="WEBHOOK_PASSWORD="
+````
+
+# InfluxDB and Grafana
+
+The software can also send detailed statistics to InfluxDB and Grafana.
+
+````
+Environment="INFLUX_SERVER=<domain>"
+Environment="INFLUX_PORT=80"
+Environment="INFLUX_DATABASE=<database>"
+Environment="INFLUX_USERNAME=<username>"
+Environment="INFLUX_PASSWORD=<password>"
+````
+
+

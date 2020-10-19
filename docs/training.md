@@ -1,12 +1,17 @@
 # Training
 
-The system learns the location of any iBeacons that you place around the area and these can then be used to define rooms and groups for reporting.
 
-The system uses 'patches' which are a roughly 3m diameter (more in an open space) patch of a room that has a fairly consistent Bluetooth signal to the sensors.
+The system learns the location of any [iBeacons](beacons.md) that you place around the area and these can then be used to define rooms and groups for reporting.
+
+The system uses 'patches' which are a roughly 3m-10m radius (more in an open space). Each patch should have a fairly consistent Bluetooth signal to the sensors.
 You train the system to recognize each patch and then define how those patches aggregate to rooms and groups.
 
+````
+                PATCH (3-10m)  ------->  ROOM  ------->  GROUP
+````
+
 The patch files are `.jsonl` format (which is just a collection of JSON objects, one per line). They are stored in the `recordings` subdirectory. A second set of
-patch files is created for you automatically in the subdirectory `beacons` from any iBeacons seen in the space that are not already at a define patch.
+patch files is created for you automatically in the subdirectory `beacons` from any iBeacons seen in the space that are not already in a defined patch.
 
 So, on startup, place a beacon in the first patch you want to train, wait maybe 15 min for some data to accumulate. You can use as many beacons at the same time as you have
 and any brand of beacon is supported including Tile, DE-WALT, Milwaukee or your own iPhone acting as an iBeacon using the `nRF Connect` app from the AppStore.
@@ -71,3 +76,4 @@ e.g.
 ````
 
 In the file, find the line with `"patch":"DEWALT-TAG"` and delete it using `Ctrl-K`.
+

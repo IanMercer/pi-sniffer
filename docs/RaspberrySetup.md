@@ -1,13 +1,14 @@
 # Raspberry Pi Headless Setup
 
-The [Raspberry Pi 3 Model B+](https://www.amazon.com/gp/product/B07P4LSDYV/ref=as_li_qf_asin_il_tl?ie=UTF8&tag=abodit01-20&creative=9325&linkCode=as2&creativeASIN=B07P4LSDYV&linkId=bb998b957f8181fc90bb029247d63fce) is the recommended Raspberry Pi for Crowd Alert
-because it has the best Bluetooth range of all the models tested. You'll also need a 5V USB power supply and micro-USB cable and an SD card. I recommend the [Sandisk Industrial 8GB UHS-1 micro-SD cards](https://www.amazon.com/gp/product/B07BLQHVQD/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=B07BLQHVQD&linkCode=as2&tag=abodit01-20&linkId=03b8fd807cc5f403a952cf74b9084e89).
+The [Raspberry Pi 4 2GB](https://amzn.to/2HlLWjy) or the [Raspberry Pi 3 Model A+ or B+](https://amzn.to/2H2wYQ3) are the recommended Raspberry Pi
+versions. The 3+ has slightly better Bluetooth range but the 4 is faster and more 'future-proof'. You'll also need a 5V USB power supply and micro-USB cable and an SD card. I recommend the [Sandisk Industrial 8GB UHS-1 micro-SD cards](https://amzn.to/3lZa7U5).
 
 1. Download the *Raspberry Pi OS (32-bit) Lite* image from https://www.raspberrypi.org/downloads/raspberry-pi-os/
 
 2. Burn the image to a micro-SD card using Etcher: https://www.balena.io/etcher/
 
 3. Create a `wpa_supplicant.conf` following the instructions here: https://www.raspberrypi.org/documentation/configuration/wireless/headless.md
+You will need to set the correct country code, SSID and password for your network.
 
 4. Add a blank file called `ssh` with no extension in the root directory. This will allow remote access over SSH.
 
@@ -31,10 +32,9 @@ sudo nmap -sn 192.168.0.0/24
 
 7. The first time you connect use `pi` as the user and `raspberry` as the password.
 
-8. Change the default password for the pi user using `passwd`.
-
 9. Run `raspi-config` and perform the following steps:
 
+    a. Change the default password for the pi user
     a. resize the partition to fill the SD card.
     b. change the host name
     c. set the timezone
@@ -43,7 +43,9 @@ Reboot after this.
 
 10. Some of the above steps can be carried out at the command line instead, e.g.
 
-    a. Change the hostname and hosts by replacing `raspberrypi` with your chosen name
+    a. Change the default password for the pi user using `passwd`.
+
+    b. Change the hostname and hosts by replacing `raspberrypi` with your chosen name
  in both of these locations, and reboot:
 
 ````
@@ -52,7 +54,7 @@ sudo nano \hosts
 sudo reboot
 ````
 
-    b. Set you local time zone and check it
+    c. Set you local time zone and check it
 ````
 sudo timedatectl set-timezone America/Los_Angeles
 timedatectl status
@@ -100,12 +102,12 @@ Storage=persistent
 
 This allows you to `journalctl --list-boots` and to display the journal for a specific boot, e.g. `-b -1`.
 
-17. Optionally add a RTC chip (recommended)
+17. Optionally add a RTC chip (only really useful if you will use the Pi in a disconnected, mobile state)
 
 You can find instructions for adding a real-time clock chip [here](https://pimylifeup.com/raspberry-pi-rtc/). I recommend the [DS3231](https://www.amazon.com/gp/product/B01N1LZSK3/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=B01N1LZSK3&linkCode=as2&tag=abodit01-20&linkId=daa1415a90f1e578374ad1a2e3fa2282) which has the best resolution.
 
 
-18. Optionally, turn off the on-board LED so that the code can use it to indicate activity
+18. Optionally, turn off the on-board LED so that the code can use it to indicate activity (recommended)
 
 `sudo sh -c "echo none > /sys/class/leds/led0/trigger"`
 
@@ -113,9 +115,10 @@ You can find instructions for adding a real-time clock chip [here](https://pimyl
 
 
 
-#ADDENDUM
+# ADDENDUM
 
-The Raspberry PiW seems to be unreliable maintaining a consistent network connection. To fix that:-
+I no longer recommend the Raspberry PiW. It seems to be unreliable maintaining a consistent network connection. To fix that
+you can try the following:-
 
 ````
 sudo nano /etc/network/interfaces
