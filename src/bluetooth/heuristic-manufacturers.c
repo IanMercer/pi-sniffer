@@ -211,9 +211,17 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         char underscored[NAME_LENGTH];
         if (manuf != NULL)
         {
-            // Prefix with _ to indicate that this isn't a for-sure name
-            snprintf(underscored, sizeof(underscored), "_%s", manuf);
-            optional_set(existing->name,underscored, NAME_LENGTH);
+				// Prefix with _ to indicate that this isn't a for-sure name
+			if (existing->addressType == PUBLIC_ADDRESS_TYPE)
+			{
+				// Use last six in name
+				snprintf(underscored, sizeof(underscored), "_%s %s", manuf, (existing->mac+8));  // Skip 8 characters XX:XX:XX
+			}
+			else
+			{
+				snprintf(underscored, sizeof(underscored), "_%s", manuf);
+			}
+			optional_set(existing->name,underscored, NAME_LENGTH);
         }
         else 
         {
@@ -975,8 +983,9 @@ const char *company_id_to_string(int company_id, int8_t* category)
 		return "Podo Labs, Inc";
 	case 368:
 		return "Roche Diabetes Care AG";
-	case 369:
-		return "Amazon Fulfillment Service";
+	case 0x0171:
+		*category = CATEGORY_FIXED;
+		return "Amazon";	// Services LLC
 	case 370:
 		return "Connovate Technology Private Limited";
 	case 371:
