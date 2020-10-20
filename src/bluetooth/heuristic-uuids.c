@@ -71,7 +71,11 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x0000111Ful) append_text(gatts, gatts_length, "HandsfreeAudioGateway, ");
         else if (ble_uuid == 0x00001120ul) append_text(gatts, gatts_length, "DirectPrintingReferenceObjects, ");
         else if (ble_uuid == 0x00001121ul) append_text(gatts, gatts_length, "ReflectedUI, ");
-        else if (ble_uuid == 0x00001122ul) append_text(gatts, gatts_length, "BasicPringing, ");
+        else if (ble_uuid == 0x00001122ul) 
+        {
+            append_text(gatts, gatts_length, "BasicPrinting, ");
+            soft_set_category(&existing->category, CATEGORY_PRINTER);
+        }
         else if (ble_uuid == 0x00001123ul) append_text(gatts, gatts_length, "PrintingStatus, ");
         else if (ble_uuid == 0x00001124ul) append_text(gatts, gatts_length, "HumanInterfaceDevice, ");
         else if (ble_uuid == 0x00001125ul) append_text(gatts, gatts_length, "HardcopyCableReplacement, ");
@@ -137,7 +141,7 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         }
         else if (ble_uuid == 0x0000feaful) {
             append_text(gatts, gatts_length, "Nest, ");
-            soft_set_category(&existing->category, CATEGORY_FIXED);
+            soft_set_category(&existing->category, CATEGORY_SECURITY);
         }
         else if (ble_uuid == 0xadabfb00ul) {
             append_text(gatts, gatts_length, "FitbitHR?, ");
@@ -176,6 +180,10 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         }
         else if (ble_uuid == 0xb9406000ul) {
             append_text(gatts, gatts_length, "Estimote 6, ");
+            soft_set_category(&existing->category, CATEGORY_BEACON);
+        }
+        else if (ble_uuid == 0xa3e68a83ul) {
+            append_text(gatts, gatts_length, "Milwaukee, ");
             soft_set_category(&existing->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0xc7f94713ul) append_text(gatts, gatts_length, "CDP, ");

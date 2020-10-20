@@ -100,6 +100,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_SECURITY; // Smart door lock?
     else if (string_starts_with(name, "Kuna"))
         existing->category = CATEGORY_SECURITY;
+    else if (string_starts_with(name, "Dropcam"))
+        existing->category = CATEGORY_SECURITY;
 
     // Category
 

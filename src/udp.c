@@ -654,7 +654,7 @@ void print_counts_by_closest(struct OverallState* state)
     g_info(" ");
     g_info("==============================================================================================");
 
-    g_info ("              Beacon                Area             Group        When");
+    g_info ("              Beacon               Patch        Room            Group        When");
     g_info("----------------------------------------------------------------------------------------------");
     for (struct Beacon* b = state->beacons; b != NULL; b=b->next)
     {
@@ -667,11 +667,12 @@ void print_counts_by_closest(struct OverallState* state)
             else if (diff < 24*60) snprintf(ago, sizeof(ago), "%.1f hours ago", diff / 60.0);
             else snprintf(ago, sizeof(ago), "%.1f days ago", diff / 24.0 / 60.0);
 
-            const char* room_name =  (b->patch == NULL) ? "---" : b->patch->name;
+            const char* patch_name =  (b->patch == NULL) ? "---" : b->patch->name;
+            const char* room_name = (b->patch == NULL) ? "---" : b->patch->room;
             const char* category = (b->patch == NULL) ? "---" : ((b->patch->group == NULL) ? "???" : b->patch->group->name);
 
-            g_info("%20s  %18s %16s        %s",
-                b->alias, room_name, 
+            g_info("%20s %18s %18s %16s      %s",
+                b->alias, patch_name, room_name, 
                 category,
                 ago);
             

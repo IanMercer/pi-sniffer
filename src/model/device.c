@@ -46,10 +46,12 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
         if (local->is_training_beacon)
         {
             g_info("Training beacon changed name '%s' to '%s' because %s", local->name, remote->name, access_name);
+            local->is_temporary_name = remote->is_temporary_name;
             g_strlcpy(local->name, remote->name, NAME_LENGTH);
         }
         else{
             g_info("Remote changed name '%s' by remote '%s'", local->name, remote->name);
+            local->is_temporary_name = remote->is_temporary_name;
             g_strlcpy(local->name, remote->name, NAME_LENGTH);
         }
     }
@@ -190,6 +192,9 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     if (device->is_training_beacon){
         cJSON_AddNumberToObject(j, "training", 1);
     }
+    if (device->is_temporary_name){
+        cJSON_AddNumberToObject(j, "temp", 1);
+    }
 
     string = cJSON_PrintUnformatted(j);
     cJSON_Delete(j);
@@ -301,6 +306,9 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
 
     cJSON *training = cJSON_GetObjectItemCaseSensitive(djson, "training");
     device->is_training_beacon = cJSON_IsNumber(training);
+
+    cJSON *temp = cJSON_GetObjectItemCaseSensitive(djson, "temp");
+    device->is_temporary_name = cJSON_IsNumber(temp);
 
     device->category = CATEGORY_UNKNOWN;
     cJSON *category = cJSON_GetObjectItemCaseSensitive(djson, "category");
