@@ -4,7 +4,13 @@ Install Apache2 and configure it:
 
 ````
 sudo apt-get install apache2
-a2enmod headers
+
+# Enable headers for CORS
+sudo a2enmod headers
+
+# Enable CGI
+sudo a2enmod cgi
+
 sudo systemctl restart apache2.service
 ````
 
