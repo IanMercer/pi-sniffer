@@ -485,9 +485,9 @@ void print_counts_by_closest(struct OverallState* state)
 
             cJSON_AddStringToObject(jobject, "patch", best.patch_name);
 
-            char buf[64];
-            strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", localtime(&now));
-            cJSON_AddStringToObject(jobject, "time", buf);
+            // char buf[64];
+            // strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", localtime(&now));
+            // cJSON_AddStringToObject(jobject, "time", buf);
             cJSON *jdistances = cJSON_AddObjectToObject(jobject, "distances");
  
             for (struct AccessPoint* current = access_points_list; current != NULL; current = current->next)

@@ -1633,16 +1633,19 @@ int report_to_influx_tick()
     time_t now = time(0);
 
     struct summary* summary = NULL;
-    summarize_by_group(state.patches, &summary);
+    summarize_by_room(state.patches, &summary);
 
     for (struct summary* s = summary; s != NULL; s = s->next)
     {
+        char tags[120];
         char field[120];
 
         snprintf(field, sizeof(field), "beacon=%.1f,computer=%.1f,phone=%.1f,tablet=%.1f,watch=%.1f,wear=%.1f",
             s->beacon_total, s->computer_total, s->phone_total, s->tablet_total, s->watch_total, s->wearable_total);
 
-        ok = ok && append_influx_line(body, sizeof(body), s->category, s->extra, field, now);
+        snprintf(tags, sizeof(tags), "room=%s", s->category);
+
+        ok = ok && append_influx_line(body, sizeof(body), s->extra, tags, field, now);
 
         if (strlen(body) + 5 * 100 > sizeof(body)){
             //g_debug("%s", body);
@@ -1656,7 +1659,7 @@ int report_to_influx_tick()
 
     if (strlen(body) > 0)
     {
-        //g_debug("%s", body);
+        g_debug("%s", body);
         post_to_influx(&state, body, strlen(body));
     }
 

@@ -112,7 +112,7 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x00006666ul) append_text(gatts, gatts_length, "Bad 0x6666, ");
         else if (ble_uuid == 0x6ada028cul) 
         {
-            append_text(gatts, gatts_length, "Nosuch, ");
+            append_text(gatts, gatts_length, "Notfound(6ada028c), ");
         }
         else if (ble_uuid == 0xa3c87500) 
         {
@@ -202,6 +202,18 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x5918f000ul) {
             append_text(gatts, gatts_length, "Ezurio MTM, ");
             soft_set_category(&existing->category, CATEGORY_FIXED);
+        }
+        else if (ble_uuid == 0x00000100ul) {
+            append_text(gatts, gatts_length, "Notfound(0x100), ");
+        }
+        else if (ble_uuid == 0x0000fe95ul) {
+            append_text(gatts, gatts_length, "Notfound(0xfe95), ");
+        }
+        else if (ble_uuid == 0x00010203ul) {
+            append_text(gatts, gatts_length, "Notfound(0x00010203), ");
+        }
+        else if (ble_uuid == 0xebe0ccb0ul) {
+            append_text(gatts, gatts_length, "Notfound(0xebe0ccb0), ");
         }
         else
             append_text(gatts, gatts_length, "Unknown(%s), ", strCopy);

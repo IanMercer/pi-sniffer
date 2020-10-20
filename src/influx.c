@@ -107,7 +107,7 @@ struct cache_item
 /*
    Append an Influx line message, returns TRUE if successful, FALSE if output is full
 */
-bool append_influx_line(char* line, int line_length,  const char* area_category, const char* tags, char* fields, time_t timestamp)
+bool append_influx_line(char* line, int line_length,  const char* measurement_name, const char* tags, char* fields, time_t timestamp)
 {
     /* InfluxDB line protocol note:
         measurement name
@@ -119,7 +119,7 @@ bool append_influx_line(char* line, int line_length,  const char* area_category,
     int remainder = line_length - existing_length;
 
     int written = snprintf(line+existing_length, remainder, "%s,%s %s %lu000000000\n",
-        area_category,            // A group of areas sums to a category
+        measurement_name,            // Measurement
         tags,                     // CSV tags
         fields,
         timestamp);               // nanosecond timestamp
