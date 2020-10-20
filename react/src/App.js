@@ -38,7 +38,7 @@ class App extends Component {
  {
     var self = this;
     // setState method is used to update the state
-    fetch('http://192.168.0.154:80/cgi-bin/cgijson.cgi')
+    fetch('/cgi-bin/cgijson.cgi')
     .then(res => res.json())
     .then((data) => {
       self.setState({ rooms: data.rooms.sort((a, b) => (''+a.group+'_'+a.name).localeCompare(b.group+'_'+b.name)) })
