@@ -1988,7 +1988,7 @@ void initialize_state()
     if (s_udp_sign_port != NULL)
         state.udp_sign_port = atoi(s_udp_sign_port);
     if (s_udp_scale_factor != NULL)
-        state.udp_scale_factor = atoi(s_udp_scale_factor);
+        state.udp_scale_factor = strtof(s_udp_scale_factor, NULL);
 
     // MQTT Settings
 

@@ -184,3 +184,442 @@ without having to update the sign itself. e.g.
 ````
 This is designed to be easy to parse using ArduinoJSON or equivalent on a microcontroller.
 
+
+# Creating a disk image for remote deployment
+
+Follow the steps to set up a complete system and test it.
+
+Next, remove the contents of the `recordings` and `beacons` subdirectories.
+
+To avoid the other person from having to set their wireless settings country before WiFi works you can disable the service. Only do this if you
+have includes the Wireless settings including country code in wpa_supplicant.conf.
+````
+sudo systemctl mask systemd-rfkill.service
+````
+
+Edit the wpa_supplicant.conf file to prepare it for the remote destination network:
+
+````
+sudo nano /etc/wpa_supplicant/wpa_supplicant.conf
+````
+Alternatively you can create one from Windows or Mac by editing a file with the same name in `/boot/wpa_supplicant.conf`. On startup
+the Raspberry Pi will copy this file to the correct location.
+
+
+Do a clean shutdown `sudo shutdown`.  Wait until it's finished and then remove the card from the Raspberry Pi.
+
+Put the card into a Mac or Windows machine and create the `Wpa_supplicant.conf` file for the destination network.
+
+Use `ApplePi Baker` to create a .IMG file. Share that `.IMG` file with the recipient and they can use `Etcher` to burn the image to a clean SD card.
+
+
+They should 
+
+
+
+
+# Hotspot Mode
+
+hostapd (host access point daemon) is a user space daemon software enabling a network interface card to act as an access point and authentication server. 
+
+````
+sudo apt-get install hostapd
+sudo apt-get install dnsmasq
+sudo systemctl unmask hostapd
+
+cp /usr/share/doc/hostapd/examples/hostapd.conf > /etc/hostapd/hostapd.conf
+  # $EDITOR /etc/hostapd/hostapd.conf
+
+
+
+
+sudo nano /etc/hostapd/hostapd.conf
+````
+
+
+````
+#2.4GHz setup wifi 80211 b,g,n
+interface=wlan0
+driver=nl80211
+ssid=CrowdAlert
+hw_mode=g
+channel=8
+wmm_enabled=0
+macaddr_acl=0
+auth_algs=1
+ignore_broadcast_ssid=0
+wpa=2
+wpa_passphrase=NoCrowdingHere
+wpa_key_mgmt=WPA-PSK
+wpa_pairwise=CCMP TKIP
+rsn_pairwise=CCMP
+
+#80211n - Change GB to your WiFi country code
+country_code=US
+ieee80211n=1
+ieee80211d=1
+````
+
+
+See also `cat /usr/share/doc/hostapd/README.Debian`
+
+Now set up dnsmasq:
+
+````
+sudo nano /etc/dnsmasq.conf
+````
+
+Add the following lines:
+
+````
+#RPiHotspot config - Internet
+interface=wlan0
+bind-dynamic
+domain-needed
+bogus-priv
+dhcp-range=192.168.50.150,192.168.50.200,255.255.255.0,1h
+````
+
+
+Now `sudo nano /etc/network/interfaces` to check that it's unchanged from:
+````
+# interfaces(5) file used by ifup(8) and ifdown(8)
+# Please note that this file is written to be used with dhcpcd
+# For static IP, consult /etc/dhcpcd.conf and 'man dhcpcd.conf'
+# Include files from /etc/network/interfaces.d:
+source-directory /etc/network/interfaces.d
+````
+
+
+
+
+
+
+
+
+````
+sudo nano /etc/sysctl.conf
+````
+
+Uncomment the next line to enable packet forwarding for IPv4
+````
+#net.ipv4.ip_forward=1
+````
+
+
+````
+sudo nano /etc/dhcpcd.conf
+````
+
+Add a line at the bottom
+````
+nohook wpa_supplicant
+````
+
+or for permanent forwarding they suggested
+
+````
+nohook wpa_supplicant
+interface wlan0
+static ip_address=192.168.50.10/24
+static routers=192.168.50.1
+static domain_name_servers=8.8.8.8
+````
+
+First create the file for the ip table rules.
+
+sudo nano /etc/iptables-hs
+
+add the lines below or download from here
+
+#!/bin/bash
+iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+iptables -A FORWARD -i eth0 -o wlan0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+iptables -A FORWARD -i wlan0 -o eth0 -j ACCEPT
+now save (ctrl & o) and exit (ctrl & x)
+
+Update the permissions so it can be run with
+
+sudo chmod +x /etc/iptables-hs
+
+Now the service file can be created which will activate the ip tables each time the Raspberry Pi starts up
+
+Create the following file
+
+sudo nano /etc/systemd/system/hs-iptables.service
+
+Then add the lines below of download from here
+
+
+[Unit]
+Description=Activate IPtables for Hotspot
+After=network-pre.target
+Before=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/etc/iptables-hs
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+autohotspot service file
+Next we have to create a service which will run the autohotspot script when the Raspberry Pi starts up.
+
+create a new file with the command
+
+sudo nano /etc/systemd/system/autohotspot.service
+
+Then enter the following text or download here
+
+
+[Unit]
+Description=Automatically generates an internet Hotspot when a valid ssid is not in range
+After=multi-user.target
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/autohotspotN
+[Install]
+WantedBy=multi-user.target
+and save (ctrl & o) and exit (ctrl & x)
+
+ 
+
+For the service to work it has to be enabled. To do this enter the command
+
+sudo systemctl enable autohotspot.service
+
+
+
+#!/bin/bash
+#version 0.961-N/HS-I
+
+#You may share this script on the condition a reference to RaspberryConnect.com 
+#must be included in copies or derivatives of this script. 
+
+#Network Wifi & Hotspot with Internet
+#A script to switch between a wifi network and an Internet routed Hotspot
+#A Raspberry Pi with a network port required for Internet in hotspot mode.
+#Works at startup or with a seperate timer or manually without a reboot
+#Other setup required find out more at
+#http://www.raspberryconnect.com
+
+wifidev="wlan0" #device name to use. Default is wlan0.
+ethdev="eth0" #Ethernet port to use with IP tables
+#use the command: iw dev ,to see wifi interface name 
+
+IFSdef=$IFS
+cnt=0
+#These four lines capture the wifi networks the RPi is setup to use
+wpassid=$(awk '/ssid="/{ print $0 }' /etc/wpa_supplicant/wpa_supplicant.conf | awk -F'ssid=' '{ print $2 }' | sed 's/\r//g'| awk 'BEGIN{ORS=","} {print}' | sed 's/\"/''/g' | sed 's/,$//')
+IFS=","
+ssids=($wpassid)
+IFS=$IFSdef #reset back to defaults
+
+
+#Note:If you only want to check for certain SSIDs
+#Remove the # in in front of ssids=('mySSID1'.... below and put a # infront of all four lines above
+# separated by a space, eg ('mySSID1' 'mySSID2')
+#ssids=('mySSID1' 'mySSID2' 'mySSID3')
+
+#Enter the Routers Mac Addresses for hidden SSIDs, seperated by spaces ie 
+#( '11:22:33:44:55:66' 'aa:bb:cc:dd:ee:ff' ) 
+mac=()
+
+ssidsmac=("${ssids[@]}" "${mac[@]}") #combines ssid and MAC for checking
+
+createAdHocNetwork()
+{
+    echo "Creating Hotspot"
+    ip link set dev "$wifidev" down
+    ip a add 192.168.50.5/24 brd + dev "$wifidev"
+    ip link set dev "$wifidev" up
+    dhcpcd -k "$wifidev" >/dev/null 2>&1
+    iptables -t nat -A POSTROUTING -o "$ethdev" -j MASQUERADE
+    iptables -A FORWARD -i "$ethdev" -o "$wifidev" -m state --state RELATED,ESTABLISHED -j ACCEPT
+    iptables -A FORWARD -i "$wifidev" -o "$ethdev" -j ACCEPT
+    systemctl start dnsmasq
+    systemctl start hostapd
+    echo 1 > /proc/sys/net/ipv4/ip_forward
+}
+
+KillHotspot()
+{
+    echo "Shutting Down Hotspot"
+    ip link set dev "$wifidev" down
+    systemctl stop hostapd
+    systemctl stop dnsmasq
+    iptables -D FORWARD -i "$ethdev" -o "$wifidev" -m state --state RELATED,ESTABLISHED -j ACCEPT
+    iptables -D FORWARD -i "$wifidev" -o "$ethdev" -j ACCEPT
+    echo 0 > /proc/sys/net/ipv4/ip_forward
+    ip addr flush dev "$wifidev"
+    ip link set dev "$wifidev" up
+    dhcpcd  -n "$wifidev" >/dev/null 2>&1
+}
+
+ChkWifiUp()
+{
+	echo "Checking WiFi connection ok"
+        sleep 20 #give time for connection to be completed to router
+	if ! wpa_cli -i "$wifidev" status | grep 'ip_address' >/dev/null 2>&1
+        then #Failed to connect to wifi (check your wifi settings, password etc)
+	       echo 'Wifi failed to connect, falling back to Hotspot.'
+               wpa_cli terminate "$wifidev" >/dev/null 2>&1
+	       createAdHocNetwork
+	fi
+}
+
+chksys()
+{
+    #After some system updates hostapd gets masked using Raspbian Buster, and above. This checks and fixes  
+    #the issue and also checks dnsmasq is ok so the hotspot can be generated.
+    #Check Hostapd is unmasked and disabled
+    if systemctl -all list-unit-files hostapd.service | grep "hostapd.service masked" >/dev/null 2>&1 ;then
+	systemctl unmask hostapd.service >/dev/null 2>&1
+    fi
+    if systemctl -all list-unit-files hostapd.service | grep "hostapd.service enabled" >/dev/null 2>&1 ;then
+	systemctl disable hostapd.service >/dev/null 2>&1
+	systemctl stop hostapd >/dev/null 2>&1
+    fi
+    #Check dnsmasq is disabled
+    if systemctl -all list-unit-files dnsmasq.service | grep "dnsmasq.service masked" >/dev/null 2>&1 ;then
+	systemctl unmask dnsmasq >/dev/null 2>&1
+    fi
+    if systemctl -all list-unit-files dnsmasq.service | grep "dnsmasq.service enabled" >/dev/null 2>&1 ;then
+	systemctl disable dnsmasq >/dev/null 2>&1
+	systemctl stop dnsmasq >/dev/null 2>&1
+    fi
+}
+
+
+FindSSID()
+{
+#Check to see what SSID's and MAC addresses are in range
+ssidChk=('NoSSid')
+i=0; j=0
+until [ $i -eq 1 ] #wait for wifi if busy, usb wifi is slower.
+do
+        ssidreply=$((iw dev "$wifidev" scan ap-force | egrep "^BSS|SSID:") 2>&1) >/dev/null 2>&1 
+        #echo "SSid's in range: " $ssidreply
+	printf '%s\n' "${ssidreply[@]}"
+        echo "Device Available Check try " $j
+        if (($j >= 10)); then #if busy 10 times goto hotspot
+                 echo "Device busy or unavailable 10 times, going to Hotspot"
+                 ssidreply=""
+                 i=1
+	elif echo "$ssidreply" | grep "No such device (-19)" >/dev/null 2>&1; then
+                echo "No Device Reported, try " $j
+		NoDevice
+        elif echo "$ssidreply" | grep "Network is down (-100)" >/dev/null 2>&1 ; then
+                echo "Network Not available, trying again" $j
+                j=$((j + 1))
+                sleep 2
+	elif echo "$ssidreply" | grep "Read-only file system (-30)" >/dev/null 2>&1 ; then
+		echo "Temporary Read only file system, trying again"
+		j=$((j + 1))
+		sleep 2
+	elif echo "$ssidreply" | grep "Invalid exchange (-52)" >/dev/null 2>&1 ; then
+		echo "Temporary unavailable, trying again"
+		j=$((j + 1))
+		sleep 2
+	elif echo "$ssidreply" | grep -v "resource busy (-16)"  >/dev/null 2>&1 ; then
+               echo "Device Available, checking SSid Results"
+		i=1
+	else #see if device not busy in 2 seconds
+                echo "Device unavailable checking again, try " $j
+		j=$((j + 1))
+		sleep 2
+	fi
+done
+
+for ssid in "${ssidsmac[@]}"
+do
+     if (echo "$ssidreply" | grep -F -- "$ssid") >/dev/null 2>&1
+     then
+	      #Valid SSid found, passing to script
+              echo "Valid SSID Detected, assesing Wifi status"
+              ssidChk=$ssid
+              return 0
+      else
+	      #No Network found, NoSSid issued"
+              echo "No SSid found, assessing WiFi status"
+              ssidChk='NoSSid'
+     fi
+done
+}
+
+NoDevice()
+{
+	#if no wifi device,ie usb wifi removed, activate wifi so when it is
+	#reconnected wifi to a router will be available
+	echo "No wifi device connected"
+	wpa_supplicant -B -i "$wifidev" -c /etc/wpa_supplicant/wpa_supplicant.conf >/dev/null 2>&1
+	exit 1
+}
+
+chksys
+FindSSID
+
+#Create Hotspot or connect to valid wifi networks
+if [ "$ssidChk" != "NoSSid" ]
+then
+       echo 0 > /proc/sys/net/ipv4/ip_forward #deactivate ip forwarding
+       if systemctl status hostapd | grep "(running)" >/dev/null 2>&1
+       then #hotspot running and ssid in range
+              KillHotspot
+              echo "Hotspot Deactivated, Bringing Wifi Up"
+              wpa_supplicant -B -i "$wifidev" -c /etc/wpa_supplicant/wpa_supplicant.conf >/dev/null 2>&1
+              ChkWifiUp
+       elif { wpa_cli -i "$wifidev" status | grep 'ip_address'; } >/dev/null 2>&1
+       then #Already connected
+              echo "Wifi already connected to a network"
+       else #ssid exists and no hotspot running connect to wifi network
+              echo "Connecting to the WiFi Network"
+              wpa_supplicant -B -i "$wifidev" -c /etc/wpa_supplicant/wpa_supplicant.conf >/dev/null 2>&1
+              ChkWifiUp
+       fi
+else #ssid or MAC address not in range
+       if systemctl status hostapd | grep "(running)" >/dev/null 2>&1
+       then
+              echo "Hostspot already active"
+       elif { wpa_cli status | grep "$wifidev"; } >/dev/null 2>&1
+       then
+              echo "Cleaning wifi files and Activating Hotspot"
+              wpa_cli terminate >/dev/null 2>&1
+              ip addr flush "$wifidev"
+              ip link set dev "$wifidev" down
+              rm -r /var/run/wpa_supplicant >/dev/null 2>&1
+              createAdHocNetwork
+       else #"No SSID, activating Hotspot"
+              createAdHocNetwork
+       fi
+fi
+
+sudo chmod +x /usr/bin/autohotspotN
+
+
+
+
+

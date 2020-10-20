@@ -15,6 +15,11 @@ struct AccessPoint *add_access_point(struct AccessPoint** access_point_list, cha
                                      const char *description, const char *platform,
                                      int rssi_one_meter, float rssi_factor, float people_distance)
 {
+    g_assert(rssi_one_meter < -50);
+    g_assert(rssi_one_meter > -150);
+    g_assert(rssi_factor > 1.0);
+    g_assert(rssi_factor < 5.0);
+
     //g_debug("Check for new access point '%s'\n", client_id);
     bool created;
     struct AccessPoint* ap = get_or_create_access_point(access_point_list, client_id, &created);
@@ -29,10 +34,10 @@ struct AccessPoint *add_access_point(struct AccessPoint** access_point_list, cha
         g_utf8_strncpy(ap->description, description, META_LENGTH);
         g_utf8_strncpy(ap->platform, platform, META_LENGTH);
         //strncpy(ap->client_id, client_id, META_LENGTH);
-        ap->rssi_one_meter = rssi_one_meter;
-        ap->rssi_factor = rssi_factor;
-        ap->people_distance = people_distance;
     }
+    ap->rssi_one_meter = rssi_one_meter;
+    ap->rssi_factor = rssi_factor;
+    ap->people_distance = people_distance;
     ap->people_closest_count = 0.0;
     ap->people_in_range_count = 0.0;
     time(&ap->last_seen);
