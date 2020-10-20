@@ -1974,6 +1974,12 @@ void initialize_state()
         people_distance = strtof(s_people_distance, NULL);
 
     g_debug("Add self as access point");
+
+    if (rssi_one_meter > -50) g_warning("Unlikely setting for RSSI_ONE_METER=%i", rssi_one_meter);
+    if (rssi_one_meter < -150) g_warning("Unlikely setting for RSSI_ONE_METER=%i", rssi_one_meter);
+    if (rssi_factor < 1.0) g_warning("Unlikely setting for RSSI_FACTOR=%.2f", rssi_factor);
+    if (rssi_factor > 5.0) g_warning("Unlikely setting for RSSI_FACTOR=%.2f", rssi_factor);
+
     state.local = add_access_point(&state.access_points, client_id, description, platform,
                                    rssi_one_meter, rssi_factor, people_distance);
 
