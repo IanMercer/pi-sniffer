@@ -1,18 +1,8 @@
 {
     "comment1":"Remember to set a configuration entry pointing to this file if it's not placed in /etc/signswift/config.json.",
 
-    "sensors" : [
-        { "name" : "barn" },
-        { "name" : "barn2" },
-        { "name" : "garage" },
-        { "name" : "kitchen" },
-        { "name" : "livingroom" },
-        { "name" : "mobile" },
-        { "name" : "study" }
-    ],
-
     "beacons" : [
-        {"name": "AprilBeacon_E1234", "mac": "d0:39:72:e8:04:a2", "alias": "AprilBeacon" },
-        {"name": "Sensoro", "mac": "01:17:c5:34:09:ee", "alias": "Sensoro" }
+        {"name": "AprilBeacon_E1234", "mac": "d0:39:72:e8:04:a2", "alias": "Audi Car" },
+        {"name": "Sensoro", "mac": "01:17:c5:34:09:ee", "alias": "Circular Saw" }
     ]
 }
