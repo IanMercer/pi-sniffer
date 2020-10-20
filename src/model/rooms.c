@@ -183,7 +183,7 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
             if (cJSON_IsString(name) && (name->valuestring != NULL))
             {
                 g_debug("Added sensor %s", name->valuestring);
-                add_access_point(accesspoint_list, name->valuestring, "not seen yet", "not seen yet", 64, , 7.5);
+                add_access_point(accesspoint_list, name->valuestring, "not seen yet", "not seen yet", 64, 2.8, 7.5);
             }
             else
             {
