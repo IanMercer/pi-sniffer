@@ -1483,21 +1483,18 @@ gboolean should_remove(struct Device *existing)
 
     int delta_time = difftime(now, existing->latest);
 
-    // 2 min for a regular device
-    int max_time_ago_seconds = 2 * 60;
+    // 3 min for a regular device
+    int max_time_ago_seconds = 3 * 60;
 
-    // 10 min if we got to know it
+    // 5 min if we got to know it
     if (existing->category != CATEGORY_UNKNOWN){
-        max_time_ago_seconds = 4 * 60; // was 10 * 60;
+        max_time_ago_seconds = 5 * 60; // was 10 * 60;
     }
 
-    // Try letting public beacons go sooner, see if they come back
-    // // 20 min for a beacon or other public mac address
-    // // Some iBeacons seem to go offline occasionally for 10min
-    // if (existing->addressType == PUBLIC_ADDRESS_TYPE)
-    // {
-    //     max_time_ago_seconds = 20 * 60;
-    // }
+    // 12 min for ibeacons
+    if (existing->category == CATEGORY_BEACON){
+        max_time_ago_seconds = 12 * 60;
+    }
 
     // 1 hour upper limit
     if (max_time_ago_seconds > 60 * MAX_TIME_AGO_CACHE)

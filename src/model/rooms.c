@@ -124,6 +124,7 @@ struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group
 */
 void read_configuration_file(const char* path, struct AccessPoint** accesspoint_list, struct Beacon** beacon_list)
 {
+    (void)accesspoint_list; // no longer used
     // Read from file ...
 
     FILE *fp;
@@ -169,28 +170,28 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
 
     // -------------- access points ---------------
 
-    cJSON* accesspoints = cJSON_GetObjectItemCaseSensitive(json, "sensors");
-    if (!cJSON_IsArray(accesspoints)){
-        g_warning("Could not parse sensors[] from configuration file");
-        // non-fatal
-    }
-    else
-    {
-        cJSON* accesspoint = NULL;
-        cJSON_ArrayForEach(accesspoint, accesspoints)
-        {
-            cJSON* name = cJSON_GetObjectItemCaseSensitive(accesspoint, "name");
-            if (cJSON_IsString(name) && (name->valuestring != NULL))
-            {
-                g_debug("Added sensor %s", name->valuestring);
-                add_access_point(accesspoint_list, name->valuestring, "not seen yet", "not seen yet", 64, 2.8, 7.5);
-            }
-            else
-            {
-                g_warning("Missing name field on sensor object");
-            }
-        }
-    }
+    // cJSON* accesspoints = cJSON_GetObjectItemCaseSensitive(json, "sensors");
+    // if (!cJSON_IsArray(accesspoints)){
+    //     g_warning("Could not parse sensors[] from configuration file");
+    //     // non-fatal
+    // }
+    // else
+    // {
+    //     cJSON* accesspoint = NULL;
+    //     cJSON_ArrayForEach(accesspoint, accesspoints)
+    //     {
+    //         cJSON* name = cJSON_GetObjectItemCaseSensitive(accesspoint, "name");
+    //         if (cJSON_IsString(name) && (name->valuestring != NULL))
+    //         {
+    //             g_debug("Added sensor %s", name->valuestring);
+    //             add_access_point(accesspoint_list, name->valuestring, "not seen yet", "not seen yet", 64, 2.8, 7.5);
+    //         }
+    //         else
+    //         {
+    //             g_warning("Missing name field on sensor object");
+    //         }
+    //     }
+    // }
 
     // ------------------- beacons --------------------
 

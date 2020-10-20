@@ -369,8 +369,9 @@ void print_counts_by_closest(struct OverallState* state)
 
         int age = difftime(now, test->time);
         // If this hasn't been seen in > 300s (5min), skip it
-        // and therefore all later instances of it 
-        if (age > 300) continue;
+        // and therefore all later instances of it (except beacons, keep them in the list longer)
+        if (age > 300 && test->category != CATEGORY_BEACON) continue;
+        else if (age > 600) continue;
         count_in_age_range++;
 
         char mac[18];
@@ -455,7 +456,9 @@ void print_counts_by_closest(struct OverallState* state)
         struct AccessPoint *ap = test->access_point;
 
         int delta_time = difftime(now, test->time);
-        double score = 0.55 - atan(delta_time / 42.0 - 4.0) / 3.0;
+        double x_scale = test->category == CATEGORY_BEACON ? 84.0 : 42.0;       // beacons last longer, tend to transmit less often
+
+        double score = 0.55 - atan(delta_time / x_scale - 4.0) / 3.0;
         // A curve that stays a 1.0 for a while and then drops rapidly around 3 minutes out
         if (score > 0.99) score = 1.0;
         if (score < 0.1) score = 0.0;
