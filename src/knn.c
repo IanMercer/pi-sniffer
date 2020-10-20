@@ -33,14 +33,6 @@ char* recording_to_json (struct recording* r, struct AccessPoint* access_points)
 
 //    cJSON_AddStringToObject(j, "patch", r->patch_name);
 
-    // time
-
-    time_t rawtime;
-    time (&rawtime);
-    char buf[64];
-    strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", localtime(&rawtime));
-    cJSON_AddStringToObject(j, "time", buf);
-
     // distances
 
     cJSON *distances = cJSON_AddObjectToObject(j, "distances");
@@ -334,6 +326,9 @@ bool read_observations_file (const char * dirname, const char* filename, struct 
 
         line_count++;
 
+        // Skip comment lines
+        if (string_starts_with(line, "#")) { g_free(line); continue; }
+
         trim(line);
         if (strlen(line) > 0)
         {
@@ -479,7 +474,15 @@ bool record (const char* directory, const char* device_name, double access_dista
     char* buffer = recording_to_json(&r, access_points);
     if (buffer != NULL)
     {
-        gssize written =  g_data_output_stream_put_string(output, buffer, NULL, &error_local);
+        // time
+        time_t rawtime;
+        time (&rawtime);
+        char time_comment[64];
+        strftime(time_comment, sizeof(time_comment), "# time %Y-%m-%dT%H:%M:%S\n", localtime(&rawtime));
+
+        gssize written = 0;
+        written +=  g_data_output_stream_put_string(output, time_comment, NULL, &error_local);
+        written +=  g_data_output_stream_put_string(output, buffer, NULL, &error_local);
         written +=  g_data_output_stream_put_string(output, "\n", NULL, &error_local);
 
         free(buffer);
