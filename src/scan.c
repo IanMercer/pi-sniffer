@@ -1656,7 +1656,7 @@ int report_to_influx_tick()
 
     if (strlen(body) > 0)
     {
-        g_debug("%s", body);
+        //g_debug("%s", body);
         post_to_influx(&state, body, strlen(body));
     }
 
@@ -1701,8 +1701,12 @@ void send_to_udp_display(struct OverallState *state)
     }
 }
 
+
+static int report_count = 0;
+
 /*
     Report access point counts to InfluxDB, Web, UDP
+    Called every 20s but Web hook only called once a minute and Influx once every five minutes
 */
 int report_counts(void *parameters)
 {
@@ -1711,12 +1715,20 @@ int report_counts(void *parameters)
     if (!state.network_up) return TRUE;
     if (starting) return TRUE;
 
+    report_count++;
+
     if (influx_is_configured() || webhook_is_configured() || state.web_polling || state.udp_sign_port > 0)
     {
         // Set JSON for all ways to receive it (GET, POST, INFLUX, MQTT)
         print_counts_by_closest(&state);
-        report_to_influx_tick();
-        report_to_http_post_tick();
+
+        // Every 5 min
+        if (report_count % 15 == 0) report_to_influx_tick();
+
+        // Every 1 min
+        if (report_count % 3 == 0) report_to_http_post_tick();
+
+        // Every 20s
         send_to_udp_display(&state);
         return TRUE;
     }
