@@ -186,7 +186,8 @@ float score (struct recording* recording, double access_points_distance[N_ACCESS
         if (recording_distance != 0 && measured_distance != 0) matches++;
     }
 
-    if (matches > 0) return sqrt(sum_delta_squared / matches);
+    // better score for more matches
+    if (matches > 0) return sqrt(sum_delta_squared) / matches;
     // otherwise some large number
     return sqrt(sum_delta_squared);
 }

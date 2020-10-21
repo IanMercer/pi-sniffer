@@ -78,7 +78,7 @@ struct AccessPoint *update_accessPoints(struct AccessPoint** access_point_list, 
     // Make sure we aren't dropping too many messages
     if (ap->sequence !=0 && (access_point.sequence - ap->sequence) > 1)
     {
-        g_warning("Missed %li messages from %s", (access_point.sequence - ap->sequence) - 1, ap->client_id);
+        g_warning("Missed %li messages from %s", (long)((access_point.sequence - ap->sequence) - 1), ap->client_id);
     }
     ap->sequence = access_point.sequence;
 
