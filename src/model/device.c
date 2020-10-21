@@ -159,6 +159,7 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     cJSON_AddNumberToObject(j, "people_distance", a->people_distance);
     cJSON_AddNumberToObject(j, "people_closest_count", a->people_closest_count);
     cJSON_AddNumberToObject(j, "people_in_range_count", a->people_in_range_count);
+    cJSON_AddNumberToObject(j, "seq", a->sequence);
 
     // Device details
     cJSON_AddStringToObject(j, "mac", device->mac);
@@ -253,6 +254,12 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
     if (cJSON_IsNumber(people_in_range_count))
     {
         access_point->people_in_range_count = (float)people_in_range_count->valuedouble;
+    }
+
+    cJSON *sequence = cJSON_GetObjectItemCaseSensitive(djson, "seq");
+    if (cJSON_IsNumber(sequence))
+    {
+        access_point->sequence = (int64_t)sequence->valuedouble;
     }
 
     // DEVICE

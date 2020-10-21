@@ -54,13 +54,13 @@ struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group
 
     if (string_contains_insensitive(tags, " "))
     {
-        g_warning("Spaces not allowed in tags for area '%s' (removed)", patch_name);
+        //g_warning("Spaces not allowed in tags for area '%s' (removed)", patch_name);
         url_slug(tags);
     }
 
     if (string_contains_insensitive(patch_name, " "))
     {
-        g_warning("Spaces not allowed in patch names '%s' (removed)", patch_name);
+        //g_warning("Spaces not allowed in patch names '%s' (removed)", patch_name);
         url_slug(patch_name);   // destructive
     }
 
@@ -230,10 +230,7 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
     }
 
     cJSON_Delete(json);
-
-    g_debug("free buffer");
     g_free(buffer);
-
     fclose(fp);
 }
 

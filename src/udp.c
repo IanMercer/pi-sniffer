@@ -169,7 +169,16 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
     state->closest[state->closest_n].time = time;
     state->closest[state->closest_n].count = count;
     state->closest[state->closest_n].is_training_beacon = is_training_beacon;
-    strncpy(state->closest[state->closest_n].name, name, META_LENGTH);           // debug only, remove this later
+    strncpy(state->closest[state->closest_n].name, name, NAME_LENGTH);           // debug only, remove this later
+
+    // If it's a known MAC address or name of a beacon, update the name to the alias
+    for (struct Beacon* b = state->beacons; b != NULL; b = b->next)
+    {
+        if (strcmp(b->name, name) == 0 || b->mac64 == device_64)
+        {
+            g_utf8_strncpy(state->closest[state->closest_n].name, b->alias, NAME_LENGTH);
+        }
+    }
     state->closest_n++;
 
     // And now clean the remainder of the array, removing any for same access, same device
@@ -323,9 +332,9 @@ void print_counts_by_closest(struct OverallState* state)
     //if (state->recordings == NULL)
     {
         g_info("Re-read observations files");
-        bool ok = read_observations ("recordings", state->access_points, &state->recordings, &state->patches, &state->groups, TRUE);
+        bool ok = read_observations ("recordings", state, TRUE);
         if (!ok) g_warning("Failed to read recordings files back");
-        ok = read_observations ("beacons", state->access_points, &state->recordings, &state->patches, &state->groups, FALSE);
+        ok = read_observations ("beacons", state, FALSE);
         if (!ok) g_warning("Failed to read beacon files back");
         for (struct recording* r = state->recordings; r != NULL; r=r->next)
         {
@@ -587,7 +596,8 @@ void print_counts_by_closest(struct OverallState* state)
             struct Beacon* beacon = NULL;
             for (struct Beacon* b = beacon_list; b != NULL; b=b->next)
             {
-                if (strcmp(b->name, test->name) == 0 || b->mac64 == test->device_64)
+                // g_debug("'%s' '%s' '%s'", b->name, b->alias, test->name);
+                if (strcmp(b->alias, test->name) == 0 || strcmp(b->name, test->name) == 0 || b->mac64 == test->device_64)
                 {
                     beacon = b;
                     break;
@@ -662,7 +672,6 @@ void print_counts_by_closest(struct OverallState* state)
     g_info("----------------------------------------------------------------------------------------------");
     for (struct Beacon* b = state->beacons; b != NULL; b=b->next)
     {
-        if (b->patch != NULL)
         {
             char ago[20];
             double diff = b->last_seen == 0 ? -1 : difftime(now, b->last_seen) / 60.0;
@@ -834,6 +843,7 @@ void *listen_loop(void *param)
         dummy.people_in_range_count = 0.0;
         dummy.rssi_factor = 0.0;
         dummy.rssi_one_meter = 0.0;
+        dummy.sequence = 0;
 
         strncpy(d.mac, "notset", 7);  // access point only messages have no device mac address
 
@@ -959,6 +969,7 @@ GCancellable *create_socket_service(struct OverallState *state)
 void send_device_udp(struct OverallState *state, struct Device *device)
 {
     //printf("    Send UDP %i device %s '%s'\n", PORT, device->mac, device->name);
+    state->local->sequence++;
     char *json = device_to_json(state->local, device);
     //printf("    %s\n", json);
     udp_send(state->udp_mesh_port, json, strlen(json) + 1);

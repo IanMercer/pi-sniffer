@@ -26,8 +26,7 @@ struct recording
 
 bool record (const char* directory, const char* device_name, double access_distances[N_ACCESS_POINTS], struct AccessPoint* access_points, char* location);
 
-bool read_observations (const char * dirname, struct AccessPoint* access_points, struct recording** recordings,
-    struct patch** patch_list, struct group** group_list, bool confirmed);
+bool read_observations (const char * dirname, struct OverallState* state, bool confirmed);
 
 void free_list(struct recording** head);
 

@@ -136,6 +136,7 @@ struct AccessPoint
    time_t last_seen;             // Time access point was last seen
 
    struct AccessPoint* next;     // Linked list
+   int64_t sequence;             // Message sequence number so we can spot missing messages
 };
 
 /*
@@ -186,7 +187,7 @@ struct ClosestTo
    // count from access point
    int count;
    // for debugging
-   char name [META_LENGTH];
+   char name [NAME_LENGTH];
    // for training location to patch mappings
    bool is_training_beacon;
 };

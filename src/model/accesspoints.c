@@ -74,6 +74,14 @@ struct AccessPoint *update_accessPoints(struct AccessPoint** access_point_list, 
     strncpy(ap->platform, access_point.platform, META_LENGTH);
     // TODO: Only if later
     time(&access_point.last_seen);
+
+    // Make sure we aren't dropping too many messages
+    if (ap->sequence !=0 && (access_point.sequence - ap->sequence) > 1)
+    {
+        g_warning("Missed %li messages from %s", (access_point.sequence - ap->sequence) - 1, ap->client_id);
+    }
+    ap->sequence = access_point.sequence;
+
     return ap;
 }
 

@@ -55,14 +55,6 @@ struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group
 
 // ------------------------------------------------------------------
 
-struct beacon
-{
-    const char* name;
-    const char* mac_address;
-    int64_t mac64;
-    const char* alias;
-};
-
 /*
     summarize_by_room
 */

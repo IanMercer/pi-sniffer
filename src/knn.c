@@ -58,7 +58,7 @@ char* recording_to_json (struct recording* r, struct AccessPoint* access_points)
 /*
     Convert JSON lines value back to a recording value
 */
-bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct recording** recordings, struct patch** patch_list, struct group** areas_list, struct patch** current_patch, bool confirmed)
+bool json_to_recording(char* buffer, struct OverallState* state, struct patch** current_patch, bool confirmed)
 {
     if (strlen(buffer) == 0) return TRUE;
 
@@ -112,7 +112,7 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
         else
         {
             //g_info("Heading: Patch '%s' Group name '%s', tags '%s'", patch_name->valuestring, group_name->valuestring, tags->valuestring);
-            *current_patch = get_or_create_patch(patch_name->valuestring, room_name->valuestring, group_name->valuestring, tags->valuestring, patch_list, areas_list, confirmed);
+            *current_patch = get_or_create_patch(patch_name->valuestring, room_name->valuestring, group_name->valuestring, tags->valuestring, &state->patches, &state->groups, confirmed);
         }
     }
 
@@ -132,10 +132,10 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
         struct recording* ralloc = malloc(sizeof(struct recording));
         ralloc->confirmed = confirmed;
         g_utf8_strncpy(ralloc->patch_name, (*current_patch)->name, META_LENGTH);
-        ralloc->next = *recordings;
-        *recordings = ralloc;
+        ralloc->next = state->recordings;
+        state->recordings = ralloc;
 
-        for (struct AccessPoint* ap = access_points; ap != NULL; ap = ap->next)
+        for (struct AccessPoint* ap = state->access_points; ap != NULL; ap = ap->next)
         {
             cJSON* dist = cJSON_GetObjectItem(distances, ap->client_id);
             if (cJSON_IsNumber(dist))
@@ -154,7 +154,7 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
 
         if (count < 1)
         {
-            g_warning("No values found in %s", buffer);
+            //g_warning("No values found in %s", buffer);
             cJSON_Delete(json);
             return FALSE;
         }
@@ -169,21 +169,26 @@ bool json_to_recording(char* buffer, struct AccessPoint* access_points, struct r
 float score (struct recording* recording, double access_points_distance[N_ACCESS_POINTS], struct AccessPoint* access_points)
 {
     float sum_delta_squared = 0.0;
+    int matches = 0;
     for (struct AccessPoint* ap = access_points; ap != NULL; ap=ap->next)
     {
         float recording_distance = recording->access_point_distances[ap->id];
         float measured_distance = access_points_distance[ap->id];
 
-        // A missing distance is treated as being off at infinity (50.0)
-        // If both are zero this cancels out, but if it was expected to be here and isn't or vice-versa a long reading is better
+        // A missing distance is treated as being off at infinity (>20m)
+        // If both are zero this cancels out, but if it was expected to be here and isn't or vice-versa a distant reading is better
         if (recording_distance == 0.0) recording_distance = 35.0;
         if (measured_distance == 0.0) measured_distance = 35.0;
 
         float delta = measured_distance - recording_distance;
         sum_delta_squared += delta*delta;
+
+        if (recording_distance != 0 && measured_distance != 0) matches++;
     }
 
-    return sum_delta_squared;
+    if (matches > 0) return sqrt(sum_delta_squared / matches);
+    // otherwise some large number
+    return sqrt(sum_delta_squared);
 }
 
 
@@ -268,12 +273,13 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
             }
         }
 
+        // TODO: Make insertion sort to keep top_k
         if (score > best_score)
         {
             //g_debug("Replace %s by %s in best score %.2f", top_result[0].patch_name, result[i].patch_name, score);
             best_score = score;
-            top_result[0] = result[i];                        // copy name and distance (for first)
-            top_result[0].distance = sqrt(best_distance);     // overwrite with best distance
+            top_result[0] = result[i];                  // copy name and distance (for first)
+            top_result[0].distance = best_distance;     // overwrite with best distance
             // do something with top_count
             (void)top_count;
         }
@@ -285,13 +291,12 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
 
 // FILE OPERATIONS
 
-bool read_observations_file (const char * dirname, const char* filename, struct AccessPoint* access_points, struct recording** recordings,
-    struct patch** patchs_list, struct group** areas_list, bool confirmed)
+bool read_observations_file (const char * dirname, const char* filename, struct OverallState* state, bool confirmed)
 {
 	g_return_val_if_fail (filename != NULL, FALSE);
 
     // only match JSONL files
-    g_return_val_if_fail(string_ends_with(filename, ".jsonl"), FALSE);
+    if (!string_ends_with(filename, ".jsonl")) return FALSE;
 
     char fullpath[128];
     g_snprintf(fullpath, sizeof(fullpath), "%s/%s", dirname, filename);
@@ -336,7 +341,7 @@ bool read_observations_file (const char * dirname, const char* filename, struct 
         if (strlen(line) > 0)
         {
             //g_debug("%s", line);
-            bool ok = json_to_recording(line, access_points, recordings, patchs_list, areas_list, &current_patch, confirmed);
+            bool ok = json_to_recording(line, state, &current_patch, confirmed);
             if (!ok)
             {
                 g_warning("Could not use '%s' in %s (%i)", line, filename, line_count);
@@ -392,8 +397,7 @@ void ensure_directory(const char* directory)
  * Return value: %TRUE if there were no errors.
  *
  **/
-bool read_observations (const char * dirname, struct AccessPoint* access_points, struct recording** recordings,
-    struct patch** patch_list, struct group** areas_list, bool confirmed)
+bool read_observations (const char * dirname,  struct OverallState* state, bool confirmed)
 {
     ensure_directory(dirname);
 
@@ -412,7 +416,7 @@ bool read_observations (const char * dirname, struct AccessPoint* access_points,
         while ((filename = g_dir_read_name(dir)))
         {
             //g_debug("Reading file '%s'",filename);
-            ok = read_observations_file(dirname, filename, access_points, recordings, patch_list, areas_list, confirmed) && ok;
+            ok = read_observations_file(dirname, filename, state, confirmed) && ok;
         }
         g_dir_close(dir);
     }

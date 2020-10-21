@@ -179,6 +179,22 @@ void pack_columns()
     }
 }
 
+
+/*
+  Use a known beacon name for a device if present
+*/
+void apply_known_beacons(struct Device* device)
+{
+    for (struct Beacon* b = state.beacons; b != NULL; b = b->next)
+    {
+        if (strcmp(b->name, device->name) == 0 || b->mac64 == device->mac64)
+        {
+            g_utf8_strncpy(device->name, b->alias, NAME_LENGTH);
+        }
+    }
+}
+
+
 /*
    Remove a device from array and move all later devices up one spot
 */
@@ -544,6 +560,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         kalman_initialize(&existing->kalman_interval);
 
         g_info("Added device %i. %s\n", existing->id, address);
+        apply_known_beacons(existing);
     }
     else
     {
@@ -603,6 +620,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 // g_print("  Name unchanged '%s'=='%s'\n", name, existing->name);
             }
 
+            apply_known_beacons(existing);
             apply_name_heuristics (existing, name);
 
         }
@@ -939,7 +957,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             uint16_t appearance = g_variant_get_uint16(prop_val);
             if (existing->appearance != appearance)
             {
-                g_print("  %s Appearance has changed ", address);
+                g_debug("  %s Appearance has changed %i->%i", address, existing->appearance, appearance);
 #ifdef MQTT
                 if (state.network_up) send_to_mqtt_single_value(address, "appearance", appearance);
 #endif
@@ -1745,6 +1763,10 @@ int print_access_points_tick(void *parameters)
 {
     (void)parameters;
     print_access_points(state.access_points);
+
+    // And send access point to everyone over UDP - so that even if no activity everyone gets a list of active access points
+    send_access_point_udp(&state);
+
     return TRUE;
 }
 
@@ -2134,7 +2156,7 @@ static void on_name_acquired (GDBusConnection *connection, const gchar *name, gp
 {
     (void)connection;
     (void)user_data;
-    g_warning("DBUS name aquired '%s'", name);
+    g_warning("DBUS name acquired '%s'", name);
 }
 
 /*
