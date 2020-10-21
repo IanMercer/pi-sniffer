@@ -434,7 +434,7 @@ bool record (const char* directory, const char* device_name, double access_dista
         return FALSE;
     }
 
-    if (device_name[0] == '_')
+    if (*device_name == '_')
     {
        g_debug("Temporary device name passed to record method, skipped");
        return FALSE;
@@ -461,6 +461,13 @@ bool record (const char* directory, const char* device_name, double access_dista
 
     if (is_new)
     {
+        g_data_output_stream_put_string(output, "# Copy this file into the recordings directory to create a new patch.\n", NULL, &error_local);
+        g_data_output_stream_put_string(output, "# Edit the name for the patch, the room, the group and the tags.\n", NULL, &error_local);
+        g_data_output_stream_put_string(output, "# Or append it to an existing patch using the following command:\n", NULL, &error_local);
+        g_data_output_stream_put_string(output, "# cat ", NULL, &error_local);
+        g_data_output_stream_put_string(output, fullpath, NULL, &error_local);
+        g_data_output_stream_put_string(output, " >> recordings/SomeExistingPatchName.jsonl\n", NULL, &error_local);
+
         char header[128];
         snprintf(header, sizeof(header), "{\"patch\":\"%s\",\"room\":\"%s\",\"group\":\"House\",\"tags\":\"tags\"}\n\n", device_name, device_name);
         g_data_output_stream_put_string(output, header, NULL, &error_local);
