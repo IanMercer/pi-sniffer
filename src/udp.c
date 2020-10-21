@@ -24,6 +24,7 @@
 
 void udp_send(int port, const char *message, int message_length)
 {
+    if (port == 0) return; // not configured
     if (is_any_interface_up())
     {
         int sockfd;
