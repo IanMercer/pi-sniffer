@@ -203,6 +203,9 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
             append_text(gatts, gatts_length, "Ezurio MTM, ");
             soft_set_category(&existing->category, CATEGORY_FIXED);
         }
+        else if (ble_uuid == 0x0000fef5ul) {
+            append_text(gatts, gatts_length, "Notfound(0xfef5), ");
+        }
         else if (ble_uuid == 0x00000100ul) {
             append_text(gatts, gatts_length, "Notfound(0x100), ");
         }
