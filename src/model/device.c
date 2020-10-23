@@ -49,10 +49,15 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
             local->is_temporary_name = remote->is_temporary_name;
             g_strlcpy(local->name, remote->name, NAME_LENGTH);
         }
-        else{
-            g_info("Remote changed name '%s' by remote '%s'", local->name, remote->name);
+        else if (local->is_temporary_name)
+        {
+            g_info("Remote changed name from '%s' to remote '%s'", local->name, remote->name);
             local->is_temporary_name = remote->is_temporary_name;
             g_strlcpy(local->name, remote->name, NAME_LENGTH);
+        }
+        else
+        {
+            g_warning("Remote has different permanenent name local:'%s' remote: '%s'", local->name, remote->name);
         }
     }
     // TODO: All the NAME rules should be applied here too (e.g. privacy)
