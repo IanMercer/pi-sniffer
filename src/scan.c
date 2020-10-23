@@ -1707,12 +1707,12 @@ void send_to_udp_display(struct OverallState *state)
 
         // Add metadata for the sign to consume (so that signage can be adjusted remotely)
         // TODO: More levels etc. settable remotely
-        cJSON_AddNumberToObject(jobject, "sf", state->udp_scale_factor);
+        cJSON_AddRounded(jobject, "sf", state->udp_scale_factor);
 
         char* json = cJSON_PrintUnformatted(jobject);
         cJSON_Delete(jobject);
 
-        g_warning("%s", json);
+        //g_warning("%s", json);
 
         // +1 for the NULL terminator
         udp_send(state->udp_sign_port, json, strlen(json)+1);        
@@ -1948,6 +1948,36 @@ int try_connect_tick(void *parameters)
 
 static char client_id[META_LENGTH];
 
+/*
+   Get an integer parameter from the environment or default
+*/
+void get_int_env(const char* env, int* value, int default_value)
+{
+    const char *s = getenv(env);
+    *value = (s != NULL) ? atoi(s) : default_value;
+}
+
+/*
+   Get a float parameter from the environment or default
+*/
+void get_float_env(const char* env, float* value, float default_value)
+{
+    const char *s = getenv(env);
+    *value = (s != NULL) ? strtof(s, NULL) : default_value;
+}
+
+/*
+   Get a string parameter from the environment or default
+*/
+void get_string_env(const char* env, char** value, char* default_value)
+{
+    const char *s = getenv(env);
+    *value = (s != NULL) ? s : default_value;
+}
+
+/*
+    Initialize state from environment
+*/
 void initialize_state()
 {
     // Default values if not set in environment variables
@@ -2019,42 +2049,40 @@ void initialize_state()
 
     // UDP Settings
 
-    const char *s_udp_mesh_port = getenv("UDP_MESH_PORT");
-    const char *s_udp_sign_port = getenv("UDP_SIGN_PORT");
-    const char *s_udp_scale_factor = getenv("UDP_SCALE_FACTOR");
-
-    if (s_udp_mesh_port != NULL)
-        state.udp_mesh_port = atoi(s_udp_mesh_port);
-    if (s_udp_sign_port != NULL)
-        state.udp_sign_port = atoi(s_udp_sign_port);
-    if (s_udp_scale_factor != NULL)
-        state.udp_scale_factor = strtof(s_udp_scale_factor, NULL);
+    get_int_env("UDP_MESH_PORT", &state.udp_mesh_port, 0);
+    get_int_env("UDP_SIGN_PORT", &state.udp_sign_port, 0);
+    // Metadata passed to the display to adjust how it displays the values sent
+    // TODO: Expand this to an arbitrary JSON blob
+    get_float_env("UDP_SCALE_FACTOR", &state.udp_scale_factor, 1.0);
 
     // MQTT Settings
 
-    state.mqtt_topic = getenv("MQTT_TOPIC");
-    if (state.mqtt_topic == NULL)
-        state.mqtt_topic = "BLF"; // sorry, historic name
-    state.mqtt_server = getenv("MQTT_SERVER");
-    if (state.mqtt_server == NULL)
-        state.mqtt_server = "";
-    state.mqtt_username = getenv("MQTT_USERNAME");
-    state.mqtt_password = getenv("MQTT_PASSWORD");
+    get_string_env("MQTT_TOPIC", &state.mqtt_topic, "BLF");  // sorry, historic name
+    get_string_env("MQTT_SERVER", &state.mqtt_server, "");
+    get_string_env("MQTT_USERNAME", &state.mqtt_username, "");
+    get_string_env("MQTT_PASSWORD", &state.mqtt_password, "");
+
+    // INFLUX DB
+
+    get_int_env("INFLUX_MIN_PERIOD", &state.influx_min_period_seconds, 5 *60);      // at most every 5 min
+    get_int_env("INFLUX_MAX_PERIOD", &state.influx_max_period_seconds, 60 *60);     // at least every 60 min
 
     state.influx_server = getenv("INFLUX_SERVER");
     if (state.influx_server == NULL) state.influx_server = "";
 
-    const char *s_influx_port = getenv("INFLUX_PORT");
-    state.influx_port = (s_influx_port != NULL) ? atoi(s_influx_port) : 8086;
+    get_int_env("INFLUX_PORT", &state.influx_port, 8086);
 
     state.influx_database = getenv("INFLUX_DATABASE");
-
     state.influx_username = getenv("INFLUX_USERNAME");
     state.influx_password = getenv("INFLUX_PASSWORD");
 
+    // WEBHOOK
+
+    get_int_env("WEBHOOK_MIN_PERIOD", &state.influx_min_period_seconds, 5 *60);      // at most every 5 min
+    get_int_env("WEBHOOK_MAX_PERIOD", &state.influx_max_period_seconds, 60 *60);     // at least every 60 min
+
     state.webhook_domain = getenv("WEBHOOK_DOMAIN");
-    const char *s_webhook_port = getenv("WEBHOOK_PORT");
-    state.webhook_port = (s_webhook_port != NULL) ? atoi(s_webhook_port) : 80;
+    get_int_env("WEBHOOK_PORT", &state.webhook_port, 80);
     state.webhook_path = getenv("WEBHOOK_PATH");
     state.webhook_username = getenv("WEBHOOK_USERNAME");
     state.webhook_password = getenv("WEBHOOK_PASSWORD");
@@ -2096,6 +2124,7 @@ void display_state()
     g_info("MQTT_USERNAME='%s'", state.mqtt_username);
     g_info("MQTT_PASSWORD='%s'", state.mqtt_password == NULL ? "(null)" : "*****");
 
+    g_info("INFLUX_PERIOD='%i'", state.influx_period_seconds);
     g_info("INFLUX_SERVER='%s'", state.influx_server);
     g_info("INFLUX_PORT=%i", state.influx_port);
     g_info("INFLUX_DATABASE='%s'", state.influx_database);

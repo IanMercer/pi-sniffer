@@ -240,12 +240,20 @@ struct OverallState
    char *mqtt_password;
    enum Verbosity verbosity;
 
+   // No less than this many seconds between sends
+   int influx_min_period_seconds;
+   // No more than this many seconds between sends
+   int influx_max_period_seconds;
    char* influx_server;
    int influx_port;
    char* influx_database;
    char* influx_username;
    char* influx_password;
 
+   // No less than this many seconds between sends
+   int webhook_min_period_seconds;
+   // No more than this many seconds between sends
+   int webhook_max_period_seconds;
    // Optional webhook for posting room counts to digital signage displays
    char* webhook_domain;
    int webhook_port;
