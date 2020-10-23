@@ -1971,7 +1971,7 @@ void get_float_env(const char* env, float* value, float default_value)
 */
 void get_string_env(const char* env, char** value, char* default_value)
 {
-    const char *s = getenv(env);
+    char *s = getenv(env);
     *value = (s != NULL) ? s : default_value;
 }
 
@@ -2124,7 +2124,8 @@ void display_state()
     g_info("MQTT_USERNAME='%s'", state.mqtt_username);
     g_info("MQTT_PASSWORD='%s'", state.mqtt_password == NULL ? "(null)" : "*****");
 
-    g_info("INFLUX_PERIOD='%i'", state.influx_period_seconds);
+    g_info("INFLUX_MIN_PERIOD='%i'", state.influx_min_period_seconds);
+    g_info("INFLUX_MAX_PERIOD='%i'", state.influx_max_period_seconds);
     g_info("INFLUX_SERVER='%s'", state.influx_server);
     g_info("INFLUX_PORT=%i", state.influx_port);
     g_info("INFLUX_DATABASE='%s'", state.influx_database);
