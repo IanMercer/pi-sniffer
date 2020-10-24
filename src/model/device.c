@@ -325,14 +325,11 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
 */
 void set_name(struct Device* d, const char*value, enum name_type name_type)
 {
-    enum name_type old_type = d->name_type;
-
     if (d->name_type < name_type)
     {
+        g_info("Upgraded name from %s to %s (%i->%i)", d->name, value, d->name_type, name_type);
         d->name_type = name_type;
         g_strlcpy(d->name, value, NAME_LENGTH);
-
-        g_info("Upgraded name from %s to %s (%i->%i)", d->name, value, old_type, name_type);
     }
 }
 
