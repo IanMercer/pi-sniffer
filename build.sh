@@ -13,6 +13,22 @@ echo "    G_DEBUG=gc-friendly G_SLICE=always-malloc valgrind --tool=memcheck --s
 
 chmod a+x ./scan
 
+# Create executable directory
+if [ ! -e /opt/sniffer ]
+then
+sudo mkdir /opt/sniffer
+fi
+
+# Create working directory
+if [ ! -e /var/sniffer ]
+then
+sudo mkdir /var/sniffer
+fi
+
+# copy executable over to opt directory
+echo Copy scan to /opt/sniffer
+sudo cp scan /opt/sniffer/
+
 # run immediately
 # sudo ./scan 192.168.0.52:1883
 
