@@ -327,10 +327,16 @@ void set_name(struct Device* d, const char*value, enum name_type name_type)
 {
     if (d->name_type < name_type)
     {
-        g_info("Upgraded name from %s to %s (%i->%i)", d->name, value, d->name_type, name_type);
+        if (d->name_type == nt_initial)
+        {
+            g_info("  %s Set name to '%s' (%i)", d->mac, value, name_type);
+        }
+        else
+        {
+            g_info("  %s Upgraded name from '%s' to '%s' (%i->%i)", d->mac, d->name, value, d->name_type, name_type);
+        }
+            
         d->name_type = name_type;
         g_strlcpy(d->name, value, NAME_LENGTH);
     }
 }
-
-

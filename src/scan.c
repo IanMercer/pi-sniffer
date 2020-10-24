@@ -608,7 +608,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
             if (strncmp(name, existing->name, NAME_LENGTH - 1) != 0)
             {
-                g_debug("  %s changed name '%s' -> '%s'\n", address, existing->name, name);
+                // g_debug("  %s changed name '%s' -> '%s'\n", address, existing->name, name);
 #ifdef MQTT
                 if (state.network_up) send_to_mqtt_single(address, "name", name);
 #endif
