@@ -91,7 +91,7 @@ bool string_contains_insensitive(const char *buffer, const char *match);
 /*
    Overwrite if it was empty or began with an underscore (temporary name)
 */
-void optional_set(char* name, char* value, int max_length);
+void optional_set_alias(char* name, char* value, int max_length);
 
 void soft_set_8(int8_t* field, int8_t field_new);
 

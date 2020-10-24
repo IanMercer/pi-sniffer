@@ -360,7 +360,7 @@ bool string_contains_insensitive(const char *buffer, const char *match)
 /*
    Overwrite if it was empty or began with an underscore (temporary name)
 */
-void optional_set(char* name, char* value, int max_length) {
+void optional_set_alias(char* name, char* value, int max_length) {
   if (strlen(name) && name[0]!='_') return;
   // TODO: user device->is_temp_name
   if (name[0] == '_' && strcmp(value, "_Beacon") == 0) return;  // don't overwrite with a less specific name

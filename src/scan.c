@@ -121,7 +121,8 @@ void pack_columns()
                 // cannot be the same if they both have names and the names are different
                 // but don't reject _ names as they are temporary and will get replaced
                 bool haveDifferentNames = (strlen(a->name) > 0) && (strlen(b->name) > 0) 
-                    && (a->name[0] != '_') && (b->name[0] != '_')
+                    // can reject as soon as they both have a partial name that is same type but doesn't match
+                    && (a->name_type == b->name_type)               
                     && (g_strcmp0(a->name, b->name) != 0);
 
                 // cannot be the same if they both have known categories and they are different
@@ -189,7 +190,7 @@ void apply_known_beacons(struct Device* device)
     {
         if (strcmp(b->name, device->name) == 0 || b->mac64 == device->mac64)
         {
-            g_utf8_strncpy(device->name, b->alias, NAME_LENGTH);
+            set_name(device, b->alias, nt_alias);
         }
     }
 }
@@ -526,7 +527,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
         // dummy struct filled with unmatched values
         existing->name[0] = '\0';
-        existing->is_temporary_name = TRUE;
+        existing->name_type = nt_initial;
         existing->alias[0] = '\0';
         existing->addressType = 0;
         existing->category = CATEGORY_UNKNOWN;
@@ -534,7 +535,6 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         existing->trusted = FALSE;
         existing->paired = FALSE;
         existing->deviceclass = 0;
-        existing->manufacturer = 0;
         existing->manufacturer_data_hash = 0;
         existing->service_data_hash = 0;
         existing->appearance = 0;
@@ -612,12 +612,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 #ifdef MQTT
                 if (state.network_up) send_to_mqtt_single(address, "name", name);
 #endif
-                g_strlcpy(existing->name, name, NAME_LENGTH);
-                existing->is_temporary_name = FALSE;
-            }
-            else
-            {
-                // g_print("  Name unchanged '%s'=='%s'\n", name, existing->name);
+                set_name(existing, name, nt_known);
             }
 
             apply_known_beacons(existing);
@@ -1052,39 +1047,45 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             GVariantIter i;
             uint16_t manufacturer;
 
+            // First calculate the sum of all the manufacturerdata values to see if they have changed
+            uint8_t hash;
+
             g_variant_iter_init(&i, prop_val);
             while (g_variant_iter_next(&i, "{qv}", &manufacturer, &s_value))
-            { // Just one, well ... not always
-                uint8_t hash;
+            {
                 int actualLength;
                 unsigned char *allocdata = read_byte_array(s_value, &actualLength, &hash);
+                g_variant_unref(s_value);
+                g_free(allocdata);
+            }
 
-                if (existing->manufacturer != manufacturer)
+            if (existing->manufacturer_data_hash != hash)
+            {
+                existing->manufacturer_data_hash = hash;
+
+                g_variant_iter_init(&i, prop_val);
+                while (g_variant_iter_next(&i, "{qv}", &manufacturer, &s_value))
                 {
+                    uint8_t hash;
+                    int actualLength;
+                    unsigned char *allocdata = read_byte_array(s_value, &actualLength, &hash);
+
                     if (manufacturer == 0x4c && allocdata[0] == 0x02){
                         g_debug("  %s iBeacon  ", address);
                     } else if (manufacturer == 0x4c){
                         g_debug("  %s Manufacturer Apple  ", address);
                     } else {
                         g_debug("  %s Manufacturer 0x%4x  ", address, manufacturer);
-                    }
-#ifdef MQTT
-                    send_to_mqtt_single_value(address, "manufacturer", manufacturer);
-#endif
-                    existing->manufacturer = manufacturer;
-                }
+                        }
 
-                if (existing->manufacturer_data_hash != hash)
-                {
-                    pretty_print2("  ManufacturerData", prop_val, TRUE); // a{qv}
-                    //g_debug("  ManufData has changed ");
+                    pretty_print2("  ManufacturerData", s_value, TRUE); // a{qv}
+
+    #ifdef MQTT
                     // Need to send actual manufacturer number not always 76 here TODO
-#ifdef MQTT
                     if (state.verbosity >= Details) {
-                      send_to_mqtt_array(address, "manufacturerdata", "76", allocdata, actualLength);
-                    }
-#endif
-                    existing->manufacturer_data_hash = hash;
+                    send_to_mqtt_array(address, "manufacturerdata", "76", allocdata, actualLength);
+                        }
+    #endif
 
                     if (existing->distance > 0)
                     {
@@ -1093,12 +1094,12 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                         //g_print("  %s Will resend distance\n", address);
                         send_distance = TRUE;
                     }
+
+                    handle_manufacturer(existing, manufacturer, allocdata);
+
+                    g_variant_unref(s_value);
+                    g_free(allocdata);
                 }
-
-                handle_manufacturer(existing, manufacturer, allocdata);
-
-                g_variant_unref(s_value);
-                g_free(allocdata);
             }
         }
         else if (strcmp(property_name, "Player") == 0)

@@ -68,6 +68,19 @@ typedef uint64_t u_int64_t;
 // Aim for 30s to allow connection 15 * 2
 #define TRY_CONNECT_COMPLETE 15
 
+// Names are either heuristics, actual or aliases
+// Greater number wins over smaller number
+// Used for tracking beacons and learning mode
+
+enum name_type { 
+    nt_initial = 0,          // ""
+    nt_generic = 100,        // e.g. "Beacon"
+    nt_manufacturer = 200,   //  e.g. "Milwaukee"
+    nt_device = 300,         //  e.g. "iPhone"
+    nt_known = 400,          // received from Bluetooth
+    nt_alias = 500           // defined for system, e.g. tag names
+};
+
 /*
    Structure for tracking BLE devices in range
 */
@@ -80,11 +93,10 @@ struct Device
    int64_t mac64;          // mac address (moving off string)
    int64_t supersededby;   // mac address of previous mac in same column
    char name[NAME_LENGTH];
-   bool is_temporary_name; // Will replace '_' with this flag
+   enum name_type name_type;      // not set, heuristic, known, or alias
    char alias[NAME_LENGTH];
    int8_t addressType; // 0, 1, 2
    int8_t category;    // Reasoned guess at what kind of device it is
-   int manufacturer;
    bool paired;
    bool connected;
    bool trusted;
@@ -113,6 +125,12 @@ struct Device
    float z;
    bool is_training_beacon;      // Is this a beacon with "Indoor Positioning" turned on?
 };
+
+/*
+   Set name and name type if an improvement
+*/
+void set_name(struct Device* d, const char*value, enum name_type name_type);
+
 
 /*
    AccessPoint is another instance of the app sending information to us, aka Sensor

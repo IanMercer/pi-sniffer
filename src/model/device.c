@@ -39,31 +39,12 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
 {
     local->is_training_beacon = local->is_training_beacon || remote->is_training_beacon;
 
-    if (strcmp(local->name, remote->name) != 0 
-        && strlen(local->name)>0 && strlen(remote->name)>0
-        && remote->name[0] != '_')
-    {
-        if (local->is_training_beacon)
-        {
-            g_info("Training beacon changed name '%s' to '%s' because %s", local->name, remote->name, access_name);
-            local->is_temporary_name = remote->is_temporary_name;
-            g_strlcpy(local->name, remote->name, NAME_LENGTH);
-        }
-        else if (local->is_temporary_name)
-        {
-            g_info("Remote changed name from '%s' to remote '%s'", local->name, remote->name);
-            local->is_temporary_name = remote->is_temporary_name;
-            g_strlcpy(local->name, remote->name, NAME_LENGTH);
-        }
-        else
-        {
-            g_warning("Remote has different permanenent name local:'%s' remote: '%s'", local->name, remote->name);
-        }
-    }
+    // Remote name wins if it's a "stronger type"
+    set_name(local, remote->name, remote->name_type);
     // TODO: All the NAME rules should be applied here too (e.g. privacy)
 
     //optional_set(local->name, remote->name, NAME_LENGTH);
-    optional_set(local->alias, remote->alias, NAME_LENGTH);
+    optional_set_alias(local->alias, remote->alias, NAME_LENGTH);
     soft_set_8(&local->addressType, remote->addressType);
 
     // If this is an update for an existing value update the superseded field
@@ -177,7 +158,6 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     cJSON_AddStringToObject(j, "alias", device->alias);
     cJSON_AddNumberToObject(j, "addressType", device->addressType);
     cJSON_AddStringToObject(j, "category", category_from_int(device->category));
-    cJSON_AddNumberToObject(j, "manufacturer", device->manufacturer);
     cJSON_AddBoolToObject(j, "paired", device->paired);
     cJSON_AddBoolToObject(j, "connected", device->connected);
     cJSON_AddBoolToObject(j, "trusted", device->trusted);
@@ -198,9 +178,7 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     if (device->is_training_beacon){
         cJSON_AddNumberToObject(j, "training", 1);
     }
-    if (device->is_temporary_name){
-        cJSON_AddNumberToObject(j, "temp", 1);
-    }
+    cJSON_AddNumberToObject(j, "nt", device->name_type);
 
     string = cJSON_PrintUnformatted(j);
     cJSON_Delete(j);
@@ -319,8 +297,15 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
     cJSON *training = cJSON_GetObjectItemCaseSensitive(djson, "training");
     device->is_training_beacon = cJSON_IsNumber(training);
 
-    cJSON *temp = cJSON_GetObjectItemCaseSensitive(djson, "temp");
-    device->is_temporary_name = cJSON_IsNumber(temp);
+    cJSON *temp = cJSON_GetObjectItemCaseSensitive(djson, "nt");
+    if (cJSON_IsNumber(temp))
+    {
+        device->name_type = temp->valueint;
+    }
+    else
+    {
+        device->name_type = nt_initial;
+    }
 
     device->category = CATEGORY_UNKNOWN;
     cJSON *category = cJSON_GetObjectItemCaseSensitive(djson, "category");
@@ -332,6 +317,23 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
    cJSON_Delete(djson);
 
    return true;
+}
+
+
+/*
+   Set name and name type if an improvement
+*/
+void set_name(struct Device* d, const char*value, enum name_type name_type)
+{
+    enum name_type old_type = d->name_type;
+
+    if (d->name_type < name_type)
+    {
+        d->name_type = name_type;
+        g_strlcpy(d->name, value, NAME_LENGTH);
+
+        g_info("Upgraded name from %s to %s (%i->%i)", d->name, value, old_type, name_type);
+    }
 }
 
 

@@ -10,13 +10,14 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     uint8_t apple_device_type = allocdata[00];
     if (apple_device_type == 0x01)
     {
+        set_name(existing, "Apple", nt_device);
         // An iMac causes this
         g_info("  %s '%s' Apple Device type 0x01 - what is this?", existing->mac, existing->name);
 
     }
     else if (apple_device_type == 0x02)
     {
-        optional_set(existing->name, "_Beacon", NAME_LENGTH);
+        set_name(existing, "Beacon", nt_manufacturer);  // this is less-specific than an already known manufacturer
         if (existing->category != CATEGORY_BEACON)
         {
             g_info("  %s '%s' Beacon", existing->mac, existing->name);
@@ -32,17 +33,17 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x03)     // On user action
     {
-        optional_set(existing->name, "_Airprint", NAME_LENGTH);
+        set_name(existing, "AirPrint", nt_manufacturer);
         g_info("  %s '%s' Airprint", existing->mac, existing->name);
     }
     else if (apple_device_type == 0x05)     // On user action
     {
-        optional_set(existing->name, "_Airdrop", NAME_LENGTH);
+        set_name(existing, "AirDrop", nt_device);
         g_info("  %s '%s' Airdrop", existing->mac, existing->name);
     }
     else if (apple_device_type == 0x06)     // Constantly
     {
-        optional_set(existing->name, "_Homekit", NAME_LENGTH);
+        set_name(existing, "Homekit", nt_device);
         g_info("  %s '%s' Homekit", existing->mac, existing->name);
         // 1 byte adv internal length
         // 1 byte status flags
@@ -52,7 +53,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x07)     // Proximity Pairing - Constantly (rare)
     {
-        optional_set(existing->name, "_Airpods", NAME_LENGTH);
+        set_name(existing, "AirPods", nt_device);
         g_info("  %s '%s' Proximity Pairing", existing->mac, existing->name);
         existing->category = CATEGORY_HEADPHONES;
         // 1 byte length
@@ -64,7 +65,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x08)     // On user action (rare)
     {
-        optional_set(existing->name, "_Siri", NAME_LENGTH);
+        set_name(existing, "Siri", nt_device);
         g_info("  %s '%s' Siri", existing->mac, existing->name);
         // 1 byte length
         // 2 bytes perceptual hash
@@ -75,7 +76,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x09)     // On user action (some)
     {
-        optional_set(existing->name, "_Airplay", NAME_LENGTH);
+        set_name(existing, "AirPlay", nt_device);
         g_info("  %s '%s' Airplay", existing->mac, existing->name);
         existing->category = CATEGORY_FIXED;  // probably an Apple TV?
         // 1 byte length
@@ -85,20 +86,20 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x0a)     // ?? (rare)
     {
-        optional_set(existing->name, "_Apple 0a", NAME_LENGTH);
+        set_name(existing, "Apple 0x0a", nt_device);
         g_info("  %s '%s' Apple 0a??", existing->mac, existing->name);
     }
     else if (apple_device_type == 0x0b)     // On physical action
     {
         // Confirmed seen from iWatch
         // Sent when watch has lost pairing to phone?
-        optional_set(existing->name, "iWatch", NAME_LENGTH);
+        set_name(existing, "iWatch", nt_device);
         g_info("  %s '%s' Magic Switch", existing->mac, existing->name);
         soft_set_category(&existing->category, CATEGORY_WATCH);
     }
     else if (apple_device_type == 0x0c)     // Handoff
     {
-        optional_set(existing->name, "_Apple Phone", NAME_LENGTH);
+        set_name(existing, "Apple Phone", nt_device);
         g_info("  %s '%s' Handoff", existing->mac, existing->name);
         soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? but assume phone
         // 1 byte length
@@ -109,19 +110,19 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x0d)     // Instant hotspot - On user action
     {
-        optional_set(existing->name, "_Apple WifiSet", NAME_LENGTH);
+        set_name(existing, "Apple WifiSet", nt_device);
         g_info("  %s '%s' WifiSet", existing->mac, existing->name);
         soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? but assume phone
     }
     else if (apple_device_type == 0x0e)     // Instant hotspot - Reaction to target presence
     {
-        optional_set(existing->name, "_Apple Hotspot", NAME_LENGTH);
+        set_name(existing, "Apple Hotspot", nt_device);
         g_info("  %s '%s' Hotspot", existing->mac, existing->name);
         soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? but assume phone
     } 
     else if (apple_device_type == 0x0f)     // Nearby action - On user action (rare)
     {
-        optional_set(existing->name, "_Apple Nearby Action", NAME_LENGTH);
+        set_name(existing, "Apple Nearby Action", nt_device);
         g_info("  %s '%s' Nearby Action", existing->mac, existing->name);
         soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? but assume phone
         // Used for WiFi-password messages
@@ -133,7 +134,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x10)     // Nearby Info - Constantly
     {
-        optional_set(existing->name, "_Apple", NAME_LENGTH);
+        set_name(existing, "Apple Nearby", nt_device);
         //g_debug("  Nearby Info ");
         // 0x10
         // 1 byte length

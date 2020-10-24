@@ -369,69 +369,71 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     else if (string_starts_with(existing->mac, "8C:DE:52"))
     {
         // various IoT
-        optional_set(existing->name, "_ISSC Technologies Corp.", NAME_LENGTH);  // Fabless Semi: headsets, car kits, ...
+          // Fabless Semi: headsets, car kits, ...
+        set_name(existing, "ISSC Technologies Corp.", nt_manufacturer);
     }
 
     else if (string_starts_with(existing->mac, "0C:8C:DC"))
     {
         // various IoT
-        optional_set(existing->name, "_Suunto", NAME_LENGTH);
+        set_name(existing, "Suunto", nt_manufacturer);
         existing->category = CATEGORY_WEARABLE;
     }
 
     else if (string_starts_with(existing->mac, "CC:93:4A"))
     {
         // various IoT
-        optional_set(existing->name, "_Sierra Wireless", NAME_LENGTH);
+        set_name(existing, "Sierra Wireless", nt_manufacturer);
         existing->category = CATEGORY_FIXED;
     }
 
     else if (string_starts_with(existing->mac, "64:b8:53"))
     {
         // Samsung phone
-        optional_set(existing->name, "_Samsung Phone", NAME_LENGTH);
+        set_name(existing, "Samsung phone", nt_manufacturer);
         existing->category = CATEGORY_PHONE;
     }
     else if (string_starts_with(existing->mac, "e0:55:3d"))
     {
         // OEM to Sony? HP?
-        optional_set(existing->name, "_Cisco Meraki", NAME_LENGTH); // Bluetooth and Wifi and beacon
+        set_name(existing, "Cisco Meraki", nt_manufacturer);
+         // Bluetooth and Wifi and beacon
         existing->category = CATEGORY_FIXED;
     }
     else if (string_starts_with(existing->mac, "0c:96:e6"))
     {
         // OEM to Sony? HP?
-        optional_set(existing->name, "_Cloud Network Tech", NAME_LENGTH); // (Samoa) Inc
+        set_name(existing, "Cloud Network Tech", nt_manufacturer);// (Samoa) Inc
         existing->category = CATEGORY_FIXED;
     }
     else if (string_starts_with(existing->mac, "cc:04:b4"))
     {
-        optional_set(existing->name, "_Select Comfort", NAME_LENGTH);
+        set_name(existing, "Select Comfort", nt_manufacturer);
         existing->category = CATEGORY_FIXED;
     }
     else if (string_starts_with(existing->mac, "64:db:a0"))
     {
-        optional_set(existing->name, "_Select Comfort", NAME_LENGTH);
+        set_name(existing, "Select Comfort", nt_manufacturer);
         existing->category = CATEGORY_FIXED;
     }
     else if (string_starts_with(existing->mac, "C0:28:8d"))
     {
-        optional_set(existing->name, "_Logitech", NAME_LENGTH);
+        set_name(existing, "Logitech", nt_manufacturer);
         existing->category = CATEGORY_FIXED;
     }
     else if (string_starts_with(existing->mac, "88:c6:26"))
     {
-        optional_set(existing->name, "_Logitech", NAME_LENGTH);
+        set_name(existing, "Logitech", nt_manufacturer);
         existing->category = CATEGORY_FIXED;
     }
     else if (string_starts_with(existing->mac, "00:25:52"))
     {
-        optional_set(existing->name, "_VXI Corp", NAME_LENGTH);
+        set_name(existing, "VXI Corp", nt_manufacturer);
         existing->category = CATEGORY_HEADPHONES;
     }
     else if (string_starts_with(existing->mac, "cc:70:ed"))
     {
-        optional_set(existing->name, "_Cisco Systems", NAME_LENGTH);
+        set_name(existing, "Cisco Systems", nt_manufacturer);
         existing->category = CATEGORY_FIXED;
     }
     else if (string_starts_with(existing->mac, "88:6b:0f"))
@@ -442,7 +444,7 @@ void apply_name_heuristics (struct Device* existing, const char* name)
             (int8_t)(existing->mac64 >> 8) & 0xff,
             (int8_t)(existing->mac64 >> 0) & 0xff);
 
-        optional_set(existing->name, beaconName, NAME_LENGTH);
+        set_name(existing, beaconName, nt_manufacturer);
         existing->category = CATEGORY_BEACON;
     }
 
