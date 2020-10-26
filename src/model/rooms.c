@@ -281,7 +281,10 @@ void summarize_by_room(struct patch* patches, struct summary** summary)
 {
     for (struct patch* p = patches; p != NULL; p = p->next)
     {
-        update_summary(summary, p->room, p->group->name, p->phone_total, p->tablet_total, p->computer_total, p->watch_total, p->wearable_total, p->beacon_total);
+        if (p->confirmed)
+        {
+            update_summary(summary, p->room, p->group->name, p->phone_total, p->tablet_total, p->computer_total, p->watch_total, p->wearable_total, p->beacon_total);
+        }
     }
 }
 
@@ -293,6 +296,9 @@ void summarize_by_group(struct patch* patches, struct summary** summary)
 {
     for (struct patch* p = patches; p != NULL; p = p->next)
     {
-        update_summary(summary, p->group->name, p->group->tags, p->phone_total, p->tablet_total, p->computer_total, p->watch_total, p->wearable_total, p->beacon_total);
+        if (p->confirmed)
+        {
+            update_summary(summary, p->group->name, p->group->tags, p->phone_total, p->tablet_total, p->computer_total, p->watch_total, p->wearable_total, p->beacon_total);
+        }
     }
 }

@@ -1622,24 +1622,22 @@ bool influx_is_configured()
 }
 
 /*
-    Report access point counts to HttpPost
+    Report summaries to HttpPost
 */
 int report_to_http_post_tick()
 {
     if (!webhook_is_configured()) return FALSE;
-    g_info("Report to webhook url");
     post_to_webhook(&state);
     return TRUE;
 }
 
 
 /*
-    Report access point counts to InfluxDB
+    Report summaries to InfluxDB
 */
-int report_to_influx_tick()
+int report_to_influx_tick(struct OverallState* state)
 {
     if (!influx_is_configured()) return FALSE;
-    g_info("Report to Influx");
 
     char body[4096];
     body[0] = '\0';
@@ -1649,7 +1647,10 @@ int report_to_influx_tick()
     time_t now = time(0);
 
     struct summary* summary = NULL;
-    summarize_by_room(state.patches, &summary);
+    summarize_by_room(state->patches, &summary);
+
+    // Clean out a stuck signal on InfluxDB
+    //ok = ok && append_influx_line(body, sizeof(body), "<Group>", "room=<room>", "beacon=0.0,computer=0.0,phone=0.0,tablet=0.0,watch=0.0,wear=0.0", now);
 
     for (struct summary* s = summary; s != NULL; s = s->next)
     {
@@ -1665,18 +1666,19 @@ int report_to_influx_tick()
 
         if (strlen(body) + 5 * 100 > sizeof(body)){
             //g_debug("%s", body);
-            post_to_influx(&state, body, strlen(body));
+            post_to_influx(state, body, strlen(body));
             body[0] = '\0';
         }
+
+        //g_debug("INFLUX: %s %s %s", s->extra, tags, field);
     }
 
     free_summary(&summary);
 
-
     if (strlen(body) > 0)
     {
         //g_debug("%s", body);
-        post_to_influx(&state, body, strlen(body));
+        post_to_influx(state, body, strlen(body));
     }
 
     if (!ok)
@@ -1738,14 +1740,27 @@ int report_counts(void *parameters)
 
     if (influx_is_configured() || webhook_is_configured() || state.web_polling || state.udp_sign_port > 0)
     {
+        time(&now);
         // Set JSON for all ways to receive it (GET, POST, INFLUX, MQTT)
-        print_counts_by_closest(&state);
+        bool changed = print_counts_by_closest(&state);
 
-        // Every 5 min
-        if (report_count % 15 == 0) report_to_influx_tick();
+        int influx_seconds = difftime(now, state.influx_last_sent);
 
-        // Every 1 min
-        if (report_count % 3 == 0) report_to_http_post_tick();
+        if (influx_seconds > state.influx_max_period_seconds || (changed && (influx_seconds > state.influx_min_period_seconds)))
+        {
+            g_debug("Sending to influx %is since last", influx_seconds);
+            state.influx_last_sent = now;
+            report_to_influx_tick(&state);
+        }
+
+        int webhook_seconds = difftime(now, state.webhook_last_sent);
+
+        if (webhook_seconds > state.webhook_max_period_seconds || (changed && (webhook_seconds > state.webhook_min_period_seconds)))
+        {
+            g_debug("Sending to webhook %is since last", webhook_seconds);
+            state.webhook_last_sent = now;
+            report_to_http_post_tick();
+        }
 
         // Every 20s
         send_to_udp_display(&state);
@@ -1993,8 +2008,11 @@ void initialize_state()
     state.patches = NULL;         // linked list
     state.groups = NULL;        // linked list
     state.closest_n = 0;        // count of closest
+    state.patch_hash = 0;       // hash to detect changes
     state.beacons = NULL;       // linked list
     state.json = NULL;          // DBUS JSON message
+    time(&state.influx_last_sent);
+    time(&state.webhook_last_sent);
 
     // no devices yet
     state.n = 0;
@@ -2079,8 +2097,8 @@ void initialize_state()
 
     // WEBHOOK
 
-    get_int_env("WEBHOOK_MIN_PERIOD", &state.influx_min_period_seconds, 5 *60);      // at most every 5 min
-    get_int_env("WEBHOOK_MAX_PERIOD", &state.influx_max_period_seconds, 60 *60);     // at least every 60 min
+    get_int_env("WEBHOOK_MIN_PERIOD", &state.webhook_min_period_seconds, 5 *60);      // at most every 5 min
+    get_int_env("WEBHOOK_MAX_PERIOD", &state.webhook_max_period_seconds, 60 *60);     // at least every 60 min
 
     state.webhook_domain = getenv("WEBHOOK_DOMAIN");
     get_int_env("WEBHOOK_PORT", &state.webhook_port, 80);
@@ -2125,17 +2143,19 @@ void display_state()
     g_info("MQTT_USERNAME='%s'", state.mqtt_username);
     g_info("MQTT_PASSWORD='%s'", state.mqtt_password == NULL ? "(null)" : "*****");
 
-    g_info("INFLUX_MIN_PERIOD='%i'", state.influx_min_period_seconds);
-    g_info("INFLUX_MAX_PERIOD='%i'", state.influx_max_period_seconds);
     g_info("INFLUX_SERVER='%s'", state.influx_server);
     g_info("INFLUX_PORT=%i", state.influx_port);
     g_info("INFLUX_DATABASE='%s'", state.influx_database);
     g_info("INFLUX_USERNAME='%s'", state.influx_username);
     g_info("INFLUX_PASSWORD='%s'", state.influx_password == NULL ? "(null)" : "*****");
+    g_info("INFLUX_MIN_PERIOD='%i'", state.influx_min_period_seconds);
+    g_info("INFLUX_MAX_PERIOD='%i'", state.influx_max_period_seconds);
 
     g_info("WEBHOOK_URL='%s:%i%s'", state.webhook_domain == NULL ? "(null)" : state.webhook_domain, state.webhook_port, state.webhook_path);
     g_info("WEBHOOK_USERNAME='%s'", state.webhook_username == NULL ? "(null)" : "*****");
     g_info("WEBHOOK_PASSWORD='%s'", state.webhook_password == NULL ? "(null)" : "*****");
+    g_info("WEBHOOK_MIN_PERIOD='%i'", state.webhook_min_period_seconds);
+    g_info("WEBHOOK_MAX_PERIOD='%i'", state.webhook_max_period_seconds);
 
     g_info("CONFIG='%s'", state.configuration_file_path == NULL ? "** Please set a path to config.json **" : state.configuration_file_path);
 

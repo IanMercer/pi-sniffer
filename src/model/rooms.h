@@ -16,9 +16,9 @@
 // An area: a group of rooms, maybe a shop, an administrative unit like a lab, or an entire building or 'Outside' 
 struct group
 {
-    const char* name;          // group for Influx or other db
+    const char* name;           // group for reporting
     const char* tags;           // CSV tags with no spaces
-    struct group* next;          // next ptr
+    struct group* next;         // next ptr
 };
 
 // A patch: a roughly circular area about 3-5m in radius with similar distances from the sensors, the unit of measurement

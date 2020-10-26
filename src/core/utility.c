@@ -392,6 +392,7 @@ bool interface_state = FALSE;
 
 bool is_any_interface_up()
 {
+    if (!interface_state) g_warning("Start scanning interfaces");
     int count = 0;
     int count_connected = 0;
 
@@ -413,6 +414,9 @@ bool is_any_interface_up()
 
         if (family != AF_INET) continue; // For IPV6 add && family != AF_INET6) continue;
         if (strncmp(ifa->ifa_name, "lo", 2) == 0) continue;       // loopback
+        if (strncmp(ifa->ifa_name, "vir", 3) == 0) continue;      // virtual
+        if (strncmp(ifa->ifa_name, "veth", 4) == 0) continue;     // virtual
+        if (strncmp(ifa->ifa_name, "docker", 6) == 0) continue;   // virtual
 
         count++;
        
@@ -430,7 +434,6 @@ bool is_any_interface_up()
             bool isConnected = ifr.ifr_ifru.ifru_flags & IFF_RUNNING;
             //g_debug("%s is %i", ifa->ifa_name, isConnected);
             if (isConnected) count_connected++;
-
             close(socketfd);
         }
     }

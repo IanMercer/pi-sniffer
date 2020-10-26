@@ -78,7 +78,7 @@ int http_post(char* hostname, int port, char* path, char* auth, char* body, int 
     if (ret < 0)
         g_warning("Write data body failed");
 
-        /* Get back the acknowledgement from InfluxDB */
+        /* Get back the acknowledgement */
         /* It worked if you get "HTTP/1.1 204 No Content" and some other fluff */
         ret = read(sockfd, result, result_len);
         if (ret < 0) g_warning("Reading the result from %s failed", hostname);

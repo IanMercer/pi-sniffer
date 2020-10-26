@@ -24,6 +24,7 @@ void send_access_point_udp(struct OverallState* state);
 
 struct ClosestTo* get_closest(struct OverallState* state, struct Device* device);
 
-void print_counts_by_closest(struct OverallState* state);
+// Compute counts by patch, room and group, returns true if they changed
+bool print_counts_by_closest(struct OverallState* state);
 
 #endif

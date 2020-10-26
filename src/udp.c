@@ -197,7 +197,8 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
 /*
    Calculates room scores using access point distances
 */
-void calculate_location(struct OverallState* state, struct ClosestTo* closest, double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS], float time_score, 
+void calculate_location(struct OverallState* state, struct ClosestTo* closest, 
+    double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS], float time_score, 
     struct top_k* best, bool is_training_beacon)
 {
     (void)accesstimes;
@@ -211,85 +212,123 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest, d
     // try confirmed
     int k_found = k_nearest(state->recordings, accessdistances, access_points, best_three, 3, TRUE);
 
-    if (k_found < 3)
-    {
-        // Try again including unconfirmed recordings (beacon subdirectory)
-        k_found = k_nearest(state->recordings, accessdistances, access_points, best_three, 3, FALSE);
-    }
+    // if (k_found < 3)
+    // {
+    //     // Try again including unconfirmed recordings (beacon subdirectory)
+    //     k_found = k_nearest(state->recordings, accessdistances, access_points, best_three, 3, FALSE);
+    // }
 
-    if (k_found == 0) { g_warning("Did not find a nearest k"); }
-
-    *best = best_three[0];
-    // TODO: Not just top 1, use top few
-
-    bool found = FALSE;
-
-    for (struct patch* patch = state->patches; patch != NULL; patch = patch->next)
-    {
-        if (strcmp(patch->name, best->patch_name) == 0)
-        {
-            found = TRUE;
-            patch->knn_score = 1.0;
-            // don't break, need to set rest to zero
-        }
-        else
-        {
-            patch->knn_score = 0.0;
-        }
-    }
-
-    if (!found) 
+    if (k_found == 0) 
     { 
-        g_warning("Did not find a patch called %s, creating one on the fly", best->patch_name);
-        char* world = strdup("World");
-        char* tags = strdup("zone=here");
-        struct patch* patch = get_or_create_patch(best->patch_name, best->patch_name, world, tags, &state->patches, &state->groups, FALSE);
-        patch->knn_score = 1.0;
-        best->distance = 1.0;
-        strncpy(best->patch_name, patch->name, META_LENGTH);
-    }
-
-
-    time_t now = time(0);
-    if (difftime(now, closest->time) > 60)
-    {
-        g_debug("Old, nearest to '%s' score=%.2f * %.2f", best->patch_name, best->distance, time_score);
-        //g_debug("Skip CSV, old data %fs", difftime(now, closest->time));
+        g_warning("Did not find a nearest k"); 
     }
     else 
     {
-        //g_debug("CSV: %s", csv);
+        *best = best_three[0];
+        // TODO: Not just top 1, use top few
 
-        // RECORD TRAINING DATA
-        if ((is_training_beacon) && (strcmp(closest->name, "iPhone") != 0) && (strcmp(closest->name, "Off") != 0))
+        bool found = FALSE;
+
+        for (struct patch* patch = state->patches; patch != NULL; patch = patch->next)
         {
-            if (best->distance < 1.0 && strncmp(best->patch_name, device_name, META_LENGTH) == 0)
+            if (strcmp(patch->name, best->patch_name) == 0)
             {
-                // skip, we already have a good enough recording with the SAME name
-               g_debug("Training: Skip, nearest to '%s' score=%.2f * %.2f", best->patch_name, best->distance, time_score);
+                found = TRUE;
+                patch->knn_score = 1.0;
+                // don't break, need to set rest to zero
             }
             else
             {
-                record("recordings", device_name, accessdistances, access_points, device_name);
-                g_debug("Training: Nearest was '%s', score=%.2f * %.2f", best->patch_name, best->distance, time_score);
+                patch->knn_score = 0.0;
             }
         }
-        else if (closest->category == CATEGORY_BEACON)
+
+        if (!found) 
+        { 
+            g_warning("Did not find a patch called %s, creating one on the fly", best->patch_name);
+            char* world = strdup("World");
+            char* tags = strdup("zone=here");
+            struct patch* patch = get_or_create_patch(best->patch_name, best->patch_name, world, tags, &state->patches, &state->groups, FALSE);
+            patch->knn_score = 1.0;
+            best->distance = 1.0;
+            strncpy(best->patch_name, patch->name, META_LENGTH);
+        }
+
+        time_t now = time(0);
+        if (difftime(now, closest->time) > 60)
         {
-            if (best->distance > 10.0)
-            {
-                g_warning("Adding a possible recording");
-                record("beacons", device_name, accessdistances, access_points, device_name);
-            }
-            g_debug("Beacon: Nearest was '%s', score=%.2f * %.2f", best->patch_name, best->distance, time_score);
+            g_debug("Old, nearest to '%s' distance: %.2f, age: %.2f", best->patch_name, best->distance, time_score);
+            //g_debug("Skip CSV, old data %fs", difftime(now, closest->time));
+        }
+        else 
+        {
+            g_debug("Nearest to '%s' distance %.2f, age %.2f", best->patch_name, best->distance, time_score);
+        }
+        return;
+    }
+
+    // Try again including unconfirmed recordings (beacon subdirectory)
+    k_found = k_nearest(state->recordings, accessdistances, access_points, best_three, 3, FALSE);
+
+    if (k_found == 0 || best_three[0].distance > 5.0)
+    {
+        // No nearest in the beacons directory either
+
+        // if it's training beacon add it diectly to recordings ... otherwise add it to the beacons directory
+
+        if (is_training_beacon)
+        {
+            g_warning("Adding a possible recording - TRAINING BEACON");
         }
         else
         {
-            g_debug("Nearest to '%s' score=%.2f * %.2f", best->patch_name, best->distance, time_score);
+            g_warning("Adding a possible recording");
         }
-        //g_debug("Scores: %s", line);
 
+        record("beacons", device_name, accessdistances, access_points, device_name);
     }
+
+    // // 
+    // {
+    //     //g_debug("CSV: %s", csv);
+    //     // Try to find a nearest beacon recording, if none close, record one
+
+    //     // RECORD TRAINING DATA
+    //     if ((is_training_beacon) && (strcmp(closest->name, "iPhone") != 0) && (strcmp(closest->name, "Off") != 0))
+    //     {
+    //         if (best->distance < 1.0 && strncmp(best->patch_name, device_name, META_LENGTH) == 0)
+    //         {
+    //             // skip, we already have a good enough recording with the SAME name
+    //            g_debug("Training: Skip, nearest to '%s' score=%.2f * %.2f", best->patch_name, best->distance, time_score);
+    //         }
+    //         else
+    //         {
+    //             record("recordings", device_name, accessdistances, access_points, device_name);
+    //             g_debug("Training: Nearest was '%s', score=%.2f * %.2f", best->patch_name, best->distance, time_score);
+    //         }
+    //     }
+    //     else if (closest->category == CATEGORY_BEACON)
+    //     {
+    //         // Try again including unconfirmed recordings (beacon subdirectory)
+    //         k_found = k_nearest(state->recordings, accessdistances, access_points, best_three, 3, FALSE);
+
+    //         if (k_found == 0 || best_three[0].distance > 5.0)
+    //         {
+    //             g_warning("Adding a possible recording");
+    //             record("beacons", device_name, accessdistances, access_points, device_name);
+    //         }
+    //         else
+    //         {
+    //             g_debug("Beacon: Nearest was '%s', score=%.2f * %.2f", best->patch_name, best->distance, time_score);
+    //         }
+    //     }
+    //     else
+    //     {
+    //         g_debug("Nearest to '%s' score=%.2f * %.2f", best->patch_name, best->distance, time_score);
+    //     }
+    //     //g_debug("Scores: %s", line);
+
+    // }
 }
 
 
@@ -304,9 +343,9 @@ void set_count_to_zero(struct AccessPoint* ap, void* extra)
 }
 
 /*
-    Find counts by access point
+    Find counts by patch, room and group
 */
-void print_counts_by_closest(struct OverallState* state)
+bool print_counts_by_closest(struct OverallState* state)
 {
     struct AccessPoint* access_points_list = state->access_points;
     struct Beacon* beacon_list = state->beacons;
@@ -496,7 +535,7 @@ void print_counts_by_closest(struct OverallState* state)
             char *json = NULL;
             cJSON *jobject = cJSON_CreateObject();
 
-            cJSON_AddStringToObject(jobject, "patch", best.patch_name);
+            //cJSON_AddStringToObject(jobject, "patch", best.patch_name);
 
             // char buf[64];
             // strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", localtime(&now));
@@ -512,7 +551,7 @@ void print_counts_by_closest(struct OverallState* state)
                 }
             }
 
-            cJSON_AddRounded(jobject, "quality", best.distance);
+            //cJSON_AddRounded(jobject, "quality", best.distance);
 
             json = cJSON_PrintUnformatted(jobject);
             cJSON_Delete(jobject);
@@ -554,8 +593,10 @@ void print_counts_by_closest(struct OverallState* state)
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
                     if (rcurrent->knn_score > 0)
+                    {
                         g_debug("Wearable in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
-                    rcurrent->wearable_total += rcurrent->knn_score * score;        // probability x incidence
+                        rcurrent->wearable_total += rcurrent->knn_score * score;        // probability x incidence
+                    }
                 }
             }
             else if (test->category == CATEGORY_BEACON)
@@ -577,8 +618,10 @@ void print_counts_by_closest(struct OverallState* state)
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
                     if (rcurrent->knn_score > 0)
-                        g_debug("Phone in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
-                    rcurrent->phone_total += rcurrent->knn_score * score;        // probability x incidence
+                    {
+                        g_info("Phone in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
+                        rcurrent->phone_total += rcurrent->knn_score * score;        // probability x incidence
+                    }
                 }
             }
             else //if (test->distance < 7.5)
@@ -709,7 +752,7 @@ void print_counts_by_closest(struct OverallState* state)
     // Add metadata for the sign to consume (so that signage can be adjusted remotely)
     cJSON* sign_meta = cJSON_AddObjectToObject(jobject, "signage");
     // TODO: More levels etc. settable remotely
-    cJSON_AddNumberToObject(sign_meta, "scale_factor", state->udp_scale_factor);
+    cJSON_AddRounded(sign_meta, "scale_factor", state->udp_scale_factor);
 
     json_rooms = cJSON_PrintUnformatted(jobject);
     //json_rooms = cJSON_Print(jobject);
@@ -725,7 +768,25 @@ void print_counts_by_closest(struct OverallState* state)
     //g_info("Summary by room: %s", json_rooms);
     //g_info(" ");
     g_info("Total people present %.2f", total_count);
+    //g_info("%s ", json_rooms);
     g_info(" ");
+
+
+    // Compute a hash to see if changes have happened (does not have to be perfect, we will send every n minutes regardless)
+    int patch_hash = 0;
+    for (struct patch* current = patch_list; current != NULL; current = current->next)
+    {
+        patch_hash = patch_hash * 7;
+        patch_hash += round(current->phone_total) + round(current->tablet_total) + round(current->computer_total) + round(current->beacon_total)
+            + round(current->watch_total) + round(current->wearable_total);
+    }
+
+    if (state->patch_hash  != patch_hash)
+    {
+        state->patch_hash = patch_hash;
+        return true;
+    }
+    return false;
 }
 
 
@@ -817,6 +878,8 @@ void *listen_loop(void *param)
     g_info("Starting listen thread for mesh operation on port %i\n", state->udp_mesh_port);
     g_info("Local client id is %s\n", state->local->client_id);
     g_cancellable_reset(cancellable);
+
+    if (!is_any_interface_up()) g_warning("No interface to listen on");
 
     while (!g_cancellable_is_cancelled(cancellable))
     {

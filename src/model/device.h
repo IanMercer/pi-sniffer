@@ -262,6 +262,9 @@ struct OverallState
    int influx_min_period_seconds;
    // No more than this many seconds between sends
    int influx_max_period_seconds;
+   // time last sent
+   time_t influx_last_sent;
+   // server domain name
    char* influx_server;
    int influx_port;
    char* influx_database;
@@ -272,6 +275,8 @@ struct OverallState
    int webhook_min_period_seconds;
    // No more than this many seconds between sends
    int webhook_max_period_seconds;
+   // time last sent
+   time_t webhook_last_sent;
    // Optional webhook for posting room counts to digital signage displays
    char* webhook_domain;
    int webhook_port;
@@ -297,6 +302,9 @@ struct OverallState
    // Most recent 2048 closest to observations
    int closest_n;
    
+   // Hash value of patch scores to calculate if changes have happened
+   int patch_hash;
+
    struct ClosestTo closest[CLOSEST_N];
 
    // linked list of beacons
