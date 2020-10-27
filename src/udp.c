@@ -255,7 +255,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
         }
 
         time_t now = time(0);
-        if (difftime(now, closest->time) > 60)
+        if (difftime(now, closest->time) > 300)
         {
             g_debug("Old, nearest to '%s' distance: %.2f, age: %.2f", best->patch_name, best->distance, time_score);
             //g_debug("Skip CSV, old data %fs", difftime(now, closest->time));
@@ -419,7 +419,7 @@ bool print_counts_by_closest(struct OverallState* state)
         int age = difftime(now, test->time);
         // If this hasn't been seen in > 300s (5min), skip it
         // and therefore all later instances of it (except beacons, keep them in the list longer)
-        if (age > 300 && test->category != CATEGORY_BEACON) continue;
+        if (age > 400 && test->category != CATEGORY_BEACON) continue;
         else if (age > 600) continue;
         count_in_age_range++;
 
