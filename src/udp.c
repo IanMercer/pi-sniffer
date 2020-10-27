@@ -505,26 +505,12 @@ bool print_counts_by_closest(struct OverallState* state)
         struct AccessPoint *ap = test->access_point;
 
         int delta_time = difftime(now, test->time);
-        double x_scale = test->category == CATEGORY_BEACON ? 84.0 : 42.0;       // beacons last longer, tend to transmit less often
+        double x_scale = test->category == CATEGORY_BEACON ? 160.0 : 80.0;       // beacons last longer, tend to transmit less often
 
         double score = 0.55 - atan(delta_time / x_scale - 4.0) / 3.0;
         // A curve that stays a 1.0 for a while and then drops rapidly around 3 minutes out
-        if (score > 0.99) score = 1.0;
+        if (score > 0.90) score = 1.0;
         if (score < 0.1) score = 0.0;
-
-        // Model the uncertainty when a new device arrives. On first tick it could
-        if (count < 2)
-        {
-            score = score * 0.5;
-        }
-        else if (count < 3)
-        {
-            score = score * 0.75;
-        }
-        else if (count < 4)
-        {
-            score = score * 0.95;
-        }
 
         if (score > 0)
         {
