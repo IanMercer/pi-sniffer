@@ -178,6 +178,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_BEACON;
     else if (string_starts_with(name, "LYWSD03MMC"))
         existing->category = CATEGORY_BEACON;
+    else if (string_ends_with(name, "beacon"))
+        existing->category = CATEGORY_BEACON;
     else if (string_ends_with(name, "Beacon"))
         existing->category = CATEGORY_BEACON;
 
