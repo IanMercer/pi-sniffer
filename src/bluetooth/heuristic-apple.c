@@ -134,7 +134,10 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x10)     // Nearby Info - Constantly
     {
-        set_name(existing, "Apple Nearby", nt_device);
+        // Almost certainly an iPhone
+        set_name(existing, "iPhone", nt_device);
+        soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? but assume phone
+
         //g_debug("  Nearby Info ");
         // 0x10
         // 1 byte length
