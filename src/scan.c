@@ -1881,7 +1881,7 @@ gboolean try_disconnect(struct Device *a)
 gboolean try_connect(struct Device *a)
 {
     // If we already have a category and a non-temporary name
-    if (a->category != CATEGORY_UNKNOWN && strncmp(a->name, "_", 1) != 0)
+    if (a->category != CATEGORY_UNKNOWN && a->name_type == nt_known)
         return FALSE; // already has a category and a name
 
     // Don't attempt connection until a device is close enough, or has been seen enough
