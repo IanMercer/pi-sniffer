@@ -120,9 +120,6 @@ struct Device
    int8_t try_connect_attempts;   // How many attempts have been made to connect
    // TODO: Collect data, SVM or trilateration TBD
    char *closest; // Closest access point name
-   float x;       // Calculated position, will be Kalman filtered
-   float y;
-   float z;
    bool is_training_beacon;      // Is this a beacon with "Indoor Positioning" turned on?
 };
 
