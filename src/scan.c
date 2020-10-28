@@ -645,6 +645,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 {
                     g_debug("  %s Address type has changed -> '%s'\n", address, addressType);
                     // Not interested in random as most devices are random
+                    apply_mac_address_heuristics(existing);
                 }
 #ifdef MQTT
                 if (state.network_up) send_to_mqtt_single(address, "type", addressType);

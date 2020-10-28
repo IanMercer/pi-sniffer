@@ -3,6 +3,8 @@
 #include "device.h"
 #include "utility.h"
 
+void apply_mac_address_heuristics (struct Device* existing);
+
 void apply_name_heuristics (struct Device* existing, const char* name);
 
 void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigned char *allocdata);
