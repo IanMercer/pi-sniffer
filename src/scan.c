@@ -578,13 +578,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
     }
 
     // Mark the most recent time for this device (but not if it's a get all devices call)
-    if (isUpdate)
-    {
-        time(&existing->latest);
-        existing->count++;
-        // If we just saw it, it can't be superseeded by anyone else
-        existing->supersededby = 0;
-    }
+
+    bool update_latest = isUpdate;   // May get cancelled if we see a DISCONNECTED message
 
     // If after examining every key/value pair, distance has been set then we will send it
     bool send_distance = FALSE;
@@ -661,20 +656,14 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             }
             g_free(addressType);
         }
-        else if (strcmp(property_name, "RSSI") == 0 && (isUpdate == FALSE))
+        else if (strcmp(property_name, "RSSI") == 0 && !isUpdate)
         {
-            // Ignore this, it isn't helpful
+            // Ignore this, it isn't helpful when it's not an update
             // int16_t rssi = g_variant_get_int16(prop_val);
             // g_print("  %s RSSI repeat %i\n", address, rssi);
         }
         else if (strcmp(property_name, "RSSI") == 0)
         {
-            if (!isUpdate)
-            {
-                //g_print("$$$$$$$$$$$$ RSSI is unreliable for get all devices\n");
-                continue;
-            }
-
             int16_t rssi = g_variant_get_int16(prop_val);
             //send_to_mqtt_single_value(address, "rssi", rssi);
 
@@ -773,6 +762,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                     g_debug("  %s Connected      ", address);
                 else
                     g_debug("  %s Disconnected   ", address);
+                    // And do not count this as an updated time
+                    update_latest = FALSE;
 
 #ifdef MQTT
                 if (state.verbosity >= Details) {
@@ -1142,6 +1133,15 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
         //g_print("un_ref prop_val\n");
         g_variant_unref(prop_val);
+    }
+
+    if (update_latest)
+    {
+        // DO NOT DO THIS IF THE MESSAGE IS "DISCONNECTED" AS THAT IS SENT AFTER IT HAS GONE!
+        time(&existing->latest);
+        existing->count++;
+        // If we just saw it, it can't be superseeded by anyone else
+        existing->supersededby = 0;
     }
 
     if (starting && send_distance)
