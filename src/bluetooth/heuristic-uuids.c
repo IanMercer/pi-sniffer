@@ -45,7 +45,11 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x00001105ul) append_text(gatts, gatts_length, "OBEXObjectPush, ");
         else if (ble_uuid == 0x00001106ul) append_text(gatts, gatts_length, "OBEXFileTransfer, ");
         else if (ble_uuid == 0x00001107ul) append_text(gatts, gatts_length, "IrMCSyncCommand, ");
-        else if (ble_uuid == 0x00001108ul) append_text(gatts, gatts_length, "Headset, ");
+        else if (ble_uuid == 0x00001108ul) 
+        {
+            append_text(gatts, gatts_length, "Headset, ");
+            soft_set_category(&existing->category, CATEGORY_HEADPHONES);
+        }
         else if (ble_uuid == 0x00001109ul) append_text(gatts, gatts_length, "CordlessTelephony, ");
         else if (ble_uuid == 0x0000110Aul) append_text(gatts, gatts_length, "AudioSource, ");
         else if (ble_uuid == 0x0000110Bul) append_text(gatts, gatts_length, "AudioSink, ");
@@ -67,7 +71,11 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x0000111Bul) append_text(gatts, gatts_length, "ImagingResponder, ");
         else if (ble_uuid == 0x0000111Cul) append_text(gatts, gatts_length, "ImagingAutomaticArchive, ");
         else if (ble_uuid == 0x0000111Dul) append_text(gatts, gatts_length, "ImagingReferenceObjects, ");
-        else if (ble_uuid == 0x0000111Eul) append_text(gatts, gatts_length, "Handsfree, ");
+        else if (ble_uuid == 0x0000111Eul)
+        {
+            append_text(gatts, gatts_length, "Handsfree, ");
+            soft_set_category(&existing->category, CATEGORY_HEADPHONES);
+        }
         else if (ble_uuid == 0x0000111Ful) append_text(gatts, gatts_length, "HandsfreeAudioGateway, ");
         else if (ble_uuid == 0x00001120ul) append_text(gatts, gatts_length, "DirectPrintingReferenceObjects, ");
         else if (ble_uuid == 0x00001121ul) append_text(gatts, gatts_length, "ReflectedUI, ");

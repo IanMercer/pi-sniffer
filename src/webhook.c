@@ -3,7 +3,6 @@
 */
 
 #include "webhook.h"
-#include "device.h"
 #include "http.h"
 #include <string.h>
 #include <glib.h>

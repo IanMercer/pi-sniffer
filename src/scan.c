@@ -22,8 +22,10 @@
 #include "influx.h"
 #include "rooms.h"
 #include "accesspoints.h"
+#include "closest.h"
 #include "sniffer-generated.h"
 #include "webhook.h"
+#include "state.h"
 
 #define G_LOG_USE_STRUCTURED 1
 #include <glib.h>
@@ -267,7 +269,7 @@ void find_latest_observations()
                 columns[col].latest = a->latest;
                 // Do we 'own' this device or does someone else
                 columns[col].isClosest = true;
-                struct ClosestTo *closest = get_closest(&state, a);
+                struct ClosestTo *closest = get_closest_64(&state, a->mac64);
                 columns[col].isClosest = closest != NULL && closest->access_point != NULL && closest->access_point->id == state.local->id;
             }
         }
@@ -1584,7 +1586,7 @@ void dump_device(struct OverallState* state, struct Device *d)
 
     float closest_dist = NAN;
     char *closest_ap = "unknown";
-    struct ClosestTo *closest = get_closest(state, d);
+    struct ClosestTo *closest = get_closest_64(state, d->mac64);
     if (closest)
     {
         closest_dist = closest->distance;

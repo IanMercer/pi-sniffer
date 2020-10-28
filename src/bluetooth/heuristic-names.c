@@ -56,6 +56,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_WEARABLE;
     else if (string_starts_with(name, "Ionic"))
         existing->category = CATEGORY_WEARABLE; // FITBIT
+    else if (string_starts_with(name, "Zip"))
+        existing->category = CATEGORY_WEARABLE; // FITBIT Zip
     else if (string_starts_with(name, "Versa"))
         existing->category = CATEGORY_WEARABLE; // FITBIT
     else if (string_starts_with(name, "Charge "))  //  Charge 2, 3, 4
@@ -437,6 +439,11 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     {
         set_name(existing, "Cisco Systems", nt_manufacturer);
         existing->category = CATEGORY_FIXED;
+    }
+    else if (string_starts_with(existing->mac, "6c:9a:c9"))
+    {
+        set_name(existing, "Valentine Radar", nt_manufacturer);
+        existing->category = CATEGORY_CAR;
     }
     else if (string_starts_with(existing->mac, "88:6b:0f"))
     {

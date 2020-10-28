@@ -15,6 +15,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include "device.h"
+#include "state.h"
 
 #define BUFSIZE 8196
 #define CACHE_TOPICS 100

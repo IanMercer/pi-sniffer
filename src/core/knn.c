@@ -1,6 +1,7 @@
 /*
     K-Nearest Neighbors Classifier
 */
+#include "state.h"
 #include "knn.h"
 #include "accesspoints.h"
 #include "cJSON.h"

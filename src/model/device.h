@@ -4,7 +4,6 @@
 #define G_LOG_USE_STRUCTURED 1
 
 #include "kalman.h"
-#include <pthread.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -179,6 +178,29 @@ struct Beacon
      - ?
 */
 
+
+int category_to_int(char *category);
+
+char *category_from_int(uint8_t i);
+
+char *device_to_json(struct AccessPoint *a, struct Device *device);
+
+char *access_point_to_json(struct AccessPoint *a);
+
+bool device_from_json(const char *json, struct AccessPoint *access_point, struct Device *device);
+
+void merge(struct Device *local, struct Device *remote, char *access_name, bool safe);
+
+/*
+   How much data is sent over MQTT
+*/
+enum Verbosity
+{
+   Counts = 1,
+   Distances = 2,
+   Details = 3
+};
+
 struct ClosestTo
 {
    // Which device
@@ -205,110 +227,6 @@ struct ClosestTo
    char name [NAME_LENGTH];
    // for training location to patch mappings
    bool is_training_beacon;
-};
-
-int category_to_int(char *category);
-
-char *category_from_int(uint8_t i);
-
-char *device_to_json(struct AccessPoint *a, struct Device *device);
-
-char *access_point_to_json(struct AccessPoint *a);
-
-bool device_from_json(const char *json, struct AccessPoint *access_point, struct Device *device);
-
-void merge(struct Device *local, struct Device *remote, char *access_name, bool safe);
-
-/*
-   How much data is sent over MQTT
-*/
-enum Verbosity
-{
-   Counts = 1,
-   Distances = 2,
-   Details = 3
-};
-
-// Shared device state object (one globally for app, thread safe access needed)
-struct OverallState
-{
-   int n; // current devices
-   bool network_up;        // Is the network up
-   bool web_polling;        // website is running locally
-   pthread_mutex_t lock;
-   struct Device devices[N];
-
-   struct AccessPoint *local; // the local access point (in the access points struct)
-
-   // TODO: The following will all move to a new systemd service running on the
-   // other end of DBUS.
-
-   // Set only if you want to broadcast people to whole of LAN
-   int udp_sign_port;      // The display for this group of sensors
-   int udp_mesh_port;      // The mesh port for this group of sensors
-   float udp_scale_factor; // Scale factor to multiply people by to send to screen
-   // TODO: Settable parameters for the display
-
-   char *mqtt_topic;
-   char *mqtt_server;
-   char *mqtt_username;
-   char *mqtt_password;
-   enum Verbosity verbosity;
-
-   // No less than this many seconds between sends
-   int influx_min_period_seconds;
-   // No more than this many seconds between sends
-   int influx_max_period_seconds;
-   // time last sent
-   time_t influx_last_sent;
-   // server domain name
-   char* influx_server;
-   int influx_port;
-   char* influx_database;
-   char* influx_username;
-   char* influx_password;
-
-   // No less than this many seconds between sends
-   int webhook_min_period_seconds;
-   // No more than this many seconds between sends
-   int webhook_max_period_seconds;
-   // time last sent
-   time_t webhook_last_sent;
-   // Optional webhook for posting room counts to digital signage displays
-   char* webhook_domain;
-   int webhook_port;
-   char* webhook_path;
-   char* webhook_username;
-   char* webhook_password;
-
-   // path to config.json
-   char* configuration_file_path;
-
-   // linked list of access points
-   struct AccessPoint* access_points;
-
-   // linked list of rooms
-   struct patch* patches;
-
-   // linked list of groups
-   struct group* groups;
-
-   // linked list of recorded locations for k-means
-   struct recording* recordings;
-
-   // Most recent 2048 closest to observations
-   int closest_n;
-   
-   // Hash value of patch scores to calculate if changes have happened
-   int patch_hash;
-
-   struct ClosestTo closest[CLOSEST_N];
-
-   // linked list of beacons
-   struct Beacon* beacons;
-
-   // Latest JSON for sending over DBUS on request
-   char* json;
 };
 
 #endif

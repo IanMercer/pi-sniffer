@@ -3,6 +3,7 @@
 
 // Client side implementation of UDP client-server model 
 #include "device.h"
+#include "state.h"
 
 #include <glib.h>
 #include <gio/gio.h>
@@ -20,11 +21,5 @@ void update_closest(struct OverallState* state, struct Device* device);
 void update_superseded(struct OverallState* state, struct Device* device); 
 
 void send_access_point_udp(struct OverallState* state);
-
-
-struct ClosestTo* get_closest(struct OverallState* state, struct Device* device);
-
-// Compute counts by patch, room and group, returns true if they changed
-bool print_counts_by_closest(struct OverallState* state);
 
 #endif
