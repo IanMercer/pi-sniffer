@@ -146,6 +146,8 @@ void *listen_loop(void *param)
         time(&now);
 
         struct Device d;
+        d.mac64 = 0;
+
         struct AccessPoint dummy;
         strncpy(dummy.client_id, "notset", 7);
         strncpy(dummy.description, "notset", 7);
@@ -172,8 +174,8 @@ void *listen_loop(void *param)
                 continue;
             }
 
-            // TODO: Ignore messages with no device, access point matrix already updated
-            if (d.mac == NULL || strlen(d.mac) == 0){
+            if (d.mac64 == 0)
+            {
                 g_info("Ignoring access point only message");
                 continue;
             }
