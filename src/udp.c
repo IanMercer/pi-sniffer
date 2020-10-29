@@ -231,7 +231,7 @@ void *listen_loop(void *param)
 
             // Update the closest data structure
             g_assert(actual != NULL);
-            g_debug("Update closest from  UDP: %s %s", d.mac, d.name);
+            g_debug("Update closest from UDP: %s %s count=%i ap=%s %s", d.mac, d.name, d.count, actual->client_id, dummy.client_id);
             add_closest(state, d.mac64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count, d.name, d.is_training_beacon);
 
             pthread_mutex_unlock(&state->lock);
