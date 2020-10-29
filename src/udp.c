@@ -176,7 +176,7 @@ void *listen_loop(void *param)
 
             if (d.mac64 == 0)
             {
-                g_info("Ignoring access point only message");
+                //g_info("Ignoring access point only message from %s", dummy.client_id);
                 continue;
             }
 

@@ -391,8 +391,8 @@ void report_devices_count()
         state.local->people_in_range_count = people_in_range;
         g_debug("Local people count = %.2f (%.2f in range)", people_closest, people_in_range);
 
-        // And send access point to everyone over UDP
-        send_access_point_udp(&state);
+        // And send access point to everyone over UDP - now sent only on tick event
+        //send_access_point_udp(&state);
     }
 
 // TEST TEST TEST TEST
