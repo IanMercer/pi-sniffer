@@ -283,6 +283,7 @@ int64_t mac_string_to_int_64 (char* mac){
     int len = strlen(mac);  // Should be 5 + 6*2 = 17
     if (strcmp(mac,"<random>")==0) return 0;
     if (strcmp(mac,"<any>")==0) return 0;
+    if (strcmp(mac,"<pub>")==0) return 0;
     if (strcmp(mac,"any")==0) return 0;
     if (len==0) return 0;
     if (len != 17) g_warning("Incorrect length mac address '%s'", mac);

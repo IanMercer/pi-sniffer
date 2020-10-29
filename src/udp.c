@@ -170,7 +170,7 @@ void *listen_loop(void *param)
             // ignore messages from self
             if (strcmp(actual->client_id, state->local->client_id) == 0)
             {
-                //g_print("Ignoring message from self %s : %s\n", a.client_id, d.mac);
+                g_print("Ignoring message from self %s : %s\n", dummy.client_id, d.mac);
                 continue;
             }
 

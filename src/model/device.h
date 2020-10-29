@@ -55,7 +55,7 @@ typedef uint64_t u_int64_t;
 #define CATEGORY_SPEAKERS 18
 #define CATEGORY_CAMERA 19
 #define CATEGORY_WATCH 20     
-
+#define CATEGORY_COVID 21
 
 // Max allowed length of names and aliases (plus 1 for null)
 #define NAME_LENGTH 21

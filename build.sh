@@ -25,20 +25,20 @@ then
 sudo mkdir /var/sniffer
 fi
 
-# copy executable over to opt directory
-echo Copy scan to /opt/sniffer
-sudo cp scan /opt/sniffer/
-
-# run immediately
-# sudo ./scan 192.168.0.52:1883
-
-# update running service
-
 if [ -e /etc/systemd/system/pi-sniffer.service ]
 then
 echo stopping service
 sudo systemctl stop pi-sniffer.service
 fi
+
+# copy executable over to opt directory
+echo Copy scan to /opt/sniffer
+sudo cp scan /opt/sniffer/
+
+# run immediately
+# sudo ./scan
+
+# update running service
 
 echo installing service
 # DBUS configuration necessary to allow name to be registered on bus

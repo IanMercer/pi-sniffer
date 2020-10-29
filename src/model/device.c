@@ -11,11 +11,11 @@
 // These must be in same order as enum values
 char* categories[] = { "unknown", "phone", "wearable", "tablet", "headphones", "computer", 
     "tv", "fixed", "beacon", "car", "audio", "lighting", "sprinklers", "sales", "appliance", "security", "fitness", "printer",
-    "speakers", "camera", "watch" };
+    "speakers", "camera", "watch", "covid" };
 
 int category_values[] = { CATEGORY_UNKNOWN, CATEGORY_PHONE, CATEGORY_WEARABLE, CATEGORY_TABLET, CATEGORY_HEADPHONES, CATEGORY_COMPUTER, 
     CATEGORY_TV, CATEGORY_FIXED, CATEGORY_BEACON, CATEGORY_CAR, CATEGORY_AUDIO_CARD, CATEGORY_LIGHTING, CATEGORY_SPRINKLERS, CATEGORY_POS, 
-    CATEGORY_APPLIANCE, CATEGORY_SECURITY, CATEGORY_FITNESS, CATEGORY_PRINTER, CATEGORY_SPEAKERS, CATEGORY_CAMERA, CATEGORY_WATCH };
+    CATEGORY_APPLIANCE, CATEGORY_SECURITY, CATEGORY_FITNESS, CATEGORY_PRINTER, CATEGORY_SPEAKERS, CATEGORY_CAMERA, CATEGORY_WATCH, CATEGORY_COVID };
 
 int category_to_int(char* category)
 {
