@@ -133,6 +133,21 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
     if (distance < 0.01)     // erroneous value
         return;
 
+    // If it's already here, remove it
+    for (int i = state->closest_n-1; i >= 0; i--)
+    {
+        g_assert(state->closest[i].access_point != NULL);
+        if (state->closest[i].access_point->id == access_point->id && state->closest[i].device_64 == device_64)
+        {
+            if (i < state->closest_n-1)
+            { 
+              memmove(&state->closest[i], &state->closest[i+1], sizeof(struct ClosestTo) * (state->closest_n-1 -i));
+            }
+            state->closest_n--;
+            break;        // if we always do this there will only ever be one
+        }
+    }
+
     // If the array is full, shuffle it down one
     if (state->closest_n == CLOSEST_N)
     {
@@ -162,18 +177,6 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         }
     }
     state->closest_n++;
-
-    // And now clean the remainder of the array, removing any for same access, same device
-    for (int i = state->closest_n-2; i >= 0; i--)
-    {
-        g_assert(state->closest[i].access_point != NULL);
-        if (state->closest[i].access_point->id == access_point->id && state->closest[i].device_64 == device_64)
-        {
-            memmove(&state->closest[i], &state->closest[i+1], sizeof(struct ClosestTo) * (state->closest_n-1 -i));
-            state->closest_n--;
-            break;        // if we always do this there will only ever be one
-        }
-    }
 }
 
 

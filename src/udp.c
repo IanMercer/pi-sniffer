@@ -178,16 +178,14 @@ void *listen_loop(void *param)
                 continue;
             }
 
-            bool found = false;
-
             pthread_mutex_lock(&state->lock);
+
+            // Find matching device and merge in any data it doesn't have
 
             for (int i = 0; i < state->n; i++)
             {
                 if (d.mac64 == state->devices[i].mac64)
                 {
-                    found = true;
-
                     int delta_time = difftime(now, d.latest);
 
                     if (d.supersededby != 0)
@@ -225,22 +223,16 @@ void *listen_loop(void *param)
                         // }
 
                         g_assert(actual != NULL);
-
-                        add_closest(state, d.mac64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count, d.name, d.is_training_beacon);
                     }
                    
                     break;
                 }
             }
 
-            if (!found && strncmp(d.mac, "notset", 6) != 0)
-            {
-                // char* cat = category_from_int(d.category);
-                g_debug("Add from UDP: %s %s", d.mac, d.name);
-
-                g_assert(actual != NULL);
-                add_closest(state, d.mac64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count, d.name, d.is_training_beacon);
-            }
+            // Update the closest data structure
+            g_assert(actual != NULL);
+            g_debug("Update closest from  UDP: %s %s", d.mac, d.name);
+            add_closest(state, d.mac64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count, d.name, d.is_training_beacon);
 
             pthread_mutex_unlock(&state->lock);
         }
