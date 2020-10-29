@@ -235,18 +235,20 @@ void *listen_loop(void *param)
 
             if (!found && strncmp(d.mac, "notset", 6) != 0)
             {
-                // char* cat = category_from_int(d.category);
-                g_debug("Add from UDP: %s %s", d.mac, d.name);
+                char mac_string[18];
+                mac_64_to_string(mac_string, sizeof(mac_string), d.mac64);
 
-                int64_t id_64 = mac_string_to_int_64(d.mac);
+                // char* cat = category_from_int(d.category);
+                g_debug("Add from UDP: %s == %s %s", d.mac, mac_string, d.name);
+
                 g_assert(actual != NULL);
-                add_closest(state, id_64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count, d.name, d.is_training_beacon);
+                add_closest(state, d.mac64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count, d.name, d.is_training_beacon);
             }
 
             pthread_mutex_unlock(&state->lock);
         }
     }
-    g_info("Listen thread finished\n");
+    g_info("Listen thread finished");
     return NULL;
 }
 
