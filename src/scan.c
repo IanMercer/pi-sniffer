@@ -717,7 +717,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             double delta_v = fabs(existing->distance - averaged);
             double score = delta_v * delta_time_sent;
 
-            if (score > 10.0 || delta_time_sent > 30)
+            if (score > 10.0 || delta_time_sent > 10)
             {
                 //g_print("  %s Will send rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
                 existing->distance = averaged;
