@@ -235,11 +235,8 @@ void *listen_loop(void *param)
 
             if (!found && strncmp(d.mac, "notset", 6) != 0)
             {
-                char mac_string[18];
-                mac_64_to_string(mac_string, sizeof(mac_string), d.mac64);
-
                 // char* cat = category_from_int(d.category);
-                g_debug("Add from UDP: %s == %s %s", d.mac, mac_string, d.name);
+                g_debug("Add from UDP: %s %s", d.mac, d.name);
 
                 g_assert(actual != NULL);
                 add_closest(state, d.mac64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count, d.name, d.is_training_beacon);
