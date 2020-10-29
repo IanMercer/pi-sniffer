@@ -74,8 +74,8 @@ typedef uint64_t u_int64_t;
 enum name_type { 
     nt_initial = 0,          // ""
     nt_generic = 100,        // e.g. "Beacon"
-    nt_manufacturer = 200,   //  e.g. "Milwaukee"
-    nt_device = 300,         //  e.g. "iPhone"
+    nt_manufacturer = 200,   // e.g. "Milwaukee"
+    nt_device = 300,         // e.g. "iPhone"
     nt_known = 400,          // received from Bluetooth
     nt_alias = 500           // defined for system, e.g. tag names
 };

@@ -202,6 +202,7 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x0000fd6ful) 
         {
             append_text(gatts, gatts_length, "CovidTrace, ");
+            set_name(existing, "Covid Trace", nt_generic);
             soft_set_category(&existing->category, CATEGORY_COVID);
         }
         else if (ble_uuid == 0x0000fe79ul) 
