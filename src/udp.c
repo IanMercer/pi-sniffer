@@ -193,8 +193,7 @@ void *listen_loop(void *param)
                     if (d.supersededby != 0)
                     {
                         // remove from closest
-                        int64_t id_64 = mac_string_to_int_64(d.mac);
-                        mark_superseded(state, actual, id_64, d.supersededby);
+                        mark_superseded(state, actual, d.mac64, d.supersededby);
                         // Don't bump the latest time on this device, this message relates to an earlier time, right?
                     }
                     else 
@@ -237,7 +236,7 @@ void *listen_loop(void *param)
             if (!found && strncmp(d.mac, "notset", 6) != 0)
             {
                 // char* cat = category_from_int(d.category);
-                // g_debug("Add from UDP: %s %s %s\n", d.mac, d.name, cat);
+                g_debug("Add from UDP: %s %s", d.mac, d.name);
 
                 int64_t id_64 = mac_string_to_int_64(d.mac);
                 g_assert(actual != NULL);

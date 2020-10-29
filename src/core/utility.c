@@ -285,7 +285,7 @@ int64_t mac_string_to_int_64 (char* mac){
     if (strcmp(mac,"<any>")==0) return 0;
     if (strcmp(mac,"any")==0) return 0;
     if (len==0) return 0;
-    if (len != 17) g_warning("Incorrect length mac address %s", mac);
+    if (len != 17) g_warning("Incorrect length mac address '%s'", mac);
     // Very lazy, assumes format is right: 00:00:00:00:00:00
     for(int i = 0; i < len; i++) {
         char let = mac[i];
