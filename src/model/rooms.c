@@ -220,7 +220,7 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
                 beacon->patch = NULL;
                 beacon->next = *beacon_list;
                 *beacon_list = beacon;
-                g_warning("Added beacon `%s` = '%s' to list", beacon->name, beacon->alias);
+                //g_warning("Added beacon `%s` = '%s' to list", beacon->name, beacon->alias);
             }
             else
             {

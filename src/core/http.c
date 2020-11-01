@@ -38,7 +38,7 @@ int http_post(char* hostname, int port, char* path, char* auth, char* body, int 
 
     /* lookup the ip address */
     server = gethostbyname(hostname);
-    if (server == NULL) { g_error("ERROR, no such host"); return -1; }
+    if (server == NULL) { g_error("ERROR, no such host for '%s'", hostname); return -1; }
 
     /* fill in the structure */
     memset(&serv_addr,0,sizeof(serv_addr));

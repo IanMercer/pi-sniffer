@@ -66,8 +66,6 @@
 
 typedef void (*method_cb_t)(GObject *, GAsyncResult *, gpointer);
 
-void print_and_free_error(GError *error);
-
 int bluez_set_discovery_filter(GDBusConnection *conn);
 
 int bluez_adapter_connect_device(GDBusConnection *conn, char *address);

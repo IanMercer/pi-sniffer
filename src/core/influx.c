@@ -40,7 +40,7 @@ void post_to_influx_body(struct OverallState* state, char body[BUFSIZE], int len
 
     /* lookup the ip address */
     server = gethostbyname(state->influx_server);
-    if (server == NULL) { g_error("ERROR, no such host"); return; }
+    if (server == NULL) { g_error("ERROR, no such host '%s'", state->influx_server); return; }
 
     /* fill in the structure */
     memset(&serv_addr,0,sizeof(serv_addr));

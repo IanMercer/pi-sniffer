@@ -1,6 +1,7 @@
-#include<sys/socket.h>
-#include<arpa/inet.h> //inet_addr
- 
+#include <sys/socket.h>
+#include <arpa/inet.h> //inet_addr
+#include <stdio.h> 
+
 int web_server_thread()
 {
     int socket_desc , new_socket , c;

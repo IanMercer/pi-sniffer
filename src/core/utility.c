@@ -521,3 +521,44 @@ void cJSON_AddRounded(cJSON * item, const char* label, double value)
 }
 
 
+
+/*
+   Get an integer parameter from the environment or default
+*/
+void get_int_env(const char* env, int* value, int default_value)
+{
+    const char *s = getenv(env);
+    *value = (s != NULL) ? atoi(s) : default_value;
+}
+
+/*
+   Get a float parameter from the environment or default
+*/
+void get_float_env(const char* env, float* value, float default_value)
+{
+    const char *s = getenv(env);
+    *value = (s != NULL) ? strtof(s, NULL) : default_value;
+}
+
+/*
+   Get a string parameter from the environment or default
+*/
+void get_string_env(const char* env, char** value, char* default_value)
+{
+    char *s = getenv(env);
+    *value = (s != NULL) ? s : default_value;
+}
+
+
+/*
+    print_and_free_error
+*/
+void print_and_free_error(GError *error) 
+{
+  if (error)
+  {
+       g_print("Error: %s\n", error->message);
+       g_error_free (error);
+  }
+}
+

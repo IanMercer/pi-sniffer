@@ -2,7 +2,6 @@
 
 #include "device.h"
 #include "utility.h"
-#include "mqtt_send.h"
 
 void handle_apple(struct Device *existing, unsigned char *allocdata)
 {

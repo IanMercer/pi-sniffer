@@ -5,19 +5,6 @@
 
 #include "bluetooth.h"
 
-/*
-    print_and_free_error
-*/
-void print_and_free_error(GError *error) 
-{
-  if (error)
-  {
-       g_print("Error: %s\n", error->message);
-       g_error_free (error);
-  }
-}
-
-
 
 int bluez_set_discovery_filter(GDBusConnection *conn)
 {

@@ -13,7 +13,9 @@
  *
  */
 #include "core/utility.h"
+#ifdef MQTT
 #include "mqtt_send.h"
+#endif
 #include "udp.h"
 #include "kalman.h"
 #include "device.h"
@@ -1129,7 +1131,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         else
         {
             const char *type = g_variant_get_type_string(prop_val);
-            g_debug("ERROR Unknown property: '%s' %s\n", property_name, type);
+            g_debug("ERROR Unknown property: '%s' %s", property_name, type);
         }
 
         //g_print("un_ref prop_val\n");
@@ -1966,33 +1968,6 @@ int try_connect_tick(void *parameters)
 }
 
 static char client_id[META_LENGTH];
-
-/*
-   Get an integer parameter from the environment or default
-*/
-void get_int_env(const char* env, int* value, int default_value)
-{
-    const char *s = getenv(env);
-    *value = (s != NULL) ? atoi(s) : default_value;
-}
-
-/*
-   Get a float parameter from the environment or default
-*/
-void get_float_env(const char* env, float* value, float default_value)
-{
-    const char *s = getenv(env);
-    *value = (s != NULL) ? strtof(s, NULL) : default_value;
-}
-
-/*
-   Get a string parameter from the environment or default
-*/
-void get_string_env(const char* env, char** value, char* default_value)
-{
-    char *s = getenv(env);
-    *value = (s != NULL) ? s : default_value;
-}
 
 /*
     Initialize state from environment

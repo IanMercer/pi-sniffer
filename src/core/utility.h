@@ -134,4 +134,24 @@ void cJSON_AddSummary(cJSON * item, struct summary* s);
 void cJSON_AddRounded(cJSON * item, const char* label, double value);
 
 
+/*
+   Get an integer parameter from the environment or default
+*/
+void get_int_env(const char* env, int* value, int default_value);
+
+/*
+   Get a float parameter from the environment or default
+*/
+void get_float_env(const char* env, float* value, float default_value);
+
+/*
+   Get a string parameter from the environment or default
+*/
+void get_string_env(const char* env, char** value, char* default_value);
+
+/*
+   Print and free error
+*/
+void print_and_free_error(GError *error);
+
 #endif
