@@ -11,13 +11,17 @@ CFLAGS = -Wall -Wextra -g `pkg-config --cflags glib-2.0 gio-2.0 gio-unix-2.0` -I
 
 LIBS = -lm `pkg-config --libs glib-2.0 gio-2.0 gio-unix-2.0`
 
-DEPS = src/*.h src/model/*.h src/core/*.h src/bluetooth/*.h src/dbus/*.h
-SRC = src/scan.c src/udp.c src/influx.c src/webhook.c src/core/*.c src/model/*.c src/bluetooth/*.c src/dbus/*.c
+DEPS = Makefile src/model/*.h src/core/*.h src/bluetooth/*.h src/dbus/*.h
+SRC = src/core/*.c src/model/*.c src/bluetooth/*.c src/dbus/*.c
 MQTTSRC = src/mqtt.c src/udp.c src/mqtt_send.c src/influx.c src/core/*.c src/model/*.c src/dbus/*.c
 CGIJSON = src/cgijson.c src/dbus/sniffer-generated.c
 
-scan: $(SRC)
-	gcc -o $@ $^ $(CFLAGS) $(LIBS)
+scan report cgijson: src/*.c $(SRC) $(DEPS)
+	gcc -o scan src/scan.c $(SRC) $(CFLAGS) $(LIBS)
+	gcc -o report src/report.c $(SRC) $(CFLAGS) $(LIBS)
+	gcc -o cgijson.cgi $(CGIJSON) $(CFLAGS) $(LIBS)
+	echo assuming you have apache set up on your Raspberry Pi
+	echo cp cgijson.cgi /usr/lib/cgi-bin/
 
 scanwithmqtt: $(SRC)
 	gcc -o $@ $^ $(CFLAGS) $(LIBS) -lpaho-mqtt3as -DMQTT
@@ -29,7 +33,7 @@ mqtt: $(MQTTSRC)
 #sniffer-generated.h sniffer-generated.c: sniffer.xml
 #	gdbus-codegen --generate-c-code sniffer-generated --c-namespace pi --interface-prefix com.signswift sniffer.xml
 
-cgijson: $(CGIJSON)
-	gcc -o $@ $^ $(CFLAGS) $(LIBS)
-	echo assuming you have apache set up on your Raspberry Pi
-	cp cgijson /usr/lib/cgi-bin/
+#cgijson: $(CGIJSON)
+#	gcc -o $@ $^ $(CFLAGS) $(LIBS)
+#	echo assuming you have apache set up on your Raspberry Pi
+#	cp cgijson /usr/lib/cgi-bin/
