@@ -345,27 +345,27 @@ bool print_counts_by_closest(struct OverallState* state)
     }
 
     // TODO: Make this lazy, less often?
+    //if (state->recordings == NULL)
     free_list(&state->recordings);
     int count_recordings = 0;
-    //if (state->recordings == NULL)
+    g_info("Re-read observations files");
+    bool ok = read_observations ("recordings", state, TRUE);
+    if (!ok) g_warning("Failed to read recordings files back");
+    bool have_some_recordings = state->patches != NULL;
+    // and then layer the found beacons on top
+    ok = read_observations ("beacons", state, FALSE);
+    if (!ok) g_warning("Failed to read beacon files back");
+    for (struct recording* r = state->recordings; r != NULL; r=r->next)
     {
-        g_info("Re-read observations files");
-        bool ok = read_observations ("recordings", state, TRUE);
-        if (!ok) g_warning("Failed to read recordings files back");
-        ok = read_observations ("beacons", state, FALSE);
-        if (!ok) g_warning("Failed to read beacon files back");
-        for (struct recording* r = state->recordings; r != NULL; r=r->next)
-        {
-            count_recordings++;
-        }
+        count_recordings++;
     }
 
     g_info(" ");
     g_info("COUNTS (closest contains %i, recordings contains %i)", state->closest_n, count_recordings);
     
-    if (state->patches == NULL)
+    if (!have_some_recordings)
     {
-        g_warning("No patches found, please deploy the empty patches file");
+        g_warning("No patches found, please deploy patches files");
 
         char* local_id = state->local->client_id; // Used as group_id
         struct patch* current_patch = get_or_create_patch("Near", "Inside", local_id, "tags", &state->patches, &state->groups, TRUE);

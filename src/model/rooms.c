@@ -111,19 +111,20 @@ struct patch* get_or_create_patch(const char* patch_name, const char* room_name,
     }
     else
     {
-        // If a definition is split across two files everything must align
-        if (strcmp(found->room, room_name) != 0)
-        {
-            g_warning("Patch '%s' found in two rooms: '%s' and '%s', ignoring latter", patch_name, found->room, room_name);
-        }
-        if (strcmp(found->group->name, group_name) != 0)
-        {
-            g_warning("Patch '%s' found in two groups: '%s' and '%s'", patch_name, found->group->name, group_name);
-        }
-        if (strcmp(found->group->tags, tags) != 0)
-        {
-            g_warning("Patch '%s' found in group: '%s' has different tags, ignoring '%s'", patch_name, found->group->name, tags);
-        }
+        // These have all been 'slugged', need a slugged_equals method
+        // // If a definition is split across two files everything must align
+        // if (strcmp(found->room, room_name) != 0)
+        // {
+        //     g_warning("Patch '%s' found in two rooms: '%s' and '%s', ignoring latter", patch_name, found->room, room_name);
+        // }
+        // if (strcmp(found->group->name, group_name) != 0)
+        // {
+        //     g_warning("Patch '%s' found in two groups: '%s' and '%s'", patch_name, found->group->name, group_name);
+        // }
+        // if (strcmp(found->group->tags, tags) != 0)
+        // {
+        //     g_warning("Patch '%s' found in group: '%s' has different tags, ignoring '%s'", patch_name, found->group->name, tags);
+        // }
         free(patch_name_m);
     }
 
