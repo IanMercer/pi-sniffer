@@ -387,8 +387,6 @@ bool print_counts_by_closest(struct OverallState* state)
         state->recordings = ralloc;
 
         ralloc->access_point_distances[0] = 12.0;    // mid-point of far
-
-        free(local_id);
     }
     
     time_t now = time(0);
