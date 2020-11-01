@@ -433,7 +433,11 @@ bool is_any_interface_up()
             ioctl(socketfd, SIOCGIFFLAGS, &ifr);
 
             bool isConnected = ifr.ifr_ifru.ifru_flags & IFF_RUNNING;
-            //g_debug("%s is %i", ifa->ifa_name, isConnected);
+            if (!interface_state)
+            {
+                // Log interfaces state if we are currently down (or starting)
+                g_debug("%s is %i", ifa->ifa_name, isConnected);
+            }
             if (isConnected) count_connected++;
             close(socketfd);
         }
