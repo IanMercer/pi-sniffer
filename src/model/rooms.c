@@ -71,7 +71,7 @@ struct patch* get_or_create_patch(const char* patch_name, const char* room_name,
     struct patch* found = NULL;
     for (struct patch* r = *patch_list; r != NULL; r=r->next)
     {
-        if (strcmp(r->name, patch_name) == 0)
+        if (strcmp(r->name, patch_name_m) == 0)
         {
             found = r;
             break;
@@ -124,9 +124,8 @@ struct patch* get_or_create_patch(const char* patch_name, const char* room_name,
         {
             g_warning("Patch '%s' found in group: '%s' has different tags, ignoring '%s'", patch_name, found->group->name, tags);
         }
+        free(patch_name_m);
     }
-
-    free(patch_name_m);
 
     return found;
 }
