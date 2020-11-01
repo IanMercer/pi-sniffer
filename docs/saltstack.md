@@ -11,7 +11,7 @@ Edit the "master" directive in the minion configuration file, typically `sudo na
 
 ````
 - #master: salt
-+ master: salt.abodit.com
++ master: <SALT SERVER DOMAIN NAME>
 ````
 
 Edit the salt grains file to define information about this device:
@@ -26,7 +26,6 @@ Add groups:
 group: pi4
 group: location_name
 ````
-
 
 
 After updating the configuration file, restart the Salt minion

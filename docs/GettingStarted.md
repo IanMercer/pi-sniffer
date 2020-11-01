@@ -23,13 +23,27 @@ See [MQTT.md](MQTT.md). You do not need to do this if you are not using MQTT.
 
 * clone this repository
 
-`git clone https://github.com/ianmercer/pi-sniffer`
+````
+git clone https://github.com/ianmercer/pi-sniffer`
+cd pi-sniffer
+````
+
+* create a configuration file
+
+Add the details of any iBeacons you have or other Bluetooth devices you want to track
+
+````
+sudo mkdir /etc/signswift
+sudo cp config.json /etc/signswift/config.json
+nano /etc/signswift/config.json
+````
 
 * edit the .service file to point to the scan executable location by editing the `ExecStart` and `WorkingDirectory` lines:
+````
 
-`cd pi-sniffer`
+nano pi-sniffer.service
+````
 
-`nano pi-sniffer.service`
 
 * build and deploy the code:
 

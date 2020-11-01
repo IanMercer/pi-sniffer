@@ -10,6 +10,15 @@ versions. The 3+ has slightly better Bluetooth range but the 4 is faster and mor
 3. Create a `wpa_supplicant.conf` following the instructions here: https://www.raspberrypi.org/documentation/configuration/wireless/headless.md
 You will need to set the correct country code, SSID and password for your network.
 
+To encrypt the password (as you should) use this command:
+
+````
+wpa_passphrase "ssid" "password"
+````
+
+You can add multiple Wi-Fi connections provided each has a `priority=` value.
+
+
 4. Add a blank file called `ssh` with no extension in the root directory. This will allow remote access over SSH.
 
 5. Plug the Pi in and find what IP address it was allocated. You can probably find it at `raspberrypi.ocal` or you can connect a monitor and keyboard, or you can look at your router to see what IP was allocated, or you can do a portscan on the local network to find it (change the base address to match your local network in this nmap command.)
@@ -45,8 +54,7 @@ Reboot after this.
 
     a. Change the default password for the pi user using `passwd`.
 
-    b. Change the hostname and hosts by replacing `raspberrypi` with your chosen name
- in both of these locations, and reboot:
+    b. Change the hostname and hosts by replacing `raspberrypi` with your chosen name in both of these locations, and reboot:
 
 ````
 sudo nano \etc\hostname
@@ -153,3 +161,26 @@ In short:
 2. Reboot
 3. `sudo apt-get install python-smbus i2c-tools`
 
+
+# OPTIONAL AUTO-NAMING
+
+If you have many Raspberry Pis that you want to setup from a common image, add this to `/etc/rc.local` before you create the image, but do not run it. On first-run
+it will change the name from `raspberrypi` to `Crowd-XXXXXX` where XXXXXX is the serial number of the Raspberry Pi.
+
+````
+MAC="crowd-""$(grep 'Serial' /proc/cpuinfo | sed 's/^Serial.*000\([1-9a-f][0-9a-f]*\)$/\1/')"
+CURRENT_HOSTNAME=$(cat /proc/sys/kernel/hostname)
+
+if [ $CURRENT_HOSTNAME = "raspberrypi" ]
+then
+echo "Changing name to" $MAC "from" $CURRENT_HOSTNAME
+chattr -i /etc/hostname
+echo "$MAC" > "/etc/hostname"
+echo "$MAC" > "/etc/salt/minion_id"
+chattr -i /etc/hosts
+sed -i "s/127.0.1.1\s*$CURRENT_HOSTNAME/127.0.1.1\t$MAC/g" /etc/hosts
+hostname $MAC
+#chattr +i /etc/hostname
+#chattr +i /etc/hosts
+fi
+````
