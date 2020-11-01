@@ -506,8 +506,8 @@ int report_to_influx_tick(struct OverallState* state)
         char tags[120];
         char field[120];
 
-        snprintf(field, sizeof(field), "beacon=%.1f,computer=%.1f,phone=%.1f,tablet=%.1f,watch=%.1f,wear=%.1f",
-            s->beacon_total, s->computer_total, s->phone_total, s->tablet_total, s->watch_total, s->wearable_total);
+        snprintf(field, sizeof(field), "beacon=%.1f,computer=%.1f,phone=%.1f,tablet=%.1f,watch=%.1f,wear=%.1f,oth=%.1f",
+            s->beacon_total, s->computer_total, s->phone_total, s->tablet_total, s->watch_total, s->wearable_total, s->other_total);
 
         snprintf(tags, sizeof(tags), "room=%s", s->category);
 
@@ -881,18 +881,6 @@ void display_state()
     int count = 0;
     for (struct AccessPoint* ap = state.access_points; ap != NULL; ap=ap->next){ count ++; }
     g_info("ACCESS_POINTS: %i", count);
-
-    // CSV header
-    char csv[256];
-    csv[0] = '\0';
-    bool found = false;
-    for (struct AccessPoint* current = state.access_points; current != NULL; current = current->next)
-    {
-        found = true;
-        append_text(csv, sizeof(csv), "%s,", current->client_id);
-    }
-    if (found) csv[strlen(csv)-1] = '\0';  // trim trailing comma
-    g_debug("CSV: %s,device,room", csv);
 }
 
 guint prop_changed;

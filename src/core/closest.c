@@ -277,7 +277,6 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
 
     // // 
     // {
-    //     //g_debug("CSV: %s", csv);
     //     // Try to find a nearest beacon recording, if none close, record one
 
     //     // RECORD TRAINING DATA
@@ -342,6 +341,7 @@ bool print_counts_by_closest(struct OverallState* state)
         current->beacon_total = 0.0;
         current->watch_total = 0.0;
         current->wearable_total = 0.0;
+        current->other_total = 0.0;
     }
 
     // TODO: Make this lazy, less often?
@@ -624,7 +624,10 @@ bool print_counts_by_closest(struct OverallState* state)
             }
             else //if (test->distance < 7.5)
             {
-                // only count phones for occupancy
+                for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
+                {
+                    rcurrent->other_total += rcurrent->knn_score * score;
+                }
             }
             // else 
             // {

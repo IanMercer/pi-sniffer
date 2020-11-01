@@ -2140,18 +2140,6 @@ void display_state()
     int count = 0;
     for (struct AccessPoint* ap = state.access_points; ap != NULL; ap=ap->next){ count ++; }
     g_info("ACCESS_POINTS: %i", count);
-
-    // CSV header
-    char csv[256];
-    csv[0] = '\0';
-    bool found = false;
-    for (struct AccessPoint* current = state.access_points; current != NULL; current = current->next)
-    {
-        found = true;
-        append_text(csv, sizeof(csv), "%s,", current->client_id);
-    }
-    if (found) csv[strlen(csv)-1] = '\0';  // trim trailing comma
-    g_debug("CSV: %s,device,room", csv);
 }
 
 guint prop_changed;
