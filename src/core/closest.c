@@ -348,26 +348,32 @@ bool print_counts_by_closest(struct OverallState* state)
     //if (state->recordings == NULL)
     free_list(&state->recordings);
     int count_recordings = 0;
+    int count_recordings_and_beacons = 0;
     g_info("Re-read observations files");
     bool ok = read_observations ("recordings", state, TRUE);
     if (!ok) g_warning("Failed to read recordings files back");
-    bool have_some_recordings = state->patches != NULL;
-    // and then layer the found beacons on top
-    ok = read_observations ("beacons", state, FALSE);
-    if (!ok) g_warning("Failed to read beacon files back");
     for (struct recording* r = state->recordings; r != NULL; r=r->next)
     {
         count_recordings++;
     }
 
+    // and then layer the found beacons on top
+    ok = read_observations ("beacons", state, FALSE);
+    if (!ok) g_warning("Failed to read beacon files back");
+    for (struct recording* r = state->recordings; r != NULL; r=r->next)
+    {
+        count_recordings_and_beacons++;
+    }
+
     g_info(" ");
-    g_info("COUNTS (closest contains %i, recordings contains %i)", state->closest_n, count_recordings);
+    g_info("COUNTS (closest contains %i, recordings: %i, beacons: %i)", state->closest_n, count_recordings, count_recordings_and_beacons);
     
-    if (!have_some_recordings)
+    if (count_recordings == 0)
     {
         g_warning("No patches found, please deploy patches files");
 
         char* local_id = state->local->client_id; // Used as group_id
+
         struct patch* current_patch = get_or_create_patch("Near", "Inside", local_id, "tags", &state->patches, &state->groups, TRUE);
 
         struct recording* ralloc = malloc(sizeof(struct recording));
