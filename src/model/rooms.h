@@ -51,7 +51,7 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
 /*
    get or create a patch and update any existing group also
 */
-struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group_name, char* tags, struct patch** patch_list, struct group** groups_list, bool confirmed);
+struct patch* get_or_create_patch(const char* patch_name, const char* room_name, const char* group_name, const char* tags, struct patch** patch_list, struct group** groups_list, bool confirmed);
 
 // ------------------------------------------------------------------
 

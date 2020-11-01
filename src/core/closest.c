@@ -367,7 +367,7 @@ bool print_counts_by_closest(struct OverallState* state)
     {
         g_warning("No patches found, please deploy the empty patches file");
 
-        char* local_id = state->access_points[0].client_id; // Used as group_id
+        char* local_id = state->local->client_id; // Used as group_id
         struct patch* current_patch = get_or_create_patch("Near", "Inside", local_id, "tags", &state->patches, &state->groups, TRUE);
 
         struct recording* ralloc = malloc(sizeof(struct recording));
@@ -387,6 +387,8 @@ bool print_counts_by_closest(struct OverallState* state)
         state->recordings = ralloc;
 
         ralloc->access_point_distances[0] = 12.0;    // mid-point of far
+
+        free(local_id);
     }
     
     time_t now = time(0);

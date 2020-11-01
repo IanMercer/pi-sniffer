@@ -15,17 +15,28 @@
 /*
     Get or add a group
 */
-struct group* get_or_add_area(struct group** group_list, char* group_name, char* tags)
+struct group* get_or_add_group(struct group** group_list, const char* group_name, const char* tags)
 {
+    char* group_name_m = strdup(group_name);
+    url_slug(group_name_m);  // destructive
+
+    char* tags_m = strdup(tags);
+    url_slug(tags_m);       // destructive
+
     for (struct group* current = *group_list; current != NULL; current = current->next)
     {
         if (strcmp(current->name, group_name) == 0 &&
-            strcmp(current->tags, tags) == 0) return current;
+            strcmp(current->tags, tags) == 0)
+            {
+                free(group_name_m);
+                free(tags_m);
+                return current;
+            }
     }
     // Otherwise add a new group
     struct group* group = g_malloc(sizeof(struct group));
-    group->name = strdup(group_name);
-    group->tags = strdup(tags);
+    group->name = group_name_m;
+    group->tags = tags_m;
     group->next = NULL;
 
     if (*group_list == NULL)
@@ -46,23 +57,16 @@ struct group* get_or_add_area(struct group** group_list, char* group_name, char*
 /*
    get or create a room and update any existing group also
 */
-struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group_name, char* tags,
+struct patch* get_or_create_patch(const char* patch_name, const char* room_name, const char* group_name, const char* tags,
     struct patch** patch_list, struct group** groups_list, bool confirmed)
 {
-    g_assert(tags != NULL);
     g_assert(patch_name != NULL);
+    g_assert(group_name != NULL);
+    g_assert(tags != NULL);
 
-    if (string_contains_insensitive(tags, " "))
-    {
-        //g_warning("Spaces not allowed in tags for area '%s' (removed)", patch_name);
-        url_slug(tags);
-    }
-
-    if (string_contains_insensitive(patch_name, " "))
-    {
-        //g_warning("Spaces not allowed in patch names '%s' (removed)", patch_name);
-        url_slug(patch_name);   // destructive
-    }
+    // Work with a copy because we are destructive
+    char* patch_name_m = g_strdup(patch_name);
+    url_slug(patch_name_m);   // destructive
 
     struct patch* found = NULL;
     for (struct patch* r = *patch_list; r != NULL; r=r->next)
@@ -77,13 +81,13 @@ struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group
     if (found == NULL)
     {
         found = g_malloc(sizeof(struct patch));
-        found->name = strdup(patch_name);
+        found->name = patch_name_m;
         found->next = NULL;
         found->group = NULL;
-        found->room = strdup(url_slug(room_name));
+        found->room = url_slug(strdup(room_name));
         found->confirmed = confirmed;
         // no strdup here, get_or_add_group handles that
-        found->group = get_or_add_area(groups_list, url_slug(group_name), tags);
+        found->group = get_or_add_group(groups_list, group_name, tags);
         g_info("Added patch %s in %s with tags %s", found->name, group_name, tags);
 
         found->phone_total = 0;
@@ -107,13 +111,22 @@ struct patch* get_or_create_patch(char* patch_name, char* room_name, char* group
     }
     else
     {
-        if (strcmp(found->group->name, group_name) != 0 || strcmp(found->group->tags, tags) != 0)
+        // If a definition is split across two files everything must align
+        if (strcmp(found->room, room_name) != 0)
         {
-            g_warning("Patch '%s' changing group from '%s' to '%s'", patch_name, found->group->name, group_name);
-            struct group* group = get_or_add_area(groups_list, group_name, tags);
-            found->group = group;
+            g_warning("Patch '%s' found in two rooms: '%s' and '%s', ignoring latter", patch_name, found->room, room_name);
+        }
+        if (strcmp(found->group->name, group_name) != 0)
+        {
+            g_warning("Patch '%s' found in two groups: '%s' and '%s'", patch_name, found->group->name, group_name);
+        }
+        if (strcmp(found->group->tags, tags) != 0)
+        {
+            g_warning("Patch '%s' found in group: '%s' has different tags, ignoring '%s'", patch_name, found->group->name, tags);
         }
     }
+
+    free(patch_name_m);
 
     return found;
 }
