@@ -779,7 +779,7 @@ bool print_counts_by_closest(struct OverallState* state)
     {
         patch_hash = patch_hash * 7;
         patch_hash += round(current->phone_total) + round(current->tablet_total) + round(current->computer_total) + round(current->beacon_total)
-            + round(current->watch_total) + round(current->wearable_total);
+            + round(current->watch_total) + round(current->wearable_total) + round(current->other_total);
     }
 
     if (state->patch_hash  != patch_hash)
