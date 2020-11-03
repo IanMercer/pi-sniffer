@@ -374,25 +374,37 @@ bool print_counts_by_closest(struct OverallState* state)
 
         char* local_id = state->local->client_id; // Used as group_id
 
-        struct patch* current_patch = get_or_create_patch("Near", "Inside", local_id, "tags", &state->patches, &state->groups, TRUE);
-
+        struct patch* current_patch = get_or_create_patch("Close", "Inside", local_id, "tags", &state->patches, &state->groups, TRUE);
         struct recording* ralloc = malloc(sizeof(struct recording));
         ralloc->confirmed = TRUE;
         g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
         ralloc->next = state->recordings;
         state->recordings = ralloc;
+        ralloc->access_point_distances[0] = 2.0;    // < 3m
 
-        ralloc->access_point_distances[0] = 4.0;    // mid-point of near
-
-        current_patch = get_or_create_patch("Far", "Outside", local_id, "tags", &state->patches, &state->groups, TRUE);
-
+        current_patch = get_or_create_patch("Near", "Inside", local_id, "tags", &state->patches, &state->groups, TRUE);
         ralloc = malloc(sizeof(struct recording));
         ralloc->confirmed = TRUE;
         g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
         ralloc->next = state->recordings;
         state->recordings = ralloc;
+        ralloc->access_point_distances[0] = 4.0;    // < 7m
 
-        ralloc->access_point_distances[0] = 12.0;    // mid-point of far
+        current_patch = get_or_create_patch("Far", "Outside", local_id, "tags", &state->patches, &state->groups, TRUE);
+        ralloc = malloc(sizeof(struct recording));
+        ralloc->confirmed = TRUE;
+        g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
+        ralloc->next = state->recordings;
+        state->recordings = ralloc;
+        ralloc->access_point_distances[0] = 10.0;    // > 7m
+
+        current_patch = get_or_create_patch("Distant", "Outside", local_id, "tags", &state->patches, &state->groups, TRUE);
+        ralloc = malloc(sizeof(struct recording));
+        ralloc->confirmed = TRUE;
+        g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
+        ralloc->next = state->recordings;
+        state->recordings = ralloc;
+        ralloc->access_point_distances[0] = 18.0;    // > 14m
     }
     
     time_t now = time(0);
