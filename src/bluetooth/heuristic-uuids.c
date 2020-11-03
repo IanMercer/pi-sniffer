@@ -144,6 +144,7 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
             soft_set_category(&existing->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0x0000feedul) {
+            set_name(existing, "Tile", nt_device);
             append_text(gatts, gatts_length, "Tile, ");
             soft_set_category(&existing->category, CATEGORY_BEACON);
         }

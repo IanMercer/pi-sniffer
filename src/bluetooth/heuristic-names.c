@@ -354,6 +354,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_CAR; // OBD-II monitor
     else if (string_starts_with(name, "Scosche BTFM4"))
         existing->category = CATEGORY_CAR; // Handsfree car kit
+    else if (string_starts_with(name, "BLE_Garmin Driv"))
+        existing->category = CATEGORY_CAR; // Garmin Nav
     else if (string_starts_with(name, "MAX 360c"))
         existing->category = CATEGORY_CAR; // radar detector
     else if (strncmp(name, "Land Rover", 10) == 0)
