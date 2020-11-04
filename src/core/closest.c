@@ -786,12 +786,15 @@ bool print_counts_by_closest(struct OverallState* state)
 
 
     // Compute a hash to see if changes have happened (does not have to be perfect, we will send every n minutes regardless)
+    // Round to nearest quarter, or 0.1 for phones
     int patch_hash = 0;
     for (struct patch* current = patch_list; current != NULL; current = current->next)
     {
         patch_hash = patch_hash * 7;
-        patch_hash += round(current->phone_total) + round(current->tablet_total) + round(current->computer_total) + round(current->beacon_total)
-            + round(current->watch_total) + round(current->wearable_total) + round(current->other_total);
+        patch_hash += round(current->phone_total * 10) + round(current->tablet_total * 4) 
+            + round(current->computer_total * 4) 
+            + round(current->beacon_total * 4) + round(current->watch_total * 4) 
+            + round(current->wearable_total * 4) + round(current->other_total * 4);
     }
 
     if (state->patch_hash  != patch_hash)
@@ -801,4 +804,3 @@ bool print_counts_by_closest(struct OverallState* state)
     }
     return false;
 }
-

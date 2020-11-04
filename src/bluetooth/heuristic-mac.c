@@ -97,6 +97,11 @@ void apply_mac_address_heuristics (struct Device* existing)
         set_name(existing, "KIMIN Electronic", nt_manufacturer);  // AirPlay - Denon?
         existing->category = CATEGORY_CAR;
     }
+    else if (string_starts_with(existing->mac, "04:EE:03"))
+    {
+        set_name(existing, "Texas Instruments", nt_manufacturer);  // Chipset
+    }
+
     else if (string_starts_with(existing->mac, "88:6b:0f"))
     {
         char beaconName[NAME_LENGTH];
