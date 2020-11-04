@@ -2078,7 +2078,7 @@ void initialize_state()
     get_int_env("WEBHOOK_MIN_PERIOD", &state.webhook_min_period_seconds, 5 *60);      // at most every 5 min
     get_int_env("WEBHOOK_MAX_PERIOD", &state.webhook_max_period_seconds, 60 *60);     // at least every 60 min
 
-    state.webhook_domain = getenv("WEBHOOK_DOMAIN");
+    get_string_env("WEBHOOK_DOMAIN", &state.webhook_domain, NULL);
     get_int_env("WEBHOOK_PORT", &state.webhook_port, 80);
     get_string_env("WEBHOOK_PATH", &state.webhook_path, "/api/bluetooth");
     get_string_env("WEBHOOK_USERNAME", &state.webhook_username, "");
@@ -2128,7 +2128,7 @@ void display_state()
     g_info("INFLUX_MIN_PERIOD='%i'", state.influx_min_period_seconds);
     g_info("INFLUX_MAX_PERIOD='%i'", state.influx_max_period_seconds);
 
-    g_info("WEBHOOK_URL='%s:%i%s'", state.webhook_domain == NULL ? "(null)" : state.webhook_domain, state.webhook_port, state.webhook_path);
+    g_info("WEBHOOK_DOMAIN/PORT/PATH='%s:%i%s'", state.webhook_domain == NULL ? "(null)" : state.webhook_domain, state.webhook_port, state.webhook_path);
     g_info("WEBHOOK_USERNAME='%s'", state.webhook_username == NULL ? "(null)" : "*****");
     g_info("WEBHOOK_PASSWORD='%s'", state.webhook_password == NULL ? "(null)" : "*****");
     g_info("WEBHOOK_MIN_PERIOD='%i'", state.webhook_min_period_seconds);

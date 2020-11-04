@@ -13,6 +13,9 @@
 
 void post_to_webhook (struct OverallState* state)
 {
+    if (state->webhook_domain == NULL) return;
+    if (strlen(state->webhook_domain) == 0) return;
+    
     char* auth = ""; // TODO: Username and password or token
 
     char result[BUFSIZE];
