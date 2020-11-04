@@ -388,7 +388,7 @@ bool print_counts_by_closest(struct OverallState* state)
         g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
         ralloc->next = state->recordings;
         state->recordings = ralloc;
-        ralloc->access_point_distances[0] = 4.0;    // < 7m
+        ralloc->access_point_distances[0] = 6.0;    // < 9m
 
         current_patch = get_or_create_patch("Far", "Outside", local_id, "tags", &state->patches, &state->groups, TRUE);
         ralloc = malloc(sizeof(struct recording));
@@ -396,7 +396,7 @@ bool print_counts_by_closest(struct OverallState* state)
         g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
         ralloc->next = state->recordings;
         state->recordings = ralloc;
-        ralloc->access_point_distances[0] = 10.0;    // > 7m
+        ralloc->access_point_distances[0] = 12.0;    // > 9m
 
         current_patch = get_or_create_patch("Distant", "Outside", local_id, "tags", &state->patches, &state->groups, TRUE);
         ralloc = malloc(sizeof(struct recording));
