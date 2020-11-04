@@ -2080,12 +2080,11 @@ void initialize_state()
 
     state.webhook_domain = getenv("WEBHOOK_DOMAIN");
     get_int_env("WEBHOOK_PORT", &state.webhook_port, 80);
-    state.webhook_path = getenv("WEBHOOK_PATH");
-    state.webhook_username = getenv("WEBHOOK_USERNAME");
-    state.webhook_password = getenv("WEBHOOK_PASSWORD");
+    get_string_env("WEBHOOK_PATH", &state.webhook_path, "/api/bluetooth");
+    get_string_env("WEBHOOK_USERNAME", &state.webhook_username, "");
+    get_string_env("WEBHOOK_PASSWORD", &state.webhook_password, "");
 
-    state.configuration_file_path = getenv("CONFIG");
-    if (state.configuration_file_path == NULL) state.configuration_file_path = "/etc/signswift/config.json";
+    get_string_env("CONFIG", &state.configuration_file_path, "/etc/signswift/config.json");
 
     state.verbosity = Distances; // default verbosity
     char* verbosity = getenv("VERBOSITY");

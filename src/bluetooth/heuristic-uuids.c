@@ -156,6 +156,11 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
             append_text(gatts, gatts_length, "FitbitHR?, ");
             soft_set_category(&existing->category, CATEGORY_WEARABLE);
         }
+        else if (ble_uuid == 0x0f9652d2ul) {
+            append_text(gatts, gatts_length, "Truck, ");    // air suspension etc.
+            soft_set_category(&existing->category, CATEGORY_CAR);
+        }
+
         else if (ble_uuid == 0x0000fff0ul) append_text(gatts, gatts_length, "ISSC Transparent Service, ");
         else if (ble_uuid == 0x0000fff1ul) append_text(gatts, gatts_length, "ISSC Transparent RX, ");
         else if (ble_uuid == 0x0000fff2ul) append_text(gatts, gatts_length, "ISSC Transparent TX, ");
