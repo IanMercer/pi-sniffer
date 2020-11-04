@@ -101,6 +101,11 @@ void apply_mac_address_heuristics (struct Device* existing)
     {
         set_name(existing, "Texas Instruments", nt_manufacturer);  // Chipset
     }
+    else if (string_starts_with(existing->mac, "00:1B:DC"))
+    {
+        set_name(existing, "Vencer", nt_manufacturer);  // Co. Ltd. - BT Headsets but also plant monitors
+        soft_set_8(&existing->category, CATEGORY_HEADPHONES);
+    }
 
     else if (string_starts_with(existing->mac, "88:6b:0f"))
     {
