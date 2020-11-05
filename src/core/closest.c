@@ -529,7 +529,16 @@ bool print_counts_by_closest(struct OverallState* state)
         struct AccessPoint *ap = test->access_point;
 
         int delta_time = difftime(now, test->time);
-        double x_scale = test->category == CATEGORY_BEACON ? 160.0 : 80.0;       // beacons last longer, tend to transmit less often
+        double x_scale = (test->category == CATEGORY_BEACON || 
+            test->category == CATEGORY_LIGHTING ||
+            test->category == CATEGORY_APPLIANCE ||
+            test->category == CATEGORY_POS ||
+            test->category == CATEGORY_PRINTER ||
+            test->category == CATEGORY_SPRINKLERS ||
+            test->category == CATEGORY_TV || 
+            test->category == CATEGORY_FIXED) ? 160.0 :
+            test->category == CATEGORY_TABLET ? 120 :
+             80.0;       // beacons and other fixed devices last longer, tend to transmit less often
 
         double score = 0.55 - atan(delta_time / x_scale - 4.0) / 3.0;
         // A curve that stays a 1.0 for a while and then drops rapidly around 3 minutes out
