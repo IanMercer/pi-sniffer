@@ -285,7 +285,7 @@ void apply_name_heuristics (struct Device* existing, const char* name)
 
     // Accessories
     else if (string_starts_with(name, "Apple Pencil"))
-        existing->category = CATEGORY_FIXED;  // Not really fixed
+        existing->category = CATEGORY_WEARABLE;  // Not really wearable
     else if (string_starts_with(name, "SPEN 02"))
         existing->category = CATEGORY_FIXED;  // Not really fixed WACOM
     else if (string_starts_with(name, "Oculus"))

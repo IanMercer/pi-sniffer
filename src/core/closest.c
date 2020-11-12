@@ -249,7 +249,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
         }
         else 
         {
-            g_debug("Nearest to '%s' distance %.2f, age %.2f", best->patch_name, best->distance, time_score);
+            g_debug("Nearest to '%s' d=%.2f, age %.2f", best->patch_name, best->distance, time_score);
         }
         return;
     }
