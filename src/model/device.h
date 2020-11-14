@@ -104,10 +104,11 @@ struct Device
    int manufacturer_data_hash;
    int service_data_hash;
    int uuids_length;
-   int uuid_hash;    // Hash value of all UUIDs - may ditinguish devices
-   int txpower;      // TX Power
-   time_t last_rssi; // last time an RSSI was received. If gap > 0.5 hour, ignore initial point (dead letter post)
+   int uuid_hash;                 // Hash value of all UUIDs - may ditinguish devices
+   int txpower;                   // TX Power
+   time_t last_rssi;              // last time an RSSI was received. If gap > 0.5 hour, ignore initial point (dead letter post)
    struct Kalman kalman;
+   struct Kalman rssi;            // RSSI Kalman filter
    time_t last_sent;
    float distance;
    struct Kalman kalman_interval; // Tracks time between RSSI events in order to detect large gaps

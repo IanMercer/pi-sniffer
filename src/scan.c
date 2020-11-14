@@ -558,6 +558,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         time(&existing->last_sent);
         time(&existing->last_rssi);
 
+        kalman_initialize(&existing->rssi);
+
         existing->last_sent = existing->last_sent - 1000; //1s back so first RSSI goes through
         existing->last_rssi = existing->last_rssi - 1000;
 
@@ -676,6 +678,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             // track gap between RSSI received events
             //double delta_time_received = difftime(now, existing->last_rssi);
             time(&existing->last_rssi);
+
+            //float averaged_rssi = 
+            kalman_update(&existing->rssi, rssi);
 
             // Smoothed delta time, interval between RSSI events
             //float current_time_estimate = (&existing->kalman_interval)->current_estimate;

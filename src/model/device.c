@@ -174,6 +174,7 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     cJSON_AddNumberToObject(j, "latest", device->latest);
     cJSON_AddNumberToObject(j, "count", device->count);
     cJSON_AddNumberToObject(j, "column", device->column);
+    cJSON_AddNumberToObject(j, "rssi", device->rssi.current_estimate);
     cJSON_AddNumberToObject(j, "try_connect_state", device->try_connect_state);
     if (device->is_training_beacon){
         cJSON_AddNumberToObject(j, "training", 1);
@@ -279,6 +280,13 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
     if (cJSON_IsNumber(distance))
     {
         device->distance = (float)distance->valuedouble;
+    }
+
+    cJSON *rssi = cJSON_GetObjectItemCaseSensitive(djson, "rssi");
+    if (cJSON_IsNumber(rssi))
+    {
+        device->rssi.current_estimate = (float)rssi->valuedouble;
+        device->rssi.last_estimate = (float)rssi->valuedouble;
     }
 
     cJSON *count = cJSON_GetObjectItemCaseSensitive(djson, "count");
