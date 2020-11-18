@@ -317,6 +317,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_POS;  // POS
     else if (string_starts_with(name, "XXZKJ"))
         existing->category = CATEGORY_POS;  // Taiyo Yuden module Beacon? Other?
+    else if (string_starts_with(name, "IDTECH-VP3300"))
+        existing->category = CATEGORY_POS;
 
     // Cars
 

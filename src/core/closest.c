@@ -370,11 +370,11 @@ bool print_counts_by_closest(struct OverallState* state)
     
     if (count_recordings == 0)
     {
-        g_warning("No patches found, please deploy patches files");
+        //g_warning("No patches found, please deploy patches files");
 
         char* local_id = state->local->client_id; // Used as group_id
 
-        struct patch* current_patch = get_or_create_patch("Close", "Inside", local_id, "tags", &state->patches, &state->groups, TRUE);
+        struct patch* current_patch = get_or_create_patch("Close", "Inside", local_id, "room=close", &state->patches, &state->groups, TRUE);
         struct recording* ralloc = malloc(sizeof(struct recording));
         ralloc->confirmed = TRUE;
         g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
@@ -382,7 +382,7 @@ bool print_counts_by_closest(struct OverallState* state)
         state->recordings = ralloc;
         ralloc->access_point_distances[0] = 2.0;    // < 3m
 
-        current_patch = get_or_create_patch("Near", "Inside", local_id, "tags", &state->patches, &state->groups, TRUE);
+        current_patch = get_or_create_patch("Near", "Inside", local_id, "room=near", &state->patches, &state->groups, TRUE);
         ralloc = malloc(sizeof(struct recording));
         ralloc->confirmed = TRUE;
         g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
@@ -390,7 +390,7 @@ bool print_counts_by_closest(struct OverallState* state)
         state->recordings = ralloc;
         ralloc->access_point_distances[0] = 6.0;    // < 9m
 
-        current_patch = get_or_create_patch("Far", "Outside", local_id, "tags", &state->patches, &state->groups, TRUE);
+        current_patch = get_or_create_patch("Far", "Outside", local_id, "room=far", &state->patches, &state->groups, TRUE);
         ralloc = malloc(sizeof(struct recording));
         ralloc->confirmed = TRUE;
         g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
@@ -398,7 +398,7 @@ bool print_counts_by_closest(struct OverallState* state)
         state->recordings = ralloc;
         ralloc->access_point_distances[0] = 12.0;    // > 9m
 
-        current_patch = get_or_create_patch("Distant", "Outside", local_id, "tags", &state->patches, &state->groups, TRUE);
+        current_patch = get_or_create_patch("Distant", "Outside", local_id, "room=distant", &state->patches, &state->groups, TRUE);
         ralloc = malloc(sizeof(struct recording));
         ralloc->confirmed = TRUE;
         g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
@@ -499,11 +499,11 @@ bool print_counts_by_closest(struct OverallState* state)
                     mac_64_to_string(other_mac, 18, other->supersededby);
 
                     //Verbose logging
-                    struct AccessPoint *ap2 = other->access_point;
-                    g_debug(" %10s distance %5.1fm at=%3is dt=%3is count=%3i %s%s", ap2->client_id, other->distance, abs_diff, time_diff, other->count,
+                    //struct AccessPoint *ap2 = other->access_point;
+                    //g_debug(" %10s distance %5.1fm at=%3is dt=%3is count=%3i %s%s", ap2->client_id, other->distance, abs_diff, time_diff, other->count,
                        // lazy concat
-                       other->supersededby==0 ? "" : "superseeded=", 
-                       other->supersededby==0 ? "" : other_mac);
+                    //   other->supersededby==0 ? "" : "superseeded=", 
+                    //   other->supersededby==0 ? "" : other_mac);
 
                     if (time_diff > 300)
                     {
@@ -638,7 +638,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 {
                     if (rcurrent->knn_score > 0)
                     {
-                        g_info("Phone in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
+                        //g_info("Phone in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
                         rcurrent->phone_total += rcurrent->knn_score * score;        // probability x incidence
                     }
                 }
