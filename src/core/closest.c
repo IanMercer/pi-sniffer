@@ -730,46 +730,49 @@ bool print_counts_by_closest(struct OverallState* state)
     }
     free_summary(&summary);
 
-    g_info(" ");
-    g_info("==============================================================================================");
-
-    g_info ("              Beacon               Patch        Room            Group        When");
-    g_info("----------------------------------------------------------------------------------------------");
-    for (struct Beacon* b = state->beacons; b != NULL; b=b->next)
+    if (state->beacons != NULL)
     {
-        {
-            char ago[20];
-            double diff = b->last_seen == 0 ? -1 : difftime(now, b->last_seen) / 60.0;
-            if (diff < 2) snprintf(ago, sizeof(ago), "now");
-            else if (diff < 60) snprintf(ago, sizeof(ago), "%.0f min ago", diff);
-            else if (diff < 24*60) snprintf(ago, sizeof(ago), "%.1f hours ago", diff / 60.0);
-            else snprintf(ago, sizeof(ago), "%.1f days ago", diff / 24.0 / 60.0);
+      g_info(" ");
+      g_info("==============================================================================================");
 
-            const char* patch_name =  (b->patch == NULL) ? "---" : b->patch->name;
-            const char* room_name = (b->patch == NULL) ? "---" : b->patch->room;
-            const char* category = (b->patch == NULL) ? "---" : ((b->patch->group == NULL) ? "???" : b->patch->group->name);
+      g_info ("              Beacon               Patch        Room            Group        When");
+      g_info("----------------------------------------------------------------------------------------------");
+      for (struct Beacon* b = state->beacons; b != NULL; b=b->next)
+      {
+          {
+              char ago[20];
+              double diff = b->last_seen == 0 ? -1 : difftime(now, b->last_seen) / 60.0;
+              if (diff < 2) snprintf(ago, sizeof(ago), "now");
+              else if (diff < 60) snprintf(ago, sizeof(ago), "%.0f min ago", diff);
+              else if (diff < 24*60) snprintf(ago, sizeof(ago), "%.1f hours ago", diff / 60.0);
+              else snprintf(ago, sizeof(ago), "%.1f days ago", diff / 24.0 / 60.0);
 
-            g_info("%20s %18s %18s %16s      %s",
-                b->alias, patch_name, room_name, 
-                category,
-                ago);
+              const char* patch_name =  (b->patch == NULL) ? "---" : b->patch->name;
+              const char* room_name = (b->patch == NULL) ? "---" : b->patch->room;
+              const char* category = (b->patch == NULL) ? "---" : ((b->patch->group == NULL) ? "???" : b->patch->group->name);
+
+              g_info("%20s %18s %18s %16s      %s",
+                  b->alias, patch_name, room_name, 
+                  category,
+                  ago);
             
-            cJSON* item = cJSON_CreateObject();
-            cJSON_AddStringToObject(item, "name", b->alias);
-            cJSON_AddStringToObject(item, "room", room_name);
-            cJSON_AddStringToObject(item, "group", category);
-            cJSON_AddStringToObject(item, "ago", ago);
-            cJSON_AddNumberToObject(item, "t", b->last_seen);
-            cJSON_AddRounded(item, "d", diff);
+              cJSON* item = cJSON_CreateObject();
+              cJSON_AddStringToObject(item, "name", b->alias);
+              cJSON_AddStringToObject(item, "room", room_name);
+              cJSON_AddStringToObject(item, "group", category);
+              cJSON_AddStringToObject(item, "ago", ago);
+              cJSON_AddNumberToObject(item, "t", b->last_seen);
+              cJSON_AddRounded(item, "d", diff);
 
-            cJSON_AddItemToArray(jbeacons, item);
-        }
+              cJSON_AddItemToArray(jbeacons, item);
+          }
+      }
+
+      g_info(" ");
+      g_info("==============================================================================================");
+      g_info(" ");
+      //g_debug("Examined %i > %i > %i > %i", state->closest_n, count_examined, count_not_marked, count_in_age_range);
     }
-
-    g_info(" ");
-    g_info("==============================================================================================");
-    g_info(" ");
-    //g_debug("Examined %i > %i > %i > %i", state->closest_n, count_examined, count_not_marked, count_in_age_range);
 
     // Add metadata for the sign to consume (so that signage can be adjusted remotely)
     cJSON* sign_meta = cJSON_AddObjectToObject(jobject, "signage");
