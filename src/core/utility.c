@@ -393,7 +393,7 @@ bool interface_state = FALSE;
 
 bool is_any_interface_up()
 {
-    if (!interface_state) g_warning("Start scanning interfaces");
+    if (!interface_state) g_debug("Start scanning interfaces");
     int count = 0;
     int count_connected = 0;
 

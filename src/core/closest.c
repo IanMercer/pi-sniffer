@@ -119,7 +119,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
             {
                 if (state->closest[j].supersededby != supersededby)
                 {
-                    g_info("Removing %s from closest for %s as it's superseded", mac, access_point->client_id);
+                    g_debug("Removing %s from closest for %s as it's superseded", mac, access_point->client_id);
                     state->closest[j].supersededby = supersededby;
                 }
             }
