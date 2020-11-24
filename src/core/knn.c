@@ -167,29 +167,73 @@ bool json_to_recording(char* buffer, struct OverallState* state, struct patch** 
 
 // KNN CLASSIFIER
 
+// float score (struct recording* recording, double access_points_distance[N_ACCESS_POINTS], struct AccessPoint* access_points)
+// {
+//     float sum_delta_squared = 0.0;
+//     int matches = 0;
+//     for (struct AccessPoint* ap = access_points; ap != NULL; ap=ap->next)
+//     {
+//         float recording_distance = recording->access_point_distances[ap->id];
+//         float measured_distance = access_points_distance[ap->id];
+
+//         // A missing distance is treated as being off at infinity (>20m)
+//         // If both are zero this cancels out, but if it was expected to be here and isn't or vice-versa a distant reading is better
+//         if (recording_distance == 0.0) recording_distance = 35.0;
+//         if (measured_distance == 0.0) measured_distance = 35.0;
+
+//         float delta = measured_distance - recording_distance;
+//         sum_delta_squared += delta*delta;
+
+//         if (recording_distance != 0 && measured_distance != 0) matches++;
+//     }
+
+//     // better score for more matches
+//     if (matches > 0) return sqrt(sum_delta_squared) / matches;
+//     // otherwise some large number
+//     return sqrt(sum_delta_squared);
+// }
+
+#define MAX_RANGE 30
+
+// Ratio of a to b when between but straight line outside -ve or +ve depending on which direction it must be
+float calculate_ratio(float distance_a, float distance_b)
+{
+    if (distance_a != 0 && distance_b != 0) {
+        return distance_a / (distance_a + distance_b);
+    } else if (distance_a != 0) {
+        return -distance_a / MAX_RANGE;
+    }
+    else if (distance_b != 0) {
+        return 1 + distance_b / MAX_RANGE;
+    }
+    else {
+        return 0.0;
+    }
+}
+
+
 float score (struct recording* recording, double access_points_distance[N_ACCESS_POINTS], struct AccessPoint* access_points)
 {
     float sum_delta_squared = 0.0;
-    int matches = 0;
     for (struct AccessPoint* ap = access_points; ap != NULL; ap=ap->next)
     {
         float recording_distance = recording->access_point_distances[ap->id];
         float measured_distance = access_points_distance[ap->id];
 
-        // A missing distance is treated as being off at infinity (>20m)
-        // If both are zero this cancels out, but if it was expected to be here and isn't or vice-versa a distant reading is better
-        if (recording_distance == 0.0) recording_distance = 35.0;
-        if (measured_distance == 0.0) measured_distance = 35.0;
+        // Triangular matrix of pairs
+        for (struct AccessPoint* ap2 = ap->next; ap2 != NULL; ap2=ap2->next)
+        {
+            float recording_distance2 = recording->access_point_distances[ap2->id];
+            float measured_distance2 = access_points_distance[ap2->id];
 
-        float delta = measured_distance - recording_distance;
-        sum_delta_squared += delta*delta;
+            float r_ratio = calculate_ratio(recording_distance, recording_distance2);
+            float o_ratio = calculate_ratio(measured_distance, measured_distance2);
 
-        if (recording_distance != 0 && measured_distance != 0) matches++;
+            float delta = r_ratio - o_ratio;
+            sum_delta_squared += delta*delta;
+        }
     }
 
-    // better score for more matches
-    if (matches > 0) return sqrt(sum_delta_squared) / matches;
-    // otherwise some large number
     return sqrt(sum_delta_squared);
 }
 
