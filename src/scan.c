@@ -553,12 +553,13 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         existing->is_training_beacon = false;
 
         // RSSI values are stored with kalman filtering
-        kalman_initialize(&existing->kalman);
+        kalman_initialize(&existing->filtered_distance);
         existing->distance = 0;
         time(&existing->last_sent);
         time(&existing->last_rssi);
 
-        kalman_initialize(&existing->rssi);
+        kalman_initialize(&existing->filtered_rssi);
+        existing->raw_rssi = 0;
 
         existing->last_sent = existing->last_sent - 1000; //1s back so first RSSI goes through
         existing->last_rssi = existing->last_rssi - 1000;
@@ -679,8 +680,11 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             //double delta_time_received = difftime(now, existing->last_rssi);
             time(&existing->last_rssi);
 
+            //existing.unfiltered = rssi;
+
             //float averaged_rssi = 
-            kalman_update(&existing->rssi, rssi);
+            kalman_update(&existing->filtered_rssi, rssi);
+            existing->raw_rssi = rssi;  // unfiltered
 
             // Smoothed delta time, interval between RSSI events
             //float current_time_estimate = (&existing->kalman_interval)->current_estimate;
@@ -715,7 +719,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
             double distance = pow(10.0, exponent) * rangefactor;
 
-            float averaged = kalman_update(&existing->kalman, distance);
+            float averaged = kalman_update(&existing->filtered_distance, distance);
 
             // 10s with distance change of 1m triggers send
             // 1s with distance change of 10m triggers send

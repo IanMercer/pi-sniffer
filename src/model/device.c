@@ -180,7 +180,8 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     cJSON_AddNumberToObject(j, "latest", device->latest);
     cJSON_AddNumberToObject(j, "count", device->count);
     cJSON_AddNumberToObject(j, "column", device->column);
-    cJSON_AddNumberToObject(j, "rssi", device->rssi.current_estimate);
+    cJSON_AddNumberToObject(j, "filtered_rssi", device->filtered_rssi.current_estimate);
+    cJSON_AddNumberToObject(j, "raw_rssi", device->raw_rssi);
     cJSON_AddNumberToObject(j, "try_connect_state", device->try_connect_state);
     if (device->is_training_beacon){
         cJSON_AddNumberToObject(j, "training", 1);
@@ -288,11 +289,17 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
         device->distance = (float)distance->valuedouble;
     }
 
-    cJSON *rssi = cJSON_GetObjectItemCaseSensitive(djson, "rssi");
-    if (cJSON_IsNumber(rssi))
+    cJSON *filtered_rssi = cJSON_GetObjectItemCaseSensitive(djson, "filtered_rssi");
+    if (cJSON_IsNumber(filtered_rssi))
     {
-        device->rssi.current_estimate = (float)rssi->valuedouble;
-        device->rssi.last_estimate = (float)rssi->valuedouble;
+        device->filtered_rssi.current_estimate = (float)filtered_rssi->valuedouble;
+        device->filtered_rssi.last_estimate = (float)filtered_rssi->valuedouble;
+    }
+
+    cJSON *raw_rssi = cJSON_GetObjectItemCaseSensitive(djson, "raw_rssi");
+    if (cJSON_IsNumber(raw_rssi))
+    {
+        device->raw_rssi = (float)raw_rssi->valuedouble;
     }
 
     cJSON *count = cJSON_GetObjectItemCaseSensitive(djson, "count");
