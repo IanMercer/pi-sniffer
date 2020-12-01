@@ -96,6 +96,7 @@ struct patch* get_or_create_patch(const char* patch_name, const char* room_name,
         found->tablet_total = 0;
         found->watch_total = 0;
         found->wearable_total = 0;
+        found->covid_total = 0;
         found->other_total = 0;
 
         if (*patch_list == NULL)
@@ -298,7 +299,7 @@ void summarize_by_room(struct patch* patches, struct summary** summary)
         if (p->confirmed)
         {
             update_summary(summary, p->room, p->group->name, p->phone_total, p->tablet_total, p->computer_total, p->watch_total, 
-                p->wearable_total, p->beacon_total, p->other_total);
+                p->wearable_total, p->beacon_total, p->covid_total, p->other_total);
         }
     }
 }
@@ -314,7 +315,7 @@ void summarize_by_group(struct patch* patches, struct summary** summary)
         if (p->confirmed)
         {
             update_summary(summary, p->group->name, p->group->tags, p->phone_total, p->tablet_total, p->computer_total, p->watch_total, 
-                p->wearable_total, p->beacon_total, p->other_total);
+                p->wearable_total, p->beacon_total, p->covid_total, p->other_total);
         }
     }
 }

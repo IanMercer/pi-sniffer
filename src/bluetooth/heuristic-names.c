@@ -50,6 +50,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_WATCH; // Garmin Golf Watch
     else if (string_starts_with(name, "fenix"))
         existing->category = CATEGORY_WATCH;
+    //else if (string_equals(name, "Hum")) // toothbrush
+    //    existing->category = CATEGORY_FIXED;
 
     else if (string_starts_with(name, "Galaxy Fit"))
         existing->category = CATEGORY_WEARABLE;

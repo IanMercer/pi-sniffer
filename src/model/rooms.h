@@ -37,6 +37,7 @@ struct patch
     double computer_total;      // how many computers
     double watch_total;         // how many watches
     double wearable_total;      // how many other wearables
+    double covid_total;         // how many covid trackers
     double beacon_total;        // how many beacons
     double other_total;         // how many other
 };

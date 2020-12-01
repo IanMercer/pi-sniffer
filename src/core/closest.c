@@ -341,6 +341,7 @@ bool print_counts_by_closest(struct OverallState* state)
         current->beacon_total = 0.0;
         current->watch_total = 0.0;
         current->wearable_total = 0.0;
+        current->covid_total = 0.0;
         current->other_total = 0.0;
     }
 
@@ -612,8 +613,19 @@ bool print_counts_by_closest(struct OverallState* state)
                 {
                     if (rcurrent->knn_score > 0)
                     {
-                        g_debug("Wearable in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
+                        //g_debug("Wearable in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
                         rcurrent->wearable_total += rcurrent->knn_score * score;        // probability x incidence
+                    }
+                }
+            }
+            else if (test->category == CATEGORY_COVID)
+            {
+                for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
+                {
+                    if (rcurrent->knn_score > 0)
+                    {
+                        //g_debug("Covid in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
+                        rcurrent->covid_total += rcurrent->knn_score * score;        // probability x incidence
                     }
                 }
             }
@@ -804,8 +816,10 @@ bool print_counts_by_closest(struct OverallState* state)
         patch_hash = patch_hash * 7;
         patch_hash += round(current->phone_total * 10) + round(current->tablet_total * 4) 
             + round(current->computer_total * 4) 
+            + round(current->covid_total * 4)
             + round(current->beacon_total * 4) + round(current->watch_total * 4) 
-            + round(current->wearable_total * 4) + round(current->other_total * 4);
+            + round(current->wearable_total * 4) 
+            + round(current->other_total * 4);
     }
 
     if (state->patch_hash  != patch_hash)

@@ -472,7 +472,8 @@ void free_summary(struct summary** head)
 /*
    update_summary linked list
 */
-void update_summary(struct summary** summary, const char* category, const char* extra, double phone_value, double tablet_value, double computer_value, double watch_value, double wearable_value, double beacon_value, double other_value)
+void update_summary(struct summary** summary, const char* category, const char* extra, double phone_value, double tablet_value, double computer_value, double watch_value, double wearable_value, 
+    double beacon_value, double covid_value, double other_value)
 {
     for (struct summary* s = *summary; s != NULL; s = s->next)
     {
@@ -484,6 +485,7 @@ void update_summary(struct summary** summary, const char* category, const char* 
             s->watch_total += watch_value;
             s->wearable_total += wearable_value;
             s->beacon_total += beacon_value;
+            s->covid_total += covid_value;
             s->other_total += other_value;
             return;
         }
@@ -498,6 +500,7 @@ void update_summary(struct summary** summary, const char* category, const char* 
     s->watch_total = watch_value;
     s->wearable_total = wearable_value;
     s->beacon_total = beacon_value;
+    s->covid_total = covid_value;
     s->other_total = other_value;
     s->next = *summary;
     *summary = s;
@@ -514,6 +517,7 @@ void cJSON_AddSummary(cJSON * item, struct summary* s)
     if (s->computer_total > 0) cJSON_AddRounded(item, "computers", s->computer_total);
     if (s->tablet_total > 0) cJSON_AddRounded(item, "tablets", s->tablet_total);
     if (s->beacon_total > 0) cJSON_AddRounded(item, "beacons", s->beacon_total);
+    if (s->covid_total > 0) cJSON_AddRounded(item, "covid", s->covid_total);
     if (s->other_total > 0) cJSON_AddRounded(item, "other", s->other_total);
 }
 

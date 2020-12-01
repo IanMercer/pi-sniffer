@@ -111,6 +111,7 @@ struct summary
     double watch_total;         // how many watches
     double wearable_total;      // how many wearable
     double beacon_total;        // how many beacons
+    double covid_total;         // how many covid trackers
     double other_total;         // how many other
 };
 
@@ -123,7 +124,7 @@ void free_summary(struct summary** head);
    update_summary linked list
 */
 void update_summary(struct summary** summary, const char* category, const char* extra, double phone_value, double tablet_value, double computer_value,
-   double watch_value, double wearable_value, double beacon_value, double other_value);
+   double watch_value, double wearable_value, double beacon_value, double covid_value, double other_value);
 
 /*
     Add a summary count of phones, watches, ... to a cJSON object

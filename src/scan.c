@@ -1671,8 +1671,8 @@ int report_to_influx_tick(struct OverallState* state)
         char tags[120];
         char field[120];
 
-        snprintf(field, sizeof(field), "beacon=%.1f,computer=%.1f,phone=%.1f,tablet=%.1f,watch=%.1f,wear=%.1f,other=%.1f",
-            s->beacon_total, s->computer_total, s->phone_total, s->tablet_total, s->watch_total, s->wearable_total, s->other_total);
+        snprintf(field, sizeof(field), "beacon=%.1f,computer=%.1f,phone=%.1f,tablet=%.1f,watch=%.1f,wear=%.1f,cov=%.1f,other=%.1f",
+            s->beacon_total, s->computer_total, s->phone_total, s->tablet_total, s->watch_total, s->wearable_total, s->covid_total, s->other_total);
 
         snprintf(tags, sizeof(tags), "room=%s", s->category);
 
