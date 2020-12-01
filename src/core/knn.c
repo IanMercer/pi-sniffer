@@ -215,22 +215,35 @@ float calculate_ratio(float distance_a, float distance_b)
 float score (struct recording* recording, double access_points_distance[N_ACCESS_POINTS], struct AccessPoint* access_points)
 {
     float sum_delta_squared = 0.0;
-    for (struct AccessPoint* ap = access_points; ap != NULL; ap=ap->next)
+
+    if (access_points->next == NULL) 
     {
+        // single access point
+        struct AccessPoint* ap = access_points;
         float recording_distance = recording->access_point_distances[ap->id];
         float measured_distance = access_points_distance[ap->id];
-
-        // Triangular matrix of pairs
-        for (struct AccessPoint* ap2 = ap->next; ap2 != NULL; ap2=ap2->next)
+        float delta = (recording_distance - measured_distance) / 30.0;  // scale to similar to ratios
+        sum_delta_squared += delta*delta;
+    } 
+    else 
+    {
+        for (struct AccessPoint* ap = access_points; ap != NULL; ap=ap->next)
         {
-            float recording_distance2 = recording->access_point_distances[ap2->id];
-            float measured_distance2 = access_points_distance[ap2->id];
+            float recording_distance = recording->access_point_distances[ap->id];
+            float measured_distance = access_points_distance[ap->id];
 
-            float r_ratio = calculate_ratio(recording_distance, recording_distance2);
-            float o_ratio = calculate_ratio(measured_distance, measured_distance2);
+            // Triangular matrix of pairs
+            for (struct AccessPoint* ap2 = ap->next; ap2 != NULL; ap2=ap2->next)
+            {
+                float recording_distance2 = recording->access_point_distances[ap2->id];
+                float measured_distance2 = access_points_distance[ap2->id];
 
-            float delta = r_ratio - o_ratio;
-            sum_delta_squared += delta*delta;
+                float r_ratio = calculate_ratio(recording_distance, recording_distance2);
+                float o_ratio = calculate_ratio(measured_distance, measured_distance2);
+
+                float delta = r_ratio - o_ratio;
+                sum_delta_squared += delta*delta;
+            }
         }
     }
 
