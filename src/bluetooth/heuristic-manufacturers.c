@@ -1408,6 +1408,9 @@ const char *company_id_to_string(int company_id, int8_t* category)
 		return "Giatec Scientific Inc";	// concrete
 	case 0x058e:
 		return "Oculus";
+	case 0x05a7:
+        *category = CATEGORY_FIXED;
+		return "Sonos";
 	case 0x460:
         *category = CATEGORY_FIXED;  // Toothbrush
 		return "Kolibree";
