@@ -572,4 +572,3 @@ void print_and_free_error(GError *error)
        g_error_free (error);
   }
 }
-

@@ -157,4 +157,14 @@ void get_string_env(const char* env, char** value, char* default_value);
 */
 void print_and_free_error(GError *error);
 
+/*
+  g_debug call that can easily be suppressed
+*/
+//#define g_trace(...) g_log_structured_standard (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, __FILE__, G_STRINGIFY (__LINE__), G_STRFUNC, __VA_ARGS__)
+// or
+#define g_trace(...)
+
+//#define pretty_print2_trace(...) pretty_print2(__VA_ARGS__)
+#define pretty_print2_trace(...) 
+
 #endif

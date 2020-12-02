@@ -733,11 +733,11 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 //g_print("  %s Will send rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
                 existing->distance = averaged;
                 send_distance = TRUE;
-                g_debug("  %s RSSI %i d=%.1fm", address, rssi, averaged);
+                g_trace("  %s RSSI %i d=%.1fm", address, rssi, averaged);
             }
             else
             {
-                g_debug("  %s Skip sending rssi=%i dist=%.1fm, delta v=%.1fm t=%is score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
+                g_trace("  %s Skip sending rssi=%i dist=%.1fm, delta v=%.1fm t=%is score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
             }
         }
         else if (strcmp(property_name, "TxPower") == 0)
@@ -745,7 +745,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             int16_t p = g_variant_get_int16(prop_val);
             if (p != existing->txpower)
             {
-                g_debug("  %s TXPOWER has changed %i\n", address, p);
+                g_trace("  %s TXPOWER has changed %i\n", address, p);
                 // NOT CURRENTLY USED ... send_to_mqtt_single_value(address, "txpower", p);
                 existing->txpower = p;
             }
@@ -992,7 +992,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 if (existing->service_data_hash != hash)
                 {
                     //g_debug("  ServiceData has changed ");
-                    pretty_print2("  ServiceData", prop_val, TRUE); // a{qv}
+                    pretty_print2_trace("  ServiceData", prop_val, TRUE); // a{qv}
                     // Sends the service GUID as a key in the JSON object
 #ifdef MQTT
                     if (state.network_up && state.verbosity >= Details) {
@@ -1078,12 +1078,13 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                     if (manufacturer == 0x4c && allocdata[0] == 0x02){
                         g_debug("  %s iBeacon  ", address);
                     } else if (manufacturer == 0x4c){
-                        g_debug("  %s Manufacturer Apple  ", address);
+                        g_trace("  %s Manufacturer Apple  ", address);
                     } else {
-                        g_debug("  %s Manufacturer 0x%4x  ", address, manufacturer);
+                        g_trace("  %s Manufacturer 0x%4x  ", address, manufacturer);
                         }
 
-                    pretty_print2("  ManufacturerData", s_value, TRUE); // a{qv}
+                    // TODO: If detailed logging
+                    pretty_print2_trace("  ManufacturerData", s_value, TRUE); // a{qv}
 
     #ifdef MQTT
                     // Need to send actual manufacturer number not always 76 here TODO

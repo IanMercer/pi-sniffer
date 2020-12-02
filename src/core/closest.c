@@ -101,7 +101,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
             char to[18];
             mac_64_to_string(to, 18, supersededby);
 
-            g_debug("*** Received an UPDATE %s: changing %s superseded from %s to %s", access_point->client_id, mac, from, to);
+            g_trace("*** Received an UPDATE %s: changing %s superseded from %s to %s", access_point->client_id, mac, from, to);
             state->closest[j].supersededby = supersededby;
             return;
         }
@@ -119,7 +119,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
             {
                 if (state->closest[j].supersededby != supersededby)
                 {
-                    g_debug("Removing %s from closest for %s as it's superseded", mac, access_point->client_id);
+                    g_trace("Removing %s from closest for %s as it's superseded", mac, access_point->client_id);
                     state->closest[j].supersededby = supersededby;
                 }
             }
