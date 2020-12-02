@@ -350,7 +350,7 @@ bool print_counts_by_closest(struct OverallState* state)
     free_list(&state->recordings);
     int count_recordings = 0;
     int count_recordings_and_beacons = 0;
-    g_info("Re-read observations files");
+    g_trace("Re-read observations files");
     bool ok = read_observations ("recordings", state, TRUE);
     if (!ok) g_warning("Failed to read recordings files back");
     for (struct recording* r = state->recordings; r != NULL; r=r->next)
