@@ -346,18 +346,24 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
 */
 void set_name(struct Device* d, const char*value, enum name_type name_type)
 {
-    if (d->name_type < name_type)
+    if (value)
     {
-        if (d->name_type == nt_initial)
+        if (d->name_type < name_type)
         {
-            g_info("  %s Set name to '%s' (%i)", d->mac, value, name_type);
+            if (d->name_type == nt_initial)
+            {
+                g_info("  %s Set name to '%s' (%i)", d->mac, value, name_type);
+            }
+            else
+            {
+                g_info("  %s Upgraded name from '%s' to '%s' (%i->%i)", d->mac, d->name, value, d->name_type, name_type);
+            }
+                
+            d->name_type = name_type;
+            g_strlcpy(d->name, value, NAME_LENGTH);
         }
-        else
-        {
-            g_info("  %s Upgraded name from '%s' to '%s' (%i->%i)", d->mac, d->name, value, d->name_type, name_type);
-        }
-            
-        d->name_type = name_type;
-        g_strlcpy(d->name, value, NAME_LENGTH);
+    }
+    else {
+        g_warning("value was null for set_name");
     }
 }

@@ -481,7 +481,12 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         if (address_from_dict)
         {
             const char *addr = g_variant_get_string(address_from_dict, NULL);
-            g_strlcpy(address, addr, 18);
+            if (addr) {
+                g_strlcpy(address, addr, 18);
+            } else {
+                g_warning("ERROR address from variant is null");
+                return;
+            }
             g_variant_unref(address_from_dict);
         }
         else
@@ -624,17 +629,20 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         else if (strcmp(property_name, "Alias") == 0)
         {
             char *alias = g_variant_dup_string(prop_val, NULL);
-            trim(alias);
+            if (alias)
+            {
+                trim(alias);
 
-            if (strncmp(alias, existing->alias, NAME_LENGTH - 1) != 0) // has_prefix because we may have truncated it
-            {
-                //g_debug("  %s Alias has changed '%s' -> '%s'\n", address, existing->alias, alias);
-                // NOT CURRENTLY USED: send_to_mqtt_single(address, "alias", alias);
-                g_strlcpy(existing->alias, alias, NAME_LENGTH);
-            }
-            else
-            {
-                // g_print("  Alias unchanged '%s'=='%s'\n", alias, existing->alias);
+                if (strncmp(alias, existing->alias, NAME_LENGTH - 1) != 0) // has_prefix because we may have truncated it
+                {
+                    //g_debug("  %s Alias has changed '%s' -> '%s'\n", address, existing->alias, alias);
+                    // NOT CURRENTLY USED: send_to_mqtt_single(address, "alias", alias);
+                    g_strlcpy(existing->alias, alias, NAME_LENGTH);
+                }
+                else
+                {
+                    // g_print("  Alias unchanged '%s'=='%s'\n", alias, existing->alias);
+                }
             }
         }
         else if (strcmp(property_name, "AddressType") == 0)

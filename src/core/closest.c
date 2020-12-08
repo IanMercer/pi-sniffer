@@ -371,6 +371,12 @@ bool print_counts_by_closest(struct OverallState* state)
     
     if (count_recordings == 0)
     {
+        for (struct AccessPoint* ap = state->access_points; ap != NULL; ap=ap->next)
+        {
+            // Create patches: close to ap, between ap1 and ap2, ...?
+
+        }
+
         //g_warning("No patches found, please deploy patches files");
 
         char* local_id = state->local->client_id; // Used as group_id

@@ -30,7 +30,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     // Privacy
     else if (string_contains_insensitive(name, "s Mac"))  // MacBook, Mac Pro, Mac Book, ..
     {
-        char* remainder = g_strstr_len(name, NAME_LENGTH, "Mac");
+        // name could be longer than NAME_LENGTH at this point, maybe someone has a very long name
+        char* remainder = g_strstr_len(name, strlen(name), "Mac");
         g_strlcpy(existing->name, "*****'s Mac", NAME_LENGTH);
         g_strlcpy(existing->name+8, remainder, NAME_LENGTH-8);
         existing->category = CATEGORY_COMPUTER;
