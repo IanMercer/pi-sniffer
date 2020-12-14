@@ -1856,7 +1856,7 @@ int dump_all_devices_tick(void *parameters)
         g_info("People %.2f (%.2f in range) Uptime: %02i:%02i %s%s", people_closest, people_in_range, hours, minutes, connected, m_state);
 
     // Bluez eventually seems to stop sending us data, so for now, just restart every few hours
-    if ((state.hours_limit) > 0 && (hours > state.hours_limit))
+    if ((state.hours_limit) > 0 && ((int)hours > state.hours_limit))
     {
         g_warning("*** RESTARTING AFTER %i HOURS RUNNING", hours);
         system("reboot");
@@ -2001,7 +2001,7 @@ void initialize_state()
     float people_distance = 7.0; // 7m default range
     state.udp_mesh_port = 7779;
     state.udp_sign_port = 0;    // 7778;
-    state.hours_limit = 8;      // reboot after 8 hours (TODO: Make this time of day)
+    state.hours_limit = 7;      // reboot after 7 hours (TODO: Make this time of day)
     state.access_points = NULL; // linked list
     state.patches = NULL;       // linked list
     state.groups = NULL;        // linked list
@@ -2065,7 +2065,7 @@ void initialize_state()
                                    rssi_one_meter, rssi_factor, people_distance);
 
     // RUNTIME LIMIT
-    get_uint16_env("HOURS_LIMIT", &state.hours_limit, 8);
+    get_int_env("HOURS_LIMIT", &state.hours_limit, 8);
 
     // UDP Settings
     get_int_env("UDP_MESH_PORT", &state.udp_mesh_port, 0);
