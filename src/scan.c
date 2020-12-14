@@ -1860,7 +1860,9 @@ int dump_all_devices_tick(void *parameters)
     struct tm *local_time = localtime( &now );
     g_debug("Current local time and date: %s", asctime(local_time));
 
-    if ((state.reboot_hour) > 0 && (local_time->tm_hour == state.reboot_hour))
+    if ((state.reboot_hour) > 0 &&                   // reboot hour is set
+        (total_minutes > 60L) &&                     // and we didn't already reboot in this hour
+        (local_time->tm_hour == state.reboot_hour))  // and it's the right hour
     {
         g_warning("*** RESTARTING AFTER %i HOURS RUNNING", hours);
         system("reboot");
