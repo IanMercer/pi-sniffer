@@ -1855,8 +1855,12 @@ int dump_all_devices_tick(void *parameters)
     else
         g_info("People %.2f (%.2f in range) Uptime: %02i:%02i %s%s", people_closest, people_in_range, hours, minutes, connected, m_state);
 
+
     // Bluez eventually seems to stop sending us data, so for now, just restart every few hours
-    if ((state.hours_limit) > 0 && ((int)hours > state.hours_limit))
+    struct tm *local_time = localtime( &now );
+    g_debug("Current local time and date: %s", asctime(local_time));
+
+    if ((state.reboot_hour) > 0 && (local_time->tm_hour == state.reboot_hour))
     {
         g_warning("*** RESTARTING AFTER %i HOURS RUNNING", hours);
         system("reboot");
@@ -2001,7 +2005,7 @@ void initialize_state()
     float people_distance = 7.0; // 7m default range
     state.udp_mesh_port = 7779;
     state.udp_sign_port = 0;    // 7778;
-    state.hours_limit = 7;      // reboot after 7 hours (TODO: Make this time of day)
+    state.reboot_hour = 7;      // reboot after 7 hours (TODO: Make this time of day)
     state.access_points = NULL; // linked list
     state.patches = NULL;       // linked list
     state.groups = NULL;        // linked list
@@ -2064,8 +2068,8 @@ void initialize_state()
     state.local = add_access_point(&state.access_points, client_id, description, platform,
                                    rssi_one_meter, rssi_factor, people_distance);
 
-    // RUNTIME LIMIT
-    get_int_env("HOURS_LIMIT", &state.hours_limit, 8);
+    // Reboot nightly 
+    get_int_env("REBOOT_HOUR", &state.reboot_hour, 0);
 
     // UDP Settings
     get_int_env("UDP_MESH_PORT", &state.udp_mesh_port, 0);
@@ -2127,7 +2131,7 @@ void display_state()
     g_info("HOST_DESCRIPTION = %s", state.local->description);
     g_info("HOST_PLATFORM = %s", state.local->platform);
 
-    g_info("HOURS_LIMIT = %i", state.hours_limit);
+    g_info("REBOOT_HOUR = %i", state.reboot_hour);
 
     g_info("RSSI_ONE_METER Power at 1m : %i", state.local->rssi_one_meter);
     g_info("RSSI_FACTOR to distance : %.1f   (typically 2.0 (indoor, cluttered) to 4.0 (outdoor, no obstacles)", state.local->rssi_factor);
