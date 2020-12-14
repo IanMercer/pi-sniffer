@@ -138,6 +138,11 @@ void cJSON_AddRounded(cJSON * item, const char* label, double value);
 
 
 /*
+   Get a unsigned integer 16 parameter from the environment or default
+*/
+void get_uint16_env(const char* env, uint16_t* value, uint16_t default_value);
+
+/*
    Get an integer parameter from the environment or default
 */
 void get_int_env(const char* env, int* value, int default_value);

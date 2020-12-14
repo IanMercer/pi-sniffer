@@ -1856,10 +1856,11 @@ int dump_all_devices_tick(void *parameters)
         g_info("People %.2f (%.2f in range) Uptime: %02i:%02i %s%s", people_closest, people_in_range, hours, minutes, connected, m_state);
 
     // Bluez eventually seems to stop sending us data, so for now, just restart every few hours
-    if (hours > 2)
+    if ((state.hours_limit) > 0 && (hours > state.hours_limit))
     {
-        g_warning("*** RESTARTING AFTER 2 HOURS RUNNING");
-        int_handler(0);
+        g_warning("*** RESTARTING AFTER %i HOURS RUNNING", hours);
+        system("reboot");
+        //int_handler(0);
     }
 
     return TRUE;
@@ -1999,9 +2000,10 @@ void initialize_state()
     float rssi_factor = 3.5;     // fairly cluttered indoor default
     float people_distance = 7.0; // 7m default range
     state.udp_mesh_port = 7779;
-    state.udp_sign_port = 0; // 7778;
+    state.udp_sign_port = 0;    // 7778;
+    state.hours_limit = 8;      // reboot after 8 hours (TODO: Make this time of day)
     state.access_points = NULL; // linked list
-    state.patches = NULL;         // linked list
+    state.patches = NULL;       // linked list
     state.groups = NULL;        // linked list
     state.closest_n = 0;        // count of closest
     state.patch_hash = 0;       // hash to detect changes
@@ -2062,8 +2064,10 @@ void initialize_state()
     state.local = add_access_point(&state.access_points, client_id, description, platform,
                                    rssi_one_meter, rssi_factor, people_distance);
 
-    // UDP Settings
+    // RUNTIME LIMIT
+    get_uint16_env("HOURS_LIMIT", &state.hours_limit, 8);
 
+    // UDP Settings
     get_int_env("UDP_MESH_PORT", &state.udp_mesh_port, 0);
     get_int_env("UDP_SIGN_PORT", &state.udp_sign_port, 0);
     // Metadata passed to the display to adjust how it displays the values sent
@@ -2122,6 +2126,8 @@ void display_state()
     g_info("HOST_NAME = %s", state.local->client_id);
     g_info("HOST_DESCRIPTION = %s", state.local->description);
     g_info("HOST_PLATFORM = %s", state.local->platform);
+
+    g_info("HOURS_LIMIT = %i", state.hours_limit);
 
     g_info("RSSI_ONE_METER Power at 1m : %i", state.local->rssi_one_meter);
     g_info("RSSI_FACTOR to distance : %.1f   (typically 2.0 (indoor, cluttered) to 4.0 (outdoor, no obstacles)", state.local->rssi_factor);

@@ -532,7 +532,14 @@ void cJSON_AddRounded(cJSON * item, const char* label, double value)
     cJSON_AddRawToObject(item, label, print_num);
 }
 
-
+/*
+   Get an unsigned integer parameter from the environment or default
+*/
+void get_uint16_env(const char* env, uint16_t* value, uint16_t default_value)
+{
+    const char *s = getenv(env);
+    *value = (s != NULL) ? atoi(s) : default_value;
+}
 
 /*
    Get an integer parameter from the environment or default

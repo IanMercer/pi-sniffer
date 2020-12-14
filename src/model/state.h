@@ -15,6 +15,8 @@ struct OverallState
 
    struct AccessPoint *local; // the local access point (in the access points struct)
 
+   u_int16_t hours_limit;           // Maximum number of hours to run before rebooting the Pi
+
    // TODO: The following will all move to a new systemd service running on the
    // other end of DBUS.
 
