@@ -10,7 +10,7 @@ int bluez_set_discovery_filter(GDBusConnection *conn)
 {
     int rc;
     GVariantBuilder *b = g_variant_builder_new(G_VARIANT_TYPE_VARDICT);
-    g_variant_builder_add(b, "{sv}", "Transport", g_variant_new_string("le")); // or "auto"
+    g_variant_builder_add(b, "{sv}", "Transport", g_variant_new_string("auto")); // or "auto"
     //g_variant_builder_add(b, "{sv}", "RSSI", g_variant_new_int16(-150));
     g_variant_builder_add(b, "{sv}", "DuplicateData", g_variant_new_boolean(TRUE));
     g_variant_builder_add(b, "{sv}", "Discoverable", g_variant_new_boolean(TRUE));
