@@ -10,11 +10,11 @@ int bluez_set_discovery_filter(GDBusConnection *conn)
 {
     int rc;
     GVariantBuilder *b = g_variant_builder_new(G_VARIANT_TYPE_VARDICT);
-    g_variant_builder_add(b, "{sv}", "Transport", g_variant_new_string("auto")); // or "auto"
+    g_variant_builder_add(b, "{sv}", "Transport", g_variant_new_string("le")); // or "auto"
     //g_variant_builder_add(b, "{sv}", "RSSI", g_variant_new_int16(-150));
     g_variant_builder_add(b, "{sv}", "DuplicateData", g_variant_new_boolean(TRUE));
-    g_variant_builder_add(b, "{sv}", "Discoverable", g_variant_new_boolean(TRUE));
-    g_variant_builder_add(b, "{sv}", "Pairable", g_variant_new_boolean(TRUE));
+    //g_variant_builder_add(b, "{sv}", "Discoverable", g_variant_new_boolean(TRUE));
+    //g_variant_builder_add(b, "{sv}", "Pairable", g_variant_new_boolean(TRUE));
     g_variant_builder_add(b, "{sv}", "DiscoveryTimeout", g_variant_new_uint32(0));
 
     //GVariantBuilder *u = g_variant_builder_new(G_VARIANT_TYPE_STRING_ARRAY);
@@ -32,7 +32,7 @@ int bluez_set_discovery_filter(GDBusConnection *conn)
 
     if (rc)
     {
-        g_print("Not able to set discovery filter\n");
+        g_warning("Not able to set discovery filter");
         return 1;
     }
 
@@ -41,7 +41,7 @@ int bluez_set_discovery_filter(GDBusConnection *conn)
                                    bluez_get_discovery_filter_cb);
     if (rc)
     {
-        g_print("Not able to get discovery filter\n");
+        g_warning("Not able to get discovery filter");
         return 1;
     }
     return 0;
@@ -52,7 +52,7 @@ int bluez_adapter_connect_device(GDBusConnection *conn, char *address)
 {
 	int rc = bluez_device_call_method_address(conn, "Connect", address, NULL, NULL);
 	if(rc) {
-		g_print("Not able to call Connect\n");
+		g_warning("Not able to call Connect");
 		return 1;
 	}
 	return 0;
