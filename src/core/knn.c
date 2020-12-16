@@ -94,7 +94,7 @@ bool json_to_recording(char* buffer, struct OverallState* state, struct patch** 
         if (!cJSON_IsString(group_name)) append_text(missing, sizeof(missing), "'%s',", "group");
         if (!cJSON_IsString(tags)) append_text(missing, sizeof(missing), "'%s',", "tags");
         if (!cJSON_IsObject(distances)) append_text(missing, sizeof(missing), "'%s',", "distances");
-        g_warning("Missing metatdata or distances (%s) in '%s'", missing, buffer);
+        g_warning("Missing metadata or distances (%s) in '%s'", missing, buffer);
         cJSON_Delete(json);
         return FALSE;
     }
@@ -123,7 +123,7 @@ bool json_to_recording(char* buffer, struct OverallState* state, struct patch** 
 
         if (*current_patch == NULL)
         {
-            g_warning("Missing metadata heding before distances");
+            g_warning("Missing metadata heading before distances");
             cJSON_Delete(json);
             return FALSE;
         }
