@@ -89,6 +89,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_WEARABLE; // Heartrate
     else if (string_starts_with(name, "Alta HR"))
         existing->category = CATEGORY_WEARABLE; // Fitbit Alta Heartrate
+    else if (strncmp(name, "LumosHelmet", 11) == 0)  // Bike Helmet
+        existing->category = CATEGORY_WEARABLE;
 
     // FIXED
     else if (string_starts_with(name, "Tacx Neo 2T"))
@@ -374,5 +376,6 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_CAR; // radar detector
     else if (strncmp(name, "Land Rover", 10) == 0)
         existing->category = CATEGORY_CAR;
+
     // TODO: More Android device names
 }

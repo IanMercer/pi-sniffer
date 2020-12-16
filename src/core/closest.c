@@ -257,11 +257,11 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
     // Try again including unconfirmed recordings (beacon subdirectory)
     k_found = k_nearest(state->recordings, accessdistances, access_points, best_three, 3, FALSE);
 
-    if (k_found == 0 || best_three[0].distance > 5.0)
+    if (k_found == 0 || best_three[0].distance > 2.0)
     {
         // No nearest in the beacons directory either
 
-        // if it's training beacon add it diectly to recordings ... otherwise add it to the beacons directory
+        // if it's training beacon add it directly to recordings ... otherwise add it to the beacons directory
 
         if (is_training_beacon)
         {
