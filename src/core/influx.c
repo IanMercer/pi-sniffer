@@ -36,11 +36,11 @@ void post_to_influx_body(struct OverallState* state, char body[BUFSIZE], int len
 
     /* create the socket */
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) g_error("ERROR opening socket");
+    if (sockfd < 0) g_warning("ERROR opening socket");
 
     /* lookup the ip address */
     server = gethostbyname(state->influx_server);
-    if (server == NULL) { g_error("ERROR, no such host '%s'", state->influx_server); return; }
+    if (server == NULL) { g_warning("ERROR, no such host '%s'", state->influx_server); return; }
 
     /* fill in the structure */
     memset(&serv_addr,0,sizeof(serv_addr));
