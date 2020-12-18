@@ -84,10 +84,24 @@ GDBusConnection *conn;
 */
 bool overlaps(struct Device *a, struct Device *b)
 {
-    if (a->earliest >= b->latest)
-        return FALSE; // a is entirely after b
-    if (b->earliest >= a->latest)
-        return FALSE; // b is entirely after a
+    // If the earlier device has just one observation it's too soon to say if the latter one is the same device
+    // In a transit situation we get many devices passing by with just one ping, these are not superceded
+    if (a->count == 1 && a->latest <= b->earliest){
+        return TRUE; // not an overlap but unlikely to be same device
+    }
+    if (b->count == 1 && b->latest <= a->earliest){
+        return TRUE; // not an overlap but unlikely to be same device
+    }
+    if (a->earliest >= b->latest)  // a is entirely after b
+    {
+        int delta_time = difftime(a->earliest, b->latest);
+        return delta_time > 10;  // more than 10s and these are probably unrelated devices
+    }
+    if (b->earliest >= a->latest) // b is entirely after a
+    {
+        int delta_time = difftime(b->earliest, a->latest);
+        return delta_time > 10;  // more than 10s and these are probably unrelated devices
+    }
     return TRUE;      // must overlap if not entirely after or before
 }
 
