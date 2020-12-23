@@ -238,11 +238,24 @@ float score (struct recording* recording, double access_points_distance[N_ACCESS
                 float recording_distance2 = recording->access_point_distances[ap2->id];
                 float measured_distance2 = access_points_distance[ap2->id];
 
+#if deployed_version
                 float r_ratio = calculate_ratio(recording_distance, recording_distance2);
                 float o_ratio = calculate_ratio(measured_distance, measured_distance2);
 
                 float delta = r_ratio - o_ratio;
                 sum_delta_squared += delta*delta;
+#else
+
+                float diff1 = recording_distance - recording_distance2;
+                float sum1 = recording_distance + recording_distance2;
+                float diff2 = measured_distance - measured_distance2;
+                float sum2 = measured_distance + measured_distance2;
+
+                float delta1 = (diff1 - diff2) * (diff1 - diff2) / 250;   // errors cancel out on e - e
+                float delta2 = (sum1 - sum2) * (sum1 - sum2) / 1000;      // delta2 less because error is more (e + e)
+
+                sum_delta_squared += delta1*delta1 + delta2*delta2;
+#endif
             }
         }
     }
