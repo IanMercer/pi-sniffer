@@ -28,3 +28,19 @@ void post_to_webhook (struct OverallState* state)
     http_post(state->webhook_domain, state->webhook_port, state->webhook_path, auth, body, strlen(body), result, sizeof(result));
 }
 
+
+// {
+//  "deviceStateReason": "Reboot",
+//  "saltMinionId": "samplesite",
+//  "deviceId": "29e81edc-5d99-4b4b-b660-5b3ae7bf0ceb",
+//  "freeDiskSpace": 123456,
+//  "runtimeSeconds": 20000,
+//  "peoplePresent": [
+//    {
+//      "roomName": "kitchen",
+//      "count": 4
+//    }
+//  ],
+//  "localTimeZoneOffset": -8
+//}
+

@@ -228,9 +228,10 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_HEADPHONES;
     else if (string_contains_insensitive(name, "headphone"))
         existing->category = CATEGORY_HEADPHONES;
+    else if (string_contains_insensitive(name, "FreeBuds")) // HUAWEI FreeBuds 3i
+        existing->category = CATEGORY_HEADPHONES;
 
     // Hearing aids - todo: separate category
-
     else if (string_contains_insensitive(name, "Thomas Hearing Aids"))
         existing->category = CATEGORY_HEADPHONES;
 
@@ -374,6 +375,9 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_CAR; // Garmin Nav
     else if (string_starts_with(name, "MAX 360c"))
         existing->category = CATEGORY_CAR; // radar detector
+    else if (string_starts_with(name, "Interphone TOUR BLE"))
+        existing->category = CATEGORY_CAR; // motorbike intercom
+
     else if (strncmp(name, "Land Rover", 10) == 0)
         existing->category = CATEGORY_CAR;
 

@@ -184,3 +184,32 @@ hostname $MAC
 #chattr +i /etc/hosts
 fi
 ````
+
+# SHRINK LOG FILES
+
+````
+sudo nano /etc/logrotate.conf
+````
+
+````
+# see "man logrotate" for details
+# rotate log files daily
+daily
+
+# keep 2 days worth of backlogs
+rotate 2
+
+# create new (empty) log files after rotating old ones
+create
+
+# use date as a suffix of the rotated file
+#dateext
+
+# uncomment this if you want your log files compressed
+#compress
+
+# packages drop log rotation information into this directory
+include /etc/logrotate.d
+
+# system-specific logs may be also be configured here.
+````

@@ -2126,7 +2126,7 @@ void initialize_state()
     get_string_env("WEBHOOK_USERNAME", &state.webhook_username, "");
     get_string_env("WEBHOOK_PASSWORD", &state.webhook_password, "");
 
-    get_string_env("CONFIG", &state.configuration_file_path, "/etc/signswift/config.json");
+    get_string_env("CONFIG", &state.configuration_file_path, "/etc/sniffer/config.json");
 
     state.verbosity = Distances; // default verbosity
     char* verbosity = getenv("VERBOSITY");

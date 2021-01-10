@@ -16,12 +16,17 @@ SRC = src/core/*.c src/model/*.c src/bluetooth/*.c src/dbus/*.c
 MQTTSRC = src/mqtt.c src/udp.c src/mqtt_send.c src/influx.c src/core/*.c src/model/*.c src/dbus/*.c
 CGIJSON = src/cgijson.c src/dbus/sniffer-generated.c
 
+# To cross-compile to ARM we would also need ARM libraries locally ...
+#ARMOPTS = -static -std=c99
+#ARMGCC = /opt/pi/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin/arm-linux-gnueabihf-gcc
+
 scan report cgijson: src/*.c $(SRC) $(DEPS)
 	gcc -o scan src/scan.c $(SRC) $(CFLAGS) $(LIBS)
 	gcc -o report src/report.c $(SRC) $(CFLAGS) $(LIBS)
 	gcc -o cgijson.cgi $(CGIJSON) $(CFLAGS) $(LIBS)
 	echo assuming you have apache set up on your Raspberry Pi
 	echo cp cgijson.cgi /usr/lib/cgi-bin/
+#	$(ARMGCC) $(ARMOPTS) -o scan_pi src/scan.c $(SRC) $(CFLAGS) $(LIBS)
 
 scanwithmqtt: $(SRC)
 	gcc -o $@ $^ $(CFLAGS) $(LIBS) -lpaho-mqtt3as -DMQTT
@@ -37,3 +42,4 @@ mqtt: $(MQTTSRC)
 #	gcc -o $@ $^ $(CFLAGS) $(LIBS)
 #	echo assuming you have apache set up on your Raspberry Pi
 #	cp cgijson /usr/lib/cgi-bin/
+

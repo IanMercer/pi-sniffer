@@ -173,7 +173,10 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x0000fe1eul) append_text(gatts, gatts_length, "Smart Innovations Co., Ltd");
         else if (ble_uuid == 0x0000fe1ful) append_text(gatts, gatts_length, "Garmin International, Inc.");
         else if (ble_uuid == 0x0000fe20ul) append_text(gatts, gatts_length, "Emerson");
-        else if (ble_uuid == 0x0000fe21ul) append_text(gatts, gatts_length, "Bose Corporation");
+        else if (ble_uuid == 0x0000fe21ul) {
+            append_text(gatts, gatts_length, "Bose Corporation");
+            soft_set_category(&existing->category, CATEGORY_HEADPHONES);
+        }
         else if (ble_uuid == 0x0000fe22ul) append_text(gatts, gatts_length, "Zoll Medical Corporation");
         else if (ble_uuid == 0x0000fe23ul) append_text(gatts, gatts_length, "Zoll Medical Corporation");
         else if (ble_uuid == 0x0000fe24ul) append_text(gatts, gatts_length, "August Home Inc");
@@ -330,7 +333,10 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x0000febbul) append_text(gatts, gatts_length, "adafruit industries");
         else if (ble_uuid == 0x0000febcul) append_text(gatts, gatts_length, "Dexcom, Inc.");
         else if (ble_uuid == 0x0000febdul) append_text(gatts, gatts_length, "Clover Network, Inc.");
-        else if (ble_uuid == 0x0000febeul) append_text(gatts, gatts_length, "Bose Corporation");
+        else if (ble_uuid == 0x0000febeul) {
+            append_text(gatts, gatts_length, "Bose Corporation");
+            soft_set_category(&existing->category, CATEGORY_HEADPHONES);
+        }
         else if (ble_uuid == 0x0000febful) append_text(gatts, gatts_length, "Nod, Inc.");
         else if (ble_uuid == 0x0000fec0ul) append_text(gatts, gatts_length, "KDDI Corporation");
         else if (ble_uuid == 0x0000fec1ul) append_text(gatts, gatts_length, "KDDI Corporation");
