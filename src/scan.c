@@ -2006,6 +2006,18 @@ int try_connect_tick(void *parameters)
     return TRUE;
 }
 
+
+/*
+* Experimental DBus sender
+*/
+int send_notification_tick(void* parameters)
+{
+   g_info("Send test notification");
+   piSniffer* sniffer = (piSniffer*)parameters;
+   pi_sniffer_emit_notification (sniffer, "{\"json\":\"goes here\"}");
+   return TRUE;
+}
+
 static char client_id[META_LENGTH];
 
 /*
@@ -2419,6 +2431,9 @@ int main(int argc, char **argv)
 
     // Flash the led N times for N people present
     g_timeout_add(300, flash_led, loop);
+
+    // Experimental DBus sender
+    g_timeout_add_seconds(30, send_notification_tick, sniffer);
 
     g_info(" ");
     g_info(" ");

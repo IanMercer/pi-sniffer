@@ -75,7 +75,7 @@ struct OverallState
 
    // Most recent 2048 closest to observations
    int closest_n;
-   
+
    // Hash value of patch scores to calculate if changes have happened
    int patch_hash;
 

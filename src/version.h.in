@@ -1,0 +1,3 @@
+// This version.h file is updated by the CMake scripts to the current version number
+#define Scan_VERSION_MAJOR @Scan_VERSION_MAJOR@
+#define Scan_VERSION_MINOR @Scan_VERSION_MINOR@
