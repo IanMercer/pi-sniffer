@@ -25,20 +25,21 @@
 #include "rooms.h"
 #include "accesspoints.h"
 #include "closest.h"
-#include "sniffer-generated.h"
 #include "webhook.h"
 #include "state.h"
+#include "sniffer-generated.h"
+#include "sniffer-dbus.h"
 
 #define G_LOG_USE_STRUCTURED 1
 #include <glib.h>
 #include <gio/gio.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <time.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <net/if.h>
-#include <time.h>
 #include <math.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -411,7 +412,8 @@ void report_devices_count()
         //send_access_point_udp(&state);
     }
 
-// TEST TEST TEST TEST
+// It's possible to send signals directly to DBus using code like this but I now use a generated
+// skeleton, see DBUS directory and generation script
 /*
     GVariantBuilder *b = g_variant_builder_new(G_VARIANT_TYPE_VARDICT);
     g_variant_builder_add(b, "{sv}", "PeopleClosest", g_variant_new_double(people_closest));
@@ -436,43 +438,6 @@ void report_devices_count()
         print_and_free_error(error);
     }
 */
-}
-
-/*
-   Read byte array from GVariant
-*/
-unsigned char *read_byte_array(GVariant *s_value, int *actualLength, uint8_t *hash)
-{
-    unsigned char byteArray[2048];
-    int len = 0;
-
-    GVariantIter *iter_array;
-    guchar str;
-
-    //g_debug("START read_byte_array\n");
-
-    g_variant_get(s_value, "ay", &iter_array);
-
-    while (g_variant_iter_loop(iter_array, "y", &str))
-    {
-        byteArray[len++] = str;
-    }
-
-    g_variant_iter_free(iter_array);
-
-    unsigned char *allocdata = g_malloc(len);
-    memcpy(allocdata, byteArray, len);
-
-    *hash = 0;
-    for (int i = 0; i < len; i++)
-    {
-        *hash += allocdata[i];
-    }
-
-    *actualLength = len;
-
-    //g_debug("END read_byte_array\n");
-    return allocdata;
 }
 
 /*
@@ -2009,11 +1974,11 @@ int try_connect_tick(void *parameters)
 
 
 /*
-* Experimental DBus sender
+* DBus Notification Sender
 */
 int send_notification_tick(void* parameters)
 {
-   g_info("Send test notification");
+   g_info("Send DBus notification");
    piSniffer* sniffer = (piSniffer*)parameters;
    if (state.json != NULL) {
      pi_sniffer_emit_notification (sniffer, state.json);
@@ -2021,186 +1986,10 @@ int send_notification_tick(void* parameters)
    return TRUE;
 }
 
-static char client_id[META_LENGTH];
 
-/*
-    Initialize state from environment
-*/
-void initialize_state()
-{
-    // Default values if not set in environment variables
-    const char *description = "Please set a HOST_DESCRIPTION in the environment variables";
-    const char *platform = "Please set a HOST_PLATFORM in the environment variables";
-    int rssi_one_meter = -64;    // fairly typical RPI3 and iPhone
-    float rssi_factor = 3.5;     // fairly cluttered indoor default
-    float people_distance = 7.0; // 7m default range
-    state.udp_mesh_port = 7779;
-    state.udp_sign_port = 0;    // 7778;
-    state.reboot_hour = 7;      // reboot after 7 hours (TODO: Make this time of day)
-    state.access_points = NULL; // linked list
-    state.patches = NULL;       // linked list
-    state.groups = NULL;        // linked list
-    state.closest_n = 0;        // count of closest
-    state.patch_hash = 0;       // hash to detect changes
-    state.beacons = NULL;       // linked list
-    state.json = NULL;          // DBUS JSON message
-    time(&state.influx_last_sent);
-    time(&state.webhook_last_sent);
-
-    // no devices yet
-    state.n = 0;
-
-    if (gethostname(client_id, META_LENGTH) != 0)
-    {
-        g_error("Could not get host name");
-        exit(EXIT_FAILURE);
-    }
-    g_debug("Host name: %s", client_id);
-
-    state.network_up = FALSE; // is_any_interface_up();
-    state.web_polling = FALSE; // until first request
-
-    // Optional metadata about the access point for dashboard
-    const char *s_client_id = getenv("HOST_NAME");
-    const char *s_client_description = getenv("HOST_DESCRIPTION");
-    const char *s_client_platform = getenv("HOST_PLATFORM");
-
-    if (s_client_id != NULL)
-    {
-        strncpy(client_id, s_client_id, META_LENGTH);
-        g_debug("Client id: %s", client_id);
-    }
-
-    // These two can just be pointers to the constant strings or the supplied metadata
-    if (s_client_description != NULL)
-        description = s_client_description;
-    if (s_client_platform != NULL)
-        platform = s_client_platform;
-
-    g_debug("Get RSSI factors");
-    const char *s_rssi_one_meter = getenv("RSSI_ONE_METER");
-    const char *s_rssi_factor = getenv("RSSI_FACTOR");
-    const char *s_people_distance = getenv("PEOPLE_DISTANCE");
-
-    if (s_rssi_one_meter != NULL)
-        rssi_one_meter = atoi(s_rssi_one_meter);
-    if (s_rssi_factor != NULL)
-        rssi_factor = strtof(s_rssi_factor, NULL);
-    if (s_people_distance != NULL)
-        people_distance = strtof(s_people_distance, NULL);
-
-    g_debug("Add self as access point");
-
-    if (rssi_one_meter > -50) g_warning("Unlikely setting for RSSI_ONE_METER=%i", rssi_one_meter);
-    if (rssi_one_meter < -150) g_warning("Unlikely setting for RSSI_ONE_METER=%i", rssi_one_meter);
-    if (rssi_factor < 1.0) g_warning("Unlikely setting for RSSI_FACTOR=%.2f", rssi_factor);
-    if (rssi_factor > 5.0) g_warning("Unlikely setting for RSSI_FACTOR=%.2f", rssi_factor);
-
-    state.local = add_access_point(&state.access_points, client_id, description, platform,
-                                   rssi_one_meter, rssi_factor, people_distance);
-
-    // Reboot nightly 
-    get_int_env("REBOOT_HOUR", &state.reboot_hour, 0);
-
-    // UDP Settings
-    get_int_env("UDP_MESH_PORT", &state.udp_mesh_port, 0);
-    get_int_env("UDP_SIGN_PORT", &state.udp_sign_port, 0);
-    // Metadata passed to the display to adjust how it displays the values sent
-    // TODO: Expand this to an arbitrary JSON blob
-    get_float_env("UDP_SCALE_FACTOR", &state.udp_scale_factor, 1.0);
-
-    // MQTT Settings
-
-    get_string_env("MQTT_TOPIC", &state.mqtt_topic, "BLF");  // sorry, historic name
-    get_string_env("MQTT_SERVER", &state.mqtt_server, "");
-    get_string_env("MQTT_USERNAME", &state.mqtt_username, "");
-    get_string_env("MQTT_PASSWORD", &state.mqtt_password, "");
-
-    // INFLUX DB
-
-    get_int_env("INFLUX_MIN_PERIOD", &state.influx_min_period_seconds, 5 *60);      // at most every 5 min
-    get_int_env("INFLUX_MAX_PERIOD", &state.influx_max_period_seconds, 60 *60);     // at least every 60 min
-
-    state.influx_server = getenv("INFLUX_SERVER");
-    if (state.influx_server == NULL) state.influx_server = "";
-
-    get_int_env("INFLUX_PORT", &state.influx_port, 8086);
-
-    state.influx_database = getenv("INFLUX_DATABASE");
-    state.influx_username = getenv("INFLUX_USERNAME");
-    state.influx_password = getenv("INFLUX_PASSWORD");
-
-    // WEBHOOK
-
-    get_int_env("WEBHOOK_MIN_PERIOD", &state.webhook_min_period_seconds, 5 *60);      // at most every 5 min
-    get_int_env("WEBHOOK_MAX_PERIOD", &state.webhook_max_period_seconds, 60 *60);     // at least every 60 min
-
-    get_string_env("WEBHOOK_DOMAIN", &state.webhook_domain, NULL);
-    get_int_env("WEBHOOK_PORT", &state.webhook_port, 80);
-    get_string_env("WEBHOOK_PATH", &state.webhook_path, "/api/bluetooth");
-    get_string_env("WEBHOOK_USERNAME", &state.webhook_username, "");
-    get_string_env("WEBHOOK_PASSWORD", &state.webhook_password, "");
-
-    get_string_env("CONFIG", &state.configuration_file_path, "/etc/sniffer/config.json");
-
-    state.verbosity = Distances; // default verbosity
-    char* verbosity = getenv("VERBOSITY");
-    if (verbosity){
-        if (strcmp(verbosity, "counts")) state.verbosity = Counts;
-        if (strcmp(verbosity, "distances")) state.verbosity = Distances;
-        if (strcmp(verbosity, "details")) state.verbosity = Details;
-    }
-
-    read_configuration_file(state.configuration_file_path, &state.access_points, &state.beacons);
-
-    g_debug("Completed read of configuration file");
-}
-
-void display_state()
-{
-    g_info("HOST_NAME = %s", state.local->client_id);
-    g_info("HOST_DESCRIPTION = %s", state.local->description);
-    g_info("HOST_PLATFORM = %s", state.local->platform);
-
-    g_info("REBOOT_HOUR = %i", state.reboot_hour);
-
-    g_info("RSSI_ONE_METER Power at 1m : %i", state.local->rssi_one_meter);
-    g_info("RSSI_FACTOR to distance : %.1f   (typically 2.0 (indoor, cluttered) to 4.0 (outdoor, no obstacles)", state.local->rssi_factor);
-    g_info("PEOPLE_DISTANCE : %.1fm (cutoff)", state.local->people_distance);
-
-    g_info("UDP_MESH_PORT=%i", state.udp_mesh_port);
-    g_info("UDP_SIGN_PORT=%i", state.udp_sign_port);
-    g_info("UDP_SCALE_FACTOR=%.1f", state.udp_scale_factor);
-
-    g_info("VERBOSITY=%i", state.verbosity);
-
-    g_info("MQTT_TOPIC='%s'", state.mqtt_topic);
-    g_info("MQTT_SERVER='%s'", state.mqtt_server);
-    g_info("MQTT_USERNAME='%s'", state.mqtt_username);
-    g_info("MQTT_PASSWORD='%s'", state.mqtt_password == NULL ? "(null)" : "*****");
-
-    g_info("INFLUX_SERVER='%s'", state.influx_server);
-    g_info("INFLUX_PORT=%i", state.influx_port);
-    g_info("INFLUX_DATABASE='%s'", state.influx_database);
-    g_info("INFLUX_USERNAME='%s'", state.influx_username);
-    g_info("INFLUX_PASSWORD='%s'", state.influx_password == NULL ? "(null)" : "*****");
-    g_info("INFLUX_MIN_PERIOD='%i'", state.influx_min_period_seconds);
-    g_info("INFLUX_MAX_PERIOD='%i'", state.influx_max_period_seconds);
-
-    g_info("WEBHOOK_DOMAIN/PORT/PATH='%s:%i%s'", state.webhook_domain == NULL ? "(null)" : state.webhook_domain, state.webhook_port, state.webhook_path);
-    g_info("WEBHOOK_USERNAME='%s'", state.webhook_username == NULL ? "(null)" : "*****");
-    g_info("WEBHOOK_PASSWORD='%s'", state.webhook_password == NULL ? "(null)" : "*****");
-    g_info("WEBHOOK_MIN_PERIOD='%i'", state.webhook_min_period_seconds);
-    g_info("WEBHOOK_MAX_PERIOD='%i'", state.webhook_max_period_seconds);
-
-    g_info("CONFIG='%s'", state.configuration_file_path == NULL ? "** Please set a path to config.json **" : state.configuration_file_path);
-
-    int count = 0;
-    for (struct AccessPoint* ap = state.access_points; ap != NULL; ap=ap->next){ count ++; }
-    g_info("ACCESS_POINTS: %i", count);
-}
 
 guint prop_changed;
+guint settings_prop_changed;
 guint iface_added;
 guint iface_removed;
 GMainLoop *loop;
@@ -2223,6 +2012,33 @@ static gboolean on_handle_status_request (piSniffer *interface,
     // g_free (response);
     return TRUE;
 }
+
+/*
+    incoming request on DBUS, probably from Azure handler, update settings
+*/
+static gboolean on_handle_settings_request (piSniffer *interface,
+                       GDBusMethodInvocation  *invocation,
+                       const gchar            *json,
+                       gpointer                user_data)
+{
+    struct OverallState* state = (struct OverallState*)user_data;
+
+    // Update settings from json blob passed in
+
+    g_info("*** %s Received settings update %s", state->local->client_id, json);
+
+    // TODO: Parse JSON
+    //   Get thresholds { room/group: goes above, goes below }
+    //   Get min-interval for sending updates
+    //   Get max-interval for sending updates
+    //   Get patch updates and write them to files?
+    //   Get main/sub state for each access point?
+    
+
+    pi_sniffer_complete_settings(interface, invocation);  // no value to pass back
+    return TRUE;
+}
+
 
 /*
    DBUS name acquired
@@ -2260,7 +2076,6 @@ void custom_log_handler (const gchar *log_domain, GLogLevelFlags log_level, cons
     g_log_default_handler(log_domain, log_level, message, user_data);
 }
 
-
 /*
     MAIN
 */
@@ -2284,7 +2099,7 @@ int main(int argc, char **argv)
     }
 
     g_info("initialize_state()");
-    initialize_state();
+    initialize_state(&state);
 
     signal(SIGINT, int_handler);
     signal(SIGTERM, int_handler);
@@ -2317,13 +2132,19 @@ int main(int argc, char **argv)
     g_debug("calling g_bus_own_name");
 
     piSniffer * sniffer = pi_sniffer_skeleton_new ();
+    
+// TODO: Sample of setting properties (none of these are used now, single JSON blob from remote service)
+//    pi_sniffer_set_distance_limit(sniffer, 7.5);
+//    pi_sniffer_get_max_interval(sniffer);
+//    pi_sniffer_get_min_interval(sniffer);
 
-    // TODO: Sample of setting properties
-    pi_sniffer_set_distance_limit(sniffer, 7.5);
-
-    // TODO: Experimental DBus
+    // DBus - CGI or other app is asking for a status (polling)
     g_signal_connect(sniffer, "handle-status", G_CALLBACK(on_handle_status_request), &state);
 
+    // DBus - Azure communicator or other app is updating settings
+    g_signal_connect(sniffer, "handle-settings", G_CALLBACK(on_handle_settings_request), &state);
+
+    // DBus advertise the interface we support
     GError* error = NULL;
     if (!g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (sniffer),
                                          conn,
@@ -2442,13 +2263,13 @@ int main(int argc, char **argv)
     g_info(" ");
     g_info(" ");
 
-    display_state();
+    display_state(&state);
 
-    g_info("Start main loop\n");
+    g_info("Start main loop");
 
     g_main_loop_run(loop);
 
-    g_info("END OF MAIN LOOP RUN\n");
+    g_info("END OF MAIN LOOP RUN");
 
     if (argc > 3)
     {
@@ -2462,13 +2283,14 @@ int main(int argc, char **argv)
         g_warning("Not able to stop scanning");
     g_usleep(100);
 
-    rc = bluez_adapter_set_property(conn, "Powered", g_variant_new("b", FALSE));
-    if (rc)
-        g_warning("Not able to disable the adapter\n");
+//    rc = bluez_adapter_set_property(conn, "Powered", g_variant_new("b", FALSE));
+//    if (rc)
+//        g_warning("Not able to disable the adapter");
 fail:
     g_bus_unown_name(name_connection_id);
 
     g_dbus_connection_signal_unsubscribe(conn, prop_changed);
+    g_dbus_connection_signal_unsubscribe(conn, settings_prop_changed);
     g_dbus_connection_signal_unsubscribe(conn, iface_added);
     g_dbus_connection_signal_unsubscribe(conn, iface_removed);
     g_dbus_connection_close_sync(conn, NULL, NULL);
@@ -2484,6 +2306,7 @@ void int_handler(int dummy)
     g_main_loop_unref(loop);
 
     g_dbus_connection_signal_unsubscribe(conn, prop_changed);
+    g_dbus_connection_signal_unsubscribe(conn, settings_prop_changed);
     g_dbus_connection_signal_unsubscribe(conn, iface_added);
     g_dbus_connection_signal_unsubscribe(conn, iface_removed);
     g_dbus_connection_close_sync(conn, NULL, NULL);

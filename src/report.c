@@ -1,3 +1,5 @@
+// OBSOLETE - reporting will all come off DBUS
+
 /*
  *  CROWD ALERT - REPORT SERVICE
  *

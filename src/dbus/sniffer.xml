@@ -1,17 +1,23 @@
 <node>
   <interface name="com.signswift.sniffer">
 
+    <!-- This is the main notification back to the service, the sender passes it unchanged (JSON blob)-->
+    <signal name="Notification">
+      <arg name="json" type="s"/>
+    </signal>
+
     <!-- Not very 'dbus' GVariant-like but json is what's needed for web interface -->
     <method name="Status">
       <arg name="json" direction="out" type="s"/>
     </method>
 
-    <signal name="Notification">
-      <arg name="json" type="s"/>
-    </signal>
+    <!-- Also not very 'dbus' but we want an opaque flow from service to scanner -->
+    <method name="Settings">
+      <arg name="json" direction="in" type="s"/>
+    </method>
 
-    <!-- <property name="RSSIFactor" type="d" access="readwrite"/>
-    <property name="RSSIOneMeter" type="d" access="readwrite"/> -->
-    <property name="DistanceLimit" type="d" access="readwrite"/>
+    <!-- Not currently used, transitioned to patches, rooms, groups and alerts -->
+    <!-- <property name="DistanceLimit" type="d" access="readwrite"/> -->
+
   </interface>
 </node>

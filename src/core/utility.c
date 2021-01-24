@@ -580,3 +580,41 @@ void print_and_free_error(GError *error)
        g_error_free (error);
   }
 }
+
+
+/*
+   Read byte array and compute hash from GVariant
+*/
+unsigned char *read_byte_array(GVariant *s_value, int *actualLength, uint8_t *hash)
+{
+    unsigned char byteArray[2048];
+    int len = 0;
+
+    GVariantIter *iter_array;
+    guchar str;
+
+    //g_debug("START read_byte_array\n");
+
+    g_variant_get(s_value, "ay", &iter_array);
+
+    while (g_variant_iter_loop(iter_array, "y", &str))
+    {
+        byteArray[len++] = str;
+    }
+
+    g_variant_iter_free(iter_array);
+
+    unsigned char *allocdata = g_malloc(len);
+    memcpy(allocdata, byteArray, len);
+
+    *hash = 0;
+    for (int i = 0; i < len; i++)
+    {
+        *hash += allocdata[i];
+    }
+
+    *actualLength = len;
+
+    //g_debug("END read_byte_array\n");
+    return allocdata;
+}

@@ -31,12 +31,14 @@ struct _piSnifferIface
   GTypeInterface parent_iface;
 
 
+  gboolean (*handle_settings) (
+    piSniffer *object,
+    GDBusMethodInvocation *invocation,
+    const gchar *arg_json);
 
   gboolean (*handle_status) (
     piSniffer *object,
     GDBusMethodInvocation *invocation);
-
-  gdouble  (*get_distance_limit) (piSniffer *object);
 
   void (*notification) (
     piSniffer *object,
@@ -55,6 +57,10 @@ void pi_sniffer_complete_status (
     piSniffer *object,
     GDBusMethodInvocation *invocation,
     const gchar *json);
+
+void pi_sniffer_complete_settings (
+    piSniffer *object,
+    GDBusMethodInvocation *invocation);
 
 
 
@@ -84,11 +90,24 @@ gboolean pi_sniffer_call_status_sync (
     GCancellable *cancellable,
     GError **error);
 
+void pi_sniffer_call_settings (
+    piSniffer *proxy,
+    const gchar *arg_json,
+    GCancellable *cancellable,
+    GAsyncReadyCallback callback,
+    gpointer user_data);
 
+gboolean pi_sniffer_call_settings_finish (
+    piSniffer *proxy,
+    GAsyncResult *res,
+    GError **error);
 
-/* D-Bus property accessors: */
-gdouble pi_sniffer_get_distance_limit (piSniffer *object);
-void pi_sniffer_set_distance_limit (piSniffer *object, gdouble value);
+gboolean pi_sniffer_call_settings_sync (
+    piSniffer *proxy,
+    const gchar *arg_json,
+    GCancellable *cancellable,
+    GError **error);
+
 
 
 /* ---- */

@@ -196,9 +196,40 @@ static const _ExtendedGDBusMethodInfo _pi_sniffer_method_info_status =
   FALSE
 };
 
+static const _ExtendedGDBusArgInfo _pi_sniffer_method_info_settings_IN_ARG_json =
+{
+  {
+    -1,
+    (gchar *) "json",
+    (gchar *) "s",
+    NULL
+  },
+  FALSE
+};
+
+static const GDBusArgInfo * const _pi_sniffer_method_info_settings_IN_ARG_pointers[] =
+{
+  &_pi_sniffer_method_info_settings_IN_ARG_json.parent_struct,
+  NULL
+};
+
+static const _ExtendedGDBusMethodInfo _pi_sniffer_method_info_settings =
+{
+  {
+    -1,
+    (gchar *) "Settings",
+    (GDBusArgInfo **) &_pi_sniffer_method_info_settings_IN_ARG_pointers,
+    NULL,
+    NULL
+  },
+  "handle-settings",
+  FALSE
+};
+
 static const GDBusMethodInfo * const _pi_sniffer_method_info_pointers[] =
 {
   &_pi_sniffer_method_info_status.parent_struct,
+  &_pi_sniffer_method_info_settings.parent_struct,
   NULL
 };
 
@@ -236,26 +267,6 @@ static const GDBusSignalInfo * const _pi_sniffer_signal_info_pointers[] =
   NULL
 };
 
-static const _ExtendedGDBusPropertyInfo _pi_sniffer_property_info_distance_limit =
-{
-  {
-    -1,
-    (gchar *) "DistanceLimit",
-    (gchar *) "d",
-    G_DBUS_PROPERTY_INFO_FLAGS_READABLE | G_DBUS_PROPERTY_INFO_FLAGS_WRITABLE,
-    NULL
-  },
-  "distance-limit",
-  FALSE,
-  TRUE
-};
-
-static const GDBusPropertyInfo * const _pi_sniffer_property_info_pointers[] =
-{
-  &_pi_sniffer_property_info_distance_limit.parent_struct,
-  NULL
-};
-
 static const _ExtendedGDBusInterfaceInfo _pi_sniffer_interface_info =
 {
   {
@@ -263,7 +274,7 @@ static const _ExtendedGDBusInterfaceInfo _pi_sniffer_interface_info =
     (gchar *) "com.signswift.sniffer",
     (GDBusMethodInfo **) &_pi_sniffer_method_info_pointers,
     (GDBusSignalInfo **) &_pi_sniffer_signal_info_pointers,
-    (GDBusPropertyInfo **) &_pi_sniffer_property_info_pointers,
+    NULL,
     NULL
   },
   "sniffer",
@@ -296,7 +307,6 @@ pi_sniffer_interface_info (void)
 guint
 pi_sniffer_override_properties (GObjectClass *klass, guint property_id_begin)
 {
-  g_object_class_override_property (klass, property_id_begin++, "distance-limit");
   return property_id_begin - 1;
 }
 
@@ -311,8 +321,8 @@ pi_sniffer_override_properties (GObjectClass *klass, guint property_id_begin)
 /**
  * piSnifferIface:
  * @parent_iface: The parent interface.
+ * @handle_settings: Handler for the #piSniffer::handle-settings signal.
  * @handle_status: Handler for the #piSniffer::handle-status signal.
- * @get_distance_limit: Getter for the #piSniffer:distance-limit property.
  * @notification: Handler for the #piSniffer::notification signal.
  *
  * Virtual table for the D-Bus interface <link linkend="gdbus-interface-com-signswift-sniffer.top_of_page">com.signswift.sniffer</link>.
@@ -347,6 +357,29 @@ pi_sniffer_default_init (piSnifferIface *iface)
     1,
     G_TYPE_DBUS_METHOD_INVOCATION);
 
+  /**
+   * piSniffer::handle-settings:
+   * @object: A #piSniffer.
+   * @invocation: A #GDBusMethodInvocation.
+   * @arg_json: Argument passed by remote caller.
+   *
+   * Signal emitted when a remote caller is invoking the <link linkend="gdbus-method-com-signswift-sniffer.Settings">Settings()</link> D-Bus method.
+   *
+   * If a signal handler returns %TRUE, it means the signal handler will handle the invocation (e.g. take a reference to @invocation and eventually call pi_sniffer_complete_settings() or e.g. g_dbus_method_invocation_return_error() on it) and no order signal handlers will run. If no signal handler handles the invocation, the %G_DBUS_ERROR_UNKNOWN_METHOD error is returned.
+   *
+   * Returns: %TRUE if the invocation was handled, %FALSE to let other signal handlers run.
+   */
+  g_signal_new ("handle-settings",
+    G_TYPE_FROM_INTERFACE (iface),
+    G_SIGNAL_RUN_LAST,
+    G_STRUCT_OFFSET (piSnifferIface, handle_settings),
+    g_signal_accumulator_true_handled,
+    NULL,
+    g_cclosure_marshal_generic,
+    G_TYPE_BOOLEAN,
+    2,
+    G_TYPE_DBUS_METHOD_INVOCATION, G_TYPE_STRING);
+
   /* GObject signals for received D-Bus signals: */
   /**
    * piSniffer::notification:
@@ -367,47 +400,6 @@ pi_sniffer_default_init (piSnifferIface *iface)
     G_TYPE_NONE,
     1, G_TYPE_STRING);
 
-  /* GObject properties for D-Bus properties: */
-  /**
-   * piSniffer:distance-limit:
-   *
-   * Represents the D-Bus property <link linkend="gdbus-property-com-signswift-sniffer.DistanceLimit">"DistanceLimit"</link>.
-   *
-   * Since the D-Bus property for this #GObject property is both readable and writable, it is meaningful to both read from it and write to it on both the service- and client-side.
-   */
-  g_object_interface_install_property (iface,
-    g_param_spec_double ("distance-limit", "DistanceLimit", "DistanceLimit", -G_MAXDOUBLE, G_MAXDOUBLE, 0.0, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
-}
-
-/**
- * pi_sniffer_get_distance_limit: (skip)
- * @object: A #piSniffer.
- *
- * Gets the value of the <link linkend="gdbus-property-com-signswift-sniffer.DistanceLimit">"DistanceLimit"</link> D-Bus property.
- *
- * Since this D-Bus property is both readable and writable, it is meaningful to use this function on both the client- and service-side.
- *
- * Returns: The property value.
- */
-gdouble 
-pi_sniffer_get_distance_limit (piSniffer *object)
-{
-  return PI_SNIFFER_GET_IFACE (object)->get_distance_limit (object);
-}
-
-/**
- * pi_sniffer_set_distance_limit: (skip)
- * @object: A #piSniffer.
- * @value: The value to set.
- *
- * Sets the <link linkend="gdbus-property-com-signswift-sniffer.DistanceLimit">"DistanceLimit"</link> D-Bus property to @value.
- *
- * Since this D-Bus property is both readable and writable, it is meaningful to use this function on both the client- and service-side.
- */
-void
-pi_sniffer_set_distance_limit (piSniffer *object, gdouble value)
-{
-  g_object_set (G_OBJECT (object), "distance-limit", value, NULL);
 }
 
 /**
@@ -524,6 +516,104 @@ _out:
 }
 
 /**
+ * pi_sniffer_call_settings:
+ * @proxy: A #piSnifferProxy.
+ * @arg_json: Argument to pass with the method invocation.
+ * @cancellable: (nullable): A #GCancellable or %NULL.
+ * @callback: A #GAsyncReadyCallback to call when the request is satisfied or %NULL.
+ * @user_data: User data to pass to @callback.
+ *
+ * Asynchronously invokes the <link linkend="gdbus-method-com-signswift-sniffer.Settings">Settings()</link> D-Bus method on @proxy.
+ * When the operation is finished, @callback will be invoked in the thread-default main loop of the thread you are calling this method from (see g_main_context_push_thread_default()).
+ * You can then call pi_sniffer_call_settings_finish() to get the result of the operation.
+ *
+ * See pi_sniffer_call_settings_sync() for the synchronous, blocking version of this method.
+ */
+void
+pi_sniffer_call_settings (
+    piSniffer *proxy,
+    const gchar *arg_json,
+    GCancellable *cancellable,
+    GAsyncReadyCallback callback,
+    gpointer user_data)
+{
+  g_dbus_proxy_call (G_DBUS_PROXY (proxy),
+    "Settings",
+    g_variant_new ("(s)",
+                   arg_json),
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    cancellable,
+    callback,
+    user_data);
+}
+
+/**
+ * pi_sniffer_call_settings_finish:
+ * @proxy: A #piSnifferProxy.
+ * @res: The #GAsyncResult obtained from the #GAsyncReadyCallback passed to pi_sniffer_call_settings().
+ * @error: Return location for error or %NULL.
+ *
+ * Finishes an operation started with pi_sniffer_call_settings().
+ *
+ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
+ */
+gboolean
+pi_sniffer_call_settings_finish (
+    piSniffer *proxy,
+    GAsyncResult *res,
+    GError **error)
+{
+  GVariant *_ret;
+  _ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (proxy), res, error);
+  if (_ret == NULL)
+    goto _out;
+  g_variant_get (_ret,
+                 "()");
+  g_variant_unref (_ret);
+_out:
+  return _ret != NULL;
+}
+
+/**
+ * pi_sniffer_call_settings_sync:
+ * @proxy: A #piSnifferProxy.
+ * @arg_json: Argument to pass with the method invocation.
+ * @cancellable: (nullable): A #GCancellable or %NULL.
+ * @error: Return location for error or %NULL.
+ *
+ * Synchronously invokes the <link linkend="gdbus-method-com-signswift-sniffer.Settings">Settings()</link> D-Bus method on @proxy. The calling thread is blocked until a reply is received.
+ *
+ * See pi_sniffer_call_settings() for the asynchronous version of this method.
+ *
+ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
+ */
+gboolean
+pi_sniffer_call_settings_sync (
+    piSniffer *proxy,
+    const gchar *arg_json,
+    GCancellable *cancellable,
+    GError **error)
+{
+  GVariant *_ret;
+  _ret = g_dbus_proxy_call_sync (G_DBUS_PROXY (proxy),
+    "Settings",
+    g_variant_new ("(s)",
+                   arg_json),
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    cancellable,
+    error);
+  if (_ret == NULL)
+    goto _out;
+  g_variant_get (_ret,
+                 "()");
+  g_variant_unref (_ret);
+_out:
+  return _ret != NULL;
+}
+
+/**
  * pi_sniffer_complete_status:
  * @object: A #piSniffer.
  * @invocation: (transfer full): A #GDBusMethodInvocation.
@@ -539,10 +629,27 @@ pi_sniffer_complete_status (
     GDBusMethodInvocation *invocation,
     const gchar *json)
 {
-  (void)object;
   g_dbus_method_invocation_return_value (invocation,
     g_variant_new ("(s)",
                    json));
+}
+
+/**
+ * pi_sniffer_complete_settings:
+ * @object: A #piSniffer.
+ * @invocation: (transfer full): A #GDBusMethodInvocation.
+ *
+ * Helper function used in service implementations to finish handling invocations of the <link linkend="gdbus-method-com-signswift-sniffer.Settings">Settings()</link> D-Bus method. If you instead want to finish handling an invocation by returning an error, use g_dbus_method_invocation_return_error() or similar.
+ *
+ * This method will free @invocation, you cannot use it afterwards.
+ */
+void
+pi_sniffer_complete_settings (
+    piSniffer *object,
+    GDBusMethodInvocation *invocation)
+{
+  g_dbus_method_invocation_return_value (invocation,
+    g_variant_new ("()"));
 }
 
 /* ------------------------------------------------------------------------ */
@@ -591,45 +698,6 @@ pi_sniffer_proxy_get_property (GObject      *object,
   GValue       *value,
   GParamSpec   *pspec G_GNUC_UNUSED)
 {
-  const _ExtendedGDBusPropertyInfo *info;
-  GVariant *variant;
-  g_assert (prop_id != 0 && prop_id - 1 < 1);
-  info = (const _ExtendedGDBusPropertyInfo *) _pi_sniffer_property_info_pointers[prop_id - 1];
-  variant = g_dbus_proxy_get_cached_property (G_DBUS_PROXY (object), info->parent_struct.name);
-  if (info->use_gvariant)
-    {
-      g_value_set_variant (value, variant);
-    }
-  else
-    {
-      if (variant != NULL)
-        g_dbus_gvariant_to_gvalue (variant, value);
-    }
-  if (variant != NULL)
-    g_variant_unref (variant);
-}
-
-static void
-pi_sniffer_proxy_set_property_cb (GDBusProxy *proxy,
-  GAsyncResult *res,
-  gpointer      user_data)
-{
-  const _ExtendedGDBusPropertyInfo *info = user_data;
-  GError *error;
-  GVariant *_ret;
-  error = NULL;
-  _ret = g_dbus_proxy_call_finish (proxy, res, &error);
-  if (!_ret)
-    {
-      g_warning ("Error setting property '%s' on interface com.signswift.sniffer: %s (%s, %d)",
-                 info->parent_struct.name, 
-                 error->message, g_quark_to_string (error->domain), error->code);
-      g_error_free (error);
-    }
-  else
-    {
-      g_variant_unref (_ret);
-    }
 }
 
 static void
@@ -638,18 +706,6 @@ pi_sniffer_proxy_set_property (GObject      *object,
   const GValue *value,
   GParamSpec   *pspec G_GNUC_UNUSED)
 {
-  const _ExtendedGDBusPropertyInfo *info;
-  GVariant *variant;
-  g_assert (prop_id != 0 && prop_id - 1 < 1);
-  info = (const _ExtendedGDBusPropertyInfo *) _pi_sniffer_property_info_pointers[prop_id - 1];
-  variant = g_dbus_gvalue_to_gvariant (value, G_VARIANT_TYPE (info->parent_struct.signature));
-  g_dbus_proxy_call (G_DBUS_PROXY (object),
-    "org.freedesktop.DBus.Properties.Set",
-    g_variant_new ("(ssv)", "com.signswift.sniffer", info->parent_struct.name, variant),
-    G_DBUS_CALL_FLAGS_NONE,
-    -1,
-    NULL, (GAsyncReadyCallback) pi_sniffer_proxy_set_property_cb, (GDBusPropertyInfo *) &info->parent_struct);
-  g_variant_unref (variant);
 }
 
 static void
@@ -722,21 +778,6 @@ pi_sniffer_proxy_g_properties_changed (GDBusProxy *_proxy,
     }
 }
 
-static gdouble 
-pi_sniffer_proxy_get_distance_limit (piSniffer *object)
-{
-  piSnifferProxy *proxy = PI_SNIFFER_PROXY (object);
-  GVariant *variant;
-  gdouble value = 0;
-  variant = g_dbus_proxy_get_cached_property (G_DBUS_PROXY (proxy), "DistanceLimit");
-  if (variant != NULL)
-    {
-      value = g_variant_get_double (variant);
-      g_variant_unref (variant);
-    }
-  return value;
-}
-
 static void
 pi_sniffer_proxy_init (piSnifferProxy *proxy)
 {
@@ -764,8 +805,6 @@ pi_sniffer_proxy_class_init (piSnifferProxyClass *klass)
   proxy_class->g_signal = pi_sniffer_proxy_g_signal;
   proxy_class->g_properties_changed = pi_sniffer_proxy_g_properties_changed;
 
-  pi_sniffer_override_properties (gobject_class, 1);
-
 #if GLIB_VERSION_MAX_ALLOWED < GLIB_VERSION_2_38
   g_type_class_add_private (klass, sizeof (piSnifferProxyPrivate));
 #endif
@@ -774,7 +813,6 @@ pi_sniffer_proxy_class_init (piSnifferProxyClass *klass)
 static void
 pi_sniffer_proxy_iface_init (piSnifferIface *iface)
 {
-  iface->get_distance_limit = pi_sniffer_proxy_get_distance_limit;
 }
 
 /**
@@ -1164,25 +1202,9 @@ out:
   return g_variant_builder_end (&builder);
 }
 
-static gboolean _pi_sniffer_emit_changed (gpointer user_data);
-
 static void
 pi_sniffer_skeleton_dbus_interface_flush (GDBusInterfaceSkeleton *_skeleton)
 {
-  piSnifferSkeleton *skeleton = PI_SNIFFER_SKELETON (_skeleton);
-  gboolean emit_changed = FALSE;
-
-  g_mutex_lock (&skeleton->priv->lock);
-  if (skeleton->priv->changed_properties_idle_source != NULL)
-    {
-      g_source_destroy (skeleton->priv->changed_properties_idle_source);
-      skeleton->priv->changed_properties_idle_source = NULL;
-      emit_changed = TRUE;
-    }
-  g_mutex_unlock (&skeleton->priv->lock);
-
-  if (emit_changed)
-    _pi_sniffer_emit_changed (skeleton);
 }
 
 static void
@@ -1224,158 +1246,12 @@ static void
 pi_sniffer_skeleton_finalize (GObject *object)
 {
   piSnifferSkeleton *skeleton = PI_SNIFFER_SKELETON (object);
-  guint n;
-  for (n = 0; n < 1; n++)
-    g_value_unset (&skeleton->priv->properties[n]);
-  g_free (skeleton->priv->properties);
   g_list_free_full (skeleton->priv->changed_properties, (GDestroyNotify) _changed_property_free);
   if (skeleton->priv->changed_properties_idle_source != NULL)
     g_source_destroy (skeleton->priv->changed_properties_idle_source);
   g_main_context_unref (skeleton->priv->context);
   g_mutex_clear (&skeleton->priv->lock);
   G_OBJECT_CLASS (pi_sniffer_skeleton_parent_class)->finalize (object);
-}
-
-static void
-pi_sniffer_skeleton_get_property (GObject      *object,
-  guint         prop_id,
-  GValue       *value,
-  GParamSpec   *pspec G_GNUC_UNUSED)
-{
-  piSnifferSkeleton *skeleton = PI_SNIFFER_SKELETON (object);
-  g_assert (prop_id != 0 && prop_id - 1 < 1);
-  g_mutex_lock (&skeleton->priv->lock);
-  g_value_copy (&skeleton->priv->properties[prop_id - 1], value);
-  g_mutex_unlock (&skeleton->priv->lock);
-}
-
-static gboolean
-_pi_sniffer_emit_changed (gpointer user_data)
-{
-  piSnifferSkeleton *skeleton = PI_SNIFFER_SKELETON (user_data);
-  GList *l;
-  GVariantBuilder builder;
-  GVariantBuilder invalidated_builder;
-  guint num_changes;
-
-  g_mutex_lock (&skeleton->priv->lock);
-  g_variant_builder_init (&builder, G_VARIANT_TYPE ("a{sv}"));
-  g_variant_builder_init (&invalidated_builder, G_VARIANT_TYPE ("as"));
-  for (l = skeleton->priv->changed_properties, num_changes = 0; l != NULL; l = l->next)
-    {
-      ChangedProperty *cp = l->data;
-      GVariant *variant;
-      const GValue *cur_value;
-
-      cur_value = &skeleton->priv->properties[cp->prop_id - 1];
-      if (!_g_value_equal (cur_value, &cp->orig_value))
-        {
-          variant = g_dbus_gvalue_to_gvariant (cur_value, G_VARIANT_TYPE (cp->info->parent_struct.signature));
-          g_variant_builder_add (&builder, "{sv}", cp->info->parent_struct.name, variant);
-          g_variant_unref (variant);
-          num_changes++;
-        }
-    }
-  if (num_changes > 0)
-    {
-      GList *connections, *ll;
-      GVariant *signal_variant;
-      signal_variant = g_variant_ref_sink (g_variant_new ("(sa{sv}as)", "com.signswift.sniffer",
-                                           &builder, &invalidated_builder));
-      connections = g_dbus_interface_skeleton_get_connections (G_DBUS_INTERFACE_SKELETON (skeleton));
-      for (ll = connections; ll != NULL; ll = ll->next)
-        {
-          GDBusConnection *connection = ll->data;
-
-          g_dbus_connection_emit_signal (connection,
-                                         NULL, g_dbus_interface_skeleton_get_object_path (G_DBUS_INTERFACE_SKELETON (skeleton)),
-                                         "org.freedesktop.DBus.Properties",
-                                         "PropertiesChanged",
-                                         signal_variant,
-                                         NULL);
-        }
-      g_variant_unref (signal_variant);
-      g_list_free_full (connections, g_object_unref);
-    }
-  else
-    {
-      g_variant_builder_clear (&builder);
-      g_variant_builder_clear (&invalidated_builder);
-    }
-  g_list_free_full (skeleton->priv->changed_properties, (GDestroyNotify) _changed_property_free);
-  skeleton->priv->changed_properties = NULL;
-  skeleton->priv->changed_properties_idle_source = NULL;
-  g_mutex_unlock (&skeleton->priv->lock);
-  return FALSE;
-}
-
-static void
-_pi_sniffer_schedule_emit_changed (piSnifferSkeleton *skeleton, const _ExtendedGDBusPropertyInfo *info, guint prop_id, const GValue *orig_value)
-{
-  ChangedProperty *cp;
-  GList *l;
-  cp = NULL;
-  for (l = skeleton->priv->changed_properties; l != NULL; l = l->next)
-    {
-      ChangedProperty *i_cp = l->data;
-      if (i_cp->info == info)
-        {
-          cp = i_cp;
-          break;
-        }
-    }
-  if (cp == NULL)
-    {
-      cp = g_new0 (ChangedProperty, 1);
-      cp->prop_id = prop_id;
-      cp->info = info;
-      skeleton->priv->changed_properties = g_list_prepend (skeleton->priv->changed_properties, cp);
-      g_value_init (&cp->orig_value, G_VALUE_TYPE (orig_value));
-      g_value_copy (orig_value, &cp->orig_value);
-    }
-}
-
-static void
-pi_sniffer_skeleton_notify (GObject      *object,
-  GParamSpec *pspec G_GNUC_UNUSED)
-{
-  piSnifferSkeleton *skeleton = PI_SNIFFER_SKELETON (object);
-  g_mutex_lock (&skeleton->priv->lock);
-  if (skeleton->priv->changed_properties != NULL &&
-      skeleton->priv->changed_properties_idle_source == NULL)
-    {
-      skeleton->priv->changed_properties_idle_source = g_idle_source_new ();
-      g_source_set_priority (skeleton->priv->changed_properties_idle_source, G_PRIORITY_DEFAULT);
-      g_source_set_callback (skeleton->priv->changed_properties_idle_source, _pi_sniffer_emit_changed, g_object_ref (skeleton), (GDestroyNotify) g_object_unref);
-      g_source_set_name (skeleton->priv->changed_properties_idle_source, "[generated] _pi_sniffer_emit_changed");
-      g_source_attach (skeleton->priv->changed_properties_idle_source, skeleton->priv->context);
-      g_source_unref (skeleton->priv->changed_properties_idle_source);
-    }
-  g_mutex_unlock (&skeleton->priv->lock);
-}
-
-static void
-pi_sniffer_skeleton_set_property (GObject      *object,
-  guint         prop_id,
-  const GValue *value,
-  GParamSpec   *pspec)
-{
-  const _ExtendedGDBusPropertyInfo *info;
-  piSnifferSkeleton *skeleton = PI_SNIFFER_SKELETON (object);
-  g_assert (prop_id != 0 && prop_id - 1 < 1);
-  info = (const _ExtendedGDBusPropertyInfo *) _pi_sniffer_property_info_pointers[prop_id - 1];
-  g_mutex_lock (&skeleton->priv->lock);
-  g_object_freeze_notify (object);
-  if (!_g_value_equal (value, &skeleton->priv->properties[prop_id - 1]))
-    {
-      if (g_dbus_interface_skeleton_get_connection (G_DBUS_INTERFACE_SKELETON (skeleton)) != NULL &&
-          info->emits_changed_signal)
-        _pi_sniffer_schedule_emit_changed (skeleton, info, prop_id, &skeleton->priv->properties[prop_id - 1]);
-      g_value_copy (value, &skeleton->priv->properties[prop_id - 1]);
-      g_object_notify_by_pspec (object, pspec);
-    }
-  g_mutex_unlock (&skeleton->priv->lock);
-  g_object_thaw_notify (object);
 }
 
 static void
@@ -1389,19 +1265,6 @@ pi_sniffer_skeleton_init (piSnifferSkeleton *skeleton)
 
   g_mutex_init (&skeleton->priv->lock);
   skeleton->priv->context = g_main_context_ref_thread_default ();
-  skeleton->priv->properties = g_new0 (GValue, 1);
-  g_value_init (&skeleton->priv->properties[0], G_TYPE_DOUBLE);
-}
-
-static gdouble 
-pi_sniffer_skeleton_get_distance_limit (piSniffer *object)
-{
-  piSnifferSkeleton *skeleton = PI_SNIFFER_SKELETON (object);
-  gdouble value;
-  g_mutex_lock (&skeleton->priv->lock);
-  value = g_value_get_double (&(skeleton->priv->properties[0]));
-  g_mutex_unlock (&skeleton->priv->lock);
-  return value;
 }
 
 static void
@@ -1412,12 +1275,6 @@ pi_sniffer_skeleton_class_init (piSnifferSkeletonClass *klass)
 
   gobject_class = G_OBJECT_CLASS (klass);
   gobject_class->finalize = pi_sniffer_skeleton_finalize;
-  gobject_class->get_property = pi_sniffer_skeleton_get_property;
-  gobject_class->set_property = pi_sniffer_skeleton_set_property;
-  gobject_class->notify       = pi_sniffer_skeleton_notify;
-
-
-  pi_sniffer_override_properties (gobject_class, 1);
 
   skeleton_class = G_DBUS_INTERFACE_SKELETON_CLASS (klass);
   skeleton_class->get_info = pi_sniffer_skeleton_dbus_interface_get_info;
@@ -1434,7 +1291,6 @@ static void
 pi_sniffer_skeleton_iface_init (piSnifferIface *iface)
 {
   iface->notification = _pi_sniffer_on_signal_notification;
-  iface->get_distance_limit = pi_sniffer_skeleton_get_distance_limit;
 }
 
 /**

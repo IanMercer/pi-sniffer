@@ -89,4 +89,14 @@ struct OverallState
 };
 
 
+/*
+    Initialize state from environment
+*/
+void initialize_state(struct OverallState* state);
+
+/*
+   Log state
+*/
+void display_state(struct OverallState* state);
+
 #endif
