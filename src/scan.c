@@ -412,7 +412,7 @@ void report_devices_count()
     }
 
 // TEST TEST TEST TEST
-
+/*
     GVariantBuilder *b = g_variant_builder_new(G_VARIANT_TYPE_VARDICT);
     g_variant_builder_add(b, "{sv}", "PeopleClosest", g_variant_new_double(people_closest));
     g_variant_builder_add(b, "{sv}", "PeopleInRange", g_variant_new_double(people_in_range));
@@ -424,8 +424,8 @@ void report_devices_count()
     // no need to ... g_variant_unref(dict);
 
     GError *error = NULL;
-    gboolean ret = g_dbus_connection_emit_signal(conn, 
-        NULL,                           // 
+    gboolean ret = g_dbus_connection_emit_signal(conn,
+        NULL,                           //
         "/com/signswift/sniffer",       // path
         "com.signswift.sniffer",        // interface name
         "People",                       // signal_name
@@ -435,6 +435,7 @@ void report_devices_count()
     {
         print_and_free_error(error);
     }
+*/
 }
 
 /*
@@ -2014,7 +2015,9 @@ int send_notification_tick(void* parameters)
 {
    g_info("Send test notification");
    piSniffer* sniffer = (piSniffer*)parameters;
-   pi_sniffer_emit_notification (sniffer, "{\"json\":\"goes here\"}");
+   if (state.json != NULL) {
+     pi_sniffer_emit_notification (sniffer, state.json);
+   }
    return TRUE;
 }
 
@@ -2147,7 +2150,7 @@ void initialize_state()
         if (strcmp(verbosity, "distances")) state.verbosity = Distances;
         if (strcmp(verbosity, "details")) state.verbosity = Details;
     }
-   
+
     read_configuration_file(state.configuration_file_path, &state.access_points, &state.beacons);
 
     g_debug("Completed read of configuration file");
