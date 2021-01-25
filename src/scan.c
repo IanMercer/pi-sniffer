@@ -2049,7 +2049,7 @@ static gboolean on_handle_settings_request (piSniffer *interface,
     //  "MaxGapSeconds":1440000,
     //  "MinGapSeconds":60,
     //  "BoostForSeconds":0,
-    //  "RoomGroupDto":[
+    //  "RoomGroups":[
     //    {"Name":"Near","Rooms":[{"Name":"Near","Patches":[{"Name":"Near","Observations":[{"ap":"self","d":2.0,"u":1.0}]}]}]},
     //    {"Name":"Medium","Rooms":[{"Name":"Medium","Patches":[{"Name":"Medium","Observations":[{"ap":"self","d":2.0,"u":1.0}]}]}]},
     //    {"Name":"Far","Rooms":[{"Name":"Far","Patches":[{"Name":"Far","Observations":[{"ap":"self","d":2.0,"u":1.0}]}]}]}]}
@@ -2062,33 +2062,89 @@ static gboolean on_handle_settings_request (piSniffer *interface,
     }
 
     cJSON* roomGroups = cJSON_GetObjectItemCaseSensitive(json, "RoomGroups");
-    if (cJSON_IsObject(roomGroups))
+    if (!cJSON_IsArray(roomGroups)){
+        g_warning("Could not parse RoomGroups[]");
+        // non-fatal
+    }
+    else
     {
-        // Read each room group
-        g_info("Setting room groups for locating readings (TODO) - by writing to to files?");
+        cJSON* room_group = NULL;
+        cJSON_ArrayForEach(room_group, roomGroups)
+        {
+            cJSON* room_group_name = cJSON_GetObjectItemCaseSensitive(room_group, "Name");
+            cJSON* rooms = cJSON_GetObjectItemCaseSensitive(room_group, "Rooms");
+            if (cJSON_IsString(room_group_name) && cJSON_IsArray(rooms))
+            {
+                // "Rooms":[{"Name":"Near","Patches":[{"Name":"Near","Observations":[{"ap":"self","d":2.0,"u":1.0}]}]}]
+                g_debug("Room group %s", room_group_name->string);
+
+                cJSON* room = NULL;
+                cJSON_ArrayForEach(room, rooms)
+                {
+                    cJSON* room_name = cJSON_GetObjectItemCaseSensitive(room, "Name");
+                    cJSON* patches = cJSON_GetObjectItemCaseSensitive(room, "Patches");
+                    if (cJSON_IsString(room_name) && cJSON_IsArray(patches))
+                    {
+                        cJSON* patch = NULL;
+                        cJSON_ArrayForEach(patch, patches)
+                        {
+                            cJSON* patch_name = cJSON_GetObjectItemCaseSensitive(patch, "Name");
+                            cJSON* observations = cJSON_GetObjectItemCaseSensitive(room, "Observations");
+
+                            cJSON* observation = NULL;
+                            cJSON_ArrayForEach(observation, observations)
+                            {
+                                cJSON* ap_name = cJSON_GetObjectItemCaseSensitive(patch, "ap");
+                                cJSON* d = cJSON_GetObjectItemCaseSensitive(patch, "d");
+                                cJSON* u = cJSON_GetObjectItemCaseSensitive(patch, "u");
+
+                                if (cJSON_IsString(ap_name) && cJSON_IsNumber(d) && cJSON_IsNumber(u))
+                                {
+                                    g_debug("Room %s Patch %s Observation %s %f %f", room_name->string, patch_name->string, ap_name->string, d->valuedouble, u->valuedouble);
+                                }
+                            }
+                        }
+                    }
+                    // 
+                }
+                // // struct Beacon* beacon = malloc(sizeof(struct Beacon));
+                // // beacon->name = strdup(name->valuestring);
+                // // beacon->mac64 = mac_string_to_int_64(mac->valuestring);
+                // // beacon->alias = strdup(alias->valuestring);
+                // // beacon->last_seen = 0;
+                // // beacon->patch = NULL;
+                // // beacon->next = *beacon_list;
+                // // *beacon_list = beacon;
+                // // //g_warning("Added beacon `%s` = '%s' to list", beacon->name, beacon->alias);
+            }
+            else
+            {
+                g_warning("Missing name or rooms array on room group");
+            }
+        }
     }
 
     cJSON *max_gap_seconds = cJSON_GetObjectItemCaseSensitive(json, "MaxGapSeconds");
     if (cJSON_IsNumber(max_gap_seconds))
     {
-        state->max_gap_seconds = (float)max_gap_seconds->valuedouble;
-        g_info("Set max gap to %f", state->max_gap_seconds);
+        state->max_gap_seconds = max_gap_seconds->valueint;
+        g_info("Set max gap to %i", state->max_gap_seconds);
     }
 
     cJSON *min_gap_seconds = cJSON_GetObjectItemCaseSensitive(json, "MinGapSeconds");
     if (cJSON_IsNumber(min_gap_seconds))
     {
-        state->min_gap_seconds = (float)min_gap_seconds->valuedouble;
-        g_info("Set min gap to %f", state->min_gap_seconds);
+        state->min_gap_seconds = min_gap_seconds->valueint;
+        g_info("Set min gap to %i", state->min_gap_seconds);
     }
 
     cJSON *boost_for_seconds = cJSON_GetObjectItemCaseSensitive(json, "BoostForSeconds");
     if (cJSON_IsNumber(boost_for_seconds))
     {
         // Boost only applies if it's a bump up in time
-        if ((float)boost_for_seconds->valuedouble > state->boost_for_seconds) {
-                state->boost_for_seconds = (float)boost_for_seconds->valuedouble;
-                g_info("Set boost to %f", state->max_gap_seconds);
+        if ((float)boost_for_seconds->valueint > state->boost_for_seconds) {
+                state->boost_for_seconds = boost_for_seconds->valueint;
+                g_info("Set boost to %i", state->max_gap_seconds);
         }
     }
 
