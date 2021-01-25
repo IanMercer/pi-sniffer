@@ -2091,7 +2091,7 @@ static gboolean on_handle_settings_request (piSniffer *interface,
                         cJSON_ArrayForEach(patch, patches)
                         {
                             cJSON* patch_name = cJSON_GetObjectItemCaseSensitive(patch, "Name");
-                            cJSON* observations = cJSON_GetObjectItemCaseSensitive(room, "Observations");
+                            cJSON* observations = cJSON_GetObjectItemCaseSensitive(patch, "Observations");
 
                             if (cJSON_IsString(patch_name) && cJSON_IsArray(observations))
                             {
@@ -2100,9 +2100,9 @@ static gboolean on_handle_settings_request (piSniffer *interface,
                                 cJSON* observation = NULL;
                                 cJSON_ArrayForEach(observation, observations)
                                 {
-                                    cJSON* ap_name = cJSON_GetObjectItemCaseSensitive(patch, "ap");
-                                    cJSON* d = cJSON_GetObjectItemCaseSensitive(patch, "d");
-                                    cJSON* u = cJSON_GetObjectItemCaseSensitive(patch, "u");
+                                    cJSON* ap_name = cJSON_GetObjectItemCaseSensitive(observation, "ap");
+                                    cJSON* d = cJSON_GetObjectItemCaseSensitive(observation, "d");
+                                    cJSON* u = cJSON_GetObjectItemCaseSensitive(observation, "u");
 
                                     if (cJSON_IsString(ap_name) && cJSON_IsNumber(d) && cJSON_IsNumber(u))
                                     {
