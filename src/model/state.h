@@ -86,6 +86,18 @@ struct OverallState
 
    // Latest JSON for sending over DBUS on request
    char* json;
+
+   // minimum gap between sending updates
+   int min_gap_seconds;
+
+   // max gap between sending updates
+   int max_gap_seconds;
+
+   // seconds remaining on boosted sending schedule that ignores min_gap_seconds
+   int boost_for_seconds;
+
+
+
 };
 
 

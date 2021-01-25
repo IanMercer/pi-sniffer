@@ -2018,14 +2018,14 @@ static gboolean on_handle_status_request (piSniffer *interface,
 */
 static gboolean on_handle_settings_request (piSniffer *interface,
                        GDBusMethodInvocation  *invocation,
-                       const gchar            *json,
+                       const gchar            *jsonSettings,
                        gpointer                user_data)
 {
     struct OverallState* state = (struct OverallState*)user_data;
 
     // Update settings from json blob passed in
 
-    g_info("*** %s Received settings update %s", state->local->client_id, json);
+    g_info("*** %s Received settings update %s", state->local->client_id, jsonSettings);
 
     // TODO: Parse JSON
     //   Get thresholds { room/group: goes above, goes below }
@@ -2034,6 +2034,63 @@ static gboolean on_handle_settings_request (piSniffer *interface,
     //   Get patch updates and write them to files?
     //   Get main/sub state for each access point?
     
+    cJSON *json = cJSON_Parse(jsonSettings);
+    if (json == NULL)
+    {
+        const char *error_ptr = cJSON_GetErrorPtr();
+        if (error_ptr != NULL)
+        {
+            g_warning("Error parsing json settings update before: %s", error_ptr);
+        }
+        return TRUE;  // needed to keep running, right?
+    }
+
+    // {"Thresholds":[{"name":"Inside","on":10,"off":5}],
+    //  "MaxGapSeconds":1440000,
+    //  "MinGapSeconds":60,
+    //  "BoostForSeconds":0,
+    //  "RoomGroupDto":[
+    //    {"Name":"Near","Rooms":[{"Name":"Near","Patches":[{"Name":"Near","Observations":[{"ap":"self","d":2.0,"u":1.0}]}]}]},
+    //    {"Name":"Medium","Rooms":[{"Name":"Medium","Patches":[{"Name":"Medium","Observations":[{"ap":"self","d":2.0,"u":1.0}]}]}]},
+    //    {"Name":"Far","Rooms":[{"Name":"Far","Patches":[{"Name":"Far","Observations":[{"ap":"self","d":2.0,"u":1.0}]}]}]}]}
+
+    cJSON* thresholds = cJSON_GetObjectItemCaseSensitive(json, "Thresholds");
+    if (cJSON_IsObject(thresholds))
+    {
+        // Read each threshold, and set it on the state object
+        g_info("Setting threshold object on state (TODO)");
+    }
+
+    cJSON* roomGroups = cJSON_GetObjectItemCaseSensitive(json, "RoomGroups");
+    if (cJSON_IsObject(roomGroups))
+    {
+        // Read each room group
+        g_info("Setting room groups for locating readings (TODO) - by writing to to files?");
+    }
+
+    cJSON *max_gap_seconds = cJSON_GetObjectItemCaseSensitive(json, "MaxGapSeconds");
+    if (cJSON_IsNumber(max_gap_seconds))
+    {
+        state->max_gap_seconds = (float)max_gap_seconds->valuedouble;
+        g_info("Set max gap to %f", state->max_gap_seconds);
+    }
+
+    cJSON *min_gap_seconds = cJSON_GetObjectItemCaseSensitive(json, "MinGapSeconds");
+    if (cJSON_IsNumber(min_gap_seconds))
+    {
+        state->min_gap_seconds = (float)min_gap_seconds->valuedouble;
+        g_info("Set min gap to %f", state->min_gap_seconds);
+    }
+
+    cJSON *boost_for_seconds = cJSON_GetObjectItemCaseSensitive(json, "BoostForSeconds");
+    if (cJSON_IsNumber(boost_for_seconds))
+    {
+        // Boost only applies if it's a bump up in time
+        if ((float)boost_for_seconds->valuedouble > state->boost_for_seconds) {
+                state->boost_for_seconds = (float)boost_for_seconds->valuedouble;
+                g_info("Set boost to %f", state->max_gap_seconds);
+        }
+    }
 
     pi_sniffer_complete_settings(interface, invocation);  // no value to pass back
     return TRUE;
