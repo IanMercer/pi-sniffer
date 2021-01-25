@@ -39,6 +39,10 @@ struct OverallState
    int influx_max_period_seconds;
    // time last sent
    time_t influx_last_sent;
+
+   // time last sent
+   time_t dbus_last_sent;
+
    // server domain name
    char* influx_server;
    int influx_port;

@@ -32,6 +32,10 @@ void initialize_state(struct OverallState* state)
     state->json = NULL;          // DBUS JSON message
     time(&state->influx_last_sent);
     time(&state->webhook_last_sent);
+    time(&state->dbus_last_sent);
+    state->dbus_last_sent = state->dbus_last_sent - 12 * 60 * 60;  // so it fires on startup
+    state->min_gap_seconds = 300;           // min time for DBus message, starts at 5 min
+    state->max_gap_seconds = 12 * 60 * 60;  // twelve hours max
 
     // no devices yet
     state->n = 0;
