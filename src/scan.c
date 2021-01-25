@@ -2076,7 +2076,7 @@ static gboolean on_handle_settings_request (piSniffer *interface,
             if (cJSON_IsString(room_group_name) && cJSON_IsArray(rooms))
             {
                 // "Rooms":[{"Name":"Near","Patches":[{"Name":"Near","Observations":[{"ap":"self","d":2.0,"u":1.0}]}]}]
-                g_debug("Room group %s", room_group_name->string);
+                g_debug("Room group %s", room_group_name->valuestring);
 
                 cJSON* room = NULL;
                 cJSON_ArrayForEach(room, rooms)
@@ -2085,22 +2085,29 @@ static gboolean on_handle_settings_request (piSniffer *interface,
                     cJSON* patches = cJSON_GetObjectItemCaseSensitive(room, "Patches");
                     if (cJSON_IsString(room_name) && cJSON_IsArray(patches))
                     {
+                        g_debug("  Room %s", room_name->valuestring);
+
                         cJSON* patch = NULL;
                         cJSON_ArrayForEach(patch, patches)
                         {
                             cJSON* patch_name = cJSON_GetObjectItemCaseSensitive(patch, "Name");
                             cJSON* observations = cJSON_GetObjectItemCaseSensitive(room, "Observations");
 
-                            cJSON* observation = NULL;
-                            cJSON_ArrayForEach(observation, observations)
+                            if (cJSON_IsString(patch_name) && cJSON_IsArray(observations))
                             {
-                                cJSON* ap_name = cJSON_GetObjectItemCaseSensitive(patch, "ap");
-                                cJSON* d = cJSON_GetObjectItemCaseSensitive(patch, "d");
-                                cJSON* u = cJSON_GetObjectItemCaseSensitive(patch, "u");
+                                g_debug("    Patch %s", patch_name->valuestring);
 
-                                if (cJSON_IsString(ap_name) && cJSON_IsNumber(d) && cJSON_IsNumber(u))
+                                cJSON* observation = NULL;
+                                cJSON_ArrayForEach(observation, observations)
                                 {
-                                    g_debug("Room %s Patch %s Observation %s %f %f", room_name->string, patch_name->string, ap_name->string, d->valuedouble, u->valuedouble);
+                                    cJSON* ap_name = cJSON_GetObjectItemCaseSensitive(patch, "ap");
+                                    cJSON* d = cJSON_GetObjectItemCaseSensitive(patch, "d");
+                                    cJSON* u = cJSON_GetObjectItemCaseSensitive(patch, "u");
+
+                                    if (cJSON_IsString(ap_name) && cJSON_IsNumber(d) && cJSON_IsNumber(u))
+                                    {
+                                        g_debug("      Observation %s %f %f", ap_name->string, d->valuedouble, u->valuedouble);
+                                    }
                                 }
                             }
                         }
