@@ -1748,18 +1748,22 @@ int report_counts(void *parameters)
         bool changed = print_counts_by_closest(&state);
 
         // Send dbus message if changed
-        if (changed)
+        int dbus_seconds = difftime(now, state.dbus_last_sent);
+        if (dbus_seconds > state.max_gap_seconds ||
+            (changed && (dbus_seconds > state.min_gap_seconds)) )
         {
-            g_info("Send DBus notification");
+            g_info("Send DBus notification (%is)", dbus_seconds);
             if (state.json != NULL) 
             {
                 pi_sniffer_emit_notification (state.proxy, state.json);
+                state.dbus_last_sent = now;
             }
         }
 
         int influx_seconds = difftime(now, state.influx_last_sent);
 
-        if (influx_seconds > state.influx_max_period_seconds || (changed && (influx_seconds > state.influx_min_period_seconds)))
+        if (influx_seconds > state.influx_max_period_seconds || 
+            (changed && (influx_seconds > state.influx_min_period_seconds)))
         {
             g_debug("Sending to influx %is since last", influx_seconds);
             state.influx_last_sent = now;
