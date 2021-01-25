@@ -1747,6 +1747,16 @@ int report_counts(void *parameters)
         // Set JSON for all ways to receive it (GET, POST, INFLUX, MQTT)
         bool changed = print_counts_by_closest(&state);
 
+        // Send dbus message if changed
+        if (changed)
+        {
+            g_info("Send DBus notification");
+            if (state.json != NULL) 
+            {
+                pi_sniffer_emit_notification (state.proxy, state.json);
+            }
+        }
+
         int influx_seconds = difftime(now, state.influx_last_sent);
 
         if (influx_seconds > state.influx_max_period_seconds || (changed && (influx_seconds > state.influx_min_period_seconds)))
@@ -1973,21 +1983,6 @@ int try_connect_tick(void *parameters)
 }
 
 
-/*
-* DBus Notification Sender
-*/
-int send_notification_tick(void* parameters)
-{
-   g_info("Send DBus notification");
-   piSniffer* sniffer = (piSniffer*)parameters;
-   if (state.json != NULL) {
-     pi_sniffer_emit_notification (sniffer, state.json);
-   }
-   return TRUE;
-}
-
-
-
 guint prop_changed;
 guint settings_prop_changed;
 guint iface_added;
@@ -2101,8 +2096,8 @@ static gboolean on_handle_settings_request (piSniffer *interface,
                                 cJSON_ArrayForEach(observation, observations)
                                 {
                                     cJSON* ap_name = cJSON_GetObjectItemCaseSensitive(observation, "ap");
-                                    cJSON* d = cJSON_GetObjectItemCaseSensitive(observation, "d");
-                                    cJSON* u = cJSON_GetObjectItemCaseSensitive(observation, "u");
+                                    cJSON* d = cJSON_GetObjectItemCaseSensitive(observation, "d"); // distance
+                                    cJSON* u = cJSON_GetObjectItemCaseSensitive(observation, "u"); // count in recent period
 
                                     if (cJSON_IsString(ap_name) && cJSON_IsNumber(d) && cJSON_IsNumber(u))
                                     {
@@ -2252,6 +2247,8 @@ int main(int argc, char **argv)
     g_debug("calling g_bus_own_name");
 
     piSniffer * sniffer = pi_sniffer_skeleton_new ();
+
+    state.proxy = sniffer;
     
 // TODO: Sample of setting properties (none of these are used now, single JSON blob from remote service)
 //    pi_sniffer_set_distance_limit(sniffer, 7.5);
@@ -2377,7 +2374,7 @@ int main(int argc, char **argv)
     g_timeout_add(300, flash_led, loop);
 
     // Experimental DBus sender
-    g_timeout_add_seconds(30, send_notification_tick, sniffer);
+    //g_timeout_add_seconds(30, send_notification_tick, sniffer);
 
     g_info(" ");
     g_info(" ");

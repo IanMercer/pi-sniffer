@@ -3,6 +3,7 @@
 
 #include "device.h"
 #include <pthread.h>
+#include "sniffer-generated.h"
 
 // Shared device state object (one globally for app, thread safe access needed)
 struct OverallState
@@ -96,8 +97,8 @@ struct OverallState
    // seconds remaining on boosted sending schedule that ignores min_gap_seconds
    int boost_for_seconds;
 
-
-
+   // DBUS proxy
+   piSniffer* proxy;
 };
 
 
