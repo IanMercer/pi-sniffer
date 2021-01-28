@@ -1420,9 +1420,13 @@ const char *company_id_to_string(int company_id, int8_t* category)
 	case 0x6501:
 		*category = CATEGORY_BEACON;
 		return "Milwaukee";
+	case 0x0a01:
+		return "Bose";  // Maybe
     case 0x0399:
         *category = CATEGORY_FIXED;
 		return "Nikon";
+	case 0x8617:
+		return "Undefined";  // Not in any web search
 	default:
 		return NULL;
 	}

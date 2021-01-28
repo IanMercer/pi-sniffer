@@ -185,7 +185,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
    Calculates room scores using access point distances
 */
 void calculate_location(struct OverallState* state, struct ClosestTo* closest, 
-    double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS], float time_score, 
+    double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS], 
     struct top_k* best, bool is_training_beacon)
 {
     (void)accesstimes;
@@ -244,12 +244,13 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
         time_t now = time(0);
         if (difftime(now, closest->time) > 300)
         {
-            g_debug("Old, nearest to '%s' distance: %.2f, age: %.2f", best->patch_name, best->distance, time_score);
+            g_debug("Old '%s' score: %.2f", best->patch_name, best->distance);
             //g_debug("Skip CSV, old data %fs", difftime(now, closest->time));
         }
         else 
         {
-            g_debug("Nearest to '%s' d=%.2f, age %.2f", best->patch_name, best->distance, time_score);
+            //g_debug("'%s' d=%.2f, age %.2f", best->patch_name, best->distance, time_score);
+            g_debug("'%s' score: %.2f", best->patch_name, best->distance);
         }
         return;
     }
@@ -460,7 +461,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         char* category = category_from_int(test->category);
 
-        g_debug("------------------------ %s --- %s ---- %s -----------------", mac, category, test->name);
+        g_debug("--- %s --- %s --- %s", mac, category, test->name);
 
         int earliest = difftime(now, test->earliest);
 
@@ -554,7 +555,7 @@ bool print_counts_by_closest(struct OverallState* state)
         if (score > 0)
         {
             struct top_k best;
-            calculate_location(state, test, access_distances, access_times, score, &best, test->is_training_beacon);
+            calculate_location(state, test, access_distances, access_times, &best, test->is_training_beacon);
 
             // JSON - in a suitable format for copying into a recording
             char *json = NULL;
@@ -706,7 +707,7 @@ bool print_counts_by_closest(struct OverallState* state)
         {
             g_debug("   score %.2f", score);
         }
-        g_debug(" ");
+        //g_debug(" ");
 
     }
 

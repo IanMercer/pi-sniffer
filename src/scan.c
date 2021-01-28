@@ -1752,7 +1752,7 @@ int report_counts(void *parameters)
         if (dbus_seconds > state.max_gap_seconds ||
             (changed && (dbus_seconds > state.min_gap_seconds)) )
         {
-            g_info("Send DBus notification (%is)", dbus_seconds);
+            g_info("Send DBus notification (%is) %s", dbus_seconds, changed?"changed":"unchanged");
             if (state.json != NULL) 
             {
                 pi_sniffer_emit_notification (state.proxy, state.json);
@@ -2026,13 +2026,6 @@ static gboolean on_handle_settings_request (piSniffer *interface,
 
     g_info("*** %s Received settings update %s", state->local->client_id, jsonSettings);
 
-    // TODO: Parse JSON
-    //   Get thresholds { room/group: goes above, goes below }
-    //   Get min-interval for sending updates
-    //   Get max-interval for sending updates
-    //   Get patch updates and write them to files?
-    //   Get main/sub state for each access point?
-    
     cJSON *json = cJSON_Parse(jsonSettings);
     if (json == NULL)
     {

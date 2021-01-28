@@ -106,8 +106,12 @@ void apply_mac_address_heuristics (struct Device* existing)
         set_name(existing, "Vencer", nt_manufacturer);  // Co. Ltd. - BT Headsets but also plant monitors
         soft_set_8(&existing->category, CATEGORY_HEADPHONES);
     }
-
-    else if (string_starts_with(existing->mac, "88:6b:0f"))
+    else if (string_starts_with(existing->mac, "4C:87:5D"))
+    {
+        set_name(existing, "Bose", nt_manufacturer);
+        soft_set_8(&existing->category, CATEGORY_HEADPHONES);
+    }
+    else if (string_starts_with(existing->mac, "88:6b:0f") || string_starts_with(existing->mac, "88:6B:0F"))
     {
         char beaconName[NAME_LENGTH];
         snprintf(beaconName, sizeof(beaconName), "%s %.2x:%.x2:%.2x", "Milwaukee",
