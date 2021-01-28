@@ -5,6 +5,13 @@ This is not without challenges as cell phones randomize their mac address and a 
 
 Using the count of people present you can power displays that warn people when it's too crowded. This capability can be used to reduce crowding to help prevent the spread of COVID-19. It also gives people confidence that the store, restroom, railway carriage or other enclosed space they are about to enter is not crowded, helping us all feel confident again going about our daily lives.
 
+<blockquote>
+NOTE: A major revision is in the works splitting all code concerned with sending data to MQTT / WebHooks / Azure IoT etc.
+into separate services communicating over DBUS to the main 'sniffer' service. The DBUS interface definition can be found
+in `src/dbus`. This will allow other languages (Python, Rust, ...) to be used more easily to consume the person data
+produced by this service.
+</blockquote>
+
 The code here recently won first place in the global [BetterHealth Hackathon](https://tinyurl.com/crowdalert) organized by HCL and Microsoft. 
 
 But this system isn't limited to crowding signs. You can use the data it collects in many other ways: as an input to a smart home controlling lighting and heating based on how many people are home and which areas of the home are occupied, or as a feed to a marketing analysis system, ...
