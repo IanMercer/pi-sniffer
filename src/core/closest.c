@@ -779,7 +779,7 @@ bool print_counts_by_closest(struct OverallState* state)
             // TODO: Proper seconds from time_t calculation
             //struct tm *tm = localtime (&b->last_seen);
             int minutes = b->last_seen == 0 ? 1 : (b->last_seen) / 60;
-            beacon_hash = beacon_hash * 37 + ((uint64_t)(b->patch) & 0x7fffffff) + minutes;
+            beacon_hash = beacon_hash * 37 + (((intptr_t)b->patch) & 0x7fffffff) + minutes;
         }
 
         if (state->beacon_hash != beacon_hash)
