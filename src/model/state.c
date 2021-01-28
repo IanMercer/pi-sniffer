@@ -29,6 +29,7 @@ void initialize_state(struct OverallState* state)
     state->closest_n = 0;        // count of closest
     state->patch_hash = 0;       // hash to detect changes
     state->beacons = NULL;       // linked list
+    state->beacon_hash = 0;      // initial unseen hash
     state->json = NULL;          // DBUS JSON message
     time(&state->influx_last_sent);
     time(&state->webhook_last_sent);

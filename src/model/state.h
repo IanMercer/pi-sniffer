@@ -89,6 +89,9 @@ struct OverallState
    // linked list of beacons
    struct Beacon* beacons;
 
+   // beacon hash on room changes only for sending
+   uint32_t beacon_hash;
+
    // Latest JSON for sending over DBUS on request
    char* json;
 
