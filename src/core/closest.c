@@ -10,6 +10,7 @@
 #include <glib.h>
 #include <sys/types.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include <time.h>
 #include <math.h>
@@ -771,40 +772,47 @@ bool print_counts_by_closest(struct OverallState* state)
 
     if (state->beacons != NULL)
     {
+        // First compute a hash, see if it's changed
+        uint32_t beacon_hash = 0;
+        for (struct Beacon* b = state->beacons; b != NULL; b=b->next)
+        {
+            beacon_hash = beacon_hash * 37 + ((uint64_t)(b->patch) & 0x7fffffff);
+        }
+
+
       g_info(" ");
       g_info("==============================================================================================");
 
       g_info ("              Beacon               Patch        Room            Group        When");
       g_info("----------------------------------------------------------------------------------------------");
+      g_info("Hash %i", beacon_hash);
       for (struct Beacon* b = state->beacons; b != NULL; b=b->next)
       {
-          {
-              char ago[20];
-              double diff = b->last_seen == 0 ? -1 : difftime(now, b->last_seen) / 60.0;
-              if (diff < 2) snprintf(ago, sizeof(ago), "now");
-              else if (diff < 60) snprintf(ago, sizeof(ago), "%.0f min ago", diff);
-              else if (diff < 24*60) snprintf(ago, sizeof(ago), "%.1f hours ago", diff / 60.0);
-              else snprintf(ago, sizeof(ago), "%.1f days ago", diff / 24.0 / 60.0);
+        char ago[20];
+        double diff = b->last_seen == 0 ? -1 : difftime(now, b->last_seen) / 60.0;
+        if (diff < 2) snprintf(ago, sizeof(ago), "now");
+        else if (diff < 60) snprintf(ago, sizeof(ago), "%.0f min ago", diff);
+        else if (diff < 24*60) snprintf(ago, sizeof(ago), "%.1f hours ago", diff / 60.0);
+        else snprintf(ago, sizeof(ago), "%.1f days ago", diff / 24.0 / 60.0);
 
-              const char* patch_name =  (b->patch == NULL) ? "---" : b->patch->name;
-              const char* room_name = (b->patch == NULL) ? "---" : b->patch->room;
-              const char* category = (b->patch == NULL) ? "---" : ((b->patch->group == NULL) ? "???" : b->patch->group->name);
+        const char* patch_name =  (b->patch == NULL) ? "---" : b->patch->name;
+        const char* room_name = (b->patch == NULL) ? "---" : b->patch->room;
+        const char* category = (b->patch == NULL) ? "---" : ((b->patch->group == NULL) ? "???" : b->patch->group->name);
 
-              g_info("%20s %18s %18s %16s      %s",
-                  b->alias, patch_name, room_name, 
-                  category,
-                  ago);
-            
-              cJSON* item = cJSON_CreateObject();
-              cJSON_AddStringToObject(item, "name", b->alias);
-              cJSON_AddStringToObject(item, "room", room_name);
-              cJSON_AddStringToObject(item, "group", category);
-              cJSON_AddStringToObject(item, "ago", ago);
-              cJSON_AddNumberToObject(item, "t", b->last_seen);
-              cJSON_AddRounded(item, "d", diff);
+        g_info("%20s %18s %18s %16s      %s",
+            b->alias, patch_name, room_name, 
+            category,
+            ago);
+    
+        cJSON* item = cJSON_CreateObject();
+        cJSON_AddStringToObject(item, "name", b->alias);
+        cJSON_AddStringToObject(item, "room", room_name);
+        cJSON_AddStringToObject(item, "group", category);
+        cJSON_AddStringToObject(item, "ago", ago);
+        cJSON_AddNumberToObject(item, "t", b->last_seen);
+        cJSON_AddRounded(item, "d", diff);
 
-              cJSON_AddItemToArray(jbeacons, item);
-          }
+        cJSON_AddItemToArray(jbeacons, item);
       }
 
       g_info(" ");
