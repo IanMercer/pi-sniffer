@@ -720,7 +720,10 @@ bool print_counts_by_closest(struct OverallState* state)
         }
         else
         {
-            g_debug("   score %.2f", score);
+            if (loggingOn) 
+            {
+              g_debug("   score %.2f", score);
+            }
         }
         //g_debug(" ");
 
