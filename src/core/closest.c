@@ -582,7 +582,7 @@ bool print_counts_by_closest(struct OverallState* state)
             json = cJSON_PrintUnformatted(jobject);
             cJSON_Delete(jobject);
             // Summary of access distances
-            g_debug("%s", json);
+            g_debug("%s %.1f min", json, earliest/60.0);
             free(json);
 
             // Several observations, some have it superseded, some don't either because they know it
