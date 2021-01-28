@@ -186,7 +186,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
 */
 void calculate_location(struct OverallState* state, struct ClosestTo* closest, 
     double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS], 
-    struct top_k* best, bool is_training_beacon)
+    struct top_k* best, bool is_training_beacon, bool loggingOn)
 {
     (void)accesstimes;
 
@@ -241,18 +241,21 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
             strncpy(best->patch_name, patch->name, META_LENGTH);
         }
 
-        time_t now = time(0);
-        if (difftime(now, closest->time) > 300)
+        if (loggingOn)
         {
-            g_debug("Old '%s' score: %.2f", best->patch_name, best->distance);
-            //g_debug("Skip CSV, old data %fs", difftime(now, closest->time));
+            time_t now = time(0);
+            if (difftime(now, closest->time) > 300)
+            {
+                g_debug("Old '%s' score: %.2f", best->patch_name, best->distance);
+                //g_debug("Skip CSV, old data %fs", difftime(now, closest->time));
+            }
+            else 
+            {
+                //g_debug("'%s' d=%.2f, age %.2f", best->patch_name, best->distance, time_score);
+                g_debug("'%s' score: %.2f", best->patch_name, best->distance);
+            }
+            return;
         }
-        else 
-        {
-            //g_debug("'%s' d=%.2f, age %.2f", best->patch_name, best->distance, time_score);
-            g_debug("'%s' score: %.2f", best->patch_name, best->distance);
-        }
-        return;
     }
 
     // Try again including unconfirmed recordings (beacon subdirectory)
@@ -565,7 +568,7 @@ bool print_counts_by_closest(struct OverallState* state)
         if (score > 0)
         {
             struct top_k best;
-            calculate_location(state, test, access_distances, access_times, &best, test->is_training_beacon);
+            calculate_location(state, test, access_distances, access_times, &best, test->is_training_beacon, loggingOn);
 
             // JSON - in a suitable format for copying into a recording
             char *json = NULL;
