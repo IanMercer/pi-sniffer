@@ -37,6 +37,8 @@ void initialize_state(struct OverallState* state)
     state->min_gap_seconds = 300;           // min time for DBus message, starts at 5 min
     state->max_gap_seconds = 12 * 60 * 60;  // twelve hours max
 
+    time(&state->last_summary);  // When last summary was generated
+
     // no devices yet
     state->n = 0;
 

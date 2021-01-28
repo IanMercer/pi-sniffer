@@ -103,6 +103,9 @@ struct OverallState
 
    // DBUS proxy
    piSniffer* proxy;
+
+   // when the last summary of closest was run (to reduce logging)
+   time_t last_summary;
 };
 
 

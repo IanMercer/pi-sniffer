@@ -11,12 +11,12 @@ CC = gcc -g
 
 CFLAGS = -Wall -Wextra -g `pkg-config --cflags glib-2.0 gio-2.0 gio-unix-2.0` -Isrc -Isrc/model -Isrc/dbus -Isrc/bluetooth -Isrc/core
 
-LIBS = -lm `pkg-config --libs glib-2.0 gio-2.0 gio-unix-2.0`
+LIBS = -lm `pkg-config --libs glib-2.0 gio-2.0 gio-unix-2.0` -L./lib -ldbus -lbt -lmodel
 
-DEPS = Makefile src/model/*.h src/core/*.h src/bluetooth/*.h src/dbus/*.h
-SRC = src/core/*.c src/model/*.c src/bluetooth/*.c src/dbus/*.c
+DEPS = Makefile src/model/*.h src/core/*.h lib/libdbus.a lib/libbt.a lib/libmodel.a
+SRC = src/core/*.c
 MQTTSRC = src/mqtt.c src/udp.c src/mqtt_send.c src/influx.c src/core/*.c src/model/*.c src/dbus/*.c
-CGIJSON = src/cgijson.c src/dbus/sniffer-generated.c
+CGIJSON = src/cgijson.c
 
 ARCH := $(shell uname -m)
 
@@ -28,10 +28,52 @@ ARCH := $(shell uname -m)
 
 # TODO: Compile dbus to a library without warnings for unused parameters
 
+all: scan report cgijson ./lib/libdbus.a ./lib/libbt.a ./lib/libmodel.a
+
+# DBUS
+DBUS_SRC := src/dbus
+DBUS_OBJ := obj/dbus
+DBUS_SOURCES := $(wildcard $(DBUS_SRC)/*.c)
+DBUS_OBJECTS := $(patsubst $(DBUS_SRC)/%.c, $(DBUS_OBJ)/%.o, $(DBUS_SOURCES))
+
+$(DBUS_OBJ)/%.o: $(DBUS_SRC)/%.c
+	@mkdir -p $(@D)
+	$(CC) -I$(DBUS_SRC) $(CFLAGS) $(LIBS) -c $< -o $@
+
+./lib/libdbus.a : $(DBUS_OBJECTS)
+	@mkdir -p $(@D)
+	ar rcs $@ $(DBUS_OBJECTS)
 
 
-all: scan report cgijson
+# BLUETOOTH
+BT_SRC := src/bluetooth
+BT_OBJ := obj/bluetooth
+BT_SOURCES := $(wildcard $(BT_SRC)/*.c)
+BT_OBJECTS := $(patsubst $(BT_SRC)/%.c, $(BT_OBJ)/%.o, $(BT_SOURCES))
 
+$(BT_OBJ)/%.o: $(BT_SRC)/%.c
+	@mkdir -p $(@D)
+	$(CC) -I$(BT_SRC) $(CFLAGS) $(LIBS) -c $< -o $@
+
+./lib/libbt.a : $(BT_OBJECTS)
+	@mkdir -p $(@D)
+	ar rcs $@ $(BT_OBJECTS)
+
+# MODEL
+MODEL_SRC := src/model
+MODEL_OBJ := obj/model
+MODEL_SOURCES := $(wildcard $(MODEL_SRC)/*.c)
+MODEL_OBJECTS := $(patsubst $(MODEL_SRC)/%.c, $(MODEL_OBJ)/%.o, $(MODEL_SOURCES))
+
+$(MODEL_OBJ)/%.o: $(MODEL_SRC)/%.c
+	@mkdir -p $(@D)
+	$(CC) -I$(MODEL_SRC) $(CFLAGS) $(LIBS) -c $< -o $@
+
+./lib/libmodel.a : $(MODEL_OBJECTS)
+	@mkdir -p $(@D)
+	ar rcs $@ $(MODEL_OBJECTS)
+
+# MAIN
 scan: src/*.c $(SRC) $(DEPS)
 	gcc -o scan src/scan.c $(SRC) $(CFLAGS) $(LIBS)
 	#tar -czvf sniffer-1.0.tar.gz ./src
