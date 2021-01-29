@@ -21,7 +21,7 @@ struct group* get_or_add_group(struct group** group_list, const char* group_name
     url_slug(group_name_m);  // destructive
 
     char* tags_m = strdup(tags);
-    url_slug(tags_m);       // destructive
+    // tags should not be slugged, it contains = and ,
 
     for (struct group* current = *group_list; current != NULL; current = current->next)
     {

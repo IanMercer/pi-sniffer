@@ -846,8 +846,6 @@ bool print_counts_by_closest(struct OverallState* state)
     }
     state->json = json_rooms;
 
-    g_info("%s", json_groups);
-
     //g_info("Summary by room: %s", json_rooms);
     //g_info(" ");
     g_info("Total %.2f people: %s", total_count, json_groups);
