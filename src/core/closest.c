@@ -827,6 +827,9 @@ bool print_counts_by_closest(struct OverallState* state)
         }
     }
 
+    // debug
+    char* json_groups = cJSON_PrintUnformatted(jzones);
+
     // Add metadata for the sign to consume (so that signage can be adjusted remotely)
     cJSON* sign_meta = cJSON_AddObjectToObject(jobject, "signage");
     // TODO: More levels etc. settable remotely
@@ -843,12 +846,15 @@ bool print_counts_by_closest(struct OverallState* state)
     }
     state->json = json_rooms;
 
+    g_info("%s", json_groups);
+
     //g_info("Summary by room: %s", json_rooms);
     //g_info(" ");
-    g_info("Total people present %.2f", total_count);
+    g_info("Total %.2f people: %s", total_count, json_groups);
     //g_info("%s ", json_rooms);
     g_info(" ");
 
+    free(json_groups); // string listing each group and count
 
     // Compute a hash to see if changes have happened (does not have to be perfect, we will send every n minutes regardless)
     // Round to nearest quarter, or 0.1 for phones
