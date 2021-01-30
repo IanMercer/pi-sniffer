@@ -762,7 +762,9 @@ bool print_counts_by_closest(struct OverallState* state)
         }
         g_variant_builder_close (&builder_groups);
     }
+    GVariant* output_groups =  g_variant_builder_end(&builder_groups);
 
+    g_debug("Create rooms gvariant");
     // Rooms
     {
         g_variant_builder_open (&builder_rooms, G_VARIANT_TYPE ("aa{sv}"));
@@ -776,13 +778,15 @@ bool print_counts_by_closest(struct OverallState* state)
         }
         g_variant_builder_close (&builder_rooms);
     }
+    GVariant* output_rooms =  g_variant_builder_end(&builder_rooms);
 
+    g_debug("Create beacons gvariant");
     // Beacons
     {
-        g_variant_builder_open (&builder_assets, G_VARIANT_TYPE ("a{sv}"));
+        g_variant_builder_open (&builder_assets, G_VARIANT_TYPE ("aa{sv}"));
         // loop on beacons
         {
-            g_variant_builder_open (&builder_assets, G_VARIANT_TYPE ("{sv}"));
+            g_variant_builder_open (&builder_assets, G_VARIANT_TYPE ("a{sv}"));
             add_key_value_string(&builder_assets, "name", "name");
             add_key_value_string(&builder_assets, "room", "room");
             add_key_value_string(&builder_assets, "group", "group");
@@ -795,12 +799,11 @@ bool print_counts_by_closest(struct OverallState* state)
         }
         g_variant_builder_close (&builder_assets);
     }
+    GVariant* output_assets =  g_variant_builder_end(&builder_assets);
 
+    g_debug("Create signage gvariant");
     g_variant_builder_add (&builder_signage, "s", "signagestring");
 
-    GVariant* output_groups =  g_variant_builder_end(&builder_groups);
-    GVariant* output_rooms =  g_variant_builder_end(&builder_rooms);
-    GVariant* output_assets =  g_variant_builder_end(&builder_assets);
     GVariant* output_signage =  g_variant_builder_end(&builder_signage);
 
     char *json_complete = NULL;
