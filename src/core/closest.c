@@ -8,6 +8,8 @@
 #include <string.h>
 #include <stdbool.h>
 #include <glib.h>
+#include <json-glib/json-glib.h>
+
 #include <sys/types.h>
 #include <stdio.h>
 #include <inttypes.h>
@@ -942,10 +944,16 @@ bool print_counts_by_closest(struct OverallState* state)
 
 
     // deal with output
-    pretty_print2("Groups", output_groups, true);
-    pretty_print2("Rooms", output_rooms, true);
-    pretty_print2("Assets", output_assets, true);
-    pretty_print2("Signage", output_signage, true);
+
+    gchar* groups_json = json_gvariant_serialize_data (output_groups, NULL);
+    gchar* rooms_json = json_gvariant_serialize_data (output_groups, NULL);
+    gchar* assets_json = json_gvariant_serialize_data (output_groups, NULL);
+    gchar* signage_json = json_gvariant_serialize_data (output_groups, NULL);
+
+    g_info("Groups: %s", groups_json);
+    g_info("Rooms: %s", rooms_json);
+    g_info("Assets: %s", assets_json);
+    g_info("Signage: %s", signage_json);
 
     // release the (floating) reference to output because it wasn't used elsewhere
     g_variant_unref(output_groups);
@@ -953,7 +961,10 @@ bool print_counts_by_closest(struct OverallState* state)
     g_variant_unref(output_assets);
     g_variant_unref(output_signage);
 
-
+    g_free(groups_json);
+    g_free(rooms_json);
+    g_free(assets_json);
+    g_free(signage_json);
 
     // Compute a hash to see if changes have happened (does not have to be perfect, we will send every n minutes regardless)
     // Round to nearest quarter, or 0.1 for phones

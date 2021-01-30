@@ -9,9 +9,11 @@ CC = gcc -g
 # for MQTT make scanwithmqtt
 # You will need to download and build MQTT Paho for this
 
-CFLAGS = -Wall -Wextra -g `pkg-config --cflags glib-2.0 gio-2.0 gio-unix-2.0` -Isrc -Isrc/model -Isrc/dbus -Isrc/bluetooth -Isrc/core
+# New dependency: sudo apt-get install libjson-glib-dev
 
-LIBS = -lm `pkg-config --libs glib-2.0 gio-2.0 gio-unix-2.0` -L./lib -ldbus -lbt -lmodel
+CFLAGS = -Wall -Wextra -g `pkg-config --cflags glib-2.0 gio-2.0 gio-unix-2.0 json-glib-1.0` -Isrc -Isrc/model -Isrc/dbus -Isrc/bluetooth -Isrc/core
+
+LIBS = -lm `pkg-config --libs glib-2.0 gio-2.0 gio-unix-2.0 json-glib-1.0` -L./lib -ldbus -lbt -lmodel
 
 DEPS = Makefile src/model/*.h src/core/*.h lib/libdbus.a lib/libbt.a lib/libmodel.a
 SRC = src/core/*.c
