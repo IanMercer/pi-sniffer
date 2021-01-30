@@ -627,7 +627,7 @@ void add_key_value_string(GVariantBuilder* builder, const char* key, const char*
 {
     g_variant_builder_open (builder, G_VARIANT_TYPE ("{sv}"));
     g_variant_builder_add (builder, "s", key);
-    g_variant_builder_add (builder, "s", value);
+    g_variant_builder_add (builder, "v", value);
     g_variant_builder_close (builder);
 }
 
@@ -638,7 +638,7 @@ void add_key_value_int(GVariantBuilder* builder, const char* key, int value)
 {
     g_variant_builder_open (builder, G_VARIANT_TYPE ("{sv}"));
     g_variant_builder_add (builder, "s", key);
-    g_variant_builder_add (builder, "i", value);
+    g_variant_builder_add (builder, "v", value);
     g_variant_builder_close (builder);
 }
 
@@ -649,7 +649,7 @@ void add_key_value_datetime(GVariantBuilder* builder, const char* key, time_t va
 {
     g_variant_builder_open (builder, G_VARIANT_TYPE ("{sv}"));
     g_variant_builder_add (builder, "s", key);
-    g_variant_builder_add (builder, "t", value);
+    g_variant_builder_add (builder, "v", value);
     g_variant_builder_close (builder);
 }
 
@@ -660,7 +660,7 @@ void add_key_value_double(GVariantBuilder* builder, const char* key, double valu
 {
     g_variant_builder_open (builder, G_VARIANT_TYPE ("{sv}"));
     g_variant_builder_add (builder, "s", key);
-    g_variant_builder_add (builder, "d", value);
+    g_variant_builder_add (builder, "v", value);
     g_variant_builder_close (builder);
 }
 
