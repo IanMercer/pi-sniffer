@@ -735,77 +735,77 @@ bool print_counts_by_closest(struct OverallState* state)
 
     }
 
-    GVariantBuilder builder_groups;
-    GVariantBuilder builder_rooms;
-    GVariantBuilder builder_assets;
-    GVariantBuilder builder_signage;
+    // GVariantBuilder builder_groups;
+    // GVariantBuilder builder_rooms;
+    // GVariantBuilder builder_assets;
+    // GVariantBuilder builder_signage;
 
-    g_variant_builder_init (&builder_groups, G_VARIANT_TYPE_ARRAY);
-    g_variant_builder_init (&builder_rooms, G_VARIANT_TYPE_ARRAY); 
-    g_variant_builder_init (&builder_assets, G_VARIANT_TYPE_ARRAY); 
-    g_variant_builder_init (&builder_signage, G_VARIANT_TYPE_ARRAY);
+    // g_variant_builder_init (&builder_groups, G_VARIANT_TYPE_ARRAY);
+    // g_variant_builder_init (&builder_rooms, G_VARIANT_TYPE_ARRAY); 
+    // g_variant_builder_init (&builder_assets, G_VARIANT_TYPE_ARRAY); 
+    // g_variant_builder_init (&builder_signage, "s");
 
     // gchar buf[3];
     // sprintf (buf, "%d", i);
     // g_variant_builder_add (&builder, "{is}", i, buf);
 
-    g_debug("Create groups gvariant");
-    // Groups
-    {
-        g_variant_builder_open (&builder_groups, G_VARIANT_TYPE ("aa(sv}"));
-        // loop on groups
-        {
-            g_variant_builder_open (&builder_groups, G_VARIANT_TYPE ("a{sv}"));
-            add_key_value_string(&builder_groups, "name","group name");
-            add_key_value_string(&builder_groups, "tags","tags");
-            add_summary(&builder_groups, 1, 1, 1, 1, 1, 1, 1, 1);
-            g_variant_builder_close (&builder_groups);
-        }
-        g_variant_builder_close (&builder_groups);
-    }
-    GVariant* output_groups =  g_variant_builder_end(&builder_groups);
+    // g_debug("Create groups gvariant");
+    // // Groups
+    // {
+    //     g_variant_builder_open (&builder_groups, G_VARIANT_TYPE ("aa(sv}"));
+    //     // loop on groups
+    //     {
+    //         g_variant_builder_open (&builder_groups, G_VARIANT_TYPE ("a{sv}"));
+    //         add_key_value_string(&builder_groups, "name","group name");
+    //         add_key_value_string(&builder_groups, "tags","tags");
+    //         add_summary(&builder_groups, 1, 1, 1, 1, 1, 1, 1, 1);
+    //         g_variant_builder_close (&builder_groups);
+    //     }
+    //     g_variant_builder_close (&builder_groups);
+    // }
+    // GVariant* output_groups =  g_variant_builder_end(&builder_groups);
 
-    g_debug("Create rooms gvariant");
-    // Rooms
-    {
-        g_variant_builder_open (&builder_rooms, G_VARIANT_TYPE ("aa{sv}"));
-        // loop on groups
-        {
-            g_variant_builder_open (&builder_rooms, G_VARIANT_TYPE ("a{sv}"));
-            add_key_value_string(&builder_rooms, "room","room name");
-            add_key_value_string(&builder_rooms, "group","group name");
-            add_summary(&builder_rooms, 1, 1, 1, 1, 1, 1, 1, 1);
-            g_variant_builder_close (&builder_rooms);
-        }
-        g_variant_builder_close (&builder_rooms);
-    }
-    GVariant* output_rooms =  g_variant_builder_end(&builder_rooms);
+    // g_debug("Create rooms gvariant");
+    // // Rooms
+    // {
+    //     g_variant_builder_open (&builder_rooms, G_VARIANT_TYPE ("aa{sv}"));
+    //     // loop on groups
+    //     {
+    //         g_variant_builder_open (&builder_rooms, G_VARIANT_TYPE ("a{sv}"));
+    //         add_key_value_string(&builder_rooms, "room","room name");
+    //         add_key_value_string(&builder_rooms, "group","group name");
+    //         add_summary(&builder_rooms, 1, 1, 1, 1, 1, 1, 1, 1);
+    //         g_variant_builder_close (&builder_rooms);
+    //     }
+    //     g_variant_builder_close (&builder_rooms);
+    // }
+    // GVariant* output_rooms =  g_variant_builder_end(&builder_rooms);
 
-    g_debug("Create beacons gvariant");
-    // Beacons
-    {
-        g_variant_builder_open (&builder_assets, G_VARIANT_TYPE ("aa{sv}"));
-        // loop on beacons
-        {
-            g_variant_builder_open (&builder_assets, G_VARIANT_TYPE ("a{sv}"));
-            add_key_value_string(&builder_assets, "name", "name");
-            add_key_value_string(&builder_assets, "room", "room");
-            add_key_value_string(&builder_assets, "group", "group");
-            add_key_value_string(&builder_assets, "ago", "10 min ago");
-            add_key_value_string(&builder_assets, "t", "10 min ago");
-            add_key_value_string(&builder_assets, "d", "10 min ago");
-            add_key_value_datetime(&builder_assets, "t", now);       // last_seen
-            add_key_value_double(&builder_assets, "d", 12.4);      // diff in minutes
-            g_variant_builder_close (&builder_assets);
-        }
-        g_variant_builder_close (&builder_assets);
-    }
-    GVariant* output_assets =  g_variant_builder_end(&builder_assets);
+    // g_debug("Create beacons gvariant");
+    // // Beacons
+    // {
+    //     g_variant_builder_open (&builder_assets, G_VARIANT_TYPE ("aa{sv}"));
+    //     // loop on beacons
+    //     {
+    //         g_variant_builder_open (&builder_assets, G_VARIANT_TYPE ("a{sv}"));
+    //         add_key_value_string(&builder_assets, "name", "name");
+    //         add_key_value_string(&builder_assets, "room", "room");
+    //         add_key_value_string(&builder_assets, "group", "group");
+    //         add_key_value_string(&builder_assets, "ago", "10 min ago");
+    //         add_key_value_string(&builder_assets, "t", "10 min ago");
+    //         add_key_value_string(&builder_assets, "d", "10 min ago");
+    //         add_key_value_datetime(&builder_assets, "t", now);       // last_seen
+    //         add_key_value_double(&builder_assets, "d", 12.4);      // diff in minutes
+    //         g_variant_builder_close (&builder_assets);
+    //     }
+    //     g_variant_builder_close (&builder_assets);
+    // }
+    // GVariant* output_assets =  g_variant_builder_end(&builder_assets);
 
-    g_debug("Create signage gvariant");
-    g_variant_builder_add (&builder_signage, "s", "signagestring");
+    // g_debug("Create signage gvariant");
+    // g_variant_builder_add (&builder_signage, "s", "signagestring");
 
-    GVariant* output_signage =  g_variant_builder_end(&builder_signage);
+    // GVariant* output_signage =  g_variant_builder_end(&builder_signage);
 
     char *json_complete = NULL;
     cJSON *jobject = cJSON_CreateObject();
@@ -949,26 +949,26 @@ bool print_counts_by_closest(struct OverallState* state)
 
     // deal with output
 
-    gchar* groups_json = json_gvariant_serialize_data (output_groups, NULL);
-    gchar* rooms_json = json_gvariant_serialize_data (output_groups, NULL);
-    gchar* assets_json = json_gvariant_serialize_data (output_groups, NULL);
-    gchar* signage_json = json_gvariant_serialize_data (output_groups, NULL);
+    // gchar* groups_json = json_gvariant_serialize_data (output_groups, NULL);
+    // gchar* rooms_json = json_gvariant_serialize_data (output_groups, NULL);
+    // gchar* assets_json = json_gvariant_serialize_data (output_groups, NULL);
+    // gchar* signage_json = json_gvariant_serialize_data (output_groups, NULL);
 
-    g_info("Groups: %s", groups_json);
-    g_info("Rooms: %s", rooms_json);
-    g_info("Assets: %s", assets_json);
-    g_info("Signage: %s", signage_json);
+    // g_info("Groups: %s", groups_json);
+    // g_info("Rooms: %s", rooms_json);
+    // g_info("Assets: %s", assets_json);
+    // g_info("Signage: %s", signage_json);
 
-    // release the (floating) reference to output because it wasn't used elsewhere
-    g_variant_unref(output_groups);
-    g_variant_unref(output_rooms);
-    g_variant_unref(output_assets);
-    g_variant_unref(output_signage);
+    // // release the (floating) reference to output because it wasn't used elsewhere
+    // g_variant_unref(output_groups);
+    // g_variant_unref(output_rooms);
+    // g_variant_unref(output_assets);
+    // g_variant_unref(output_signage);
 
-    g_free(groups_json);
-    g_free(rooms_json);
-    g_free(assets_json);
-    g_free(signage_json);
+    // g_free(groups_json);
+    // g_free(rooms_json);
+    // g_free(assets_json);
+    // g_free(signage_json);
 
     // Compute a hash to see if changes have happened (does not have to be perfect, we will send every n minutes regardless)
     // Round to nearest quarter, or 0.1 for phones
