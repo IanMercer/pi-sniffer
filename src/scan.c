@@ -1772,7 +1772,9 @@ int report_counts(void *parameters)
 
         int webhook_seconds = difftime(now, state.webhook_last_sent);
 
-        if (webhook_seconds > state.webhook_max_period_seconds || (changed && (webhook_seconds > state.webhook_min_period_seconds)))
+        if (webhook_is_configured() &&
+            (webhook_seconds > state.webhook_max_period_seconds || 
+            (changed && (webhook_seconds > state.webhook_min_period_seconds))))
         {
             g_debug("Sending to webhook %is since last", webhook_seconds);
             state.webhook_last_sent = now;
@@ -1849,10 +1851,9 @@ int dump_all_devices_tick(void *parameters)
     else
         g_info("People %.2f (%.2f in range) Uptime: %02i:%02i %s%s", people_closest, people_in_range, hours, minutes, connected, m_state);
 
-
     // Bluez eventually seems to stop sending us data, so for now, just restart every few hours
     struct tm *local_time = localtime( &now );
-    g_debug("Current local time and date: %s", asctime(local_time));
+    //g_debug("Current local time and date: %s", asctime(local_time));
 
     if ((state.reboot_hour) > 0 &&                   // reboot hour is set
         (total_minutes > 60L) &&                     // and we didn't already reboot in this hour

@@ -31,6 +31,7 @@ struct OverallState
    char *mqtt_server;
    char *mqtt_username;
    char *mqtt_password;
+
    enum Verbosity verbosity;
 
    // No less than this many seconds between sends
@@ -94,6 +95,9 @@ struct OverallState
 
    // Latest JSON for sending over DBUS on request
    char* json;
+
+   // Latest GVariant stuctured output
+   GVariant* output;
 
    // minimum gap between sending updates
    int min_gap_seconds;

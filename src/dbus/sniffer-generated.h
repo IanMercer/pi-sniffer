@@ -44,6 +44,13 @@ struct _piSnifferIface
     piSniffer *object,
     const gchar *arg_json);
 
+  void (*notification2) (
+    piSniffer *object,
+    GVariant *arg_groups,
+    GVariant *arg_rooms,
+    GVariant *arg_assets,
+    const gchar *arg_signage);
+
 };
 
 GType pi_sniffer_get_type (void) G_GNUC_CONST;
@@ -68,6 +75,13 @@ void pi_sniffer_complete_settings (
 void pi_sniffer_emit_notification (
     piSniffer *object,
     const gchar *arg_json);
+
+void pi_sniffer_emit_notification2 (
+    piSniffer *object,
+    GVariant *arg_groups,
+    GVariant *arg_rooms,
+    GVariant *arg_assets,
+    const gchar *arg_signage);
 
 
 

@@ -261,9 +261,74 @@ static const _ExtendedGDBusSignalInfo _pi_sniffer_signal_info_notification =
   "notification"
 };
 
+static const _ExtendedGDBusArgInfo _pi_sniffer_signal_info_notification2_ARG_groups =
+{
+  {
+    -1,
+    (gchar *) "groups",
+    (gchar *) "aa{sv}",
+    NULL
+  },
+  FALSE
+};
+
+static const _ExtendedGDBusArgInfo _pi_sniffer_signal_info_notification2_ARG_rooms =
+{
+  {
+    -1,
+    (gchar *) "rooms",
+    (gchar *) "aa{sv}",
+    NULL
+  },
+  FALSE
+};
+
+static const _ExtendedGDBusArgInfo _pi_sniffer_signal_info_notification2_ARG_assets =
+{
+  {
+    -1,
+    (gchar *) "assets",
+    (gchar *) "aa{sv}",
+    NULL
+  },
+  FALSE
+};
+
+static const _ExtendedGDBusArgInfo _pi_sniffer_signal_info_notification2_ARG_signage =
+{
+  {
+    -1,
+    (gchar *) "signage",
+    (gchar *) "s",
+    NULL
+  },
+  FALSE
+};
+
+static const GDBusArgInfo * const _pi_sniffer_signal_info_notification2_ARG_pointers[] =
+{
+  &_pi_sniffer_signal_info_notification2_ARG_groups.parent_struct,
+  &_pi_sniffer_signal_info_notification2_ARG_rooms.parent_struct,
+  &_pi_sniffer_signal_info_notification2_ARG_assets.parent_struct,
+  &_pi_sniffer_signal_info_notification2_ARG_signage.parent_struct,
+  NULL
+};
+
+static const _ExtendedGDBusSignalInfo _pi_sniffer_signal_info_notification2 =
+{
+  {
+    -1,
+    (gchar *) "Notification2",
+    (GDBusArgInfo **) &_pi_sniffer_signal_info_notification2_ARG_pointers,
+    NULL
+  },
+  "notification2"
+};
+
 static const GDBusSignalInfo * const _pi_sniffer_signal_info_pointers[] =
 {
   &_pi_sniffer_signal_info_notification.parent_struct,
+  &_pi_sniffer_signal_info_notification2.parent_struct,
   NULL
 };
 
@@ -324,6 +389,7 @@ pi_sniffer_override_properties (GObjectClass *klass, guint property_id_begin)
  * @handle_settings: Handler for the #piSniffer::handle-settings signal.
  * @handle_status: Handler for the #piSniffer::handle-status signal.
  * @notification: Handler for the #piSniffer::notification signal.
+ * @notification2: Handler for the #piSniffer::notification2 signal.
  *
  * Virtual table for the D-Bus interface <link linkend="gdbus-interface-com-signswift-sniffer.top_of_page">com.signswift.sniffer</link>.
  */
@@ -400,6 +466,28 @@ pi_sniffer_default_init (piSnifferIface *iface)
     G_TYPE_NONE,
     1, G_TYPE_STRING);
 
+  /**
+   * piSniffer::notification2:
+   * @object: A #piSniffer.
+   * @arg_groups: Argument.
+   * @arg_rooms: Argument.
+   * @arg_assets: Argument.
+   * @arg_signage: Argument.
+   *
+   * On the client-side, this signal is emitted whenever the D-Bus signal <link linkend="gdbus-signal-com-signswift-sniffer.Notification2">"Notification2"</link> is received.
+   *
+   * On the service-side, this signal can be used with e.g. g_signal_emit_by_name() to make the object emit the D-Bus signal.
+   */
+  g_signal_new ("notification2",
+    G_TYPE_FROM_INTERFACE (iface),
+    G_SIGNAL_RUN_LAST,
+    G_STRUCT_OFFSET (piSnifferIface, notification2),
+    NULL,
+    NULL,
+    g_cclosure_marshal_generic,
+    G_TYPE_NONE,
+    4, G_TYPE_VARIANT, G_TYPE_VARIANT, G_TYPE_VARIANT, G_TYPE_STRING);
+
 }
 
 /**
@@ -415,6 +503,27 @@ pi_sniffer_emit_notification (
     const gchar *arg_json)
 {
   g_signal_emit_by_name (object, "notification", arg_json);
+}
+
+/**
+ * pi_sniffer_emit_notification2:
+ * @object: A #piSniffer.
+ * @arg_groups: Argument to pass with the signal.
+ * @arg_rooms: Argument to pass with the signal.
+ * @arg_assets: Argument to pass with the signal.
+ * @arg_signage: Argument to pass with the signal.
+ *
+ * Emits the <link linkend="gdbus-signal-com-signswift-sniffer.Notification2">"Notification2"</link> D-Bus signal.
+ */
+void
+pi_sniffer_emit_notification2 (
+    piSniffer *object,
+    GVariant *arg_groups,
+    GVariant *arg_rooms,
+    GVariant *arg_assets,
+    const gchar *arg_signage)
+{
+  g_signal_emit_by_name (object, "notification2", arg_groups, arg_rooms, arg_assets, arg_signage);
 }
 
 /**
@@ -1231,6 +1340,36 @@ _pi_sniffer_on_signal_notification (
   g_list_free_full (connections, g_object_unref);
 }
 
+static void
+_pi_sniffer_on_signal_notification2 (
+    piSniffer *object,
+    GVariant *arg_groups,
+    GVariant *arg_rooms,
+    GVariant *arg_assets,
+    const gchar *arg_signage)
+{
+  piSnifferSkeleton *skeleton = PI_SNIFFER_SKELETON (object);
+
+  GList      *connections, *l;
+  GVariant   *signal_variant;
+  connections = g_dbus_interface_skeleton_get_connections (G_DBUS_INTERFACE_SKELETON (skeleton));
+
+  signal_variant = g_variant_ref_sink (g_variant_new ("(@aa{sv}@aa{sv}@aa{sv}s)",
+                   arg_groups,
+                   arg_rooms,
+                   arg_assets,
+                   arg_signage));
+  for (l = connections; l != NULL; l = l->next)
+    {
+      GDBusConnection *connection = l->data;
+      g_dbus_connection_emit_signal (connection,
+        NULL, g_dbus_interface_skeleton_get_object_path (G_DBUS_INTERFACE_SKELETON (skeleton)), "com.signswift.sniffer", "Notification2",
+        signal_variant, NULL);
+    }
+  g_variant_unref (signal_variant);
+  g_list_free_full (connections, g_object_unref);
+}
+
 static void pi_sniffer_skeleton_iface_init (piSnifferIface *iface);
 #if GLIB_VERSION_MAX_ALLOWED >= GLIB_VERSION_2_38
 G_DEFINE_TYPE_WITH_CODE (piSnifferSkeleton, pi_sniffer_skeleton, G_TYPE_DBUS_INTERFACE_SKELETON,
@@ -1291,6 +1430,7 @@ static void
 pi_sniffer_skeleton_iface_init (piSnifferIface *iface)
 {
   iface->notification = _pi_sniffer_on_signal_notification;
+  iface->notification2 = _pi_sniffer_on_signal_notification2;
 }
 
 /**

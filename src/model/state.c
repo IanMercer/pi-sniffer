@@ -31,6 +31,7 @@ void initialize_state(struct OverallState* state)
     state->beacons = NULL;       // linked list
     state->beacon_hash = 0;      // initial unseen hash
     state->json = NULL;          // DBUS JSON message
+    state->output = NULL;        // DBUS Gvariant output
     time(&state->influx_last_sent);
     time(&state->webhook_last_sent);
     time(&state->dbus_last_sent);

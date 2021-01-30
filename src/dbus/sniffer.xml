@@ -11,6 +11,26 @@
       <arg name="json" direction="out" type="s"/>
     </method>
 
+    <!-- GVariant serialized DBus notification (replaces Json blob) 
+      Structured so that it can be easily serialized to JSON without knowing anything about the contents
+      But also so that sender can examine totals for groups->phones and decide when to send an update
+    -->
+    <signal name="Notification2">
+
+      <!-- Array of objects, each: group name, tag, phones (d), watches (d), wearables (d), computers (d), tablets (d), beacons (d), covid (d), other (d) -->
+      <arg name="groups" type="aa{sv}" />
+
+      <!-- Array of objects, each: room name, group name, tags, phones (d), watches (d), wearables (d), computers (d), tablets (d), beacons (d), covid (d), other (d) -->
+      <arg name="rooms" type="aa{sv}" />
+      
+      <!-- Array of objects: each: asset name (s), room name (s), group name (s), ago string (s), last seen datetime (u64), minutes ago (double) -->
+      <arg name="assets" type="aa{sv}" />
+
+      <!-- digital signage parameters round-tripped from management system, opaque string, probably JSON -->
+      <arg name="signage" type="s" />
+
+    </signal>
+
     <!-- Also not very 'dbus' but we want an opaque flow from service to scanner -->
     <method name="Settings">
       <arg name="json" direction="in" type="s"/>

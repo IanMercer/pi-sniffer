@@ -733,7 +733,88 @@ bool print_counts_by_closest(struct OverallState* state)
 
     }
 
-    char *json_rooms = NULL;
+    GVariantBuilder builder_groups;
+    GVariantBuilder builder_rooms;
+    GVariantBuilder builder_assets;
+    GVariantBuilder builder_signage;
+
+    g_variant_builder_init (&builder_groups, G_VARIANT_TYPE("a{sv}")); 
+    g_variant_builder_init (&builder_rooms, G_VARIANT_TYPE("a{sv}")); 
+    g_variant_builder_init (&builder_assets, G_VARIANT_TYPE("a{sv}")); 
+    g_variant_builder_init (&builder_signage, G_VARIANT_TYPE("a{sv}")); 
+
+    // gchar buf[3];
+    // sprintf (buf, "%d", i);
+    // g_variant_builder_add (&builder, "{is}", i, buf);
+
+    // Groups
+    {
+        g_variant_builder_open (&builder_groups, G_VARIANT_TYPE ("aa(sv}"));
+        // loop on groups
+        {
+            g_variant_builder_open (&builder_groups, G_VARIANT_TYPE ("a{sv}"));
+            add_key_value_string(&builder_groups, "name","group name");
+            add_key_value_string(&builder_groups, "tags","tags");
+            add_summary(&builder_groups, 1, 1, 1, 1, 1, 1, 1, 1);
+            g_variant_builder_close (&builder_groups);
+        }
+        g_variant_builder_close (&builder_groups);
+    }
+
+    // Rooms
+    {
+        g_variant_builder_open (&builder_rooms, G_VARIANT_TYPE ("aa{sv}"));
+        // loop on groups
+        {
+            g_variant_builder_open (&builder_rooms, G_VARIANT_TYPE ("a{sv}"));
+            add_key_value_string(&builder_rooms, "room","room name");
+            add_key_value_string(&builder_rooms, "group","group name");
+            add_summary(&builder_rooms, 1, 1, 1, 1, 1, 1, 1, 1);
+            g_variant_builder_close (&builder_rooms);
+        }
+        g_variant_builder_close (&builder_rooms);
+    }
+
+    // Beacons
+    {
+        g_variant_builder_open (&builder_assets, G_VARIANT_TYPE ("a{sv}"));
+        // loop on beacons
+        {
+            g_variant_builder_open (&builder_assets, G_VARIANT_TYPE ("{sv}"));
+            add_key_value_string(&builder_assets, "name", "name");
+            add_key_value_string(&builder_assets, "room", "room");
+            add_key_value_string(&builder_assets, "group", "group");
+            add_key_value_string(&builder_assets, "ago", "10 min ago");
+            add_key_value_string(&builder_assets, "t", "10 min ago");
+            add_key_value_string(&builder_assets, "d", "10 min ago");
+            add_key_value_datetime(&builder_assets, "t", now);       // last_seen
+            add_key_value_double(&builder_assets, "d", 12.4);      // diff in minutes
+            g_variant_builder_close (&builder_assets);
+        }
+        g_variant_builder_close (&builder_assets);
+    }
+
+    g_variant_builder_add (&builder_signage, "s", "signagestring");
+
+    GVariant* output_groups =  g_variant_builder_end(&builder_groups);
+    GVariant* output_rooms =  g_variant_builder_end(&builder_rooms);
+    GVariant* output_assets =  g_variant_builder_end(&builder_assets);
+    GVariant* output_signage =  g_variant_builder_end(&builder_signage);
+
+    // deal with output
+
+    pretty_print2("Groups", output_groups, true);
+    pretty_print2("Rooms", output_rooms, true);
+    pretty_print2("Assets", output_assets, true);
+    pretty_print2("Signage", output_signage, true);
+
+    // release the (floating) reference to output because it wasn't used elsewhere
+    g_variant_unref(output_groups);
+    g_variant_unref(output_rooms);
+    g_variant_unref(output_assets);
+    g_variant_unref(output_signage);
+
+    char *json_complete = NULL;
     cJSON *jobject = cJSON_CreateObject();
 
     cJSON *jrooms = cJSON_AddArrayToObject(jobject, "rooms");
@@ -752,6 +833,8 @@ bool print_counts_by_closest(struct OverallState* state)
         cJSON_AddStringToObject(item, "group", s->extra);
         cJSON_AddSummary(item, s);
         cJSON_AddItemToArray(jrooms, item);
+
+        // TODO: Add tags for GVariant of this
     }
     free_summary(&summary);
 
@@ -782,6 +865,31 @@ bool print_counts_by_closest(struct OverallState* state)
             beacon_hash = beacon_hash * 37 + (((intptr_t)b->patch) & 0x7fffffff) + minutes;
         }
 
+        // Pack beacon data (todo: make this only on changes?)
+        for (struct Beacon* b = state->beacons; b != NULL; b=b->next)
+        {
+            char ago[20];
+            double diff = b->last_seen == 0 ? -1 : difftime(now, b->last_seen) / 60.0;
+            if (diff < 2) snprintf(ago, sizeof(ago), "now");
+            else if (diff < 60) snprintf(ago, sizeof(ago), "%.0f min ago", diff);
+            else if (diff < 24*60) snprintf(ago, sizeof(ago), "%.1f hours ago", diff / 60.0);
+            else snprintf(ago, sizeof(ago), "%.1f days ago", diff / 24.0 / 60.0);
+
+            const char* room_name = (b->patch == NULL) ? "---" : b->patch->room;
+            const char* category = (b->patch == NULL) ? "---" : ((b->patch->group == NULL) ? "???" : b->patch->group->name);
+
+            cJSON* item = cJSON_CreateObject();
+            cJSON_AddStringToObject(item, "name", b->alias);
+            cJSON_AddStringToObject(item, "room", room_name);
+            cJSON_AddStringToObject(item, "group", category);
+            cJSON_AddStringToObject(item, "ago", ago);
+            cJSON_AddNumberToObject(item, "t", b->last_seen);
+            cJSON_AddRounded(item, "d", diff);
+
+            cJSON_AddItemToArray(jbeacons, item);
+        }
+
+        // Log beacon information
         if (state->beacon_hash != beacon_hash)
         {
             state->beacon_hash = beacon_hash;
@@ -808,16 +916,6 @@ bool print_counts_by_closest(struct OverallState* state)
                     b->alias, patch_name, room_name, 
                     category,
                     ago);
-            
-                cJSON* item = cJSON_CreateObject();
-                cJSON_AddStringToObject(item, "name", b->alias);
-                cJSON_AddStringToObject(item, "room", room_name);
-                cJSON_AddStringToObject(item, "group", category);
-                cJSON_AddStringToObject(item, "ago", ago);
-                cJSON_AddNumberToObject(item, "t", b->last_seen);
-                cJSON_AddRounded(item, "d", diff);
-
-                cJSON_AddItemToArray(jbeacons, item);
             }
 
             g_info(" ");
@@ -825,6 +923,7 @@ bool print_counts_by_closest(struct OverallState* state)
             g_info(" ");
             //g_debug("Examined %i > %i > %i > %i", state->closest_n, count_examined, count_not_marked, count_in_age_range);
         }
+
     }
 
     // debug
@@ -835,7 +934,7 @@ bool print_counts_by_closest(struct OverallState* state)
     // TODO: More levels etc. settable remotely
     cJSON_AddRounded(sign_meta, "scale_factor", state->udp_scale_factor);
 
-    json_rooms = cJSON_PrintUnformatted(jobject);
+    json_complete = cJSON_PrintUnformatted(jobject);
     //json_rooms = cJSON_Print(jobject);
     cJSON_Delete(jobject);
 
@@ -844,7 +943,7 @@ bool print_counts_by_closest(struct OverallState* state)
         // free(json_rooms); but on next cycle
         free(state->json);
     }
-    state->json = json_rooms;
+    state->json = json_complete;
 
     //g_info("Summary by room: %s", json_rooms);
     //g_info(" ");

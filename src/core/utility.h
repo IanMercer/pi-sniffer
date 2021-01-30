@@ -178,4 +178,31 @@ void print_and_free_error(GError *error);
 */
 unsigned char *read_byte_array(GVariant *s_value, int *actualLength, uint8_t *hash);
 
+
+/*
+ * Add a key value pair to a GVariantBuilder
+*/
+void add_key_value_string(GVariantBuilder* builder, const char* key, const char* value);
+
+/*
+ * Add a key value pair to a GVariantBuilder
+*/
+void add_key_value_int(GVariantBuilder* builder, const char* key, int value);
+
+/*
+ * Add a key value pair to a GVariantBuilder
+*/
+void add_key_value_datetime(GVariantBuilder* builder, const char* key, time_t value);
+
+/*
+ * Add a key value pair to a GVariantBuilder
+*/
+void add_key_value_double(GVariantBuilder* builder, const char* key, double value);
+
+/*
+* Add summary dictionary entries to a GVariantBuilder
+*/
+void add_summary(GVariantBuilder* builder, double phones, double watches, double wearables, double computers,
+    double tablets, double beacons, double covid, double other);
+
 #endif
