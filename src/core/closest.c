@@ -801,19 +801,6 @@ bool print_counts_by_closest(struct OverallState* state)
     GVariant* output_assets =  g_variant_builder_end(&builder_assets);
     GVariant* output_signage =  g_variant_builder_end(&builder_signage);
 
-    // deal with output
-
-    pretty_print2("Groups", output_groups, true);
-    pretty_print2("Rooms", output_rooms, true);
-    pretty_print2("Assets", output_assets, true);
-    pretty_print2("Signage", output_signage, true);
-
-    // release the (floating) reference to output because it wasn't used elsewhere
-    g_variant_unref(output_groups);
-    g_variant_unref(output_rooms);
-    g_variant_unref(output_assets);
-    g_variant_unref(output_signage);
-
     char *json_complete = NULL;
     cJSON *jobject = cJSON_CreateObject();
 
@@ -952,6 +939,21 @@ bool print_counts_by_closest(struct OverallState* state)
     g_info(" ");
 
     free(json_groups); // string listing each group and count
+
+
+    // deal with output
+    pretty_print2("Groups", output_groups, true);
+    pretty_print2("Rooms", output_rooms, true);
+    pretty_print2("Assets", output_assets, true);
+    pretty_print2("Signage", output_signage, true);
+
+    // release the (floating) reference to output because it wasn't used elsewhere
+    g_variant_unref(output_groups);
+    g_variant_unref(output_rooms);
+    g_variant_unref(output_assets);
+    g_variant_unref(output_signage);
+
+
 
     // Compute a hash to see if changes have happened (does not have to be perfect, we will send every n minutes regardless)
     // Round to nearest quarter, or 0.1 for phones
