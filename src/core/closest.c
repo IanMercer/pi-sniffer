@@ -740,10 +740,10 @@ bool print_counts_by_closest(struct OverallState* state)
     GVariantBuilder builder_assets;
     GVariantBuilder builder_signage;
 
-    g_variant_builder_init (&builder_groups, G_VARIANT_TYPE("a{sv}")); 
-    g_variant_builder_init (&builder_rooms, G_VARIANT_TYPE("a{sv}")); 
-    g_variant_builder_init (&builder_assets, G_VARIANT_TYPE("a{sv}")); 
-    g_variant_builder_init (&builder_signage, G_VARIANT_TYPE("a{sv}")); 
+    g_variant_builder_init (&builder_groups, G_VARIANT_TYPE("aa{sv}"));
+    g_variant_builder_init (&builder_rooms, G_VARIANT_TYPE("aa{sv}")); 
+    g_variant_builder_init (&builder_assets, G_VARIANT_TYPE("aa{sv}")); 
+    g_variant_builder_init (&builder_signage, G_VARIANT_TYPE("s"));
 
     // gchar buf[3];
     // sprintf (buf, "%d", i);
