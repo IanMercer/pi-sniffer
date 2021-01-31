@@ -17,6 +17,8 @@ following the instructions [here](RaspberrySetup.md).
 
 `sudo apt-get install libssl-dev`
 
+`sudo apt-get install libjson-glib-dev`
+
 * optionally install and build MQTT
 
 See [MQTT.md](MQTT.md). You do not need to do this if you are not using MQTT.

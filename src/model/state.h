@@ -18,6 +18,8 @@ struct OverallState
 
    int reboot_hour;           // Hour to reboot each day in local time (or zero for no reboot)
 
+   int isMain;                // TRUE for ONE node in a cluster, all others should be not main
+
    // TODO: The following will all move to a new systemd service running on the
    // other end of DBUS.
 
@@ -40,9 +42,6 @@ struct OverallState
    int influx_max_period_seconds;
    // time last sent
    time_t influx_last_sent;
-
-   // time last sent
-   time_t dbus_last_sent;
 
    // server domain name
    char* influx_server;
@@ -96,17 +95,17 @@ struct OverallState
    // Latest JSON for sending over DBUS on request
    char* json;
 
-   // Latest GVariant stuctured output
-   GVariant* output;
+   // Groups sequence number (increments by one for every one change in any group count)
+   // This allows sender to throttle sending based on time and changes in group counts
+   int32_t group_sequence;
 
-   // minimum gap between sending updates
-   int min_gap_seconds;
+   // Rooms sequence number (increments by one for every one change in any room count)
+   // This allows sender to throttle sending based on time and changes in room counts
+   int32_t room_sequence;
 
-   // max gap between sending updates
-   int max_gap_seconds;
-
-   // seconds remaining on boosted sending schedule that ignores min_gap_seconds
-   int boost_for_seconds;
+   // Beacon sequence number (increments by one for every one change in any asset data)
+   // This allows sender to throttle sending based on time and changes in asset locations
+   int32_t asset_sequence;
 
    // DBUS proxy
    piSniffer* proxy;

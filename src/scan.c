@@ -1741,23 +1741,17 @@ int report_counts(void *parameters)
 
     report_count++;
 
-    if (influx_is_configured() || webhook_is_configured() || state.web_polling || state.udp_sign_port > 0)
+    if (state.isMain)
     {
         time(&now);
         // Set JSON for all ways to receive it (GET, POST, INFLUX, MQTT)
         bool changed = print_counts_by_closest(&state);
 
-        // Send dbus message if changed
-        int dbus_seconds = difftime(now, state.dbus_last_sent);
-        if (dbus_seconds > state.max_gap_seconds ||
-            (changed && (dbus_seconds > state.min_gap_seconds)) )
+        // Send dbus always, receiver handles throttling
+        if ((state.json != NULL) && changed)
         {
-            g_info("Send DBus notification (%is) %s", dbus_seconds, changed?"changed":"unchanged");
-            if (state.json != NULL) 
-            {
-                pi_sniffer_emit_notification (state.proxy, state.json);
-                state.dbus_last_sent = now;
-            }
+            g_info("Send DBus notification %s", changed?"changed":"unchanged");
+            pi_sniffer_emit_notification (state.proxy, state.json);
         }
 
         int influx_seconds = difftime(now, state.influx_last_sent);
@@ -2121,30 +2115,6 @@ static gboolean on_handle_settings_request (piSniffer *interface,
             {
                 g_warning("Missing name or rooms array on room group");
             }
-        }
-    }
-
-    cJSON *max_gap_seconds = cJSON_GetObjectItemCaseSensitive(json, "MaxGapSeconds");
-    if (cJSON_IsNumber(max_gap_seconds))
-    {
-        state->max_gap_seconds = max_gap_seconds->valueint;
-        g_info("Set max gap to %i", state->max_gap_seconds);
-    }
-
-    cJSON *min_gap_seconds = cJSON_GetObjectItemCaseSensitive(json, "MinGapSeconds");
-    if (cJSON_IsNumber(min_gap_seconds))
-    {
-        state->min_gap_seconds = min_gap_seconds->valueint;
-        g_info("Set min gap to %i", state->min_gap_seconds);
-    }
-
-    cJSON *boost_for_seconds = cJSON_GetObjectItemCaseSensitive(json, "BoostForSeconds");
-    if (cJSON_IsNumber(boost_for_seconds))
-    {
-        // Boost only applies if it's a bump up in time
-        if ((float)boost_for_seconds->valueint > state->boost_for_seconds) {
-                state->boost_for_seconds = boost_for_seconds->valueint;
-                g_info("Set boost to %i", state->max_gap_seconds);
         }
     }
 

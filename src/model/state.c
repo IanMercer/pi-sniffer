@@ -20,6 +20,7 @@ void initialize_state(struct OverallState* state)
     int rssi_one_meter = -64;    // fairly typical RPI3 and iPhone
     float rssi_factor = 3.5;     // fairly cluttered indoor default
     float people_distance = 7.0; // 7m default range
+    state->isMain = true;        // only one will be true after config runs
     state->udp_mesh_port = 7779;
     state->udp_sign_port = 0;    // 7778;
     state->reboot_hour = 7;      // reboot after 7 hours (TODO: Make this time of day)
@@ -31,14 +32,8 @@ void initialize_state(struct OverallState* state)
     state->beacons = NULL;       // linked list
     state->beacon_hash = 0;      // initial unseen hash
     state->json = NULL;          // DBUS JSON message
-    state->output = NULL;        // DBUS Gvariant output
     time(&state->influx_last_sent);
     time(&state->webhook_last_sent);
-    time(&state->dbus_last_sent);
-    state->dbus_last_sent = state->dbus_last_sent - 12 * 60 * 60;  // so it fires on startup
-    state->min_gap_seconds = 300;           // min time for DBus message, starts at 5 min
-    state->max_gap_seconds = 12 * 60 * 60;  // twelve hours max
-
     time(&state->last_summary);  // When last summary was generated
 
     // no devices yet
@@ -95,6 +90,9 @@ void initialize_state(struct OverallState* state)
 
     // Reboot nightly 
     get_int_env("REBOOT_HOUR", &state->reboot_hour, 0);
+
+    // Is MAIN, DBUS_SENDER device
+    get_int_env("DBUS_SENDER", &state->isMain, FALSE);
 
     // UDP Settings
     get_int_env("UDP_MESH_PORT", &state->udp_mesh_port, 0);
