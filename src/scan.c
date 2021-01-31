@@ -1748,11 +1748,11 @@ int report_counts(void *parameters)
         bool changed = print_counts_by_closest(&state);
 
         // Send dbus always, receiver handles throttling
-        if (state.json != NULL)
+        if (state.json == NULL)
         {
             g_debug("Skipped send, no json");
         }
-        else if ((state.json != NULL) && changed)
+        else if (!changed)
         {
             g_debug("Skipped send, json is unchanged");
         }
