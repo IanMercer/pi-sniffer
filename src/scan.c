@@ -1748,7 +1748,15 @@ int report_counts(void *parameters)
         bool changed = print_counts_by_closest(&state);
 
         // Send dbus always, receiver handles throttling
-        if ((state.json != NULL) && changed)
+        if (state.json != NULL)
+        {
+            g_debug("Skipped send, no json");
+        }
+        else if ((state.json != NULL) && changed)
+        {
+            g_debug("Skipped send, json is unchanged");
+        }
+        else 
         {
             g_info("Send DBus notification %s", changed?"changed":"unchanged");
             pi_sniffer_emit_notification (state.proxy, state.json);
@@ -1781,6 +1789,7 @@ int report_counts(void *parameters)
     }
     else
     {
+        g_warning("Not configured as MAIN, not sending updates to DBUS");
         return FALSE;  // remove from loop
     }
 }
