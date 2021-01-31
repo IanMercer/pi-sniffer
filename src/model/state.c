@@ -165,6 +165,7 @@ void display_state(struct OverallState* state)
     g_info("UDP_SCALE_FACTOR=%.1f", state->udp_scale_factor);
 
     g_info("VERBOSITY=%i", state->verbosity);
+    g_info("DBUS_SENDER=%i", state->isMain);
 
     g_info("MQTT_TOPIC='%s'", state->mqtt_topic);
     g_info("MQTT_SERVER='%s'", state->mqtt_server);

@@ -1741,7 +1741,7 @@ int report_counts(void *parameters)
 
     report_count++;
 
-    if (state.isMain)
+    if (state.isMain != FALSE)
     {
         time(&now);
         // Set JSON for all ways to receive it (GET, POST, INFLUX, MQTT)
