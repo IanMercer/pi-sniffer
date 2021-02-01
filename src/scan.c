@@ -717,17 +717,17 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             double delta_v = fabs(existing->distance - averaged);
             double score = delta_v * delta_time_sent;
 
-            if (score > 10.0 || delta_time_sent > 10)
+            //if (score > 10.0 || delta_time_sent > 10)
             {
                 //g_print("  %s Will send rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
                 existing->distance = averaged;
                 send_distance = TRUE;
                 g_trace("  %s RSSI %i d=%.1fm", address, rssi, averaged);
             }
-            else
-            {
-                g_trace("  %s Skip sending rssi=%i dist=%.1fm, delta v=%.1fm t=%is score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
-            }
+            //else
+            //{
+            //    g_trace("  %s Skip sending rssi=%i dist=%.1fm, delta v=%.1fm t=%is score=%.0f", address, rssi, averaged, delta_v, delta_time_sent, score);
+            //}
         }
         else if (strcmp(property_name, "TxPower") == 0)
         {
