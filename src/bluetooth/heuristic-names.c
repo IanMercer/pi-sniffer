@@ -377,7 +377,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_CAR; // radar detector
     else if (string_starts_with(name, "Interphone TOUR BLE"))
         existing->category = CATEGORY_CAR; // motorbike intercom
-
+    else if (string_starts_with(name, "FenSens"))
+        existing->category = CATEGORY_CAR; // backup camera
     else if (strncmp(name, "Land Rover", 10) == 0)
         existing->category = CATEGORY_CAR;
 

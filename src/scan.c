@@ -593,18 +593,19 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             // Trim whitespace (Bad Tracker device keeps flipping name)
             trim(name);
 
+            // -1 on name length because of a badly behaved beacon I have!
             if (strncmp(name, existing->name, NAME_LENGTH - 1) != 0)
             {
                 // g_debug("  %s changed name '%s' -> '%s'\n", address, existing->name, name);
 #ifdef MQTT
                 if (state.network_up) send_to_mqtt_single(address, "name", name);
 #endif
+                send_distance = TRUE;
                 set_name(existing, name, nt_known);
             }
 
             apply_known_beacons(existing);
             apply_name_heuristics (existing, name);
-
         }
         else if (strcmp(property_name, "Alias") == 0)
         {
@@ -1160,15 +1161,14 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             }
 #endif
             time(&existing->last_sent);
-        }
-
-        // Broadcast what we know about the device to all other listeners
-        // only send when isUpdate is set, i.e. not for get all devices requests
-        if (isUpdate)
-        {
-            pack_columns();
-            send_device_udp(&state, existing);
-            update_closest(&state, existing);
+            // Broadcast what we know about the device to all other listeners
+            // only send when isUpdate is set, i.e. not for get all devices requests
+            if (isUpdate)
+            {
+                pack_columns();
+                update_closest(&state, existing);
+                send_device_udp(&state, existing);
+            }
         }
     }
 
