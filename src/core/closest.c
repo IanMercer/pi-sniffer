@@ -232,26 +232,15 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
     }
     else 
     {
-        // if (!found) 
-        // { 
-        //     g_warning("Did not find a patch called %s, creating one on the fly", best->patch_name);
-        //     char* world = strdup("World");
-        //     char* tags = strdup("zone=here");
-        //     struct patch* patch = get_or_create_patch(best->patch_name, best->patch_name, world, tags, &state->patches, &state->groups, FALSE);
-        //     patch->knn_score = 1.0;
-        //     best->distance = 1.0;
-        //     strncpy(best->patch_name, patch->name, META_LENGTH);
-        // }
-
         // Not really logging on, it's whether the readings have been updated since last scan
         //if (!loggingOn) return;
-
-        time_t now = time(0);
-        if (difftime(now, closest->time) > 300)
-        {
-            g_debug("Old '%s' score: %.3f", best_three[0].patch_name, best_three[0].distance);
-        }
-        else 
+        // This is handled by called which reduces probability over time, not here
+        // time_t now = time(0);
+        // if (difftime(now, closest->time) > 300)
+        // {
+        //     g_debug("Old '%s' score: %.3f", best_three[0].patch_name, best_three[0].distance);
+        // }
+        // else 
         {
             // Allocate probabilities to patches instead of 1.0 and 0.0 only
             double allocation = 1.0;
