@@ -272,7 +272,7 @@ float score (struct recording* recording, double access_points_distance[N_ACCESS
             }
             else if (measured_distance > EFFECTIVE_INFINITE - 0.10)
             {
-                sum_delta_squared += 0.92;  // could not see an AP at all, but should have been able to, could just be a missing observation
+                sum_delta_squared += 0.82;  // could not see an AP at all, but should have been able to, could just be a missing observation
             }
             else
             {
