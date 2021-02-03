@@ -14,6 +14,9 @@
 #include <sys/types.h>
 #include "cJSON.h"
 
+// Infinite distance
+#define EFFECTIVE_INFINITE 30.0
+
 /*
  * Measures the current (and peak) resident and virtual memories
  * usage of your linux C process, in kB

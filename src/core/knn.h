@@ -32,7 +32,7 @@ void free_list(struct recording** head);
 
 // KNN CLASSIFIER
 
-#define TOP_K_N 7
+#define TOP_K_N 17
 
 struct top_k
 {
@@ -41,6 +41,7 @@ struct top_k
     bool used;
 };
 
-int k_nearest(struct recording* recordings, double* access_point_distances, struct AccessPoint* access_points, struct top_k* top_result, int top_count, bool confirmed);
+int k_nearest(struct recording* recordings, double* access_point_distances, struct AccessPoint* access_points, struct top_k* top_result, int top_count, 
+    bool confirmed, bool debug);
 
 #endif

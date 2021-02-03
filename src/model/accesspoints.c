@@ -35,6 +35,7 @@ struct AccessPoint *add_access_point(struct AccessPoint** access_point_list, cha
     ap->people_distance = people_distance;
     ap->people_closest_count = 0.0;
     ap->people_in_range_count = 0.0;
+    ap->sequence = 0;
     time(&ap->last_seen);
 
     return ap;
@@ -76,7 +77,9 @@ struct AccessPoint *update_accessPoints(struct AccessPoint** access_point_list, 
     time(&access_point.last_seen);
 
     // Make sure we aren't dropping too many messages
-    if (ap->sequence !=0 && (access_point.sequence - ap->sequence) > 1)
+    if (ap->sequence !=0 && 
+        (access_point.sequence - ap->sequence) > 1 &&
+        (access_point.sequence - ap->sequence) < 1E6)
     {
         g_warning("Missed %li messages from %s", (long)((access_point.sequence - ap->sequence) - 1), ap->client_id);
     }

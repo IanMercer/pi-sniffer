@@ -208,21 +208,6 @@ void *listen_loop(void *param)
                             // This is problematic, they are ahead of us
                             g_warning("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, actual->client_id, d.distance, delta_time);
                         }
-                        // Problematic now we send older updates for superseding events
-                        // else if (delta_time > 1)
-                        // {
-                        //     // Could be a problem, they appear to be somewhat behind us
-                        //     g_warning("UPDATE %s '%s' %s dist=%.2fm time=%is", d.mac, d.name, a.client_id, d.distance, delta_time);
-                        // }
-                        // else if (delta_time > 0)
-                        // {
-                        //     g_debug("UPDATE %s '%s' %s dist=%.2fm time=%is", d.mac, d.name, a.client_id, d.distance, delta_time);
-                        // }
-                        // else
-                        // {
-                        //     // silent, right on zero time difference
-                        //     //g_debug("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, a.client_id, d.distance, delta_time);
-                        // }
 
                         g_assert(actual != NULL);
                     }
@@ -233,7 +218,7 @@ void *listen_loop(void *param)
 
             // Update the closest data structure
             g_assert(actual != NULL);
-            //g_debug("Update closest from UDP: %s %s count=%i ap=%s %s", d.mac, d.name, d.count, actual->client_id, dummy.client_id);
+            //g_debug("UDP: %s %s count=%i ap=%s %s %.1fm", d.mac, d.name, d.count, actual->client_id, dummy.client_id, d.distance);
             add_closest(state, d.mac64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count, d.name, d.is_training_beacon);
 
             pthread_mutex_unlock(&state->lock);

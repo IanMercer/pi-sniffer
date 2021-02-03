@@ -40,7 +40,7 @@ char* recording_to_json (struct recording* r, struct AccessPoint* access_points)
     for (struct AccessPoint* ap = access_points; ap != NULL; ap = ap->next)
     {
         double distance = r->access_point_distances[ap->id];
-        if (distance > 0)
+        if (distance > 0 && distance != EFFECTIVE_INFINITE)
         {
             char print_num[18];
             snprintf(print_num, 18, "%.2f", distance);
@@ -48,9 +48,8 @@ char* recording_to_json (struct recording* r, struct AccessPoint* access_points)
         }
     }
 
-
     string = cJSON_PrintUnformatted(j);
-    g_warning("%s", string);
+    g_debug("%s", string);
 
     cJSON_Delete(j);
     return string;
@@ -146,7 +145,7 @@ bool json_to_recording(char* buffer, struct OverallState* state, struct patch** 
             }
             else
             {
-                ralloc->access_point_distances[ap->id]=0;
+                ralloc->access_point_distances[ap->id]=30.0;  // effective infinite distance away
             }
         }
 
@@ -212,55 +211,81 @@ float calculate_ratio(float distance_a, float distance_b)
 }
 
 
+// New approach
+//   Look across all rows in a patch, each row could support or deny a patch match
+//   If there's a patch row with x=1.2m then a value 9.8m cannot be a good match
+
+// So summarize all rows in a patch
+//  Get distribution for x
+//  Calculate probability that y is from distribution x
+
+// RECORDING
+//
+//   Has a matching access point.  Calculate difference ... squared. Take best.
+//   Does not have this access point for any row.  Score = 30^30 if observation has it.
+//   
+//   AP             A    B    C
+//   Observation:   2   10    5
+//   Recording:     3    -    8
+//
+//
+
+
+//  For each row, can observation explain it?
+//    If yes, 
+
+
 float score (struct recording* recording, double access_points_distance[N_ACCESS_POINTS], struct AccessPoint* access_points)
 {
-    float sum_delta_squared = 0.0;
-
     if (access_points->next == NULL) 
     {
+        float sum_delta_squared = 0.0;
         // single access point
         struct AccessPoint* ap = access_points;
         float recording_distance = recording->access_point_distances[ap->id];
         float measured_distance = access_points_distance[ap->id];
         float delta = (recording_distance - measured_distance) / 30.0;  // scale to similar to ratios
         sum_delta_squared += delta*delta;
+        return sqrt(sum_delta_squared);
     } 
     else 
     {
+        float sum_delta_squared = 0.0;
+        // int matched_distances = 0;
+        // int missing_distances = 0;
+        // int extra_distances = 0;
+
         for (struct AccessPoint* ap = access_points; ap != NULL; ap=ap->next)
         {
             float recording_distance = recording->access_point_distances[ap->id];
             float measured_distance = access_points_distance[ap->id];
 
-            // Triangular matrix of pairs
-            for (struct AccessPoint* ap2 = ap->next; ap2 != NULL; ap2=ap2->next)
+            if (recording_distance > EFFECTIVE_INFINITE-0.10 && measured_distance > EFFECTIVE_INFINITE-0.10)
             {
-                float recording_distance2 = recording->access_point_distances[ap2->id];
-                float measured_distance2 = access_points_distance[ap2->id];
-
-#if deployed_version
-                float r_ratio = calculate_ratio(recording_distance, recording_distance2);
-                float o_ratio = calculate_ratio(measured_distance, measured_distance2);
-
-                float delta = r_ratio - o_ratio;
-                sum_delta_squared += delta*delta;
-#else
-
-                float diff1 = recording_distance - recording_distance2;
-                float sum1 = recording_distance + recording_distance2;
-                float diff2 = measured_distance - measured_distance2;
-                float sum2 = measured_distance + measured_distance2;
-
-                float delta1 = (diff1 - diff2) * (diff1 - diff2) / 250;   // errors cancel out on e - e
-                float delta2 = (sum1 - sum2) * (sum1 - sum2) / 1000;      // delta2 less because error is more (e + e)
-
-                sum_delta_squared += delta1*delta1 + delta2*delta2;
-#endif
+                // good, did not expect this distance to be here, but less information than a match
+                sum_delta_squared += 0.5;
+            }
+            else if (recording_distance > EFFECTIVE_INFINITE - 0.10)
+            {
+                sum_delta_squared += 2;  // the observation could see the AP but this recording says you cannot
+                // e.g. barn says you cannot see study, so if you can see study you can't be here
+            }
+            else if (measured_distance > EFFECTIVE_INFINITE - 0.10)
+            {
+                sum_delta_squared += 0.9;  // could not see an AP at all, but should have been able to, could just be a missing observation
+            }
+            else
+            {
+                // could be zero if both are undefned, hence ^
+                float delta = (recording_distance - measured_distance);
+                float increment = (delta * delta) / (EFFECTIVE_INFINITE * EFFECTIVE_INFINITE);
+                if (increment > 0.92) g_warning("Increment %.2f %.2f - %.2f", increment, recording_distance, measured_distance);
+                sum_delta_squared += increment;
             }
         }
+        return sqrt(sum_delta_squared);
     }
 
-    return sqrt(sum_delta_squared);
 }
 
 
@@ -274,13 +299,20 @@ float score (struct recording* recording, double access_points_distance[N_ACCESS
   NB You must free() the returned string
 
 */
-int k_nearest(struct recording* recordings, double* access_point_distances, struct AccessPoint* access_points, struct top_k* top_result, int top_count, bool confirmed)
+int k_nearest(struct recording* recordings, double* access_point_distances, struct AccessPoint* access_points,
+              struct top_k* top_result, int top_count, 
+              bool confirmed, bool debug)
 {
+    int k_result = 0;   // length of the final array after summarization
+
     struct top_k result[TOP_K_N];
     int k = 0;
+    int test_count = 0;
     for (struct recording* recording = recordings; recording != NULL; recording = recording->next)
     {
         if (confirmed && !recording->confirmed) continue;
+        test_count++;
+
         // Insert recording into the list if it's a better match
         float distance = score(recording, access_point_distances, access_points);
 
@@ -288,6 +320,8 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
         g_utf8_strncpy(current.patch_name, recording->patch_name, META_LENGTH);
         current.distance = distance;
         current.used = FALSE;
+
+        //if (debug) g_debug("Patch %s Distance %.2f", current.patch_name, distance);
 
         // Find insertion point
         for (int i = 0; i < TOP_K_N; i++)
@@ -319,8 +353,7 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
         return 0;
     };
 
-    top_result[0] = result[0];
-    float best_score = 0.0;
+    //if (debug) g_debug("Test count %i", test_count);
 
     float smoothing = 0.1;
 
@@ -331,33 +364,59 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
 
         float best_distance = result[i].distance;
         float score = 1.0 / (smoothing + result[i].distance);
+        int tc = 1;
+
         for (int j = i+1; j < k; j++)
         {
-            if (strcmp(result[i].patch_name, result[j].patch_name) == 0 && result[j].distance > 0)
+            if (strcmp(result[i].patch_name, result[j].patch_name) == 0)
             {
-                score += 1.0 / (smoothing + result[j].distance);
-                result[i].used = TRUE;
-
-                if (result[j].distance < best_distance)
+                tc++;
+                result[j].used = TRUE;
+                if (result[j].distance > 0)
                 {
-                    best_distance = result[i].distance;
+                    score += 1.0 / (smoothing + result[j].distance);
+                    if (result[j].distance < best_distance)
+                    {
+                        best_distance = result[i].distance;
+                    }
                 }
             }
         }
 
-        // TODO: Make insertion sort to keep top_k
-        if (score > best_score)
+        score = score / tc;   // average of scores for same patch that landed in top K
+
+        // if (debug) g_debug("Patch '%s' %s has score %.3f over %i best distance=%.2f", result[i].patch_name,
+        //   confirmed ? "confirmed" : "all",
+        //   score, tc, best_distance);
+
+        struct top_k current_value = result[i];
+        current_value.distance = score;
+
+        // Find insertion point, highest score at top 
+        for (int m = 0; m < top_count; m++)   // top_count is maybe 3 but other array is larger
         {
-            //g_debug("Replace %s by %s in best score %.2f", top_result[0].patch_name, result[i].patch_name, score);
-            best_score = score;
-            top_result[0] = result[i];                  // copy name and distance (for first)
-            top_result[0].distance = best_distance;     // overwrite with best distance
-            // do something with top_count
-            (void)top_count;
+            if (m == k_result)
+            {
+                // Off the end, but still < k, so add the item here
+                k_result++;
+                top_result[m] = current_value;
+                break;
+            }
+            else if (top_result[m].distance < score)
+            {
+                // Insert at this position, pick up current and move it down
+                struct top_k temp = top_result[m];
+                top_result[m] = current_value;
+                current_value = temp;
+            }
+            else
+            {
+                // keep going
+            }
         }
     }
 
-    return 1;       // just the top result for now
+    return k_result;       // just the top result for now
 }
 
 
@@ -416,7 +475,8 @@ bool read_observations_file (const char * dirname, const char* filename, struct 
             bool ok = json_to_recording(line, state, &current_patch, confirmed);
             if (!ok)
             {
-                g_warning("Could not use '%s' in %s (%i)", line, filename, line_count);
+                // TODO: Log just once per missing access point
+                //g_warning("Could not use '%s' in %s (%i)", line, filename, line_count);
             }
         }
         g_free(line);
@@ -574,10 +634,9 @@ bool record (const char* directory, const char* device_name, double access_dista
 
     if (is_new)
     {
-        g_warning("Change '%s' to chmod 666", fullpath);
         if (chmod(fullpath, S_IRUSR|S_IRGRP|S_IROTH|S_IWUSR|S_IWGRP|S_IWOTH) < 0)
         {
-            g_warning("Could not CHMOD file");
+            g_warning("Could not CHMOD file '%s'", fullpath);
         }
     }
 

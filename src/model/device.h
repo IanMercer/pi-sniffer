@@ -19,10 +19,7 @@ typedef uint64_t u_int64_t;
 #define N 2048
 
 // How many closest observations to track
-#define CLOSEST_N 2048
-
-// Max allowed devices across group of sensors
-#define NMAC 8192
+#define CLOSEST_N 8192
 
 // Maximum number of access points (sensors) allowed
 #define N_ACCESS_POINTS 256

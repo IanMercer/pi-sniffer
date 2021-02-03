@@ -314,7 +314,8 @@ void summarize_by_group(struct patch* patches, struct summary** summary)
     {
         if (p->confirmed)
         {
-            update_summary(summary, p->group->name, p->group->tags, p->phone_total, p->tablet_total, p->computer_total, p->watch_total, 
+            // group tags are fairly useless
+            update_summary(summary, p->group->name, "", p->phone_total, p->tablet_total, p->computer_total, p->watch_total, 
                 p->wearable_total, p->beacon_total, p->covid_total, p->other_total);
         }
     }
