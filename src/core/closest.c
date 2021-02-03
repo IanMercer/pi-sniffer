@@ -259,10 +259,9 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
             {
                 // 0.180 0.179 => 0.001 * 100 = 0.1 
                 double pallocation =  allocation * (bi < k_found-1 ?
-                    fmin(1.0, 0.5 + 50 * (best_three[bi].distance - best_three[bi+1].distance)) : 
+                    fmin(1.0, 0.5 + 5 * (best_three[bi].distance - best_three[bi+1].distance)) : 
                     1.0);
-                    // e.g. 0.19 and 0.18 => 0.01 x 100 + .5 => 1.5 => 1
-                    // e.g. 0.19 and 0.189 => 0.001 x 100 + .5 => 0.6
+                    // e.g. 0.426, 0.346, 0.289 => 0.080, 0.057 => * 5 => .4, .275 => 0.9 and ...
                 if (best_three[bi].distance > best_three[0].distance * 0.5)
                 {
                     if (loggingOn)
