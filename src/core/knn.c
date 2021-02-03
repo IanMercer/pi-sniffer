@@ -276,14 +276,10 @@ float score (struct recording* recording, double access_points_distance[N_ACCESS
             }
             else
             {
-                // Actual 1.8 recording 15.0 => 0.785
-                // Actual 1.8 recording  1.2 => 0.2
-
-                // 1.0 to 4.0 should be huge
-                // 17.0 to 20.0 should be small
-
-                float delta = fabs(recording_distance - measured_distance) / (recording_distance + measured_distance);
-                sum_delta_squared += delta;
+                // activation function
+                float delta = (measured_distance - recording_distance);
+                float delta_squared = (delta * delta) / 100.0;  // goes up to 10m delta then maxes out
+                sum_delta_squared += 1.0 * fmin(delta_squared, 1.0);
             }
         }
         return sum_delta_squared;

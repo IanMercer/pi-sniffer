@@ -259,7 +259,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
             {
                 // Adjust this to control how probability is spread over possibiities
                 // lower number = less precise, more spread 5 = too much spread
-                double scale_factor = 10.0;
+                double scale_factor = 20.0;
                 // 0.180 0.179 => 0.001 * 100 = 0.1 
                 double pallocation =  allocation * (bi < k_found-1 ?
                     fmin(1.0, 0.5 + scale_factor * (best_three[bi].distance - best_three[bi+1].distance)) : 
@@ -269,10 +269,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
                 {
                     if (loggingOn)
                     {
-                        if (pallocation > 0.3)
-                            g_info("'%s' score: %.3f (%i) p=%.3f", best_three[bi].patch_name, best_three[bi].distance, bi, pallocation);
-                        else
-                            g_debug("'%s' score: %.3f (%i) p=%.3f", best_three[bi].patch_name, best_three[bi].distance, bi, pallocation);
+                        g_debug("'%s' score: %.3f (%i) p=%.3f", best_three[bi].patch_name, best_three[bi].distance, bi, pallocation);
                     }
                 }
                 allocation = allocation - pallocation;
