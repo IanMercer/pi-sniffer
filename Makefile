@@ -30,7 +30,7 @@ ARCH := $(shell uname -m)
 
 # TODO: Compile dbus to a library without warnings for unused parameters
 
-all: scan report cgijson ./lib/libdbus.a ./lib/libbt.a ./lib/libmodel.a
+all: scan cgijson ./lib/libdbus.a ./lib/libbt.a ./lib/libmodel.a
 
 # DBUS
 DBUS_SRC := src/dbus
@@ -79,9 +79,6 @@ $(MODEL_OBJ)/%.o: $(MODEL_SRC)/%.c
 scan: src/*.c $(SRC) $(DEPS)
 	gcc -o scan src/scan.c $(SRC) $(CFLAGS) $(LIBS)
 	#tar -czvf sniffer-1.0.tar.gz ./src
-
-#report: src/*.c $(SRC) $(DEPS)
-#	gcc -o report src/report.c $(SRC) $(CFLAGS) $(LIBS)
 
 cgijson: $(CGIJSON)
 	gcc -o cgijson.cgi $(CGIJSON) $(CFLAGS) $(LIBS)

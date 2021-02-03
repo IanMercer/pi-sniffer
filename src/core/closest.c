@@ -262,7 +262,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
                 double scale_factor = 10.0;
                 // 0.180 0.179 => 0.001 * 100 = 0.1 
                 double pallocation =  allocation * (bi < k_found-1 ?
-                    fmin(1.0, 0.5 + 10 * (best_three[bi].distance - best_three[bi+1].distance)) : 
+                    fmin(1.0, 0.5 + scale_factor * (best_three[bi].distance - best_three[bi+1].distance)) : 
                     1.0);
                     // e.g. 0.426, 0.346, 0.289 => 0.080, 0.057 => * 5 => .4, .275 => 0.9 and ...
                 if (best_three[bi].distance > best_three[0].distance * 0.5)
@@ -388,7 +388,6 @@ bool print_counts_by_closest(struct OverallState* state)
         for (struct AccessPoint* ap = state->access_points; ap != NULL; ap=ap->next)
         {
             // Create patches: close to ap, between ap1 and ap2, ...?
-
         }
 
         //g_warning("No patches found, please deploy patches files");
