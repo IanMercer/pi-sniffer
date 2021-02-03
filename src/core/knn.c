@@ -246,7 +246,7 @@ float score (struct recording* recording, double access_points_distance[N_ACCESS
         float measured_distance = access_points_distance[ap->id];
         float delta = (recording_distance - measured_distance) / 30.0;  // scale to similar to ratios
         sum_delta_squared += delta*delta;
-        return sqrt(sum_delta_squared);
+        return sum_delta_squared;
     } 
     else 
     {
@@ -262,28 +262,31 @@ float score (struct recording* recording, double access_points_distance[N_ACCESS
 
             if (recording_distance > EFFECTIVE_INFINITE-0.10 && measured_distance > EFFECTIVE_INFINITE-0.10)
             {
-                // good, did not expect this distance to be here, but less information than a match
+                // OK: did not expect this distance to be here, but less information than a match
                 sum_delta_squared += 0.5;
             }
             else if (recording_distance > EFFECTIVE_INFINITE - 0.10)
             {
-                sum_delta_squared += 2;  // the observation could see the AP but this recording says you cannot
+                sum_delta_squared += 2.8;  // the observation could see the AP but this recording says you cannot
                 // e.g. barn says you cannot see study, so if you can see study you can't be here
             }
             else if (measured_distance > EFFECTIVE_INFINITE - 0.10)
             {
-                sum_delta_squared += 0.9;  // could not see an AP at all, but should have been able to, could just be a missing observation
+                sum_delta_squared += 0.92;  // could not see an AP at all, but should have been able to, could just be a missing observation
             }
             else
             {
-                // could be zero if both are undefned, hence ^
-                float delta = (recording_distance - measured_distance);
-                float increment = (delta * delta) / (EFFECTIVE_INFINITE * EFFECTIVE_INFINITE);
-                if (increment > 0.92) g_warning("Increment %.2f %.2f - %.2f", increment, recording_distance, measured_distance);
-                sum_delta_squared += increment;
+                // 1.0 to 4.0 should be huge
+                // 17.0 to 20.0 should be small
+
+                // could be zero if both are undefined, hence ^
+                float delta = fabs(recording_distance - measured_distance) / (recording_distance + measured_distance);
+                // atan forces into range 0-1 and increases impact of low numbers vs high numbers
+                //float increment = 0.5 * fabs(atan2(recording_distance, measured_distance)); // / (EFFECTIVE_INFINITE * EFFECTIVE_INFINITE);
+                sum_delta_squared += 0.5 * delta;
             }
         }
-        return sqrt(sum_delta_squared);
+        return sum_delta_squared;
     }
 
 }

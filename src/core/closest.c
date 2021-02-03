@@ -152,7 +152,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         g_assert(state->closest[i].access_point != NULL);
         if (state->closest[i].access_point->id == access_point->id && state->closest[i].device_64 == device_64
         // let's try keeping ones that indicate movement and removing any stationary ones
-        && fabs(state->closest[i].distance - distance) < 1.0
+        // let's not && fabs(state->closest[i].distance - distance) < 1.0
          )
         {
             if (i < state->closest_n-1)
@@ -227,48 +227,61 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
     }
     else 
     {
-        *best = best_three[0];
-        // TODO: Not just top 1, use top few
-
-        bool found = FALSE;
-
         for (struct patch* patch = state->patches; patch != NULL; patch = patch->next)
         {
-            if (strcmp(patch->name, best->patch_name) == 0)
-            {
-                found = TRUE;
-                patch->knn_score = 1.0;
-                // don't break, need to set rest to zero
-            }
-            else
-            {
-                patch->knn_score = 0.0;
-            }
+            patch->knn_score = 0.0;
         }
 
-        if (!found) 
-        { 
-            g_warning("Did not find a patch called %s, creating one on the fly", best->patch_name);
-            char* world = strdup("World");
-            char* tags = strdup("zone=here");
-            struct patch* patch = get_or_create_patch(best->patch_name, best->patch_name, world, tags, &state->patches, &state->groups, FALSE);
-            patch->knn_score = 1.0;
-            best->distance = 1.0;
-            strncpy(best->patch_name, patch->name, META_LENGTH);
-        }
+        // if (!found) 
+        // { 
+        //     g_warning("Did not find a patch called %s, creating one on the fly", best->patch_name);
+        //     char* world = strdup("World");
+        //     char* tags = strdup("zone=here");
+        //     struct patch* patch = get_or_create_patch(best->patch_name, best->patch_name, world, tags, &state->patches, &state->groups, FALSE);
+        //     patch->knn_score = 1.0;
+        //     best->distance = 1.0;
+        //     strncpy(best->patch_name, patch->name, META_LENGTH);
+        // }
 
-        if (loggingOn)
+        time_t now = time(0);
+        if (difftime(now, closest->time) > 300)
         {
-            time_t now = time(0);
-            if (difftime(now, closest->time) > 300)
+            g_debug("Old '%s' score: %.3f", best->patch_name, best->distance);
+            //g_debug("Skip CSV, old data %fs", difftime(now, closest->time));
+        }
+        else 
+        {
+            // Allocate probabilities to patches instead of 1.0 and 0.0 only
+
+            //g_debug("'%s' d=%.2f, age %.2f", best->patch_name, best->distance, time_score);
+            double allocation = 1.0;
+            for (int bi = 0; bi < k_found; bi++)
             {
-                g_debug("Old '%s' score: %.2f", best->patch_name, best->distance);
-                //g_debug("Skip CSV, old data %fs", difftime(now, closest->time));
-            }
-            else 
-            {
-                //g_debug("'%s' d=%.2f, age %.2f", best->patch_name, best->distance, time_score);
-                g_debug("'%s' score: %.2f", best->patch_name, best->distance);
+                // 0.180 0.179 => 0.001 * 100 = 0.1 
+                double pallocation =  allocation * (bi < k_found-1 ?
+                    fmin(1.0, 0.5 + 50 * (best_three[bi].distance - best_three[bi+1].distance)) : 
+                    1.0);
+                    // e.g. 0.19 and 0.18 => 0.01 x 100 + .5 => 1.5 => 1
+                    // e.g. 0.19 and 0.189 => 0.001 x 100 + .5 => 0.6
+                if (best_three[bi].distance > best->distance * 0.5)
+                {
+                    g_debug("'%13s' score: %.3f (%i) p=%.3f", best_three[bi].patch_name, best_three[bi].distance, bi, pallocation);
+                }
+                allocation = allocation - pallocation;
+
+                if (pallocation > 0.000001)
+                {
+                    for (struct patch* patch = state->patches; patch != NULL; patch = patch->next)
+                    {
+                        if (strcmp(patch->name, best_three[bi].patch_name) == 0)
+                        {
+                            //found = TRUE;
+                            patch->knn_score = pallocation;
+                            break;
+                        }
+                    }
+                }
+
             }
             return;
         }
