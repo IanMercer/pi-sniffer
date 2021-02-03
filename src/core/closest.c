@@ -202,7 +202,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
 */
 void calculate_location(struct OverallState* state, struct ClosestTo* closest, 
     double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS], 
-    struct top_k* best, bool is_training_beacon, bool loggingOn, bool debug)
+    bool is_training_beacon, bool loggingOn, bool debug)
 {
     (void)accesstimes;
 
@@ -249,14 +249,11 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
         time_t now = time(0);
         if (difftime(now, closest->time) > 300)
         {
-            g_debug("Old '%s' score: %.3f", best->patch_name, best->distance);
-            //g_debug("Skip CSV, old data %fs", difftime(now, closest->time));
+            g_debug("Old '%s' score: %.3f", best_three[0].patch_name, best_three[0].distance);
         }
         else 
         {
             // Allocate probabilities to patches instead of 1.0 and 0.0 only
-
-            //g_debug("'%s' d=%.2f, age %.2f", best->patch_name, best->distance, time_score);
             double allocation = 1.0;
             for (int bi = 0; bi < k_found; bi++)
             {
@@ -266,14 +263,14 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
                     1.0);
                     // e.g. 0.19 and 0.18 => 0.01 x 100 + .5 => 1.5 => 1
                     // e.g. 0.19 and 0.189 => 0.001 x 100 + .5 => 0.6
-                if (best_three[bi].distance > best->distance * 0.5)
+                if (best_three[bi].distance > best_three[0].distance * 0.5)
                 {
                     if (loggingOn)
-                    g_debug("'%13s' score: %.3f (%i) p=%.3f", best_three[bi].patch_name, best_three[bi].distance, bi, pallocation);
+                    g_debug("'%s' score: %.3f (%i) p=%.3f", best_three[bi].patch_name, best_three[bi].distance, bi, pallocation);
                 }
                 allocation = allocation - pallocation;
 
-                if (pallocation > 0.000001)
+                if (pallocation > 0.0001)
                 {
                     for (struct patch* patch = state->patches; patch != NULL; patch = patch->next)
                     {
@@ -570,8 +567,7 @@ bool print_counts_by_closest(struct OverallState* state)
         {
             bool debug = strcmp(test->name, "F350") == 0;
 
-            struct top_k best;
-            calculate_location(state, test, access_distances, access_times, &best, test->is_training_beacon, loggingOn, debug);
+            calculate_location(state, test, access_distances, access_times, test->is_training_beacon, loggingOn, debug);
 
             // JSON - in a suitable format for copying into a recording
             char *json = NULL;
@@ -598,7 +594,7 @@ bool print_counts_by_closest(struct OverallState* state)
             cJSON_Delete(jobject);
             // Summary of access distances
             if (loggingOn) {
-              g_debug("\n%s\n%.1f min", json, earliest/60.0);
+              g_debug("%s", json);
             }
             free(json);
 
