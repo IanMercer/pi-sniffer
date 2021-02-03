@@ -206,6 +206,11 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
 {
     (void)accesstimes;
 
+    for (struct patch* patch = state->patches; patch != NULL; patch = patch->next)
+    {
+        patch->knn_score = 0.0;
+    }
+
     struct AccessPoint* access_points = state->access_points;
 
     char* device_name = closest->name;
@@ -227,11 +232,6 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
     }
     else 
     {
-        for (struct patch* patch = state->patches; patch != NULL; patch = patch->next)
-        {
-            patch->knn_score = 0.0;
-        }
-
         // if (!found) 
         // { 
         //     g_warning("Did not find a patch called %s, creating one on the fly", best->patch_name);
@@ -284,7 +284,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
                         if (strcmp(patch->name, best_three[bi].patch_name) == 0)
                         {
                             //found = TRUE;
-                            patch->knn_score = pallocation;
+                            patch->knn_score += pallocation;
                             break;
                         }
                     }
@@ -601,7 +601,7 @@ bool print_counts_by_closest(struct OverallState* state)
             cJSON_Delete(jobject);
             // Summary of access distances
             if (loggingOn) {
-              g_debug("%s", json);
+              g_debug("%s x %.2f", json, score);
             }
             free(json);
 
@@ -641,22 +641,16 @@ bool print_counts_by_closest(struct OverallState* state)
             {
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    if (rcurrent->knn_score > 0)
-                    {
-                        //g_debug("Wearable in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
-                        rcurrent->wearable_total += rcurrent->knn_score * score;        // probability x incidence
-                    }
+                    //g_debug("Wearable in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
+                    rcurrent->wearable_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
             else if (test->category == CATEGORY_COVID)
             {
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    if (rcurrent->knn_score > 0)
-                    {
-                        //g_debug("Covid in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
-                        rcurrent->covid_total += rcurrent->knn_score * score;        // probability x incidence
-                    }
+                    //g_debug("Covid in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
+                    rcurrent->covid_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
             else if (test->category == CATEGORY_BEACON)
@@ -677,11 +671,8 @@ bool print_counts_by_closest(struct OverallState* state)
                 //g_debug("Update room total %i", room_count);
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    if (rcurrent->knn_score > 0)
-                    {
-                        //g_info("Phone in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
-                        rcurrent->phone_total += rcurrent->knn_score * score;        // probability x incidence
-                    }
+                    //g_info("Phone in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
+                    rcurrent->phone_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
             else //if (test->distance < 7.5)
