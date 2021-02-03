@@ -243,6 +243,9 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
         //     strncpy(best->patch_name, patch->name, META_LENGTH);
         // }
 
+        // Not really logging on, it's whether the readings have been updated since last scan
+        if (!loggingOn) return;
+
         time_t now = time(0);
         if (difftime(now, closest->time) > 300)
         {
