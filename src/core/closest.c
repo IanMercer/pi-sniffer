@@ -244,7 +244,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
         // }
 
         // Not really logging on, it's whether the readings have been updated since last scan
-        if (!loggingOn) return;
+        //if (!loggingOn) return;
 
         time_t now = time(0);
         if (difftime(now, closest->time) > 300)
@@ -268,6 +268,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
                     // e.g. 0.19 and 0.189 => 0.001 x 100 + .5 => 0.6
                 if (best_three[bi].distance > best->distance * 0.5)
                 {
+                    if (loggingOn)
                     g_debug("'%13s' score: %.3f (%i) p=%.3f", best_three[bi].patch_name, best_three[bi].distance, bi, pallocation);
                 }
                 allocation = allocation - pallocation;
@@ -752,8 +753,6 @@ bool print_counts_by_closest(struct OverallState* state)
         cJSON_AddStringToObject(item, "group", s->extra);
         cJSON_AddSummary(item, s);
         cJSON_AddItemToArray(jrooms, item);
-
-        // TODO: Add tags for GVariant of this
     }
     free_summary(&summary);
 
@@ -867,7 +866,7 @@ bool print_counts_by_closest(struct OverallState* state)
     //g_info("Summary by room: %s", json_rooms);
     //g_info(" ");
     g_info("Total %.2f people: %s", total_count, json_groups);
-    //g_info("%s ", json_rooms);
+    g_info("%s ", json_complete);
     g_info(" ");
 
     free(json_groups); // string listing each group and count
