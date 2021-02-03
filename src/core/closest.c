@@ -266,7 +266,12 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
                 if (best_three[bi].distance > best_three[0].distance * 0.5)
                 {
                     if (loggingOn)
-                    g_debug("'%s' score: %.3f (%i) p=%.3f", best_three[bi].patch_name, best_three[bi].distance, bi, pallocation);
+                    {
+                        if (pallocation > 0.3)
+                            g_info("'%s' score: %.3f (%i) p=%.3f", best_three[bi].patch_name, best_three[bi].distance, bi, pallocation);
+                        else
+                            g_debug("'%s' score: %.3f (%i) p=%.3f", best_three[bi].patch_name, best_three[bi].distance, bi, pallocation);
+                    }
                 }
                 allocation = allocation - pallocation;
 

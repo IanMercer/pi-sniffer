@@ -599,15 +599,9 @@ int report_counts(void *parameters)
 
         if (influx_seconds > state.influx_max_period_seconds || (changed && (influx_seconds > state.influx_min_period_seconds)))
         {
-            g_debug("Sending to influx %is since last", influx_seconds);
+            g_debug("Sending to influx %is since last (%s)", influx_seconds, changed?"changed":"unchanged");
             state.influx_last_sent = now;
             report_to_influx_tick(&state);
-        }
-        else
-        {
-            g_debug("Influx seconds %is < %is < %is %s", influx_seconds,
-                state.influx_min_period_seconds, state.influx_max_period_seconds,
-                changed ? "changed" : "unchanged");
         }
 
         int webhook_seconds = difftime(now, state.webhook_last_sent);
