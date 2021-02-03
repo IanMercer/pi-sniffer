@@ -276,14 +276,14 @@ float score (struct recording* recording, double access_points_distance[N_ACCESS
             }
             else
             {
+                // Actual 1.8 recording 15.0 => 0.785
+                // Actual 1.8 recording  1.2 => 0.2
+
                 // 1.0 to 4.0 should be huge
                 // 17.0 to 20.0 should be small
 
-                // could be zero if both are undefined, hence ^
                 float delta = fabs(recording_distance - measured_distance) / (recording_distance + measured_distance);
-                // atan forces into range 0-1 and increases impact of low numbers vs high numbers
-                //float increment = 0.5 * fabs(atan2(recording_distance, measured_distance)); // / (EFFECTIVE_INFINITE * EFFECTIVE_INFINITE);
-                sum_delta_squared += 0.5 * delta;
+                sum_delta_squared += delta;
             }
         }
         return sum_delta_squared;
