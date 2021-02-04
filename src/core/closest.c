@@ -256,7 +256,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
                     // e.g. 0.426, 0.346, 0.289 => 0.080, 0.057 => * 5 => .4, .275 => 0.9 and ...
                 if (best_three[bi].distance > best_three[0].distance * 0.5)
                 {
-                    //if (loggingOn)
+                    if (loggingOn)
                     {
                         g_debug("'%s' score: %.3f (%i) p=%.3f", best_three[bi].patch_name, best_three[bi].distance, bi, pallocation);
                     }
@@ -469,7 +469,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         char* category = category_from_int(test->category);
 
-        if (age < 400)
+        if (loggingOn)
         {
           g_info("--- %s --- %s --- %s", mac, category, test->name);
         }
@@ -513,7 +513,7 @@ bool print_counts_by_closest(struct OverallState* state)
                     mac_64_to_string(other_mac, 18, other->supersededby);
 
                     //Verbose logging
-                    if (loggingOn && age<400) 
+                    if (loggingOn) 
                     {
                       struct AccessPoint *ap2 = other->access_point;
                       g_debug(" %15s distance %5.1fm at=%3is dt=%3is count=%3i %s%s", ap2->client_id, other->distance, abs_diff, time_diff, other->count,
