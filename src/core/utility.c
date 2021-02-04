@@ -320,22 +320,20 @@ void append_text(char* buffer, int length, char* format, ...)
 
 /*
   string starts with
-  TODO: Make this insensitive
 */
 bool string_starts_with(const char *buffer, const char *match)
 {
-  return strncmp(buffer, match, strlen(match)) == 0;
+  return strncasecmp(buffer, match, strlen(match)) == 0;
 }
 
 /*
   string ends with
-  TODO: Make this insensitive
 */
 bool string_ends_with(const char *buffer, const char *match)
 {
     int offset = strlen(buffer) - strlen(match);
     if (offset < 0) return FALSE;
-    return strncmp(buffer + offset, match, strlen(match)) == 0;
+    return strncasecmp(buffer + offset, match, strlen(match)) == 0;
 }
 
 /*

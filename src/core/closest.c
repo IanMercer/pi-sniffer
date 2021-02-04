@@ -141,7 +141,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
     //     return;
     // }
 
-    if (distance < 0.01)     // erroneous value
+    if (distance < 0.0001)     // erroneous value
         return;
 
     // TODO: Move closest to a circular buffer and stop shifting it in memory
