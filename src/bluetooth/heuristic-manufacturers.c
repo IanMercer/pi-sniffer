@@ -75,7 +75,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
     else if (manufacturer == 0x0075)
     {
 		set_name(existing, "Samsung 0x75", nt_manufacturer);
-        existing->category = CATEGORY_PHONE;  // assume phone until TV comes along (and stays)
+		soft_set_category(&existing->category, CATEGORY_PHONE); // assume phone until TV comes along (and stays)
 
         // Galaxy Watch
         // <[byte 0x01, 0x00, 0x02, 0x00, 0x01, 0x03, 0x02]>
