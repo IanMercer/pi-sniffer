@@ -191,4 +191,8 @@ void display_state(struct OverallState* state)
     int count = 0;
     for (struct AccessPoint* ap = state->access_points; ap != NULL; ap=ap->next){ count ++; }
     g_info("ACCESS_POINTS: %i", count);
+
+    count = 0;
+    for (struct Beacon* beacon = state->beacons; beacon != NULL; beacon=beacon->next){ count ++; }
+    g_info("ASSET_COUNT: %i", count);
 }

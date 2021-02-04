@@ -125,11 +125,11 @@ void *listen_loop(void *param)
     g_socket_bind(broadcast_socket, addr, TRUE, &error);
     g_assert_no_error(error);
 
-    g_info("Starting listen thread for mesh operation on port %i\n", state->udp_mesh_port);
-    g_info("Local client id is %s\n", state->local->client_id);
+    g_info("LT: Starting listen thread for mesh operation on port %i", state->udp_mesh_port);
+    g_info("LT: Local client id is %s", state->local->client_id);
     g_cancellable_reset(cancellable);
 
-    if (!is_any_interface_up()) g_warning("No interface to listen on");
+    if (!is_any_interface_up()) g_warning("LT: No interface to listen on");
 
     while (!g_cancellable_is_cancelled(cancellable))
     {
@@ -224,7 +224,7 @@ void *listen_loop(void *param)
             pthread_mutex_unlock(&state->lock);
         }
     }
-    g_info("Listen thread finished");
+    g_info("LT: Listen thread finished");
     return NULL;
 }
 

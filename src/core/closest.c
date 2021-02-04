@@ -826,8 +826,8 @@ bool print_counts_by_closest(struct OverallState* state)
             g_info(" ");
             //g_debug("Examined %i > %i > %i > %i", state->closest_n, count_examined, count_not_marked, count_in_age_range);
         }
-
     }
+    else { g_debug("No assets to track");}
 
     // debug
     char* json_groups = cJSON_PrintUnformatted(jzones);

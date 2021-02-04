@@ -2160,11 +2160,11 @@ void custom_log_handler (const gchar *log_domain, GLogLevelFlags log_level, cons
     gint debug_level = GPOINTER_TO_INT (user_data);
 
     /* filter out messages depending on debugging level - actually a flags enum but > works */
-    if (log_level > debug_level) 
-    {
-        return;
-    }
-    g_print("%i <= %i", log_level, debug_level);
+    // if (log_level > debug_level) 
+    // {
+    //     return;
+    // }
+    //g_print("%i <= %i", log_level, debug_level);
     g_log_default_handler(log_domain, log_level, message, user_data);
 }
 
@@ -2178,7 +2178,7 @@ int main(int argc, char **argv)
 
     int debug_level = 0;
     get_int_env("DEBUG_LEVEL", &debug_level, G_LOG_LEVEL_INFO);
-    g_log_set_handler ("Sniffer", G_LOG_LEVEL_MASK, custom_log_handler, GINT_TO_POINTER (debug_level));
+    //g_log_set_handler ("Sniffer", G_LOG_LEVEL_MASK, custom_log_handler, GINT_TO_POINTER (debug_level));
 
     g_debug("DEBUG MESSAGE");
     g_info("INFO MESSAGE");
@@ -2209,7 +2209,6 @@ int main(int argc, char **argv)
     g_info("create_socket_service()");
     socket_service = create_socket_service(&state);
 
-    g_info("\n\nStarting\n\n");
 
     conn = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
     if (conn == NULL)
@@ -2218,10 +2217,12 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    g_info("\n\nStarting\n\n");
+
     // Grab zero time = time when started
     time(&started);
 
-    g_debug("calling g_bus_own_name");
+    g_info("calling g_bus_own_name");
 
     piSniffer * sniffer = pi_sniffer_skeleton_new ();
 

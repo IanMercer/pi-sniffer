@@ -233,9 +233,10 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
                 beacon->alias = strdup(alias->valuestring);
                 beacon->last_seen = 0;
                 beacon->patch = NULL;
+                // Chain onto start of list
                 beacon->next = *beacon_list;
                 *beacon_list = beacon;
-                //g_warning("Added beacon `%s` = '%s' to list", beacon->name, beacon->alias);
+                g_debug("Added beacon `%s` = '%s' to list", beacon->name, beacon->alias);
             }
             else
             {
