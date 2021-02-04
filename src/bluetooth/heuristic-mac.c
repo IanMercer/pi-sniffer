@@ -40,8 +40,9 @@ void apply_mac_address_heuristics (struct Device* existing)
     else if (string_starts_with(existing->mac, "CC:6E:A4"))
     {
         // Samsung phone
-        set_name(existing, "Samsung phone", nt_manufacturer);
-        existing->category = CATEGORY_PHONE;
+        set_name(existing, "Samsung", nt_manufacturer);
+        // Maybe a TV
+        // existing->category = CATEGORY_PHONE;
     }
     else if (string_starts_with(existing->mac, "64:b8:53"))
     {

@@ -209,7 +209,7 @@ float score (struct recording* recording, double access_points_distance[N_ACCESS
             {
                 // activation function
                 float delta = (measured_distance - recording_distance);
-                float delta_squared = (delta * delta) / 100.0;  // goes up to 10m delta then maxes out
+                float delta_squared = (delta * delta) / 50.0;  // goes up to 7m delta then maxes out
                 sum_delta_squared += 1.0 * fmin(delta_squared, 1.0);
             }
         }
