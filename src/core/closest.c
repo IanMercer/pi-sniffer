@@ -592,7 +592,7 @@ bool print_counts_by_closest(struct OverallState* state)
             // Summary of access distances
             //if (loggingOn) 
             {
-              g_debug("%s x %.2f", json, score);
+              g_debug("%16s x%.2f %s ", test->name, score, json);
             }
             free(json);
 

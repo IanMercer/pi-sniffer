@@ -193,7 +193,8 @@ float score (struct recording* recording, double access_points_distance[N_ACCESS
 
             if (recording_distance > EFFECTIVE_INFINITE-0.10 && measured_distance > EFFECTIVE_INFINITE-0.10)
             {
-                // OK: did not expect this distance to be here, but less information than a match
+                // OK: did not expect this distance to be here, and it's not but less information than a match
+                // but better than a bad match on distances, e.g. 4m and 14m
                 sum_delta_squared += 0.5;
             }
             else if (recording_distance > EFFECTIVE_INFINITE - 0.10)
@@ -201,16 +202,16 @@ float score (struct recording* recording, double access_points_distance[N_ACCESS
                 sum_delta_squared += 2.8;  // the observation could see the AP but this recording says you cannot
                 // e.g. barn says you cannot see study, so if you can see study you can't be here
             }
-            else if (measured_distance > EFFECTIVE_INFINITE - 0.10)
-            {
-                sum_delta_squared += 0.82;  // could not see an AP at all, but should have been able to, could just be a missing observation
-            }
+            //else if (measured_distance > EFFECTIVE_INFINITE - 0.10)
+            //{
+            //    sum_delta_squared += 0.82;  // could not see an AP at all, but should have been able to, could just be a missing observation
+            //} // handled by the below
             else
             {
-                // activation function
+                // activation function, and max 0.8 for a reading with the same ap
                 float delta = (measured_distance - recording_distance);
-                float delta_squared = (delta * delta) / 50.0;  // goes up to 7m delta then maxes out
-                sum_delta_squared += 1.0 * fmin(delta_squared, 1.0);
+                float delta_squared = (delta * delta) / 25.0;  // goes up to 5m delta then maxes out
+                sum_delta_squared += 0.8 * fmin(delta_squared, 1.0);
             }
         }
         return sum_delta_squared;
