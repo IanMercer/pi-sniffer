@@ -68,35 +68,8 @@ void udp_send(int port, const char *message, int message_length)
     }
 }
 
-GCancellable *cancellable;
-pthread_t listen_thread;
-
-
-/*
-   Mark as superseeded
-*/
-void mark_superseded(struct OverallState* state, struct AccessPoint* access_point, int64_t device_64, int64_t supersededby)
-{
-    if (supersededby != 0)
-    {
-        char mac[18];
-        mac_64_to_string(mac, 18, device_64);
-        char by[18];
-        mac_64_to_string(by, 18, supersededby);
-        g_debug("Marking %s as superseded by %s according to %s", mac, by, access_point->client_id);
-        for (int j = state->closest_n-1; j >= 0; j--)
-        {
-            g_assert(state->closest[j].access_point != NULL);
-            if (state->closest[j].access_point->id == access_point->id && state->closest[j].device_64 == device_64)
-            {
-                //TODO: Moving to new way to handle this ... state->closest[j].supersededby = supersededby;
-                // TODO: Remove this whole method and the code that sends it!
-            }
-        }
-        g_debug("Marked superseded");
-        return;
-    }
-}
+static GCancellable *cancellable;
+static pthread_t listen_thread;
 
 
 /*
@@ -116,6 +89,8 @@ void *listen_loop(void *param)
 {
     struct OverallState *state = (struct OverallState *)param;
     GError *error = NULL;
+
+    g_info("UDP Mesh port %i", state->udp_mesh_port);
 
     GInetAddress *iaddr = g_inet_address_new_any(G_SOCKET_FAMILY_IPV4);
     GSocketAddress *addr = g_inet_socket_address_new(iaddr, state->udp_mesh_port);
@@ -191,27 +166,18 @@ void *listen_loop(void *param)
                 {
                     int delta_time = difftime(now, d.latest);
 
-                    if (d.supersededby != 0)
+                    merge(&state->devices[i], &d, actual->client_id, delta_time == 0);
+
+                    // This is a current observation, time should match
+
+                    // If the delta time between our clock and theirs is > 0, log it
+                    if (delta_time < 0)
                     {
-                        // remove from closest
-                        mark_superseded(state, actual, d.mac64, d.supersededby);
-                        // Don't bump the latest time on this device, this message relates to an earlier time, right?
+                        // This is problematic, they are ahead of us
+                        g_warning("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, actual->client_id, d.distance, delta_time);
                     }
-                    else 
-                    {
-                        merge(&state->devices[i], &d, actual->client_id, delta_time == 0);
 
-                        // This is a current observation, time should match
-
-                        // If the delta time between our clock and theirs is > 0, log it
-                        if (delta_time < 0)
-                        {
-                            // This is problematic, they are ahead of us
-                            g_warning("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, actual->client_id, d.distance, delta_time);
-                        }
-
-                        g_assert(actual != NULL);
-                    }
+                    g_assert(actual != NULL);
                    
                     break;
                 }
@@ -220,7 +186,7 @@ void *listen_loop(void *param)
             // Update the closest data structure
             g_assert(actual != NULL);
             //g_debug("UDP: %s %s count=%i ap=%s %s %.1fm", d.mac, d.name, d.count, actual->client_id, dummy.client_id, d.distance);
-            add_closest(state, d.mac64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count, d.name, 
+            add_closest(state, d.mac64, actual, d.earliest, d.latest, d.distance, d.category, d.count, d.name, 
                 d.name_type, d.addressType,
                 d.is_training_beacon);
 
@@ -237,7 +203,10 @@ void *listen_loop(void *param)
 */
 GCancellable *create_socket_service(struct OverallState *state)
 {
+    g_info("Creating UDP listener on port %i", state->udp_mesh_port);
+
     cancellable = g_cancellable_new();
+    return cancellable;
 
     if (pthread_create(&listen_thread, NULL, listen_loop, state))
     {
@@ -274,7 +243,8 @@ void update_closest(struct OverallState *state, struct Device *device)
     //g_debug("update_closest(%s, %i, %s)", state->local->client_id, state->local->id, device->mac);
     // Add local observations into the same structure
     int64_t id_64 = mac_string_to_int_64(device->mac);
-    add_closest(state, id_64, state->local, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count, 
+    add_closest(state, id_64, state->local, device->earliest, device->latest, device->distance, device->category, 
+        device->count, 
         device->name, 
         device->name_type, device->addressType,
         device->is_training_beacon);
@@ -289,7 +259,8 @@ void update_superseded(struct OverallState *state, struct Device *device)
     // Add local observations into the same structure
     int64_t id_64 = mac_string_to_int_64(device->mac);
     g_assert(state->local != NULL);
-    add_closest(state, id_64, state->local, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count, 
+    add_closest(state, id_64, state->local, device->earliest, device->latest, device->distance, device->category, 
+        device->count, 
         device->name,
         device->name_type, device->addressType,
         device->is_training_beacon);

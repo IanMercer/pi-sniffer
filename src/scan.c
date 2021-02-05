@@ -512,7 +512,6 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         existing->hidden = false;               // we own this one
         g_strlcpy(existing->mac, address, 18);  // address
         existing->mac64 = mac_string_to_int_64(address);    // mac64
-        existing->supersededby = 0;            // will be filled in when calculating columns
 
         // dummy struct filled with unmatched values
         existing->name[0] = '\0';
@@ -1142,8 +1141,6 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         // DO NOT DO THIS IF THE MESSAGE IS "DISCONNECTED" AS THAT IS SENT AFTER IT HAS GONE!
         time(&existing->latest);
         existing->count++;
-        // If we just saw it, it can't be superseeded by anyone else
-        existing->supersededby = 0;
     }
 
     if (starting && send_distance)
@@ -1596,14 +1593,7 @@ void dump_device(struct OverallState* state, struct Device *d)
         }
     }
 
-    if (d->supersededby == 0)
-    {
-        g_info("%4i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %13s %5.1fm %s", d->id % 10000, d->mac, d->count, addressType, d->distance, d->column, (d->earliest - state->started), (d->latest - state->started), d->name, closest_ap, closest_dist, category);
-    }
-    else
-    {
-        g_debug("%4i %s.%4i %3s %5.1fm %4i  %6li-%6li %20s %13s %5.1fm %s", d->id % 10000, d->mac, d->count, addressType, d->distance, d->column, (d->earliest - state->started), (d->latest - state->started), d->name, closest_ap, closest_dist, category);
-    }
+    g_info("%4i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %13s %5.1fm %s", d->id % 10000, d->mac, d->count, addressType, d->distance, d->column, (d->earliest - state->started), (d->latest - state->started), d->name, closest_ap, closest_dist, category);
 }
 
 
@@ -2191,6 +2181,8 @@ int main(int argc, char **argv)
     g_info("initialize_state()");
     initialize_state(&state);
 
+    display_state(&state);
+
     signal(SIGINT, int_handler);
     signal(SIGTERM, int_handler);
 
@@ -2205,8 +2197,8 @@ int main(int argc, char **argv)
 
     // Create a UDP listener for mesh messages about devices connected to other access points in same LAN
     g_info("create_socket_service()");
-    socket_service = create_socket_service(&state);
 
+    socket_service = create_socket_service(&state);
 
     conn = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
     if (conn == NULL)
@@ -2345,9 +2337,6 @@ int main(int argc, char **argv)
 
     // Flash the led N times for N people present
     g_timeout_add(300, flash_led, loop);
-
-    // Experimental DBus sender
-    //g_timeout_add_seconds(30, send_notification_tick, sniffer);
 
     g_info(" ");
     g_info(" ");

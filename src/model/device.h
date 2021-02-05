@@ -87,7 +87,6 @@ struct Device
    uint8_t ttl;            // time to live count down during removal process
    char mac[18];           // mac address string
    int64_t mac64;          // mac address (moving off string)
-   int64_t supersededby;   // mac address of previous mac in same column
    char name[NAME_LENGTH];
    enum name_type name_type;      // not set, heuristic, known, or alias
    char alias[NAME_LENGTH];

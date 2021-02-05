@@ -85,7 +85,7 @@ struct ClosestTo *get_closest_64(struct OverallState* state, int64_t device_64)
 */
 void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoint* access_point, 
     time_t earliest, time_t latest, float distance, 
-    int8_t category, int64_t supersededby, int count, char* name, 
+    int8_t category, int count, char* name, 
     enum name_type name_type, int8_t addressType,
     bool is_training_beacon)
 {
@@ -122,29 +122,6 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
             }
         }
     }
-
-    // if (supersededby != 0)
-    // {
-    //     g_warning("****************** SHOULD NEVER COME HERE *********************");
-    //     char mac[18];
-    //     mac_64_to_string(mac, 18, device_64);
-    //     for (int j = state->closest_n-1; j >= 0; j--)
-    //     {
-    //         g_assert(state->closest[j].access_point != NULL);
-    //         if (state->closest[j].device_64 == device_64 && state->closest[j].access_point->id == access_point->id)
-    //         {
-    //             if (state->closest[j].supersededby != supersededby)
-    //             {
-    //                 g_debug("Removing %s from closest for %s as it's superseded", mac, access_point->client_id);
-    //                 state->closest[j].supersededby = supersededby;
-    //             }
-    //         }
-    //     }
-    //     // Could trim them from array (no, it might come back)
-    //     // Need to report this right away
-
-    //     return;
-    // }
 
     if (distance < 0.0001)     // erroneous value
         return;
@@ -184,7 +161,6 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
     state->closest[state->closest_n].category = category;
     state->closest[state->closest_n].name_type = name_type;
     state->closest[state->closest_n].addressType = addressType;
-    state->closest[state->closest_n].supersededby = supersededby;
     state->closest[state->closest_n].earliest = earliest;
     state->closest[state->closest_n].latest = latest;
     state->closest[state->closest_n].count = count;

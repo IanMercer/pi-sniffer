@@ -75,8 +75,10 @@ $(MODEL_OBJ)/%.o: $(MODEL_SRC)/%.c
 	@mkdir -p $(@D)
 	ar rcs $@ $(MODEL_OBJECTS)
 
+LIBRARIES := ./lib/libmodel.a ./lib/libbt.a ./lib/libdbus.a
+
 # MAIN
-scan: src/*.c $(SRC) $(DEPS)
+scan: src/*.c $(SRC) $(DEPS) $(LIBRARIES)
 	gcc -o scan src/scan.c $(SRC) $(CFLAGS) $(LIBS)
 	echo "Run using ... G_MESSAGES_DEBUG=all UDP_MESH_PORT=7779 DBUS_SENDER=1 ./scan"
 	#tar -czvf sniffer-1.0.tar.gz ./src

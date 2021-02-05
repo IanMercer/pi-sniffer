@@ -47,24 +47,6 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
     optional_set_alias(local->alias, remote->alias, NAME_LENGTH);
     soft_set_8(&local->addressType, remote->addressType);
 
-    // If this is an update for an existing value update the superseded field
-    if (local->supersededby != remote->supersededby)
-    {
-        int timedelta = difftime(remote->latest, local->latest);
-        if (timedelta == 0 || safe)
-        {
-            local->supersededby = remote->supersededby;
-        }
-        else
-        {
-            char macsuperlocal[18];
-            char macsuperremote[18];
-            mac_64_to_string(macsuperlocal, 18, local->supersededby);
-            mac_64_to_string(macsuperremote, 18, remote->supersededby);
-            g_warning("Did not update superseded for %s from %s to %s (%i, %i)", local->mac, macsuperlocal, macsuperremote, timedelta, safe);
-        }
-    }
-
     if (remote->category != CATEGORY_UNKNOWN)
     {
         if (local->category == CATEGORY_UNKNOWN)
@@ -156,10 +138,6 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     // Device details
     cJSON_AddStringToObject(j, "mac", device->mac);
     cJSON_AddStringToObject(j, "name", device->name);
-
-    char mac_super[18];
-    mac_64_to_string(mac_super, 18, device->supersededby);
-    cJSON_AddStringToObject(j, "supersededby", mac_super);
 
     cJSON_AddStringToObject(j, "alias", device->alias);
     cJSON_AddNumberToObject(j, "addressType", device->addressType);
@@ -267,13 +245,6 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
     if (cJSON_IsString(name) && (name->valuestring != NULL))
     {
         strncpy(device->name, name->valuestring, NAME_LENGTH);
-    }
-
-    cJSON *supersedes = cJSON_GetObjectItemCaseSensitive(djson, "supersededby");
-    if (cJSON_IsString(supersedes))
-    {
-        // TODO: ulong serialization with cJSON
-        device->supersededby = mac_string_to_int_64(supersedes->valuestring);
     }
 
     cJSON *latest = cJSON_GetObjectItemCaseSensitive(djson, "latest");
