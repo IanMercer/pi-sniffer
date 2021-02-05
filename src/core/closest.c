@@ -232,57 +232,49 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
     }
     else 
     {
-        // Not really logging on, it's whether the readings have been updated since last scan
-        //if (!loggingOn) return;
-        // This is handled by called which reduces probability over time, not here
-        // time_t now = time(0);
-        // if (difftime(now, closest->time) > 300)
-        // {
-        //     g_debug("Old '%s' score: %.3f", best_three[0].patch_name, best_three[0].distance);
-        // }
-        // else 
+        // Allocate probabilities to patches instead of 1.0 and 0.0 only
+        double allocation = 1.0;
+        for (int bi = 0; bi < k_found; bi++)
         {
-            // Allocate probabilities to patches instead of 1.0 and 0.0 only
-            double allocation = 1.0;
-            for (int bi = 0; bi < k_found; bi++)
+            // Adjust this to control how probability is spread over possibiities
+            // lower number = less precise, more spread 5 = too much spread
+            double scale_factor = 20.0;
+            // 0.180 0.179 => 0.001 * 100 = 0.1 
+            double pallocation =  allocation * (bi < k_found-1 ?
+                fmin(1.0, 0.5 + scale_factor * (best_three[bi].distance - best_three[bi+1].distance)) : 
+                1.0);
+                // e.g. 0.426, 0.346, 0.289 => 0.080, 0.057 => * 5 => .4, .275 => 0.9 and ...
+            if (best_three[bi].distance > best_three[0].distance * 0.5)
             {
-                // Adjust this to control how probability is spread over possibiities
-                // lower number = less precise, more spread 5 = too much spread
-                double scale_factor = 20.0;
-                // 0.180 0.179 => 0.001 * 100 = 0.1 
-                double pallocation =  allocation * (bi < k_found-1 ?
-                    fmin(1.0, 0.5 + scale_factor * (best_three[bi].distance - best_three[bi+1].distance)) : 
-                    1.0);
-                    // e.g. 0.426, 0.346, 0.289 => 0.080, 0.057 => * 5 => .4, .275 => 0.9 and ...
-                if (best_three[bi].distance > best_three[0].distance * 0.5)
+                if (loggingOn && bi == 0)
                 {
-                    if (loggingOn && debug)
-                    {
-                        g_debug("'%s' score: %.3f (%i) p=%.3f", best_three[bi].patch_name, best_three[bi].distance, bi, pallocation);
-                    }
+                    g_debug("'%s' score: %.3f (%i) p=%.3f", best_three[bi].patch_name, best_three[bi].distance, bi, pallocation);
                 }
-                allocation = allocation - pallocation;
-
-                if (pallocation > 0.0001)
-                {
-                    for (struct patch* patch = state->patches; patch != NULL; patch = patch->next)
-                    {
-                        if (strcmp(patch->name, best_three[bi].patch_name) == 0)
-                        {
-                            //found = TRUE;
-                            patch->knn_score += pallocation;
-                            if (patch -> knn_score > 1.0)
-                            {
-                                g_warning("knn_score %.2f should be < 1.0", patch->knn_score);
-                            }
-                            break;
-                        }
-                    }
-                }
-
             }
-            return;
+            allocation = allocation - pallocation;
+
+            if (pallocation > 0.0001)
+            {
+                for (struct patch* patch = state->patches; patch != NULL; patch = patch->next)
+                {
+                    if (strcmp(patch->name, best_three[bi].patch_name) == 0)
+                    {
+                        //found = TRUE;
+                        patch->knn_score += pallocation;
+                        if (patch -> knn_score > 1.0)
+                        {
+                            g_warning("knn_score %.2f should be < 1.0", patch->knn_score);
+                        }
+                        break;
+                    }
+                }
+            }
+
         }
+
+        
+
+        return;
     }
 
     // Try again including unconfirmed recordings (beacon subdirectory)
