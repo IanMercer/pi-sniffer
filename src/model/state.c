@@ -32,6 +32,7 @@ void initialize_state(struct OverallState* state)
     state->beacons = NULL;       // linked list
     state->beacon_hash = 0;      // initial unseen hash
     state->json = NULL;          // DBUS JSON message
+    state->led_flash_count = 3;  // Fixed for now, TODO: Back to calculated value
     time(&state->influx_last_sent);
     time(&state->webhook_last_sent);
     time(&state->last_summary);  // When last summary was generated
@@ -191,11 +192,12 @@ void display_state(struct OverallState* state)
 
     g_info("CONFIG='%s'", state->configuration_file_path == NULL ? "** Please set a path to config.json **" : state->configuration_file_path);
 
-    int count = 0;
-    for (struct AccessPoint* ap = state->access_points; ap != NULL; ap=ap->next){ count ++; }
-    g_info("ACCESS_POINTS: %i", count);
+    // These are not initialized yet
+    //int count = 0;
+    //for (struct AccessPoint* ap = state->access_points; ap != NULL; ap=ap->next){ count ++; }
+    //g_info("ACCESS_POINTS: %i", count);
 
-    count = 0;
+    int count = 0;
     for (struct Beacon* beacon = state->beacons; beacon != NULL; beacon=beacon->next){ count ++; }
     g_info("ASSET_COUNT: %i", count);
 }

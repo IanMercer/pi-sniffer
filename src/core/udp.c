@@ -71,20 +71,6 @@ void udp_send(int port, const char *message, int message_length)
 static GCancellable *cancellable;
 static pthread_t listen_thread;
 
-
-/*
-   Set count to zero
-*/
-void set_count_to_zero(struct AccessPoint* ap, void* extra)
-{
-    (void)extra;
-    ap->people_closest_count = 0;
-    ap->people_in_range_count = 0;
-}
-
-
-
-
 void *listen_loop(void *param)
 {
     struct OverallState *state = (struct OverallState *)param;
@@ -130,8 +116,6 @@ void *listen_loop(void *param)
         strncpy(dummy.platform, "notset", 7);
         dummy.id = -1;
         dummy.people_distance = 0.0;
-        dummy.people_closest_count = 0.0;
-        dummy.people_in_range_count = 0.0;
         dummy.rssi_factor = 0.0;
         dummy.rssi_one_meter = 0.0;
         dummy.sequence = 0;
@@ -187,7 +171,7 @@ void *listen_loop(void *param)
             g_assert(actual != NULL);
             //g_debug("UDP: %s %s count=%i ap=%s %s %.1fm", d.mac, d.name, d.count, actual->client_id, dummy.client_id, d.distance);
             add_closest(state, d.mac64, actual, d.earliest, d.latest, d.distance, d.category, d.count, d.name, 
-                d.name_type, d.addressType,
+                d.name_type, d.address_type,
                 d.is_training_beacon);
 
             pthread_mutex_unlock(&state->lock);
@@ -245,7 +229,7 @@ void update_closest(struct OverallState *state, struct Device *device)
     add_closest(state, id_64, state->local, device->earliest, device->latest, device->distance, device->category, 
         device->count, 
         device->name, 
-        device->name_type, device->addressType,
+        device->name_type, device->address_type,
         device->is_training_beacon);
 }
 
@@ -261,7 +245,7 @@ void update_superseded(struct OverallState *state, struct Device *device)
     add_closest(state, id_64, state->local, device->earliest, device->latest, device->distance, device->category, 
         device->count, 
         device->name,
-        device->name_type, device->addressType,
+        device->name_type, device->address_type,
         device->is_training_beacon);
 }
 

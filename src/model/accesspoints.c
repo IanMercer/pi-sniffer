@@ -33,8 +33,6 @@ struct AccessPoint *add_access_point(struct AccessPoint** access_point_list, cha
     ap->rssi_one_meter = rssi_one_meter;
     ap->rssi_factor = rssi_factor;
     ap->people_distance = people_distance;
-    ap->people_closest_count = 0.0;
-    ap->people_in_range_count = 0.0;
     ap->sequence = 0;
     time(&ap->last_seen);
 
@@ -45,20 +43,15 @@ void print_access_points(struct AccessPoint* access_points_list)
 {
     time_t now;
     time(&now);
-    float people_total = 0.0;
-    g_info("ACCESS POINTS          Platform       Close Range      Parameters         Last Seen");
+    g_info("ACCESS POINTS          Platform       Parameters   Last Seen");
     for (struct AccessPoint* ap = access_points_list; ap != NULL; ap = ap->next)
     {
         int delta_time = difftime(now, ap->last_seen);
-        g_info("%20s %16s (%4.1f %4.1f) (%3i, %.1f, %.1fm) %is",
+        g_info("%20s %16s (%3i, %.1f) %is",
         ap->client_id, ap->platform,
-        ap->people_closest_count, ap->people_in_range_count,
-        ap->rssi_one_meter, ap->rssi_factor, ap->people_distance,
+        ap->rssi_one_meter, ap->rssi_factor,
         delta_time);
-        //g_print("              %16s %s\n", ap->platform, ap->description);
-        people_total += ap->people_closest_count;
     }
-    g_info("Total people = %.1f", people_total);
 }
 
 /*
@@ -69,8 +62,6 @@ struct AccessPoint *update_accessPoints(struct AccessPoint** access_point_list, 
     struct AccessPoint* ap = add_access_point(access_point_list, access_point.client_id,
                             access_point.description, access_point.platform,
                             access_point.rssi_one_meter, access_point.rssi_factor, access_point.people_distance);
-    ap->people_closest_count = access_point.people_closest_count;
-    ap->people_in_range_count = access_point.people_in_range_count;
     strncpy(ap->description, access_point.description, META_LENGTH);
     strncpy(ap->platform, access_point.platform, META_LENGTH);
     // TODO: Only if later

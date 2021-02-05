@@ -446,7 +446,7 @@ bool is_any_interface_up()
 
     if ((count_connected > 0) != interface_state)
     {
-        g_warning("Network connectivity %i out of %i interfaces connected", count_connected, count);
+        g_info("Network connectivity %i out of %i interfaces connected", count_connected, count);
         interface_state = count_connected > 0;
     }
     return count_connected > 0;

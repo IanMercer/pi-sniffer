@@ -45,7 +45,7 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
 
     //optional_set(local->name, remote->name, NAME_LENGTH);
     optional_set_alias(local->alias, remote->alias, NAME_LENGTH);
-    soft_set_8(&local->addressType, remote->addressType);
+    soft_set_8(&local->address_type, remote->address_type);
 
     if (remote->category != CATEGORY_UNKNOWN)
     {
@@ -111,8 +111,6 @@ char* access_point_to_json (struct AccessPoint* a)
     cJSON_AddNumberToObject(j, "rssi_one_meter", a->rssi_one_meter);
     cJSON_AddNumberToObject(j, "rssi_factor", a->rssi_factor);
     cJSON_AddNumberToObject(j, "people_distance", a->people_distance);
-    cJSON_AddNumberToObject(j, "people_closest_count", a->people_closest_count);
-    cJSON_AddNumberToObject(j, "people_in_range_count", a->people_in_range_count);
 
     string = cJSON_PrintUnformatted(j);
     cJSON_Delete(j);
@@ -131,8 +129,6 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     cJSON_AddNumberToObject(j, "rssi_one_meter", a->rssi_one_meter);
     cJSON_AddNumberToObject(j, "rssi_factor", a->rssi_factor);
     cJSON_AddNumberToObject(j, "people_distance", a->people_distance);
-    cJSON_AddNumberToObject(j, "people_closest_count", a->people_closest_count);
-    cJSON_AddNumberToObject(j, "people_in_range_count", a->people_in_range_count);
     cJSON_AddNumberToObject(j, "seq", a->sequence);
 
     // Device details
@@ -140,7 +136,7 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     cJSON_AddStringToObject(j, "name", device->name);
 
     cJSON_AddStringToObject(j, "alias", device->alias);
-    cJSON_AddNumberToObject(j, "addressType", device->addressType);
+    cJSON_AddNumberToObject(j, "addressType", device->address_type);
     cJSON_AddStringToObject(j, "category", category_from_int(device->category));
     cJSON_AddBoolToObject(j, "paired", device->paired);
     cJSON_AddBoolToObject(j, "connected", device->connected);
@@ -157,10 +153,11 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     cJSON_AddNumberToObject(j, "earliest", device->earliest);
     cJSON_AddNumberToObject(j, "latest", device->latest);
     cJSON_AddNumberToObject(j, "count", device->count);
-    cJSON_AddNumberToObject(j, "column", device->column);
     cJSON_AddNumberToObject(j, "filtered_rssi", device->filtered_rssi.current_estimate);
     cJSON_AddNumberToObject(j, "raw_rssi", device->raw_rssi);
     cJSON_AddNumberToObject(j, "try_connect_state", device->try_connect_state);
+    cJSON_AddNumberToObject(j, "nt", device->name_type);
+    cJSON_AddNumberToObject(j, "at", device->address_type);
     if (device->is_training_beacon){
         cJSON_AddNumberToObject(j, "training", 1);
     }
@@ -211,18 +208,6 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
     if (cJSON_IsNumber(people_distance))
     {
         access_point->people_distance = (float)people_distance->valuedouble;
-    }
-
-    cJSON *people_closest_count = cJSON_GetObjectItemCaseSensitive(djson, "people_closest_count");
-    if (cJSON_IsNumber(people_closest_count))
-    {
-        access_point->people_closest_count = (float)people_closest_count->valuedouble;
-    }
-
-    cJSON *people_in_range_count = cJSON_GetObjectItemCaseSensitive(djson, "people_in_range_count");
-    if (cJSON_IsNumber(people_in_range_count))
-    {
-        access_point->people_in_range_count = (float)people_in_range_count->valuedouble;
     }
 
     cJSON *sequence = cJSON_GetObjectItemCaseSensitive(djson, "seq");
@@ -304,6 +289,20 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
     if (cJSON_IsString(category) && (category->valuestring != NULL))
     {
         device->category = category_to_int(category->valuestring);
+    }
+
+    device->address_type = RANDOM_ADDRESS_TYPE;
+    cJSON *addrType = cJSON_GetObjectItemCaseSensitive(djson, "at");
+    if (cJSON_IsNumber(addrType))
+    {
+        device->address_type = addrType->valueint;
+    }
+
+    device->name_type = nt_initial;
+    cJSON *nameType = cJSON_GetObjectItemCaseSensitive(djson, "nt");
+    if (cJSON_IsNumber(nameType))
+    {
+        device->name_type = (enum name_type)(addrType->valueint);
     }
 
    cJSON_Delete(djson);

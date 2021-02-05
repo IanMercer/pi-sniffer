@@ -19,6 +19,8 @@ struct OverallState
 
    struct AccessPoint *local; // the local access point (in the access points struct)
 
+   int led_flash_count;       // how many times to flash the LED
+
    int reboot_hour;           // Hour to reboot each day in local time (or zero for no reboot)
 
    int isMain;                // TRUE for ONE node in a cluster, all others should be not main

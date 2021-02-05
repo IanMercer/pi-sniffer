@@ -188,7 +188,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
         const char* manuf = company_id_to_string(manufacturer, &existing->category);
         if (manuf != NULL)
         {
-			if (existing->addressType == PUBLIC_ADDRESS_TYPE)
+			if (existing->address_type == PUBLIC_ADDRESS_TYPE)
 			{
 		        char postfixed[NAME_LENGTH];
 				// Use last six in name

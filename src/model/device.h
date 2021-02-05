@@ -90,7 +90,7 @@ struct Device
    char name[NAME_LENGTH];
    enum name_type name_type;      // not set, heuristic, known, or alias
    char alias[NAME_LENGTH];
-   int8_t addressType; // 0, 1, 2
+   int8_t address_type; // 0, 1, 2
    int8_t category;    // Reasoned guess at what kind of device it is
    bool paired;
    bool connected;
@@ -112,7 +112,6 @@ struct Device
    time_t earliest;               // Earliest time seen, used to calculate overlap
    time_t latest;                 // Latest time seen by ANY sensor, used to calculate overlap
    int count;                     // Count how many times seen (ignore 1 offs)
-   int column;                    // Allocated column in a non-overlapping range structure
    int8_t try_connect_state;      // Zero = never tried, 1..N-1 = Try in progress, N = Done
    int8_t try_connect_attempts;   // How many attempts have been made to connect
    // TODO: Collect data, SVM or trilateration TBD
@@ -141,9 +140,6 @@ struct AccessPoint
    // 2.0 to 4.0, lower for indoor or cluttered environments, default is 3.5
    float rssi_factor;            // Factor for RSSI to distance calculation 2.0-4.0 see README.md
    float people_distance;        // Counts as a person if under this range (meters)
-
-   float people_closest_count;   // E[x] of count of people closest
-   float people_in_range_count;  // E[x] of count of people in range
 
    time_t last_seen;             // Time access point was last seen
 

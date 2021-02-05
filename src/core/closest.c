@@ -155,17 +155,18 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
     }
 
     g_assert(access_point != NULL);
-    state->closest[state->closest_n].access_point = access_point;
-    state->closest[state->closest_n].device_64 = device_64;
-    state->closest[state->closest_n].distance = distance;
-    state->closest[state->closest_n].category = category;
-    state->closest[state->closest_n].name_type = name_type;
-    state->closest[state->closest_n].addressType = addressType;
-    state->closest[state->closest_n].earliest = earliest;
-    state->closest[state->closest_n].latest = latest;
-    state->closest[state->closest_n].count = count;
-    state->closest[state->closest_n].is_training_beacon = is_training_beacon;
-    strncpy(state->closest[state->closest_n].name, name, NAME_LENGTH);           // debug only, remove this later
+    struct ClosestTo* cl = &state->closest[state->closest_n];
+    cl->access_point = access_point;
+    cl->device_64 = device_64;
+    cl->distance = distance;
+    cl->category = category;
+    cl->name_type = name_type;
+    cl->addressType = addressType;
+    cl->earliest = earliest;
+    cl->latest = latest;
+    cl->count = count;
+    cl->is_training_beacon = is_training_beacon;
+    strncpy(cl->name, name, NAME_LENGTH);           // debug only, remove this later
 
     // If it's a known MAC address or name of a beacon, update the name to the alias
     for (struct Beacon* b = state->beacons; b != NULL; b = b->next)
@@ -304,6 +305,7 @@ bool print_counts_by_closest(struct OverallState* state)
     time_t last_run = state->last_summary;
     time(&state->last_summary);
 
+    g_debug("pack_closest_columns()");
     pack_closest_columns(state);
 
     struct AccessPoint* access_points_list = state->access_points;
@@ -312,7 +314,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
     float total_count = 0.0;
 
-//    g_debug("Clear room totals");
+    g_debug("Clear room totals");
 
     for (struct patch* current = patch_list; current != NULL; current = current->next)
     {
@@ -331,7 +333,7 @@ bool print_counts_by_closest(struct OverallState* state)
     free_list(&state->recordings);
     int count_recordings = 0;
     int count_recordings_and_beacons = 0;
-    g_trace("Re-read observations files");
+    g_debug("Re-read observations files");
     bool ok = read_observations ("/var/sniffer/recordings", state, TRUE);
     if (!ok) g_warning("Failed to read recordings files back");
     for (struct recording* r = state->recordings; r != NULL; r=r->next)
@@ -453,8 +455,13 @@ bool print_counts_by_closest(struct OverallState* state)
                 mac_64_to_string(sup_mac, 18, test->supersededby);
             else
                 sup_mac[0]='\0';
-            g_info("--- %s --- %10s --- %23s --- %6li-%6li col:%2i %s%s", 
-                     mac, category, test->name, test->earliest - state->started, test->latest - state->started, test->column, 
+            g_info("--- %s%s --- %10s --- %23s --- %5li-%5li col:%2i %s%s", 
+                     mac, 
+                     test->addressType == PUBLIC_ADDRESS_TYPE ? "*" : " ",
+                     category, test->name, 
+                     now - test->earliest,
+                     now - test->latest, 
+                     test->column, 
                      test->supersededby == 0 ? "" : "-- super:",
                      sup_mac);
         }
@@ -639,11 +646,7 @@ bool print_counts_by_closest(struct OverallState* state)
             else if (test->category == CATEGORY_PHONE)
             {
                 //g_info("Cluster (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, score);
-
                 total_count += score;
-                ap->people_closest_count = ap->people_closest_count + score;
-                ap->people_in_range_count = ap->people_in_range_count + score;  // TODO:
-
                 //g_debug("Update room total %i", room_count);
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {

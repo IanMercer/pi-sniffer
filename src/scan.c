@@ -79,127 +79,6 @@ bool logTable = FALSE; // set to true each time something changes
 */
 GDBusConnection *conn;
 
-// /*
-//     Do these two devices overlap in time? If so they cannot be the same device
-//     (allowed to touch given granularity of time)
-// */
-// bool overlaps(struct Device *a, struct Device *b)
-// {
-//     // If the earlier device has just one observation it's too soon to say if the latter one is the same device
-//     // In a transit situation we get many devices passing by with just one ping, these are not superceded
-//     if (a->count == 1 && a->latest <= b->earliest){
-//         return TRUE; // not an overlap but unlikely to be same device
-//     }
-//     if (b->count == 1 && b->latest <= a->earliest){
-//         return TRUE; // not an overlap but unlikely to be same device
-//     }
-//     if (a->earliest >= b->latest)  // a is entirely after b
-//     {
-//         int delta_time = difftime(a->earliest, b->latest);
-//         return delta_time > 10;  // more than 10s and these are probably unrelated devices
-//     }
-//     if (b->earliest >= a->latest) // b is entirely after a
-//     {
-//         int delta_time = difftime(b->earliest, a->latest);
-//         return delta_time > 10;  // more than 10s and these are probably unrelated devices
-//     }
-//     return TRUE;      // must overlap if not entirely after or before
-// }
-
-// /*
-//     Compute the minimum number of devices present by assigning each in a non-overlapping manner to columns
-// */
-// void pack_columns()
-// {
-//     // Push every device back to column zero as category may have changed
-//     for (int i = 0; i < state.n; i++)
-//     {
-//         struct Device *a = &state.devices[i];
-//         a->column = 0;
-//     }
-
-//     for (int k = 0; k < state.n; k++)
-//     {
-//         bool changed = false;
-
-//         for (int i = 0; i < state.n; i++)
-//         {
-//             for (int j = i + 1; j < state.n; j++)
-//             {
-//                 struct Device *a = &state.devices[i];
-//                 struct Device *b = &state.devices[j];
-
-//                 if (a->column != b->column)
-//                     continue;
-
-//                 bool over = overlaps(a, b);
-
-//                 // cannot be the same device if either has a public address (or we don't have an address type yet)
-//                 bool haveDifferentAddressTypes = (a->addressType > 0 && b->addressType > 0 && a->addressType != b->addressType);
-
-//                 // cannot be the same if they both have names and the names are different
-//                 // but don't reject _ names as they are temporary and will get replaced
-//                 bool haveDifferentNames = (strlen(a->name) > 0) && (strlen(b->name) > 0) 
-//                     // can reject as soon as they both have a partial name that is same type but doesn't match
-//                     && (a->name_type == b->name_type)               
-//                     && (g_strcmp0(a->name, b->name) != 0);
-
-//                 // cannot be the same if they both have known categories and they are different
-//                 // Used to try to blend unknowns in with knowns but now we get category right 99.9% of the time, no longer necessary
-//                 bool haveDifferentCategories = (a->category != b->category); // && (a->category != CATEGORY_UNKNOWN) && (b->category != CATEGORY_UNKNOWN);
-
-//                 bool haveDifferentMacAndPublic = (a->addressType == PUBLIC_ADDRESS_TYPE && strcmp(a->mac, b->mac)!=0);
-
-//                 if (over || haveDifferentAddressTypes || haveDifferentNames || haveDifferentCategories || haveDifferentMacAndPublic)
-//                 {
-//                     b->column++;
-//                     changed = true;
-//                     // g_print("Compare %i to %i and bump %4i %s to %i, %i %i %i\n", i, j, b->id, b->mac, b->column, over, haveDifferentAddressTypes, haveDifferentNames);
-//                 }
-//             }
-//         }
-//         if (!changed)
-//             break;
-//     }
-
-//     for (int i = state.n - 1; i > 0; i--)
-//     {
-//         struct Device* current = &state.devices[i];
-
-//         // Can't mark superseded until we know for sure it's a phone etc.
-//         if (current->category == CATEGORY_UNKNOWN) continue;
-
-//         int64_t mac64 = mac_string_to_int_64(state.devices[i].mac);
-//         for (int j = i - 1; j >= 0; j--)
-//         {
-//             struct Device* earlier = &state.devices[j];
-
-//             if (current->column == earlier->column)
-//             {
-//                 bool send_update = (earlier->supersededby == 0);
-//                 earlier->supersededby = mac64;
-//                 if (send_update)
-//                 {
-//                     g_info("%s has been superseded by %s", earlier->mac, current->mac);
-//                     send_device_udp(&state, earlier);
-//                     update_superseded(&state, earlier);
-//                 }
-//             }
-//             // If earlier was supersededby this one but now it isn't we need to report that
-//             else if (earlier->supersededby == mac64)
-//             {
-//                 // Not in same column but has a supersededby value
-//                 // This device used to be superseded by the new one, but now we know it isn't
-//                 earlier->supersededby = 0;
-//                 g_info("%s IS NO LONGER superseded by %s", earlier->mac, current->mac);
-//                 send_device_udp(&state, earlier);
-//                 update_superseded(&state, earlier);
-//             }
-//         }
-//     }
-// }
-
-
 /*
   Use a known beacon name for a device if present
 */
@@ -223,12 +102,8 @@ void remove_device(int index)
     for (int i = index; i < state.n - 1; i++)
     {
         state.devices[i] = state.devices[i + 1];
-        struct Device *dev = &state.devices[i];
-        // decrease column count, may create clashes, will fix these up next
-        dev->column = dev->column > 0 ? dev->column - 1 : 0;
     }
     state.n--;
-    //pack_columns();
 }
 
 #define MAX_TIME_AGO_COUNTING_MINUTES 5
@@ -238,206 +113,13 @@ void remove_device(int index)
 // Updated before any function that needs to calculate relative time
 time_t now;
 
-// Largest number of devices that can be tracked at once
-#define N_COLUMNS 500
-
-struct ColumnInfo
-{
-    time_t latest;   // latest observation in this column
-    float distance;  // distance of latest observation in this column
-    int8_t category; // category of device in this column (phone, computer, ...)
-    bool isClosest;  // is this device closest to us not some other sensor
-};
-
-struct ColumnInfo columns[N_COLUMNS];
-
-/*
-    Find latest observation in each column and the distance for that
-*/
-void find_latest_observations()
-{
-    for (uint i = 0; i < N_COLUMNS; i++)
-    {
-        columns[i].distance = -1.0;
-        columns[i].category = CATEGORY_UNKNOWN;
-    }
-    for (int i = 0; i < state.n; i++)
-    {
-        struct Device *a = &state.devices[i];
-        int col = a->column;
-        if (columns[col].distance < 0.0 || columns[col].latest < a->latest)
-        {
-            // Issue here, a single later 10.0m distance was moving a column
-            // beyond the range allowed
-
-            if (a->count > 1 || 
-                columns[col].distance < 0.0 || 
-                a->distance < columns[col].distance)
-            {
-                // distance only replaces old distance if >2 count or it's closer
-                // otherwise one random far distance can move a device out of range
-                columns[col].distance = a->distance;
-            }
-            if (a->category != CATEGORY_UNKNOWN)
-            {
-                // a later unknown does not override an actual phone category nor extend it
-                // This if is probably not necessary now as overlap tests for this
-                columns[col].category = a->category;
-                columns[col].latest = a->latest;
-                // Do we 'own' this device or does someone else
-                columns[col].isClosest = true;
-                struct ClosestTo *closest = get_closest_64(&state, a->mac64);
-                columns[col].isClosest = closest != NULL && closest->access_point != NULL && closest->access_point->id == state.local->id;
-            }
-        }
-    }
-}
-
-#define N_RANGES 10
-static int32_t ranges[N_RANGES] = {1, 2, 5, 10, 15, 20, 25, 30, 35, 100};
-static int8_t reported_ranges[N_RANGES] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
-
-
-/*
-    Find best packing of device time ranges into columns
-    //Set every device to column zero
-    While there is any overlap, find the overlapping pair, move the second one to the next column
-*/
-
 void report_devices_count()
 {
-    //g_debug("report_devices_count\n");
-
     if (starting)
         return; // not during first 30s startup time
 
-    // Initialize time and columns
+    // Initialize time
     time(&now);
-
-    // Allocate devices to coluumns so that there is no overlap in time
-    //pack_columns();
-
-    // Find the latest device record in each column
-    find_latest_observations();
-
-    // Calculate for each range how many devices are inside that range at the moment
-    // Ignoring any that are potential MAC address randomizations of others
-    int previous = 0;
-    bool made_changes = FALSE;
-    for (int i = 0; i < N_RANGES; i++)
-    {
-        int range = ranges[i];
-
-        int min = 0;
-
-        for (int col = 0; col < N_COLUMNS; col++)
-        {
-            if (columns[col].category != CATEGORY_PHONE)
-                continue; // only counting phones now not beacons, laptops, ...
-            if (columns[col].distance < 0.01)
-                continue; // not allocated
-
-            int delta_time = difftime(now, columns[col].latest);
-            if (delta_time > MAX_TIME_AGO_COUNTING_MINUTES * 60)
-                continue;
-
-            if (columns[col].distance < range)
-                min++;
-        }
-
-        int just_this_range = min - previous;
-        if (reported_ranges[i] != just_this_range)
-        {
-            //g_print("Devices present at range %im %i    \n", range, just_this_range);
-            reported_ranges[i] = just_this_range;
-            made_changes = TRUE;
-        }
-        previous = min;
-    }
-
-    if (made_changes)
-    {
-        char line[128];
-        snprintf(line, sizeof(line), "Devices by range:");
-        for (int i = 0; i < N_RANGES; i++)
-        {
-            snprintf(line + strlen(line), sizeof(line) - strlen(line), " %i", reported_ranges[i]);
-        }
-        g_info("%s", line);
-#ifdef MQTT
-        send_to_mqtt_distances((unsigned char *)reported_ranges, N_RANGES * sizeof(int8_t));
-#endif
-    }
-
-    int range_limit = 5;
-    int range = ranges[range_limit];
-
-    // Expected value of number of people here (decays if not detected recently)
-    float people_in_range = 0.0;
-    float people_closest = 0.0;
-
-    for (int col = 0; col < N_COLUMNS; col++)
-    {
-        if (columns[col].distance >= range)
-            continue;
-        if (columns[col].category != CATEGORY_PHONE)
-            continue; // only counting phones now not beacons, laptops, ...
-        if (columns[col].distance < 0.01)
-            continue; // not allocated
-
-        int delta_time = difftime(now, columns[col].latest);
-        if (delta_time > MAX_TIME_AGO_COUNTING_MINUTES * 60)
-            continue;
-
-        // double score = 0.55 - atan(delta_time/40.0  - 4.0) / 3.0; -- left some spikes in the graph, dropped too quickly
-        // double score = 0.55 - atan(delta_time / 45.0 - 4.0) / 3.0; -- maybe too much?
-        double score = 0.55 - atan(delta_time / 42.0 - 4.0) / 3.0;
-        // A curve that stays a 1.0 for a while and then drops rapidly around 3 minutes out
-        if (score > 0.99) score = 1.0;
-        if (score < 0.0) score = 0.0;
-
-        // Expected value E[x] = i x p(i) so sum p(i) for each column which is one person
-        people_in_range += score;
-        if (columns[col].isClosest)
-            people_closest += score;
-    }
-
-    if (fabs(people_in_range - state.local->people_in_range_count) > 0.1 || fabs(people_closest - state.local->people_closest_count) > 0.1)
-    {
-        state.local->people_closest_count = people_closest;
-        state.local->people_in_range_count = people_in_range;
-        g_debug("Local people count = %.2f (%.2f in range)", people_closest, people_in_range);
-
-        // And send access point to everyone over UDP - now sent only on tick event
-        //send_access_point_udp(&state);
-    }
-
-// It's possible to send signals directly to DBus using code like this but I now use a generated
-// skeleton, see DBUS directory and generation script
-/*
-    GVariantBuilder *b = g_variant_builder_new(G_VARIANT_TYPE_VARDICT);
-    g_variant_builder_add(b, "{sv}", "PeopleClosest", g_variant_new_double(people_closest));
-    g_variant_builder_add(b, "{sv}", "PeopleInRange", g_variant_new_double(people_in_range));
-    GVariant *dict = g_variant_builder_end(b);
-    g_variant_builder_unref(b);
-
-    GVariant* parameters = g_variant_new_tuple(&dict, 1);
-    //rc = bluez_adapter_call_method(conn, "SetDiscoveryFilter", g_variant_new_tuple(&device_dict, 1), NULL);
-    // no need to ... g_variant_unref(dict);
-
-    GError *error = NULL;
-    gboolean ret = g_dbus_connection_emit_signal(conn,
-        NULL,                           //
-        "/com/signswift/sniffer",       // path
-        "com.signswift.sniffer",        // interface name
-        "People",                       // signal_name
-        parameters, &error);
-
-    if (ret)
-    {
-        print_and_free_error(error);
-    }
-*/
 }
 
 /*
@@ -517,7 +199,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         existing->name[0] = '\0';
         existing->name_type = nt_initial;
         existing->alias[0] = '\0';
-        existing->addressType = 0;
+        existing->address_type = 0;
         existing->category = CATEGORY_UNKNOWN;
         existing->connected = FALSE;
         existing->trusted = FALSE;
@@ -530,7 +212,6 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         existing->uuid_hash = 0;
         existing->txpower = 12;
         time(&existing->earliest);
-        existing->column = 0;
         existing->count = 0;
         existing->try_connect_state = TRY_CONNECT_ZERO;
         existing->try_connect_attempts = 0;
@@ -631,9 +312,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             int newAddressType = (g_strcmp0("public", addressType) == 0) ? PUBLIC_ADDRESS_TYPE : RANDOM_ADDRESS_TYPE;
 
             // Compare values and send
-            if (existing->addressType != newAddressType)
+            if (existing->address_type != newAddressType)
             {
-                existing->addressType = newAddressType;
+                existing->address_type = newAddressType;
                 if (newAddressType == PUBLIC_ADDRESS_TYPE)
                 {
                     g_debug("  %s Address type has changed -> '%s'\n", address, addressType);
@@ -712,9 +393,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             // 10s with distance change of 1m triggers send
             // 1s with distance change of 10m triggers send
 
-            int delta_time_sent = difftime(now, existing->last_sent);
-            double delta_v = fabs(existing->distance - averaged);
-            double score = delta_v * delta_time_sent;
+            //int delta_time_sent = difftime(now, existing->last_sent);
+            //double delta_v = fabs(existing->distance - averaged);
+            //double score = delta_v * delta_time_sent;
 
             //if (score > 10.0 || delta_time_sent > 10)
             {
@@ -1577,7 +1258,7 @@ void dump_device(struct OverallState* state, struct Device *d)
     //double delta_time = difftime(now, a->latest);
     //if (delta_time > MAX_TIME_AGO_LOGGING_MINUTES * 60) return;
 
-    char *addressType = d->addressType == PUBLIC_ADDRESS_TYPE ? "pub" : d->addressType == RANDOM_ADDRESS_TYPE ? "ran" : "---";
+    char *addressType = d->address_type == PUBLIC_ADDRESS_TYPE ? "pub" : d->address_type == RANDOM_ADDRESS_TYPE ? "ran" : "---";
     char *category = category_from_int(d->category);
 
     float closest_dist = NAN;
@@ -1593,7 +1274,7 @@ void dump_device(struct OverallState* state, struct Device *d)
         }
     }
 
-    g_info("%4i %s %4i %3s %5.1fm %4i  %6li-%6li %20s %13s %5.1fm %s", d->id % 10000, d->mac, d->count, addressType, d->distance, d->column, (d->earliest - state->started), (d->latest - state->started), d->name, closest_ap, closest_dist, category);
+    g_info("%4i %s %4i %3s %5.1fm  %6li-%6li %20s %13s %5.1fm %s", d->id % 10000, d->mac, d->count, addressType, d->distance, (d->earliest - state->started), (d->latest - state->started), d->name, closest_ap, closest_dist, category);
 }
 
 
@@ -1793,6 +1474,11 @@ int print_access_points_tick(void *parameters)
     // And send access point to everyone over UDP - so that even if no activity everyone gets a list of active access points
     send_access_point_udp(&state);
 
+    // Update flashing LED
+    int countaps = 0;
+    for (struct AccessPoint* ap = state.access_points; ap != NULL; ap=ap->next){ countaps ++; }
+    state.led_flash_count = countaps;
+
     return TRUE;
 }
 
@@ -1810,23 +1496,20 @@ int dump_all_devices_tick(void *parameters)
     if (!logTable)
         return TRUE; // no changes since last time
     logTable = FALSE;
-    g_info("---------------------------------------------------------------------------------------------------------------\n");
-    g_info("Id   Address          Count Typ   Dist  Col   First   Last                 Name              Closest Category  \n");
-    g_info("---------------------------------------------------------------------------------------------------------------\n");
+    g_info("-----------------------------------------------------------------------------------------------------------");
+    g_info("Id   Address          Count Typ   Dist    First   Last                 Name              Closest Category  ");
+    g_info("-----------------------------------------------------------------------------------------------------------");
     time(&now);
     for (int i = 0; i < state.n; i++)
     {
         dump_device(&state, &state.devices[i]);
     }
-    g_info("---------------------------------------------------------------------------------------------------------------\n");
+    g_info("-----------------------------------------------------------------------------------------------------------");
 
     unsigned long total_minutes = (now - state.started) / 60; // minutes
     unsigned int minutes = total_minutes % 60;
     unsigned int hours = (total_minutes / 60) % 24;
     unsigned int days = (total_minutes) / 60 / 24;
-
-    float people_closest = state.local->people_closest_count;
-    float people_in_range = state.local->people_in_range_count;
 
     const char* connected = is_any_interface_up() ? "" : "NETWORK DOWN ";
 #ifdef MQTT    
@@ -1836,11 +1519,11 @@ int dump_all_devices_tick(void *parameters)
 #endif
 
     if (days > 1)
-        g_info("People %.2f (%.2f in range) Uptime: %i days %02i:%02i %s%s", people_closest, people_in_range, days, hours, minutes, connected, m_state);
+        g_info("Uptime: %i days %02i:%02i %s%s", days, hours, minutes, connected, m_state);
     else if (days == 1)
-        g_info("People %.2f (%.2f in range) Uptime: 1 day %02i:%02i %s%s", people_closest, people_in_range, hours, minutes, connected, m_state);
+        g_info("Uptime: 1 day %02i:%02i %s%s", hours, minutes, connected, m_state);
     else
-        g_info("People %.2f (%.2f in range) Uptime: %02i:%02i %s%s", people_closest, people_in_range, hours, minutes, connected, m_state);
+        g_info("Uptime: %02i:%02i %s%s", hours, minutes, connected, m_state);
 
     // Bluez eventually seems to stop sending us data, so for now, just restart every few hours
     struct tm *local_time = localtime( &now );
@@ -1931,9 +1614,12 @@ static int led_state = 0;
 
 int flash_led(void *parameters)
 {
+    // Only when running on Raspberry Pi
+    if (!string_contains_insensitive(state.local->platform, "ARM")) return FALSE;
+
     (void)parameters;                // not used
     // Every other cycle turn the LED on or off
-    if (led_state < state.local->people_in_range_count * 2) {
+    if (led_state < state.led_flash_count * 2) {
         char d =  (led_state & 1) == 0 ? '1' : '0';
         int fd = open("/sys/class/leds/led0/brightness", O_WRONLY);
         write (fd, &d, 1);
@@ -1942,7 +1628,7 @@ int flash_led(void *parameters)
 
     led_state = (led_state + 1);
     // 4s past end, restart
-    if (led_state > state.local->people_in_range_count * 2 + 4){
+    if (led_state > state.led_flash_count * 2 + 4){
         led_state = 0;
     }
 
@@ -2141,17 +1827,16 @@ static void on_name_lost (GDBusConnection *connection, const gchar *name, gpoint
     g_warning("DBUS name lost '%s'", name);
 }
 
-
 // Log_handler filters messages according to logging level set for application
 void custom_log_handler (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data)
 {
     gint debug_level = GPOINTER_TO_INT (user_data);
 
     /* filter out messages depending on debugging level - actually a flags enum but > works */
-    // if (log_level > debug_level) 
-    // {
-    //     return;
-    // }
+    if (log_level > debug_level) 
+    {
+        return;
+    }
     //g_print("%i <= %i", log_level, debug_level);
     g_log_default_handler(log_domain, log_level, message, user_data);
 }

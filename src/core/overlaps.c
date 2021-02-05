@@ -75,7 +75,8 @@ void pack_closest_columns(struct OverallState* state)
                 // Used to try to blend unknowns in with knowns but now we get category right 99.9% of the time, no longer necessary
                 bool haveDifferentCategories = (a->category != b->category); // && (a->category != CATEGORY_UNKNOWN) && (b->category != CATEGORY_UNKNOWN);
 
-                bool haveDifferentMacAndPublic = (a->addressType == PUBLIC_ADDRESS_TYPE && (a->device_64 != b->device_64));
+                bool haveDifferentMacAndPublic = (a->addressType == PUBLIC_ADDRESS_TYPE && 
+                    (a->device_64 != b->device_64));
 
                 if (over || haveDifferentAddressTypes || haveDifferentNames || haveDifferentCategories || 
                     haveDifferentMacAndPublic)

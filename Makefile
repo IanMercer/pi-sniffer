@@ -13,11 +13,9 @@ CC = gcc -g
 
 CFLAGS = -Wall -Wextra -g `pkg-config --cflags glib-2.0 gio-2.0 gio-unix-2.0 json-glib-1.0` -Isrc -Isrc/model -Isrc/dbus -Isrc/bluetooth -Isrc/core
 
-LIBS = -lm `pkg-config --libs glib-2.0 gio-2.0 gio-unix-2.0 json-glib-1.0` -L./lib -ldbus -lbt -lmodel
+LIBS = -lm `pkg-config --libs glib-2.0 gio-2.0 gio-unix-2.0 json-glib-1.0` -L./lib -ldbus -lbt -lmodel -lcore
 
-DEPS = Makefile src/model/*.h src/core/*.h lib/libdbus.a lib/libbt.a lib/libmodel.a
-SRC = src/core/*.c
-MQTTSRC = src/mqtt.c src/udp.c src/mqtt_send.c src/influx.c src/core/*.c src/model/*.c src/dbus/*.c
+#MQTTSRC = src/mqtt.c src/udp.c src/mqtt_send.c src/influx.c src/core/*.c src/model/*.c src/dbus/*.c
 CGIJSON = src/cgijson.c
 
 ARCH := $(shell uname -m)
@@ -75,10 +73,25 @@ $(MODEL_OBJ)/%.o: $(MODEL_SRC)/%.c
 	@mkdir -p $(@D)
 	ar rcs $@ $(MODEL_OBJECTS)
 
-LIBRARIES := ./lib/libmodel.a ./lib/libbt.a ./lib/libdbus.a
+# CORE
+CORE_SRC := src/core
+CORE_OBJ := obj/core
+CORE_SOURCES := $(wildcard $(CORE_SRC)/*.c)
+CORE_OBJECTS := $(patsubst $(CORE_SRC)/%.c, $(CORE_OBJ)/%.o, $(CORE_SOURCES))
+
+$(CORE_OBJ)/%.o: $(CORE_SRC)/%.c
+	@mkdir -p $(@D)
+	$(CC) -I$(CORE_SRC) $(CFLAGS) $(LIBS) -c $< -o $@
+
+./lib/libcore.a : $(CORE_OBJECTS)
+	@mkdir -p $(@D)
+	ar rcs $@ $(CORE_OBJECTS)
 
 # MAIN
-scan: src/*.c $(SRC) $(DEPS) $(LIBRARIES)
+
+LIBRARIES := ./lib/libmodel.a ./lib/libbt.a ./lib/libdbus.a ./lib/libcore.a
+
+scan: src/scan.c $(LIBRARIES) Makefile
 	gcc -o scan src/scan.c $(SRC) $(CFLAGS) $(LIBS)
 	echo "Run using ... G_MESSAGES_DEBUG=all UDP_MESH_PORT=7779 DBUS_SENDER=1 ./scan"
 	#tar -czvf sniffer-1.0.tar.gz ./src
@@ -94,8 +107,8 @@ armversion: $(SRC) $(DEPS)
 scanwithmqtt: $(SRC)
 	gcc -o $@ $^ $(CFLAGS) $(LIBS) -lpaho-mqtt3as -DMQTT
 
-mqtt: $(MQTTSRC)
-	gcc -o $@ $^ $(CFLAGS) $(LIBS) -lpaho-mqtt3as -DMQTT
+#mqtt: $(MQTTSRC)
+#	gcc -o $@ $^ $(CFLAGS) $(LIBS) -lpaho-mqtt3as -DMQTT
 
 
 install: scan
