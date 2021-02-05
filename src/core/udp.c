@@ -206,7 +206,6 @@ GCancellable *create_socket_service(struct OverallState *state)
     g_info("Creating UDP listener on port %i", state->udp_mesh_port);
 
     cancellable = g_cancellable_new();
-    return cancellable;
 
     if (pthread_create(&listen_thread, NULL, listen_loop, state))
     {

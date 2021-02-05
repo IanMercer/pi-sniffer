@@ -2342,8 +2342,6 @@ int main(int argc, char **argv)
     g_info(" ");
     g_info(" ");
 
-    display_state(&state);
-
     g_info("Start main loop");
 
     g_main_loop_run(loop);
