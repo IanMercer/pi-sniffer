@@ -30,20 +30,22 @@ ARCH := $(shell uname -m)
 
 all: scan cgijson ./lib/libdbus.a ./lib/libbt.a ./lib/libmodel.a
 
+# HEADERS
+HEADERS := $(wildcard src/dbus/*.h) $(wildcard src/bluetooth/*.h)  $(wildcard src/model/*.h) $(wildcard src/core/*.h)
+
 # DBUS
 DBUS_SRC := src/dbus
 DBUS_OBJ := obj/dbus
 DBUS_SOURCES := $(wildcard $(DBUS_SRC)/*.c)
 DBUS_OBJECTS := $(patsubst $(DBUS_SRC)/%.c, $(DBUS_OBJ)/%.o, $(DBUS_SOURCES))
 
-$(DBUS_OBJ)/%.o: $(DBUS_SRC)/%.c
+$(DBUS_OBJ)/%.o: $(DBUS_SRC)/%.c $(HEADERS)
 	@mkdir -p $(@D)
 	$(CC) -I$(DBUS_SRC) $(CFLAGS) $(LIBS) -c $< -o $@
 
-./lib/libdbus.a : $(DBUS_OBJECTS)
+lib/libdbus.a : $(DBUS_OBJECTS)
 	@mkdir -p $(@D)
 	ar rcs $@ $(DBUS_OBJECTS)
-
 
 # BLUETOOTH
 BT_SRC := src/bluetooth
@@ -51,11 +53,11 @@ BT_OBJ := obj/bluetooth
 BT_SOURCES := $(wildcard $(BT_SRC)/*.c)
 BT_OBJECTS := $(patsubst $(BT_SRC)/%.c, $(BT_OBJ)/%.o, $(BT_SOURCES))
 
-$(BT_OBJ)/%.o: $(BT_SRC)/%.c
+$(BT_OBJ)/%.o: $(BT_SRC)/%.c $(HEADERS)
 	@mkdir -p $(@D)
 	$(CC) -I$(BT_SRC) $(CFLAGS) $(LIBS) -c $< -o $@
 
-./lib/libbt.a : $(BT_OBJECTS)
+lib/libbt.a : $(BT_OBJECTS)
 	@mkdir -p $(@D)
 	ar rcs $@ $(BT_OBJECTS)
 
@@ -65,11 +67,11 @@ MODEL_OBJ := obj/model
 MODEL_SOURCES := $(wildcard $(MODEL_SRC)/*.c)
 MODEL_OBJECTS := $(patsubst $(MODEL_SRC)/%.c, $(MODEL_OBJ)/%.o, $(MODEL_SOURCES))
 
-$(MODEL_OBJ)/%.o: $(MODEL_SRC)/%.c
+$(MODEL_OBJ)/%.o: $(MODEL_SRC)/%.c $(HEADERS)
 	@mkdir -p $(@D)
-	$(CC) -I$(MODEL_SRC) $(CFLAGS) $(LIBS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
-./lib/libmodel.a : $(MODEL_OBJECTS)
+lib/libmodel.a : $(MODEL_OBJECTS)
 	@mkdir -p $(@D)
 	ar rcs $@ $(MODEL_OBJECTS)
 
@@ -79,17 +81,17 @@ CORE_OBJ := obj/core
 CORE_SOURCES := $(wildcard $(CORE_SRC)/*.c)
 CORE_OBJECTS := $(patsubst $(CORE_SRC)/%.c, $(CORE_OBJ)/%.o, $(CORE_SOURCES))
 
-$(CORE_OBJ)/%.o: $(CORE_SRC)/%.c
+$(CORE_OBJ)/%.o: $(CORE_SRC)/%.c $(HEADERS)
 	@mkdir -p $(@D)
 	$(CC) -I$(CORE_SRC) $(CFLAGS) $(LIBS) -c $< -o $@
 
-./lib/libcore.a : $(CORE_OBJECTS)
+lib/libcore.a : $(CORE_OBJECTS)
 	@mkdir -p $(@D)
 	ar rcs $@ $(CORE_OBJECTS)
 
 # MAIN
 
-LIBRARIES := ./lib/libmodel.a ./lib/libbt.a ./lib/libdbus.a ./lib/libcore.a
+LIBRARIES := lib/libmodel.a lib/libbt.a lib/libdbus.a lib/libcore.a
 
 scan: src/scan.c $(LIBRARIES) Makefile
 	gcc -o scan src/scan.c $(SRC) $(CFLAGS) $(LIBS)
