@@ -14,6 +14,9 @@ struct OverallState
    pthread_mutex_t lock;
    struct Device devices[N];
 
+   // Time when service started running (used to print a delta time)
+   time_t started;
+
    struct AccessPoint *local; // the local access point (in the access points struct)
 
    int reboot_hour;           // Hour to reboot each day in local time (or zero for no reboot)

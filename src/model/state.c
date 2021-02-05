@@ -35,6 +35,9 @@ void initialize_state(struct OverallState* state)
     time(&state->influx_last_sent);
     time(&state->webhook_last_sent);
     time(&state->last_summary);  // When last summary was generated
+        // Grab zero time = time when started
+    time(&state->started);
+
 
     // no devices yet
     state->n = 0;

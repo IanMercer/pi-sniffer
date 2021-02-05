@@ -89,7 +89,8 @@ void mark_superseded(struct OverallState* state, struct AccessPoint* access_poin
             g_assert(state->closest[j].access_point != NULL);
             if (state->closest[j].access_point->id == access_point->id && state->closest[j].device_64 == device_64)
             {
-                state->closest[j].supersededby = supersededby;
+                //TODO: Moving to new way to handle this ... state->closest[j].supersededby = supersededby;
+                // TODO: Remove this whole method and the code that sends it!
             }
         }
         g_debug("Marked superseded");
@@ -219,7 +220,9 @@ void *listen_loop(void *param)
             // Update the closest data structure
             g_assert(actual != NULL);
             //g_debug("UDP: %s %s count=%i ap=%s %s %.1fm", d.mac, d.name, d.count, actual->client_id, dummy.client_id, d.distance);
-            add_closest(state, d.mac64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count, d.name, d.is_training_beacon);
+            add_closest(state, d.mac64, actual, d.earliest, d.latest, d.distance, d.category, d.supersededby, d.count, d.name, 
+                d.name_type, d.addressType,
+                d.is_training_beacon);
 
             pthread_mutex_unlock(&state->lock);
         }
@@ -271,7 +274,10 @@ void update_closest(struct OverallState *state, struct Device *device)
     //g_debug("update_closest(%s, %i, %s)", state->local->client_id, state->local->id, device->mac);
     // Add local observations into the same structure
     int64_t id_64 = mac_string_to_int_64(device->mac);
-    add_closest(state, id_64, state->local, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count, device->name, device->is_training_beacon);
+    add_closest(state, id_64, state->local, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count, 
+        device->name, 
+        device->name_type, device->addressType,
+        device->is_training_beacon);
 }
 
 /*
@@ -283,7 +289,10 @@ void update_superseded(struct OverallState *state, struct Device *device)
     // Add local observations into the same structure
     int64_t id_64 = mac_string_to_int_64(device->mac);
     g_assert(state->local != NULL);
-    add_closest(state, id_64, state->local, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count, device->name, device->is_training_beacon);
+    add_closest(state, id_64, state->local, device->earliest, device->latest, device->distance, device->category, device->supersededby, device->count, 
+        device->name,
+        device->name_type, device->addressType,
+        device->is_training_beacon);
 }
 
 /*

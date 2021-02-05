@@ -1,5 +1,5 @@
-#ifndef closest_h
-#define closest_h
+#ifndef _closest_h
+#define _closest_h
 
 #include <string.h>
 #include <stdbool.h>
@@ -13,7 +13,9 @@
 // Add a closest observation
 void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoint* access_point, time_t earliest,
     time_t time, float distance, 
-    int8_t category, int64_t supersededby, int count, char* name, bool is_training_beacon);
+    int8_t category, int64_t supersededby, int count, char* name,
+    enum name_type name_type, int8_t addressType,
+    bool is_training_beacon);
 
 struct ClosestTo *get_closest_64(struct OverallState* state, int64_t mac64);
 

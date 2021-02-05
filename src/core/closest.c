@@ -18,6 +18,7 @@
 #include <math.h>
 #include "cJSON.h"
 #include "knn.h"
+#include "overlaps.h"
 
 /*
     Get the closest recent observation for a device
@@ -43,7 +44,7 @@ struct ClosestTo *get_closest_64(struct OverallState* state, int64_t device_64)
                 // continue, latest hit on access point is most relevant
                 // but if the distance is much better and it's fairly recent,
                 // go with that distance instead
-                double delta_time = difftime(best->time, test->time);
+                double delta_time = difftime(best->latest, test->latest);
                 if (best->distance > test->distance && delta_time < 30){
                     best->distance = test->distance;
                 }
@@ -51,7 +52,7 @@ struct ClosestTo *get_closest_64(struct OverallState* state, int64_t device_64)
             else if (best->distance > test->distance)
             {
                 // TODO: Check time too, only recent ones
-                double delta_time = difftime(best->time, test->time);
+                double delta_time = difftime(best->latest, test->latest);
 
                 struct AccessPoint *aptest = test->access_point;
                 struct AccessPoint *apbest = best->access_point;
@@ -82,9 +83,11 @@ struct ClosestTo *get_closest_64(struct OverallState* state, int64_t device_64)
 /*
    Add a closest observation (get a lock before you call this)
 */
-void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoint* access_point, time_t earliest,
-    time_t time, float distance, 
-    int8_t category, int64_t supersededby, int count, char* name, bool is_training_beacon)
+void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoint* access_point, 
+    time_t earliest, time_t latest, float distance, 
+    int8_t category, int64_t supersededby, int count, char* name, 
+    enum name_type name_type, int8_t addressType,
+    bool is_training_beacon)
 {
     g_assert(access_point != NULL);
     //g_debug("add_closest(%s, %i, %.2fm, %i)", client_id, access_id, distance, count);
@@ -95,20 +98,22 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         if (state->closest[j].device_64 == device_64 
             && state->closest[j].access_point->id == access_point->id)
         {
-            if (state->closest[j].supersededby != supersededby && state->closest[j].time == time)
-            {
-                char mac[18];
-                mac_64_to_string(mac, 18, device_64);
-                char from[18];
-                mac_64_to_string(from, 18, state->closest[j].supersededby);
-                char to[18];
-                mac_64_to_string(to, 18, supersededby);
+            // Not using local superceded any more
+            // if (state->closest[j].supersededby != supersededby && state->closest[j].latest == time)
+            // {
+            //     char mac[18];
+            //     mac_64_to_string(mac, 18, device_64);
+            //     char from[18];
+            //     mac_64_to_string(from, 18, state->closest[j].supersededby);
+            //     char to[18];
+            //     mac_64_to_string(to, 18, supersededby);
 
-                g_trace("*** Received an UPDATE %s: changing %s superseded from %s to %s", access_point->client_id, mac, from, to);
-                state->closest[j].supersededby = supersededby;
-                return;
-            }
-            else if (state->closest[j].count == count && state->closest[j].distance == distance)
+            //     g_trace("*** Received an UPDATE %s: changing %s superseded from %s to %s", access_point->client_id, mac, from, to);
+            //     state->closest[j].supersededby = supersededby;
+            //     return;
+            // }
+            // else 
+            if (state->closest[j].count == count && state->closest[j].distance == distance)
             {
                 //char mac[18];
                 //mac_64_to_string(mac, 18, device_64);
@@ -177,9 +182,11 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
     state->closest[state->closest_n].device_64 = device_64;
     state->closest[state->closest_n].distance = distance;
     state->closest[state->closest_n].category = category;
+    state->closest[state->closest_n].name_type = name_type;
+    state->closest[state->closest_n].addressType = addressType;
     state->closest[state->closest_n].supersededby = supersededby;
     state->closest[state->closest_n].earliest = earliest;
-    state->closest[state->closest_n].time = time;
+    state->closest[state->closest_n].latest = latest;
     state->closest[state->closest_n].count = count;
     state->closest[state->closest_n].is_training_beacon = is_training_beacon;
     strncpy(state->closest[state->closest_n].name, name, NAME_LENGTH);           // debug only, remove this later
@@ -321,6 +328,8 @@ bool print_counts_by_closest(struct OverallState* state)
     time_t last_run = state->last_summary;
     time(&state->last_summary);
 
+    pack_closest_columns(state);
+
     struct AccessPoint* access_points_list = state->access_points;
     struct Beacon* beacon_list = state->beacons;
     struct patch* patch_list = state->patches;
@@ -439,7 +448,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         struct ClosestTo* test = &state->closest[i];
 
-        bool loggingOn = test->time > last_run;
+        bool loggingOn = test->latest > last_run;
 
         // moved down to counting ... if (test->category != CATEGORY_PHONE) continue;
 
@@ -447,7 +456,7 @@ bool print_counts_by_closest(struct OverallState* state)
         if (test->mark) continue;  // already claimed (by second scan on mac address)
         count_not_marked++;
 
-        int age = difftime(now, test->time);
+        int age = difftime(now, test->latest);
         // If this hasn't been seen in > 300s (5min), skip it
         // and therefore all later instances of it (except beacons, keep them in the list longer)
         // if (age > 400 && test->category != CATEGORY_BEACON) continue;
@@ -461,9 +470,17 @@ bool print_counts_by_closest(struct OverallState* state)
 
         char* category = category_from_int(test->category);
 
-        if (loggingOn)
+        //if (loggingOn)
         {
-            g_info("--- %s --- %s --- %s", mac, category, test->name);
+            char sup_mac[18];
+            if (test->supersededby != 0)
+                mac_64_to_string(sup_mac, 18, test->supersededby);
+            else
+                sup_mac[0]='\0';
+            g_info("--- %s --- %10s --- %23s --- %6li-%6li col:%2i %s%s", 
+                     mac, category, test->name, test->earliest - state->started, test->latest - state->started, test->column, 
+                     test->supersededby == 0 ? "" : "-- super:",
+                     sup_mac);
         }
 
         int earliest = difftime(now, test->earliest);
@@ -490,8 +507,8 @@ bool print_counts_by_closest(struct OverallState* state)
                 count += other->count;
 
                 // Is this a better match than the current one?
-                int time_diff = difftime(test->time, other->time);
-                int abs_diff = difftime(now, other->time);
+                int time_diff = difftime(test->latest, other->latest);
+                int abs_diff = difftime(now, other->latest);
                 // Should always be +ve as we are scanning back in time
 
                 // TODO: Issue: was superseded on one AP but has been seen since in good health
@@ -535,7 +552,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         struct AccessPoint *ap = test->access_point;
 
-        int delta_time = difftime(now, test->time);
+        int delta_time = difftime(now, test->latest);
         double x_scale = (test->category == CATEGORY_BEACON || 
             test->category == CATEGORY_LIGHTING ||
             test->category == CATEGORY_APPLIANCE ||
@@ -694,7 +711,7 @@ bool print_counts_by_closest(struct OverallState* state)
                     {
                         best_room = rcurrent->knn_score;
                         beacon->patch = rcurrent;
-                        beacon->last_seen = test->time;
+                        beacon->last_seen = test->latest;
                     }
                 }
             }

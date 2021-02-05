@@ -212,8 +212,12 @@ struct ClosestTo
    int8_t category;
    // Earliest for this mac on this access point
    time_t earliest;
-   // When was this observation received
-   time_t time;
+   // Latest for this mac on this access point
+   time_t latest;
+
+   // column for packing non-overlapping
+   int column;
+
    // Remove this, cannot go retroactive on sending data
    // Superseded by another: i.e. access_id has seen this mac address
    // in a column more recently than this one that it superseeds
@@ -224,8 +228,12 @@ struct ClosestTo
    int count;
    // for debugging
    char name [NAME_LENGTH];
+   // name type
+   enum name_type name_type;      // 'not set', 'heuristic', 'known', or 'alias'
    // for training location to patch mappings
    bool is_training_beacon;
+   // address type is public or random
+   int8_t addressType; // 0, 1, 2
 };
 
 #endif
