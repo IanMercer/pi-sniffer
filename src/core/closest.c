@@ -256,7 +256,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
                     // e.g. 0.426, 0.346, 0.289 => 0.080, 0.057 => * 5 => .4, .275 => 0.9 and ...
                 if (best_three[bi].distance > best_three[0].distance * 0.5)
                 {
-                    if (loggingOn)
+                    if (loggingOn && debug)
                     {
                         g_debug("'%s' score: %.3f (%i) p=%.3f", best_three[bi].patch_name, best_three[bi].distance, bi, pallocation);
                     }
@@ -355,7 +355,7 @@ bool print_counts_by_closest(struct OverallState* state)
     int count_recordings = 0;
     int count_recordings_and_beacons = 0;
     g_trace("Re-read observations files");
-    bool ok = read_observations ("recordings", state, TRUE);
+    bool ok = read_observations ("/var/sniffer/recordings", state, TRUE);
     if (!ok) g_warning("Failed to read recordings files back");
     for (struct recording* r = state->recordings; r != NULL; r=r->next)
     {
@@ -363,7 +363,7 @@ bool print_counts_by_closest(struct OverallState* state)
     }
 
     // and then layer the found beacons on top
-    ok = read_observations ("beacons", state, FALSE);
+    ok = read_observations ("/var/sniffer/beacons", state, FALSE);
     if (!ok) g_warning("Failed to read beacon files back");
     for (struct recording* r = state->recordings; r != NULL; r=r->next)
     {
@@ -471,7 +471,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         if (loggingOn)
         {
-          g_info("--- %s --- %s --- %s", mac, category, test->name);
+            g_info("--- %s --- %s --- %s", mac, category, test->name);
         }
 
         int earliest = difftime(now, test->earliest);
@@ -513,7 +513,7 @@ bool print_counts_by_closest(struct OverallState* state)
                     mac_64_to_string(other_mac, 18, other->supersededby);
 
                     //Verbose logging
-                    if (loggingOn) 
+                    if (loggingOn && false)  // debugging 
                     {
                       struct AccessPoint *ap2 = other->access_point;
                       g_debug(" %15s distance %5.1fm at=%3is dt=%3is count=%3i %s%s", ap2->client_id, other->distance, abs_diff, time_diff, other->count,
@@ -562,7 +562,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         if (score > 0)
         {
-            bool debug = strcmp(test->name, "F350") == 0;
+            bool debug = strcmp(test->name, "F350XXX") == 0;
 
             calculate_location(state, test, access_distances, access_times, test->is_training_beacon, loggingOn, debug);
 
@@ -590,9 +590,9 @@ bool print_counts_by_closest(struct OverallState* state)
             json = cJSON_PrintUnformatted(jobject);
             cJSON_Delete(jobject);
             // Summary of access distances
-            //if (loggingOn) 
+            if (loggingOn) 
             {
-              g_debug("%16s x%.2f %s ", test->name, score, json);
+              g_debug("%s", json);
             }
             free(json);
 

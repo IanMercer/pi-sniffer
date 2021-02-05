@@ -166,7 +166,7 @@ bool json_to_recording(char* buffer, struct OverallState* state, struct patch** 
 
 // KNN CLASSIFIER
 
-float score (struct recording* recording, double access_points_distance[N_ACCESS_POINTS], struct AccessPoint* access_points)
+float get_probability (struct recording* recording, double access_points_distance[N_ACCESS_POINTS], struct AccessPoint* access_points, bool debug)
 {
     if (access_points->next == NULL) 
     {
@@ -181,10 +181,7 @@ float score (struct recording* recording, double access_points_distance[N_ACCESS
     } 
     else 
     {
-        float sum_delta_squared = 0.0;
-        // int matched_distances = 0;
-        // int missing_distances = 0;
-        // int extra_distances = 0;
+        double probability = 1.0;
 
         for (struct AccessPoint* ap = access_points; ap != NULL; ap=ap->next)
         {
@@ -195,28 +192,35 @@ float score (struct recording* recording, double access_points_distance[N_ACCESS
             {
                 // OK: did not expect this distance to be here, and it's not but less information than a match
                 // but better than a bad match on distances, e.g. 4m and 14m
-                sum_delta_squared += 0.5;
+                probability = probability * 0.99;
+                //if (debug) g_debug("%s neither x 0.99", ap->client_id);
             }
             else if (recording_distance > EFFECTIVE_INFINITE - 0.10)
             {
-                sum_delta_squared += 2.8;  // the observation could see the AP but this recording says you cannot
+                probability = probability * 0.2;
+                // the observation could see the AP but this recording says you cannot
                 // e.g. barn says you cannot see study, so if you can see study you can't be here
+                if (debug) g_debug("%s was not expected, but %.2fm found x 0.2", ap->client_id, measured_distance);
             }
-            //else if (measured_distance > EFFECTIVE_INFINITE - 0.10)
-            //{
-            //    sum_delta_squared += 0.82;  // could not see an AP at all, but should have been able to, could just be a missing observation
-            //} // handled by the below
+            else if (measured_distance > EFFECTIVE_INFINITE - 0.10)
+            {
+               probability = probability * 0.30;
+                if (debug) g_debug("%s was expected not found, expected at %.2f x 0.4", ap->client_id, recording_distance);
+               // could not see an AP at all, but should have been able to, could just be a missing observation
+            }
             else
             {
                 // activation function, and max 0.8 for a reading with the same ap
-                float delta = (measured_distance - recording_distance);
-                float delta_squared = (delta * delta) / 25.0;  // goes up to 5m delta then maxes out
-                sum_delta_squared += 0.8 * fmin(delta_squared, 1.0);
+                float delta = fabs(measured_distance - recording_distance);
+                //float delta_squared = (delta * delta);
+
+                double prob = 1.0 - fmin(0.8, 0.1 * fmin(delta, 8));
+                probability = probability * prob;
+                if (debug) g_debug("%s was expected and found %.2fm delta, x %.3f", ap->client_id, delta, prob);
             }
         }
-        return sum_delta_squared;
+        return probability;
     }
-
 }
 
 
@@ -244,8 +248,10 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
         if (confirmed && !recording->confirmed) continue;
         test_count++;
 
+        bool debug2 = strcmp(recording->patch_name, "Gravel") == 0 || strcmp(recording->patch_name, "Garage") == 0; 
+
         // Insert recording into the list if it's a better match
-        float distance = score(recording, access_point_distances, access_points);
+        float distance = get_probability(recording, access_point_distances, access_points, debug && debug2);
 
         struct top_k current;
         g_utf8_strncpy(current.patch_name, recording->patch_name, META_LENGTH);
@@ -264,7 +270,7 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
                 result[i] = current;
                 break;
             }
-            else if (result[i].distance > current.distance)
+            else if (result[i].distance < current.distance)
             {
                 // Insert at this position, pick up current and move it down
                 struct top_k temp = result[i];
@@ -286,16 +292,19 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
 
     //if (debug) g_debug("Test count %i", test_count);
 
-    float smoothing = 0.1;
+    // It must be somewhere so need to normalize the probabilities found to add to 1?
 
     // Find the most common in the top_k weighted by distance
     for (int i = 0; i < k; i++)
     {
         if (result[i].used) continue;
 
-        float best_distance = result[i].distance;
-        float score = 1.0 / (smoothing + result[i].distance);
+        double cumulative_probability = result[i].distance;
+        double min_prob = result[i].distance;
+        double max_prob = result[i].distance;
         int tc = 1;
+
+        if (debug) { g_debug("%s   %.3f -> %.3f", result[i].patch_name, result[i].distance, cumulative_probability);}
 
         for (int j = i+1; j < k; j++)
         {
@@ -303,25 +312,26 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
             {
                 tc++;
                 result[j].used = TRUE;
-                if (result[j].distance > 0)
+
+                if (tc < 4)  // only allow top three readings to influence score
                 {
-                    score += 1.0 / (smoothing + result[j].distance);
-                    if (result[j].distance < best_distance)
-                    {
-                        best_distance = result[i].distance;
-                    }
+                    // p(A or B) = p(A) + p(B) - p(A & B)
+                    cumulative_probability = cumulative_probability + result[j].distance
+                        - cumulative_probability * result[j].distance;
+
+                    min_prob = fmin(min_prob, result[j].distance);
+                    max_prob = fmax(max_prob, result[j].distance);
+
+                    if (debug) { g_debug("%s + %.3f -> %.3f", result[j].patch_name, result[j].distance, cumulative_probability);}
                 }
             }
         }
 
-        score = score / tc;   // average of scores for same patch that landed in top K
+        if (debug) g_debug("Patch '%s' has probability %.3f over %i (%.3f-%.3f)", result[i].patch_name,
+           cumulative_probability, tc, min_prob, max_prob);
 
-        // if (debug) g_debug("Patch '%s' %s has score %.3f over %i best distance=%.2f", result[i].patch_name,
-        //   confirmed ? "confirmed" : "all",
-        //   score, tc, best_distance);
-
-        struct top_k current_value = result[i];
-        current_value.distance = score;
+        struct top_k current_value = result[i];  // copy name
+        current_value.distance = cumulative_probability;
 
         // Find insertion point, highest score at top 
         for (int m = 0; m < top_count; m++)   // top_count is maybe 3 but other array is larger
@@ -333,7 +343,7 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
                 top_result[m] = current_value;
                 break;
             }
-            else if (top_result[m].distance < score)
+            else if (top_result[m].distance < current_value.distance)
             {
                 // Insert at this position, pick up current and move it down
                 struct top_k temp = top_result[m];
