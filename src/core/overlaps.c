@@ -87,16 +87,13 @@ void pack_closest_columns(struct OverallState* state)
 
                 // cannot be the same if they both have names and the names are different
                 // but don't reject _ names as they are temporary and will get replaced
-                bool haveDifferentNames = (strlen(a->name) > 0) && (strlen(b->name) > 0) 
+                bool haveDifferentNames =
                     // can reject as soon as they both have a partial name that is same type but doesn't match
                     // but cannot reject while one or other has a temporary name as it may match
-                    && (a->name_type >= nt_device && b->name_type >= nt_device)
-                    && (g_strcmp0(a->name, b->name) != 0);
+                    (a->name_type == b->name_type) && (g_strcmp0(a->name, b->name) != 0);
 
                 // cannot be the same if they both have known categories and they are different
-                // Used to try to blend unknowns in with knowns but now we get category right 99.9% of the time,
-                //  no longer necessary
-                bool haveDifferentCategories = (a->category != b->category); // && (a->category != CATEGORY_UNKNOWN) && (b->category != CATEGORY_UNKNOWN);
+                bool haveDifferentCategories = (a->category != b->category);
 
                 // cannot be the same device if they have different mac addresses and one is a public mac
                 bool haveDifferentMacAndPublic = (a->device_64 != b->device_64) &&
