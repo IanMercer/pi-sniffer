@@ -8,7 +8,6 @@
 #include <string.h>
 #include <stdbool.h>
 #include <glib.h>
-#include <json-glib/json-glib.h>
 
 #include <sys/types.h>
 #include <stdio.h>
@@ -305,7 +304,7 @@ bool print_counts_by_closest(struct OverallState* state)
     time_t last_run = state->last_summary;
     time(&state->last_summary);
 
-    g_debug("pack_closest_columns()");
+    //g_debug("pack_closest_columns()");
     pack_closest_columns(state);
 
     struct AccessPoint* access_points_list = state->access_points;
@@ -314,7 +313,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
     float total_count = 0.0;
 
-    g_debug("Clear room totals");
+    //g_debug("Clear room totals");
 
     for (struct patch* current = patch_list; current != NULL; current = current->next)
     {
@@ -455,12 +454,14 @@ bool print_counts_by_closest(struct OverallState* state)
                 mac_64_to_string(sup_mac, 18, test->supersededby);
             else
                 sup_mac[0]='\0';
-            g_info("--- %s%s --- %10s --- %23s --- %5li-%5li col:%2i %s%s", 
+            g_info("%3i.--- %s%s %10s %23s [%5li-%5li] (%i) col:%2i %s%s", 
+                     i,
                      mac, 
                      test->addressType == PUBLIC_ADDRESS_TYPE ? "*" : " ",
                      category, test->name, 
                      now - test->earliest,
-                     now - test->latest, 
+                     now - test->latest,
+                     test->count, 
                      test->column, 
                      test->supersededby == 0 ? "" : "-- super:",
                      sup_mac);
@@ -472,64 +473,66 @@ bool print_counts_by_closest(struct OverallState* state)
         int count_same_mac = 0;
         bool skipping = false;
 
+        // BY DEFINITION WE ONLY CARE ABOUT SUPERSEDED ON THE FIRST INSTANCE OF A MAC ADDRESS
+        // ALL EARLIER POSSIBLE SUPERSEEDED VALUES ARE IRRELEVANT IF ONE CAME IN LATER ON A
+        // DIFFERENT ACCESS POINT Right?
+
         // find all instances on this mac address in the array
         // mark them as seen as we go so they can't seed a new scan
         for (int j = i; j >= 0; j--)
         {
             struct ClosestTo* other = &state->closest[j];
+            if (other->device_64 != test->device_64) continue;
+            
+            // SAME MAC address
+            //g_debug("i=%i j=%i", i, j);
+            // other is test on first iteration
+            other->mark = true;
 
-            if (other->device_64 == test->device_64)
+            // Once we get beyond 300s we start skipping any other matches
+            if (skipping) continue;
+
+            count += other->count;
+
+            // Is this a better match than the current one?
+            int time_diff = difftime(test->latest, other->latest);
+            int abs_diff = difftime(now, other->latest);
+            // Should always be +ve as we are scanning back in time
+
+            superseded = superseded || ((other->supersededby != 0)); // WHY was it .... && (count_same_mac < 2));
+            // ignore a superseded value if it was a long time ago and we've seen other reports since then from it
+            count_same_mac++;
+
+            //if (time_diff < 300)      // only interested in where it has been recently // handled above in outer loop
             {
-                //g_debug("i=%i j=%i", i, j);
-                // other is test on first iteration
-                other->mark = true;
+                char other_mac[18];
+                mac_64_to_string(other_mac, 18, other->supersededby);
 
-                // Once we get beyond 300s we start skipping any other matches
-                if (skipping) continue;
-
-                count += other->count;
-
-                // Is this a better match than the current one?
-                int time_diff = difftime(test->latest, other->latest);
-                int abs_diff = difftime(now, other->latest);
-                // Should always be +ve as we are scanning back in time
-
-                // TODO: Issue: was superseded on one AP but has been seen since in good health
-                superseded = superseded | ((other->supersededby != 0) && (count_same_mac < 2));
-                // ignore a superseded value if it was a long time ago and we've seen other reports since then from it
-                count_same_mac++;
-
-                //if (time_diff < 300)      // only interested in where it has been recently // handled above in outer loop
+                //Verbose logging
+                if (loggingOn || other->supersededby != 0)// && false)  // debugging 
                 {
-                    char other_mac[18];
-                    mac_64_to_string(other_mac, 18, other->supersededby);
-
-                    //Verbose logging
-                    if (loggingOn && false)  // debugging 
-                    {
-                      struct AccessPoint *ap2 = other->access_point;
-                      g_debug(" %15s distance %5.1fm at=%3is dt=%3is count=%3i %s%s", ap2->client_id, other->distance, abs_diff, time_diff, other->count,
-                        other->supersededby==0 ? "" : "superseeded=", 
-                        other->supersededby==0 ? "" : other_mac);
-                    }
-
-                    if (time_diff > 600) // or we have seen enough?
-                    {
-                        if (!skipping)
-                        {
-                            //g_debug("Skip remainder, %s '%s' delta time %i > 600", mac, test->name, time_diff);
-                            skipping = true;
-                        }
-                        continue;
-                    }
-
-                    // So, instead of this, with duplicates in the list ...
-                    // build a list of all the points that contribute and their times
-
-                    int index = other->access_point->id;
-                    access_distances[index] = other->distance; // was why? round(other->distance * 10.0) / 10.0;
-                    access_times[index] = abs_diff;
+                    struct AccessPoint *ap2 = other->access_point;
+                    g_debug(" %15s distance %5.1fm at=%3is dt=%3is count=%3i %s%s", ap2->client_id, other->distance, abs_diff, time_diff, other->count,
+                    other->supersededby==0 ? "" : "superseeded=", 
+                    other->supersededby==0 ? "" : other_mac);
                 }
+
+                if (time_diff > 600) // or we have seen enough?
+                {
+                    if (!skipping)
+                    {
+                        //g_debug("Skip remainder, %s '%s' delta time %i > 600", mac, test->name, time_diff);
+                        skipping = true;
+                    }
+                    continue;
+                }
+
+                // So, instead of this, with duplicates in the list ...
+                // build a list of all the points that contribute and their times
+
+                int index = other->access_point->id;
+                access_distances[index] = other->distance; // was why? round(other->distance * 10.0) / 10.0;
+                access_times[index] = abs_diff;
             }
         }
 
@@ -721,11 +724,14 @@ bool print_counts_by_closest(struct OverallState* state)
 
     for (struct summary* s=summary; s!=NULL; s=s->next)
     {
-        cJSON* item = cJSON_CreateObject();
-        cJSON_AddStringToObject(item, "name", s->category);
-        cJSON_AddStringToObject(item, "group", s->extra);
-        cJSON_AddSummary(item, s);
-        cJSON_AddItemToArray(jrooms, item);
+        // This makes reception hard: if (any_present(s))
+        {
+            cJSON* item = cJSON_CreateObject();
+            cJSON_AddStringToObject(item, "name", s->category);
+            cJSON_AddStringToObject(item, "group", s->extra);
+            cJSON_AddSummary(item, s);
+            cJSON_AddItemToArray(jrooms, item);
+        }
     }
     free_summary(&summary);
 
@@ -736,11 +742,14 @@ bool print_counts_by_closest(struct OverallState* state)
 
     for (struct summary* s=summary; s!=NULL; s=s->next)
     {
-        cJSON* item = cJSON_CreateObject();
-        cJSON_AddStringToObject(item, "name", s->category);
-        //cJSON_AddStringToObject(item, "tag", s->extra);
-        cJSON_AddSummary(item, s);
-        cJSON_AddItemToArray(jzones, item);
+        // This makes reception hard: if (any_present(s))
+        {
+            cJSON* item = cJSON_CreateObject();
+            cJSON_AddStringToObject(item, "name", s->category);
+            //cJSON_AddStringToObject(item, "tag", s->extra);
+            cJSON_AddSummary(item, s);
+            cJSON_AddItemToArray(jzones, item);
+        }
     }
     free_summary(&summary);
 
@@ -839,7 +848,7 @@ bool print_counts_by_closest(struct OverallState* state)
     //g_info("Summary by room: %s", json_rooms);
     //g_info(" ");
     g_info("Total %.2f people: %s", total_count, json_groups);
-    g_info("%s ", json_complete);
+    //g_info("%s ", json_complete);
     g_info(" ");
 
     free(json_groups); // string listing each group and count

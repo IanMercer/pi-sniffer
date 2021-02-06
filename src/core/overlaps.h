@@ -1,5 +1,5 @@
-#ifndef _OVERLAPS_H
-#define _OVERLAPS_H
+#ifndef OVERLAPS_H
+#define OVERLAPS_H
 
 #include "state.h"
 

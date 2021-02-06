@@ -8,14 +8,6 @@
 */
 bool overlapsClosest(struct ClosestTo *a, struct ClosestTo *b)
 {
-    // If the earlier device has just one observation it's too soon to say if the latter one is the same device
-    // In a transit situation we get many devices passing by with just one ping, these are not superceded
-    if (a->count == 1 && a->latest <= b->earliest){
-        return TRUE; // not an overlap but unlikely to be same device
-    }
-    if (b->count == 1 && b->latest <= a->earliest){
-        return TRUE; // not an overlap but unlikely to be same device
-    }
     if (a->earliest >= b->latest)  // a is entirely after b
     {
         int delta_time = difftime(a->earliest, b->latest);
@@ -30,6 +22,28 @@ bool overlapsClosest(struct ClosestTo *a, struct ClosestTo *b)
 }
 
 /*
+    Was this just a blip?
+*/
+bool justABlip(struct ClosestTo *a, struct ClosestTo *b)
+{
+    // If the earlier device has just one observation it's too soon to say if the latter one is the same device
+    // In a transit situation we get many devices passing by with just one ping, these are not superceded
+    int delta = abs(difftime(a->earliest, b->latest));
+    // under 5s - unlikely to get two transmissions on different macs from same device
+    // over 60s - unlikely to be the same device (first left, second arrived)
+    if (a->count == 1 && a->latest <= b->earliest && (delta < 5 || delta > 60))
+    {
+        return TRUE; // unlikely to be same device
+    }
+    if (b->count == 1 && b->latest <= a->earliest && (delta < 5 || delta > 60))
+    {
+        return TRUE; // unlikely to be same device
+    }
+    return FALSE;
+}
+
+
+/*
     Compute the minimum number of devices present by assigning each in a non-overlapping manner to columns
 */
 void pack_closest_columns(struct OverallState* state)
@@ -42,25 +56,31 @@ void pack_closest_columns(struct OverallState* state)
         a->column = 0;
     }
 
-    for (int k = state->closest_n - 1; k > 0; k--)
+    // Should take many fewer iterations than this! This is worst case max.
+    for (int iterations = 0; iterations < state->closest_n; iterations++)
     {
         bool changed = false;
 
         for (int i = state->closest_n - 1; i > 0; i--)
         {
-            for (int j = i - 1; j > 0; j--)
+            for (int j = i - 1; j >= 0; j--)
             {
                 struct ClosestTo *a = &state->closest[i];
                 struct ClosestTo *b = &state->closest[j];
 
                 if (a->device_64 == b->device_64) continue;  // TODO: HANDLE THESE AS DEVICES NOT CLOSEST OBS
 
+                // How to handle two observations from the different access points
+                //if (a->access_point->id != b->access_point->id) continue;
+
                 if (a->column != b->column)
                     continue;
 
+                bool blip = justABlip(a,b);
                 bool over = overlapsClosest(a, b);
 
-                // cannot be the same device if either has a public address (or we don't have an address type yet)
+                // cannot be the same device if one is public and the other is random address type
+                // (or we don't have an address type yet)
                 bool haveDifferentAddressTypes = (a->addressType > 0 && b->addressType > 0 && 
                     a->addressType != b->addressType);
 
@@ -68,22 +88,51 @@ void pack_closest_columns(struct OverallState* state)
                 // but don't reject _ names as they are temporary and will get replaced
                 bool haveDifferentNames = (strlen(a->name) > 0) && (strlen(b->name) > 0) 
                     // can reject as soon as they both have a partial name that is same type but doesn't match
-                    && (a->name_type == b->name_type)              
+                    // but cannot reject while one or other has a temporary name as it may match
+                    && (a->name_type >= nt_device && b->name_type >= nt_device)
                     && (g_strcmp0(a->name, b->name) != 0);
 
                 // cannot be the same if they both have known categories and they are different
-                // Used to try to blend unknowns in with knowns but now we get category right 99.9% of the time, no longer necessary
+                // Used to try to blend unknowns in with knowns but now we get category right 99.9% of the time,
+                //  no longer necessary
                 bool haveDifferentCategories = (a->category != b->category); // && (a->category != CATEGORY_UNKNOWN) && (b->category != CATEGORY_UNKNOWN);
 
-                bool haveDifferentMacAndPublic = (a->addressType == PUBLIC_ADDRESS_TYPE && 
-                    (a->device_64 != b->device_64));
+                // cannot be the same device if they have different mac addresses and one is a public mac
+                bool haveDifferentMacAndPublic = (a->device_64 != b->device_64) &&
+                    (a->addressType == PUBLIC_ADDRESS_TYPE || b->addressType == PUBLIC_ADDRESS_TYPE);
 
-                if (over || haveDifferentAddressTypes || haveDifferentNames || haveDifferentCategories || 
+                if (blip || over || haveDifferentAddressTypes || haveDifferentNames || haveDifferentCategories || 
                     haveDifferentMacAndPublic)
                 {
                     b->column++;
                     changed = true;
-                    // g_print("Compare %i to %i and bump %4i %s to %i, %i %i %i\n", i, j, b->id, b->mac, b->column, over, haveDifferentAddressTypes, haveDifferentNames);
+                    // Log to see why entries with the same name are failing
+                    // if (g_strcmp0(a->name, "Apple Pencil") == 0 && g_strcmp0(b->name, "Apple Pencil") == 0)
+                    // {
+                    //     g_debug("%i.%s/%s %i.%s/%s Bump to (%i, %i),      %s%s%s%s%s%s", 
+                    //         i, a->name, a->access_point->client_id, 
+                    //         j, b->name, b->access_point->client_id,
+                    //         a->column, b->column,
+                    //         blip ? "blip " : "", 
+                    //         over ? "over " : "",
+                    //         haveDifferentAddressTypes ? "addressTypes " : "",
+                    //         haveDifferentNames ? "names ": "", 
+                    //         haveDifferentCategories ? "categories ":"", 
+                    //         haveDifferentMacAndPublic ? "mac ": "");
+                    // }
+                    // if (g_strcmp0(a->name, "Covid Trace") == 0 && g_strcmp0(b->name, "Covid Trace") == 0)
+                    // {
+                    //     g_debug("%i.%s/%s %i.%s/%s Bump to (%i, %i),      %s%s%s%s%s%s", 
+                    //         i, a->name, a->access_point->client_id, 
+                    //         j, b->name, b->access_point->client_id,
+                    //         a->column, b->column,
+                    //         blip ? "blip " : "", 
+                    //         over ? "over " : "",
+                    //         haveDifferentAddressTypes ? "addressTypes " : "",
+                    //         haveDifferentNames ? "names ": "", 
+                    //         haveDifferentCategories ? "categories ":"", 
+                    //         haveDifferentMacAndPublic ? "mac ": "");
+                    // }
                 }
             }
         }
@@ -108,6 +157,7 @@ void pack_closest_columns(struct OverallState* state)
             if (current->column == earlier->column)
             {
                 earlier->supersededby = mac64;
+                // No need to scan back marking the rest as superseeded, right? even though they are.
             }
             // If earlier was supersededby this one but now it isn't ...
             else if (earlier->supersededby == mac64)
@@ -115,7 +165,7 @@ void pack_closest_columns(struct OverallState* state)
                 // Not in same column but has a supersededby value
                 // This device used to be superseded by the new one, but now we know it isn't
                 earlier->supersededby = 0;
-                g_info("%s IS NO LONGER superseded by %s", earlier->name, current->name);
+                g_info("%i.%s IS NO LONGER superseded by %i.%s", j, earlier->name, i, current->name);
             }
         }
     }

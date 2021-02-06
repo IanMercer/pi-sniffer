@@ -1497,7 +1497,7 @@ int dump_all_devices_tick(void *parameters)
         return TRUE; // no changes since last time
     logTable = FALSE;
     g_info("-----------------------------------------------------------------------------------------------------------");
-    g_info("Id   Address          Count Typ   Dist    First   Last                 Name              Closest Category  ");
+    g_info("Id   Address          Count Typ   Dist    First   Last                Name             Closest Category");
     g_info("-----------------------------------------------------------------------------------------------------------");
     time(&now);
     for (int i = 0; i < state.n; i++)

@@ -219,7 +219,7 @@ void send_device_udp(struct OverallState *state, struct Device *device)
 
 
 /*
-    Update closest
+    Update closest (called from a local update)
 */
 void update_closest(struct OverallState *state, struct Device *device)
 {
@@ -229,22 +229,6 @@ void update_closest(struct OverallState *state, struct Device *device)
     add_closest(state, id_64, state->local, device->earliest, device->latest, device->distance, device->category, 
         device->count, 
         device->name, 
-        device->name_type, device->address_type,
-        device->is_training_beacon);
-}
-
-/*
-    Update superseded
-*/
-void update_superseded(struct OverallState *state, struct Device *device)
-{
-    //g_debug("update_superseded(%i, %s)", state->local->id, device->mac);
-    // Add local observations into the same structure
-    int64_t id_64 = mac_string_to_int_64(device->mac);
-    g_assert(state->local != NULL);
-    add_closest(state, id_64, state->local, device->earliest, device->latest, device->distance, device->category, 
-        device->count, 
-        device->name,
         device->name_type, device->address_type,
         device->is_training_beacon);
 }

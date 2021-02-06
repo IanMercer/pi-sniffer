@@ -61,7 +61,7 @@ void getMemory(
 
 char* trim(char *str)
 {
-    size_t len = 0;
+    int len = 0;
     char *frontp = str;
     char *endp = NULL;
 
@@ -519,6 +519,16 @@ void cJSON_AddSummary(cJSON * item, struct summary* s)
     if (s->covid_total > 0) cJSON_AddRounded(item, "covid", s->covid_total);
     if (s->other_total > 0) cJSON_AddRounded(item, "other", s->other_total);
 }
+
+/*
+*  Are there any values in this summary
+*/
+bool any_present(struct summary* s)
+{
+    return s->phone_total > 0 || s->watch_total > 0 || s->wearable_total > 0 || s->computer_total > 0 ||
+           s->tablet_total > 0 || s->beacon_total > 0 || s->covid_total > 0 || s->other_total > 0;
+}
+
 
 /*
     Add a one decimal value to a JSON object
