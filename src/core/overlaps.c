@@ -12,12 +12,12 @@ bool overlapsClosest(struct ClosestTo *a, struct ClosestTo *b)
     if (a->earliest >= b->latest)  // a is entirely after b
     {
         int delta_time = difftime(a->earliest, b->latest);
-        return delta_time > 10;  // more than 10s and these are probably unrelated devices
+        return delta_time > 60;  // more than 60s and these are probably unrelated devices
     }
     if (b->earliest >= a->latest) // b is entirely after a
     {
         int delta_time = difftime(b->earliest, a->latest);
-        return delta_time > 10;  // more than 10s and these are probably unrelated devices
+        return delta_time > 60;  // more than 60s and these are probably unrelated devices
     }
     return TRUE;      // must overlap if not entirely after or before
 }
@@ -31,12 +31,12 @@ bool justABlip(struct ClosestTo *a, struct ClosestTo *b)
     // In a transit situation we get many devices passing by with just one ping, these are not superceded
     double delta = fabs(difftime(a->earliest, b->latest));
     // under 5s - unlikely to get two transmissions on different macs from same device
-    // over 60s - unlikely to be the same device (first left, second arrived)
-    if (a->count == 1 && a->latest <= b->earliest && (delta < 5 || delta > 60))
+    // over 90s - unlikely to be the same device (first left, second arrived)
+    if (a->count == 1 && a->latest <= b->earliest && (delta < 5 || delta > 90))
     {
         return TRUE; // unlikely to be same device
     }
-    if (b->count == 1 && b->latest <= a->earliest && (delta < 5 || delta > 60))
+    if (b->count == 1 && b->latest <= a->earliest && (delta < 5 || delta > 90))
     {
         return TRUE; // unlikely to be same device
     }

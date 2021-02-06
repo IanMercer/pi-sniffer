@@ -69,6 +69,7 @@ bool json_to_recording(char* buffer, struct OverallState* state, struct patch** 
         if (error_ptr != NULL)
         {
             g_warning("Error reading saved recording before: %s", error_ptr);
+            g_warning("Line in error is `%s`", buffer);
         }
         return FALSE;
     }
