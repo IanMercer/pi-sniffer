@@ -49,7 +49,7 @@ bool justABlip(time_t a_earliest, time_t a_latest, int a_count,
     double delta = fabs(difftime(a_earliest, b_latest));
     // under 2s - unlikely to get two transmissions on different macs from same device
     // over 90s - unlikely to be the same device (first left, second arrived)
-    if (a_count == 1 && a->latest <= b_earliest && (delta < 2 || delta > 90))
+    if (a_count == 1 && a_latest <= b_earliest && (delta < 2 || delta > 90))
     {
         return TRUE; // unlikely to be same device
     }
