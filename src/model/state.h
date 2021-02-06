@@ -2,6 +2,7 @@
 #define state_h
 
 #include "device.h"
+#include "aggregate.h"
 #include <pthread.h>
 #include "sniffer-generated.h"
 

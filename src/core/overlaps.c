@@ -1,5 +1,6 @@
 #include "overlaps.h"
 #include "closest.h"
+#include "aggregate.h"
 #include "device.h"
 #include <math.h>
 
@@ -7,36 +8,52 @@
     Do these two devices overlap in time? If so they cannot be the same device
     (allowed to touch given granularity of time)
 */
-bool overlapsClosest(struct ClosestTo *a, struct ClosestTo *b)
+bool overlapsClosest(time_t a_earliest, time_t a_latest, time_t b_earliest, time_t b_latest)
 {
-    if (a->earliest >= b->latest)  // a is entirely after b
+    if (a_earliest >= b_latest)  // a is entirely after b
     {
-        int delta_time = difftime(a->earliest, b->latest);
+        return FALSE;
+        int delta_time = difftime(a_earliest, b_latest);
         return delta_time > 60;  // more than 60s and these are probably unrelated devices
     }
-    if (b->earliest >= a->latest) // b is entirely after a
+    if (b_earliest >= a_latest) // b is entirely after a
     {
-        int delta_time = difftime(b->earliest, a->latest);
+        return FALSE;
+        int delta_time = difftime(b_earliest, a_latest);
         return delta_time > 60;  // more than 60s and these are probably unrelated devices
     }
     return TRUE;      // must overlap if not entirely after or before
 }
 
+// When we know A is after B, only need to compare one way
+bool overlapsOneWay(time_t a_earliest, time_t b_latest)
+{
+    if (a_earliest >= b_latest)  // a is entirely after b
+    {
+        return FALSE;
+        int delta_time = difftime(a_earliest, b_latest);
+        return delta_time > 60;  // more than 60s and these are probably unrelated devices
+    }
+    return TRUE;      // must overlap if not entirely after or before
+}
+
+
 /*
     Was this just a blip?
 */
-bool justABlip(struct ClosestTo *a, struct ClosestTo *b)
+bool justABlip(time_t a_earliest, time_t a_latest, int a_count, 
+               time_t b_earliest, time_t b_latest, int b_count)
 {
     // If the earlier device has just one observation it's too soon to say if the latter one is the same device
     // In a transit situation we get many devices passing by with just one ping, these are not superceded
-    double delta = fabs(difftime(a->earliest, b->latest));
-    // under 5s - unlikely to get two transmissions on different macs from same device
+    double delta = fabs(difftime(a_earliest, b_latest));
+    // under 2s - unlikely to get two transmissions on different macs from same device
     // over 90s - unlikely to be the same device (first left, second arrived)
-    if (a->count == 1 && a->latest <= b->earliest && (delta < 5 || delta > 90))
+    if (a_count == 1 && a->latest <= b_earliest && (delta < 2 || delta > 90))
     {
         return TRUE; // unlikely to be same device
     }
-    if (b->count == 1 && b->latest <= a->earliest && (delta < 5 || delta > 90))
+    if (b_count == 1 && b_latest <= a_earliest && (delta < 2 || delta > 90))
     {
         return TRUE; // unlikely to be same device
     }
@@ -64,12 +81,24 @@ void pack_closest_columns(struct OverallState* state)
 
         for (int i = state->closest_n - 1; i > 0; i--)
         {
+            struct ClosestTo *a = &state->closest[i];
+
+            // Find all earlier instances and get the earliest possible time stamp
+            time_t a_earliest = a->earliest;
+            time_t a_latest = a->latest;
+
+            for (int ii = i-1; ii >=0; ii--)
+            {
+                struct ClosestTo *b = &state->closest[ii];
+                if (a->device_64 == b->device_64 &&
+                    b->earliest < a_earliest) a_earliest = b->earliest;
+            }
+
             for (int j = i - 1; j >= 0; j--)
             {
-                struct ClosestTo *a = &state->closest[i];
                 struct ClosestTo *b = &state->closest[j];
 
-                if (a->device_64 == b->device_64) continue;  // TODO: HANDLE THESE AS DEVICES NOT CLOSEST OBS
+                if (a->device_64 == b->device_64) continue;
 
                 // How to handle two observations from the different access points
                 //if (a->access_point->id != b->access_point->id) continue;
@@ -77,8 +106,15 @@ void pack_closest_columns(struct OverallState* state)
                 if (a->column != b->column)
                     continue;
 
-                bool blip = justABlip(a,b);
-                bool over = overlapsClosest(a, b);
+                // TODO: How to skip all the repeats of the same mac address as B
+                // otherwise wasted effort
+
+                // No need to scan down the B's
+                //  B must be earlier than A because of the order we are scanning in
+                //  So only B's latest time matters in relation to A's earliest time
+
+                bool blip = justABlip(a_earliest, a_latest, a->count, b->earliest, b->latest, b->count);
+                bool over = overlapsOneWay(a_earliest, b->latest);
 
                 // cannot be the same device if one is public and the other is random address type
                 // (or we don't have an address type yet)
@@ -156,8 +192,9 @@ void pack_closest_columns(struct OverallState* state)
             {
                 earlier->supersededby = mac64;
                 // No need to scan back marking the rest as superseeded, right? even though they are.
+                break;
             }
-            // If earlier was supersededby this one but now it isn't ...
+            // If earlier was superseded by this one but now it isn't ...
             else if (earlier->supersededby == mac64)
             {
                 // Not in same column but has a supersededby value

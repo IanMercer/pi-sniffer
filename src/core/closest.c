@@ -18,6 +18,7 @@
 #include "cJSON.h"
 #include "knn.h"
 #include "overlaps.h"
+#include "aggregate.h"
 
 /*
     Get the closest recent observation for a device
@@ -478,6 +479,8 @@ bool print_counts_by_closest(struct OverallState* state)
         // ALL EARLIER POSSIBLE SUPERSEEDED VALUES ARE IRRELEVANT IF ONE CAME IN LATER ON A
         // DIFFERENT ACCESS POINT Right?
 
+        superseded = test->supersededby != 0;
+
         // find all instances on this mac address in the array
         // mark them as seen as we go so they can't seed a new scan
         for (int j = i; j >= 0; j--)
@@ -500,8 +503,6 @@ bool print_counts_by_closest(struct OverallState* state)
             int abs_diff = difftime(now, other->latest);
             // Should always be +ve as we are scanning back in time
 
-            superseded = superseded || ((other->supersededby != 0)); // WHY was it .... && (count_same_mac < 2));
-            // ignore a superseded value if it was a long time ago and we've seen other reports since then from it
             count_same_mac++;
 
             //if (time_diff < 300)      // only interested in where it has been recently // handled above in outer loop
@@ -513,8 +514,12 @@ bool print_counts_by_closest(struct OverallState* state)
                 if (loggingOn)// && false)  // debugging 
                 {
                     struct AccessPoint *ap2 = other->access_point;
-                    g_debug(" %15s distance %5.1fm at=%3is dt=%3is count=%3i %s%s", ap2->client_id, other->distance, abs_diff, time_diff, other->count,
-                    other->supersededby==0 ? "" : "superseeded=", 
+                    g_debug(" %15s distance %5.1fm at=%3is dt=%3is [%5li-%5li] (%3i) %s%s", ap2->client_id, other->distance, 
+                    abs_diff, time_diff, 
+                    now - other->earliest,
+                    now - other->latest,
+                    other->count,
+                    other->supersededby==0 ? "" : "superseeded=",
                     other->supersededby==0 ? "" : other_mac);
                 }
 
