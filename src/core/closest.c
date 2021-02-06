@@ -185,6 +185,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
 */
 void calculate_location(struct OverallState* state, struct ClosestTo* closest, 
     double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS], 
+    struct top_k* best_three, int best_three_len,
     bool is_training_beacon, bool loggingOn, bool debug)
 {
     (void)accesstimes;
@@ -199,9 +200,8 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
     char* device_name = closest->name;
     //const char* category = category_from_int(closest->category);
 
-    struct top_k best_three[3];
     // try confirmed
-    int k_found = k_nearest(state->recordings, accessdistances, access_points, best_three, 3, TRUE, debug);
+    int k_found = k_nearest(state->recordings, accessdistances, access_points, best_three, best_three_len, TRUE, debug);
 
     // if (k_found < 3)
     // {
@@ -227,11 +227,13 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
                 fmin(1.0, 0.5 + scale_factor * (best_three[bi].distance - best_three[bi+1].distance)) : 
                 1.0);
                 // e.g. 0.426, 0.346, 0.289 => 0.080, 0.057 => * 5 => .4, .275 => 0.9 and ...
+            best_three[bi].probability = pallocation;
             if (best_three[bi].distance > best_three[0].distance * 0.5)
             {
                 if (loggingOn && bi == 0)
                 {
                     g_debug("'%s' score: %.3f (%i) p=%.3f", best_three[bi].patch_name, best_three[bi].distance, bi, pallocation);
+                    // TODO: How to get persistent patch addresses closest->patch = best_three[bi].patch;
                 }
             }
             allocation = allocation - pallocation;
@@ -255,13 +257,11 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
 
         }
 
-        
-
         return;
     }
 
     // Try again including unconfirmed recordings (beacon subdirectory)
-    k_found = k_nearest(state->recordings, accessdistances, access_points, best_three, 3, FALSE, debug);
+    k_found = k_nearest(state->recordings, accessdistances, access_points, best_three, best_three_len, FALSE, debug);
 
     if (k_found == 0 || best_three[0].distance > 1.0)
     {
@@ -291,6 +291,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
                 g_debug("   KFound %i : %s %.1f", i, best_three[i].patch_name, best_three[i].distance);
             }
     }
+
 }
 
 
@@ -509,7 +510,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 mac_64_to_string(other_mac, 18, other->supersededby);
 
                 //Verbose logging
-                if (loggingOn || other->supersededby != 0)// && false)  // debugging 
+                if (loggingOn)// && false)  // debugging 
                 {
                     struct AccessPoint *ap2 = other->access_point;
                     g_debug(" %15s distance %5.1fm at=%3is dt=%3is count=%3i %s%s", ap2->client_id, other->distance, abs_diff, time_diff, other->count,
@@ -536,7 +537,7 @@ bool print_counts_by_closest(struct OverallState* state)
             }
         }
 
-        struct AccessPoint *ap = test->access_point;
+        //struct AccessPoint *ap = test->access_point;
 
         int delta_time = difftime(now, test->latest);
         double x_scale = (test->category == CATEGORY_BEACON || 
@@ -559,7 +560,16 @@ bool print_counts_by_closest(struct OverallState* state)
         {
             bool debug = strcmp(test->name, "F350XXX") == 0;
 
-            calculate_location(state, test, access_distances, access_times, test->is_training_beacon, loggingOn, debug);
+            struct top_k best_three[3];
+            calculate_location(state, test, access_distances, access_times,
+                best_three, 3,
+                test->is_training_beacon, loggingOn, debug);
+
+            if (!loggingOn)
+            {
+                // Just the location
+                g_debug("'%s' score: %.3f p=%.2f", best_three[0].patch_name, best_three[0].distance, best_three[0].probability);
+            }
 
             // JSON - in a suitable format for copying into a recording
             char *json = NULL;

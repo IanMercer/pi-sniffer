@@ -39,6 +39,7 @@ struct top_k
     float distance;
     char patch_name[META_LENGTH];
     bool used;
+    float probability;
 };
 
 int k_nearest(struct recording* recordings, double* access_point_distances, struct AccessPoint* access_points, struct top_k* top_result, int top_count, 

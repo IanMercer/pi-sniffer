@@ -15,8 +15,8 @@ static char client_id[META_LENGTH];
 void initialize_state(struct OverallState* state)
 {
     // Default values if not set in environment variables
-    const char *description = "Please set a HOST_DESCRIPTION in the environment variables";
-    const char *platform = "Please set a HOST_PLATFORM in the environment variables";
+    const char *description = "HOST_DESCRIPTION env";
+    const char *platform = "HOST_PLATFORM env";
     int rssi_one_meter = -64;    // fairly typical RPI3 and iPhone
     float rssi_factor = 3.5;     // fairly cluttered indoor default
     float people_distance = 7.0; // 7m default range

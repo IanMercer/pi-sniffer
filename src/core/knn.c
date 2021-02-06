@@ -257,6 +257,7 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
         g_utf8_strncpy(current.patch_name, recording->patch_name, META_LENGTH);
         current.distance = distance;
         current.used = FALSE;
+        //current.patch = recording;
 
         //if (debug) g_debug("Patch %s Distance %.2f", current.patch_name, distance);
 

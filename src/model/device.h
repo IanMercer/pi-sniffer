@@ -229,6 +229,8 @@ struct ClosestTo
    bool is_training_beacon;
    // address type is public or random
    int8_t addressType; // 0, 1, 2
+   // the most likely patch for this device
+   struct patch* patch;
 };
 
 #endif

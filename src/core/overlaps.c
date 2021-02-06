@@ -1,6 +1,7 @@
 #include "overlaps.h"
 #include "closest.h"
 #include "device.h"
+#include <math.h>
 
 /*
     Do these two devices overlap in time? If so they cannot be the same device
@@ -28,7 +29,7 @@ bool justABlip(struct ClosestTo *a, struct ClosestTo *b)
 {
     // If the earlier device has just one observation it's too soon to say if the latter one is the same device
     // In a transit situation we get many devices passing by with just one ping, these are not superceded
-    int delta = abs(difftime(a->earliest, b->latest));
+    double delta = fabs(difftime(a->earliest, b->latest));
     // under 5s - unlikely to get two transmissions on different macs from same device
     // over 60s - unlikely to be the same device (first left, second arrived)
     if (a->count == 1 && a->latest <= b->earliest && (delta < 5 || delta > 60))

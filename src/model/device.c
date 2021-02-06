@@ -302,7 +302,7 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
     cJSON *nameType = cJSON_GetObjectItemCaseSensitive(djson, "nt");
     if (cJSON_IsNumber(nameType))
     {
-        device->name_type = (enum name_type)(addrType->valueint);
+        device->name_type = (enum name_type)(nameType->valueint);
     }
 
    cJSON_Delete(djson);
