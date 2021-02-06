@@ -540,6 +540,7 @@ bool print_counts_by_closest(struct OverallState* state)
         //struct AccessPoint *ap = test->access_point;
 
         int delta_time = difftime(now, test->latest);
+        // beacons and other fixed devices last longer, tend to transmit less often
         double x_scale = (test->category == CATEGORY_BEACON || 
             test->category == CATEGORY_LIGHTING ||
             test->category == CATEGORY_APPLIANCE ||
@@ -549,7 +550,7 @@ bool print_counts_by_closest(struct OverallState* state)
             test->category == CATEGORY_TV || 
             test->category == CATEGORY_FIXED) ? 160.0 :
             test->category == CATEGORY_TABLET ? 120 :
-             80.0;       // beacons and other fixed devices last longer, tend to transmit less often
+             80.0;
 
         double score = 0.55 - atan(delta_time / x_scale - 4.0) / 3.0;
         // A curve that stays a 1.0 for a while and then drops rapidly around 3 minutes out
@@ -568,7 +569,7 @@ bool print_counts_by_closest(struct OverallState* state)
             if (!loggingOn)
             {
                 // Just the location
-                g_debug("'%s' score: %.3f p=%.2f", best_three[0].patch_name, best_three[0].distance, best_three[0].probability);
+                g_debug("'%s' score: %.3f p=%.2f x s=%.2f", best_three[0].patch_name, best_three[0].distance, best_three[0].probability, score);
             }
 
             // JSON - in a suitable format for copying into a recording
@@ -660,10 +661,12 @@ bool print_counts_by_closest(struct OverallState* state)
             {
                 //g_info("Cluster (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, score);
                 total_count += score;
-                //g_debug("Update room total %i", room_count);
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    //g_info("Phone in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
+                    if (rcurrent->knn_score > 0)
+                    {
+                        g_info("Phone in %s +%.2f x %.2f, total %.1f", rcurrent->name, rcurrent->knn_score, score, total_count);
+                    }
                     rcurrent->phone_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
