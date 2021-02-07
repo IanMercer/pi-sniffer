@@ -32,7 +32,8 @@ bool overlapsOneWay(time_t a_earliest, time_t b_latest)
     {
         return FALSE;
         int delta_time = difftime(a_earliest, b_latest);
-        return delta_time > 60;  // more than 60s and these are probably unrelated devices
+        return delta_time > 150;  // more than 150s and these are probably unrelated devices
+        // Apple Watch 137s apart - this is where probability would come in, reduce over time
     }
     return TRUE;      // must overlap if not entirely after or before
 }
@@ -94,6 +95,8 @@ void pack_closest_columns(struct OverallState* state)
                     b->earliest < a_earliest) a_earliest = b->earliest;
             }
 
+            // TODO: Find the BEST fit and use that, proceed in order, best first, only claim 1 per leading device
+
             for (int j = i - 1; j >= 0; j--)
             {
                 struct ClosestTo *b = &state->closest[j];
@@ -102,6 +105,10 @@ void pack_closest_columns(struct OverallState* state)
 
                 // How to handle two observations from the different access points
                 //if (a->access_point->id != b->access_point->id) continue;
+
+
+                // TODO: Maybe only compare SAME access point due to time differences between them?
+
 
                 if (a->column != b->column)
                     continue;
