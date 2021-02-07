@@ -931,7 +931,7 @@ static void bluez_device_appeared(GDBusConnection *sig,
         }
         else if (g_ascii_strcasecmp(interface_name, "org.bluez.GattService1") == 0)
         {
-            pretty_print("  Gatt service = ", properties);
+            //pretty_print("  Gatt service = ", properties);
             // Gatt service = : {'UUID': <'00001805-0000-1000-8000-00805f9b34fb'>,
             //   'Device': <objectpath '/org/bluez/hci0/dev_4F_87_E1_13_66_A5'>,
             //   'Primary': <true>,
@@ -1558,13 +1558,13 @@ gboolean try_disconnect(struct Device *a)
         {
             if (a->connected)
             {
-                g_info(">>>>> Disconnect from %i. %s\n", a->id, a->mac);
+                //g_info(">>>>> Disconnect from %i. %s\n", a->id, a->mac);
                 bluez_adapter_disconnect_device(conn, a->mac);
             }
             else if (a->category == CATEGORY_UNKNOWN)
             {
                 // Failed to get enough data from connection or did not connect
-                g_info(">>>>> Failed to connect to %i. %s\n", a->id, a->mac);
+                //g_info(">>>>> Failed to connect to %i. %s\n", a->id, a->mac);
             }
             return TRUE;
         }
@@ -1605,7 +1605,7 @@ gboolean try_connect(struct Device *a)
     a->try_connect_state = 1;
     a->try_connect_attempts++;
     // Try forcing a connect to get a full dump from the device
-    g_info(">>>>>> Connect to %i. %s  attempt=%i", a->id, a->mac, a->try_connect_attempts);
+    //g_info(">>>>>> Connect to %i. %s  attempt=%i", a->id, a->mac, a->try_connect_attempts);
     bluez_adapter_connect_device(conn, a->mac);
     return TRUE;
 }
@@ -1660,7 +1660,7 @@ int try_connect_tick(void *parameters)
     }
     if (simultaneus_connections > 0)
     {
-        g_debug(">>>>>> Started %i connection attempts", simultaneus_connections);
+        //g_debug(">>>>>> Started %i connection attempts", simultaneus_connections);
     }
     return TRUE;
 }
