@@ -205,8 +205,9 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
             // This message is sent by phones not watches, seems to have nothing to do with them
             // iPhone X
             // See https://arxiv.org/pdf/1904.10600.pdf
-            soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad?
-            g_info("  %s '%s' Nearby Info 0x0a: iPhone u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+            //soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad?
+            // is sent by both ipads and iphones
+            g_info("  %s '%s' Nearby Info 0x0a: iPhone/Pad u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
         }
         else if (lower_bits == 0x0B){
             // active user
