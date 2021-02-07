@@ -304,7 +304,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
 */
 bool print_counts_by_closest(struct OverallState* state)
 {
-    time_t last_run = state->last_summary;
+    //time_t last_run = state->last_summary;
     time(&state->last_summary);
 
     //g_debug("pack_closest_columns()");
@@ -564,7 +564,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         if (score > 0)
         {
-            bool debug = strcmp(test->name, "F350") == 0;
+            bool debug = false; //strcmp(test->name, "F350") == 0;
 
             struct top_k best_three[3];
             calculate_location(state, test, access_distances, access_times,
