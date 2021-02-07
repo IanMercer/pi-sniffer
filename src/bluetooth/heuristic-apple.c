@@ -96,11 +96,11 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
         g_info("  %s '%s' Magic Switch", existing->mac, existing->name);
         soft_set_category(&existing->category, CATEGORY_WATCH);
     }
-    else if (apple_device_type == 0x0c)     // Handoff
+    else if (apple_device_type == 0x0c)     // Handoff - phones, iPads and Macbook all do this
     {
-        set_name(existing, "Apple Phone", nt_device);
+        set_name(existing, "Apple Handoff", nt_device);
         g_info("  %s '%s' Handoff", existing->mac, existing->name);
-        soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? but assume phone
+        //soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? or Macbook but assume phone
         // 1 byte length
         // 1 byte version
         // 2 bytes IV
@@ -121,7 +121,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     } 
     else if (apple_device_type == 0x0f)     // Nearby action - On user action (rare)
     {
-        set_name(existing, "Apple Nearby Action", nt_device);
+        set_name(existing, "Apple Nearby 0x0f", nt_device);
         g_info("  %s '%s' Nearby Action", existing->mac, existing->name);
         soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? but assume phone
         // Used for WiFi-password messages
@@ -134,7 +134,8 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     else if (apple_device_type == 0x10)     // Nearby Info - Constantly
     {
         // Almost certainly an iPhone
-        set_name(existing, "iPsomething", nt_generic);
+        // too soon ... name comes later ... optional(existing->name, "Apple Device");
+        set_name(existing, "Apple Nearby 0x10", nt_generic);
         //soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? but assume phone
 
         //g_debug("  Nearby Info ");
@@ -146,7 +147,6 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
 
         // e.g. phone: <[byte 0x10, 0x06, 0x51, 0x1e, 0xc1, 0x36, 0x99, 0xe1]>}
 
-        // too soon ... name comes later ... optional(existing->name, "Apple Device");
         // Not right, MacBook Pro seems to send this too
 
         uint8_t lower_bits = allocdata[02] & 0x0f;
