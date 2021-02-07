@@ -82,7 +82,6 @@ void pack_closest_columns(struct OverallState* state)
     for (int i = state->closest_n - 1; i > 0; i--)
     {
         struct ClosestTo *a = &state->closest[i];
-        a->column = 0;
         a->mark_pass_2 = false;
         a->supersededby = 0;
     }

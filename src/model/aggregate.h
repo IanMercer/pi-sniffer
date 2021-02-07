@@ -23,9 +23,6 @@ struct ClosestTo
    // Latest for this mac on this access point
    time_t latest;
 
-   // column for packing non-overlapping
-   int column;
-
    // Remove this, cannot go retroactive on sending data
    // Superseded by another: i.e. access_id has seen this mac address
    // in a column more recently than this one that it superseeds
