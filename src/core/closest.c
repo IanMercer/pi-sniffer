@@ -450,7 +450,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         char* category = category_from_int(test->category);
 
-        //if (loggingOn)
+        if (loggingOn)
         {
             char sup_mac[18];
             if (test->supersededby != 0)
@@ -511,7 +511,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 mac_64_to_string(other_mac, 18, other->supersededby);
 
                 //Verbose logging
-                if (loggingOn)// && false)  // debugging 
+                if (loggingOn && false)  // debugging 
                 {
                     struct AccessPoint *ap2 = other->access_point;
                     g_debug(" %15s distance %5.1fm at=%3is dt=%3is [%5li-%5li] (%3i) %s%s", ap2->client_id, other->distance, 
@@ -571,7 +571,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 best_three, 3,
                 test->is_training_beacon, loggingOn, debug);
 
-            if (!loggingOn)
+            if (!loggingOn && false)
             {
                 // Just the location
                 g_debug("'%s' score: %.3f p=%.2f x s=%.2f", best_three[0].patch_name, best_three[0].distance, best_three[0].probability, score);
