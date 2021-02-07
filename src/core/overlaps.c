@@ -119,19 +119,17 @@ void pack_closest_columns(struct OverallState* state)
             // cannot be the same if they both have known categories and they are different
             bool haveDifferentCategories = (a->category != b->category);
 
-            // cannot be the same device if they have different mac addresses and one is a public mac
-            bool haveDifferentMacAndPublic = (a->device_64 != b->device_64) &&
-                (a->addressType == PUBLIC_ADDRESS_TYPE || b->addressType == PUBLIC_ADDRESS_TYPE);
-
-            // scan all records with b as their mac address
+            // cannot be the same device if either is a public mac address (already know macs are different)
+            bool haveDifferentMacAndPublic = (a->addressType == PUBLIC_ADDRESS_TYPE || b->addressType == PUBLIC_ADDRESS_TYPE);
 
             bool might_supersede = !(haveDifferentAddressTypes || haveDifferentNames || haveDifferentCategories || 
                     haveDifferentMacAndPublic);
 
-            // TODO: Should we require at least one matching access point?
+            // Require at least one matching access point
             // e.g. two devices at opposite ends of the mesh that never overlapped are unlikely to be the same device
             bool atLeastOneMatch = false;
 
+            // scan all records with b as their mac address
             for (int ii = i; ii >= 0; ii--)
             {
                 struct ClosestTo *am = &state->closest[ii];

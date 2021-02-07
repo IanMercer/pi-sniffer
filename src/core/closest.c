@@ -571,10 +571,10 @@ bool print_counts_by_closest(struct OverallState* state)
                 best_three, 3,
                 test->is_training_beacon, logging, debug);
 
-            if (logging)
+            if (!logging && detailedLogging)
             {
-                // Just the location
-                g_debug("'%s' score: %.3f p=%.2f x s=%.2f", best_three[0].patch_name, best_three[0].distance, best_three[0].probability, score);
+                // Just the location when not logging if detailed logging
+                g_debug("'%s' score: %.3f p=%.3f x s=%.2f", best_three[0].patch_name, best_three[0].distance, best_three[0].probability, score);
             }
 
             // JSON - in a suitable format for copying into a recording
@@ -616,10 +616,10 @@ bool print_counts_by_closest(struct OverallState* state)
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
                     rcurrent->tablet_total += rcurrent->knn_score * score;        // probability x incidence
-                    if (logging && rcurrent->knn_score > 0)
-                    {
-                        g_info("Tablet in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
-                    }
+                    // if (logging && rcurrent->knn_score > 0)
+                    // {
+                    //     g_info("Tablet in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
+                    // }
                 }
             }
             else if (test->category == CATEGORY_COMPUTER)
@@ -667,10 +667,10 @@ bool print_counts_by_closest(struct OverallState* state)
                 total_count += score;
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    if (logging && rcurrent->knn_score > 0)
-                    {
-                        g_info("Phone in %s +%.2f x %.2f, total %.1f", rcurrent->name, rcurrent->knn_score, score, total_count);
-                    }
+                    // if (logging && rcurrent->knn_score > 0)
+                    // {
+                    //     g_info("Phone in %s +%.2f x %.2f, total %.1f", rcurrent->name, rcurrent->knn_score, score, total_count);
+                    // }
                     rcurrent->phone_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
