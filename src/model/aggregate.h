@@ -32,6 +32,8 @@ struct ClosestTo
    int64_t supersededby;
    // mark and sweep flag
    bool mark;
+   // second sweep pass
+   bool mark_pass_2;
    // count from access point
    int count;
    // for debugging

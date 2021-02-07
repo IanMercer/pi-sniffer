@@ -64,6 +64,16 @@ bool justABlip(time_t a_earliest, time_t a_latest, int a_count,
 
 /*
     Compute the minimum number of devices present by assigning each in a non-overlapping manner to columns
+
+    Pairwise iteration (A, B)
+    Multiple instances of A and B each with an access point name A0, A1, A2, ...  B0, B2, ...
+
+    A and B could be successors iff ...
+        A and B have matching names, categories, ...
+        Every matching pair satisfies A before B
+        Probability is based on lowest gap between A(ap) and B(ap)
+
+
 */
 void pack_closest_columns(struct OverallState* state)
 {
@@ -73,142 +83,129 @@ void pack_closest_columns(struct OverallState* state)
     {
         struct ClosestTo *a = &state->closest[i];
         a->column = 0;
-    }
-
-    // Should take many fewer iterations than this! This is worst case max.
-    for (int iterations = 0; iterations < state->closest_n; iterations++)
-    {
-        bool changed = false;
-
-        for (int i = state->closest_n - 1; i > 0; i--)
-        {
-            struct ClosestTo *a = &state->closest[i];
-
-            // Find all earlier instances and get the earliest possible time stamp
-            time_t a_earliest = a->earliest;
-            time_t a_latest = a->latest;
-
-            for (int ii = i-1; ii >=0; ii--)
-            {
-                struct ClosestTo *b = &state->closest[ii];
-                if (a->device_64 == b->device_64 &&
-                    b->earliest < a_earliest) a_earliest = b->earliest;
-            }
-
-            // TODO: Find the BEST fit and use that, proceed in order, best first, only claim 1 per leading device
-
-            for (int j = i - 1; j >= 0; j--)
-            {
-                struct ClosestTo *b = &state->closest[j];
-
-                if (a->device_64 == b->device_64) continue;
-
-                // How to handle two observations from the different access points
-                //if (a->access_point->id != b->access_point->id) continue;
-
-
-                // TODO: Maybe only compare SAME access point due to time differences between them?
-
-
-                if (a->column != b->column)
-                    continue;
-
-                // TODO: How to skip all the repeats of the same mac address as B
-                // otherwise wasted effort
-
-                // No need to scan down the B's
-                //  B must be earlier than A because of the order we are scanning in
-                //  So only B's latest time matters in relation to A's earliest time
-
-                bool blip = justABlip(a_earliest, a_latest, a->count, b->earliest, b->latest, b->count);
-                bool over = overlapsOneWay(a_earliest, b->latest);
-
-                // cannot be the same device if one is public and the other is random address type
-                // (or we don't have an address type yet)
-                bool haveDifferentAddressTypes = (a->addressType > 0 && b->addressType > 0 && 
-                    a->addressType != b->addressType);
-
-                // cannot be the same if they both have names and the names are different
-                // but don't reject _ names as they are temporary and will get replaced
-                bool haveDifferentNames =
-                    // can reject as soon as they both have a partial name that is same type but doesn't match
-                    // but cannot reject while one or other has a temporary name as it may match
-                    (a->name_type == b->name_type) && (g_strcmp0(a->name, b->name) != 0);
-
-                // cannot be the same if they both have known categories and they are different
-                bool haveDifferentCategories = (a->category != b->category);
-
-                // cannot be the same device if they have different mac addresses and one is a public mac
-                bool haveDifferentMacAndPublic = (a->device_64 != b->device_64) &&
-                    (a->addressType == PUBLIC_ADDRESS_TYPE || b->addressType == PUBLIC_ADDRESS_TYPE);
-
-                if (blip || over || haveDifferentAddressTypes || haveDifferentNames || haveDifferentCategories || 
-                    haveDifferentMacAndPublic)
-                {
-                    b->column++;
-                    changed = true;
-                    // Log to see why entries with the same name are failing
-                    // if (g_strcmp0(a->name, "Apple Pencil") == 0 && g_strcmp0(b->name, "Apple Pencil") == 0)
-                    // {
-                    //     g_debug("%i.%s/%s %i.%s/%s Bump to (%i, %i),      %s%s%s%s%s%s", 
-                    //         i, a->name, a->access_point->client_id, 
-                    //         j, b->name, b->access_point->client_id,
-                    //         a->column, b->column,
-                    //         blip ? "blip " : "", 
-                    //         over ? "over " : "",
-                    //         haveDifferentAddressTypes ? "addressTypes " : "",
-                    //         haveDifferentNames ? "names ": "", 
-                    //         haveDifferentCategories ? "categories ":"", 
-                    //         haveDifferentMacAndPublic ? "mac ": "");
-                    // }
-                    // if (g_strcmp0(a->name, "Covid Trace") == 0 && g_strcmp0(b->name, "Covid Trace") == 0)
-                    // {
-                    //     g_debug("%i.%s/%s %i.%s/%s Bump to (%i, %i),      %s%s%s%s%s%s", 
-                    //         i, a->name, a->access_point->client_id, 
-                    //         j, b->name, b->access_point->client_id,
-                    //         a->column, b->column,
-                    //         blip ? "blip " : "", 
-                    //         over ? "over " : "",
-                    //         haveDifferentAddressTypes ? "addressTypes " : "",
-                    //         haveDifferentNames ? "names ": "", 
-                    //         haveDifferentCategories ? "categories ":"", 
-                    //         haveDifferentMacAndPublic ? "mac ": "");
-                    // }
-                }
-            }
-        }
-        if (!changed)
-            break;
+        a->mark_pass_2 = false;
+        a->supersededby = 0;
     }
 
     for (int i = state->closest_n - 1; i > 0; i--)
     {
-        struct ClosestTo *current = &state->closest[i];
+        struct ClosestTo *a = &state->closest[i];
+        if (a->mark_pass_2) continue;   // already did this A as an Am lower down
 
-        // Can't mark superseded until we know for sure it's a phone etc.
-        if (current->category == CATEGORY_UNKNOWN) continue;
+        // TODO: Find the BEST fit and use that, proceed in order, best first, only claim 1 per leading device
 
-        int64_t mac64 = current->device_64;
         for (int j = i - 1; j >= 0; j--)
         {
-            struct ClosestTo *earlier = &state->closest[j];
+            struct ClosestTo *b = &state->closest[j];
+            if (a->device_64 == b->device_64) continue;
+            if (b->mark_pass_2) continue;
+            if (b->supersededby != 0) continue;  // already claimed
 
-            if (current->device_64 == earlier->device_64) continue;  // TODO: HANDLE THESE AS DEVICES NOT CLOSEST OBS
+            // We have an A and a B, now do pairwise comparison of all A's and all B's
+            // if any of them overlap then these two devices cannot be successors
 
-            if (current->column == earlier->column)
+            // cannot be the same device if one is public and the other is random address type
+            // (or we don't have an address type yet)
+            bool haveDifferentAddressTypes = (a->addressType > 0 && b->addressType > 0 && 
+                a->addressType != b->addressType);
+
+            // cannot be the same if they both have names and the names are different
+            // but don't reject _ names as they are temporary and will get replaced
+            bool haveDifferentNames =
+                // can reject as soon as they both have a partial name that is same type but doesn't match
+                // but cannot reject while one or other has a temporary name as it may match
+                (a->name_type == b->name_type || (a->name_type>=nt_known && b->name_type>=nt_known)) && 
+                    (g_strcmp0(a->name, b->name) != 0);
+
+            // cannot be the same if they both have known categories and they are different
+            bool haveDifferentCategories = (a->category != b->category);
+
+            // cannot be the same device if they have different mac addresses and one is a public mac
+            bool haveDifferentMacAndPublic = (a->device_64 != b->device_64) &&
+                (a->addressType == PUBLIC_ADDRESS_TYPE || b->addressType == PUBLIC_ADDRESS_TYPE);
+
+            // scan all records with b as their mac address
+
+            bool might_supersede = !(haveDifferentAddressTypes || haveDifferentNames || haveDifferentCategories || 
+                    haveDifferentMacAndPublic);
+
+            // TODO: Should we require at least one matching access point?
+            // e.g. two devices at opposite ends of the mesh that never overlapped are unlikely to be the same device
+            bool atLeastOneMatch = false;
+
+            for (int ii = i; ii >= 0; ii--)
             {
-                earlier->supersededby = mac64;
-                // No need to scan back marking the rest as superseeded, right? even though they are.
+                struct ClosestTo *am = &state->closest[ii];
+                if (am->device_64 != a->device_64) continue;  // not an 'A'
+                am->mark_pass_2 = true;  // mark seen so outer loop skips all A's
+
+                // After marking As we can skip any comparisons if they cannot work
+                if (!might_supersede)
+                {
+                    continue;
+                }
+                for (int jj = j; jj >= 0; jj--)
+                {
+                    struct ClosestTo *bm = &state->closest[jj];
+                    if (bm->device_64 != b->device_64) continue;  // not a 'B'
+
+                    if (am->access_point->id != bm->access_point->id) continue;
+
+                    atLeastOneMatch = true;
+                    //g_debug("Compare %s(%i) x %s(%i) for %s", am->name, am->name_type, bm->name, bm->name_type,
+                    //    am->access_point->client_id);
+
+                    // Same access point so the times are comparable
+
+                    bool blip = justABlip(am->earliest, am->latest, a->count, bm->earliest, bm->latest, bm->count);
+                    bool over = overlapsOneWay(am->earliest, bm->latest);
+
+                    if (blip || over)
+                    {
+                        // could not be same device with new MAC address
+                        might_supersede = false;
+                    }
+                }
+            }
+
+            if (might_supersede && atLeastOneMatch)
+            {
+                // All of the observations are consistent with being superceded
+                b->supersededby = a->device_64;
+                //g_debug("Mark supersede %s x %s", a->name, b->name);
+
+                // A can only supersede one of the B
                 break;
             }
-            // If earlier was superseded by this one but now it isn't ...
-            else if (earlier->supersededby == mac64)
-            {
-                // Not in same column but has a supersededby value
-                // This device used to be superseded by the new one, but now we know it isn't
-                earlier->supersededby = 0;
-                g_info("%i.%s IS NO LONGER superseded by %i.%s", j, earlier->name, i, current->name);
-            }
-        }
-    }
+
+            // Log to see why entries with the same name are failing
+            // if (g_strcmp0(a->name, "Apple Pencil") == 0 && g_strcmp0(b->name, "Apple Pencil") == 0)
+            // {
+            //     g_debug("%i.%s/%s %i.%s/%s Bump to (%i, %i),      %s%s%s%s%s%s", 
+            //         i, a->name, a->access_point->client_id, 
+            //         j, b->name, b->access_point->client_id,
+            //         a->column, b->column,
+            //         blip ? "blip " : "", 
+            //         over ? "over " : "",
+            //         haveDifferentAddressTypes ? "addressTypes " : "",
+            //         haveDifferentNames ? "names ": "", 
+            //         haveDifferentCategories ? "categories ":"", 
+            //         haveDifferentMacAndPublic ? "mac ": "");
+            // }
+            // if (g_strcmp0(a->name, "Covid Trace") == 0 && g_strcmp0(b->name, "Covid Trace") == 0)
+            // {
+            //     g_debug("%i.%s/%s %i.%s/%s Bump to (%i, %i),      %s%s%s%s%s%s", 
+            //         i, a->name, a->access_point->client_id, 
+            //         j, b->name, b->access_point->client_id,
+            //         a->column, b->column,
+            //         blip ? "blip " : "", 
+            //         over ? "over " : "",
+            //         haveDifferentAddressTypes ? "addressTypes " : "",
+            //         haveDifferentNames ? "names ": "", 
+            //         haveDifferentCategories ? "categories ":"", 
+            //         haveDifferentMacAndPublic ? "mac ": "");
+            // }
+        } // for j
+    }  // for i
+
 }

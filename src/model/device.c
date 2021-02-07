@@ -90,10 +90,10 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
 
     if (safe)  // i.e. difference between our clock and theirs was zero
     {
-        if (remote->latest > local->latest)
+        if (remote->latest_local > local->latest_any)
         {
             //g_debug("Bumping %s '%s' by %.1fs from %s", local->mac, local->name, difftime(remote->latest, local->latest), access_name);
-            local->latest = remote->latest;
+            local->latest_any = remote->latest_any;
         }
     }
 
@@ -151,7 +151,7 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     cJSON_AddNumberToObject(j, "last_sent", device->last_sent);
     cJSON_AddNumberToObject(j, "distance", device->distance);
     cJSON_AddNumberToObject(j, "earliest", device->earliest);
-    cJSON_AddNumberToObject(j, "latest", device->latest);
+    cJSON_AddNumberToObject(j, "latest", device->latest_local);
     cJSON_AddNumberToObject(j, "count", device->count);
     cJSON_AddNumberToObject(j, "filtered_rssi", device->filtered_rssi.current_estimate);
     cJSON_AddNumberToObject(j, "raw_rssi", device->raw_rssi);
@@ -236,7 +236,8 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
     if (cJSON_IsNumber(latest))
     {
         // TODO: Full date time serialization and deserialization
-        device->latest = latest->valueint;
+        device->latest_local = latest->valueint;
+        device->latest_any = latest->valueint;
     }
 
     cJSON *distance = cJSON_GetObjectItemCaseSensitive(djson, "distance");

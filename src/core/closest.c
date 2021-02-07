@@ -174,6 +174,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         if (strcmp(b->name, name) == 0 || b->mac64 == device_64)
         {
             g_utf8_strncpy(state->closest[state->closest_n].name, b->alias, NAME_LENGTH);
+            cl->name_type = nt_known;
         }
     }
     state->closest_n++;

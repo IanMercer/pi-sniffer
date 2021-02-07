@@ -110,7 +110,8 @@ struct Device
    float distance;
    struct Kalman kalman_interval; // Tracks time between RSSI events in order to detect large gaps
    time_t earliest;               // Earliest time seen, used to calculate overlap
-   time_t latest;                 // Latest time seen by ANY sensor, used to calculate overlap
+   time_t latest_local;           // Latest time seen by this sensor, used to calculate overlap
+   time_t latest_any;             // Latest time seen by ANY sensor, used to keep alive
    int count;                     // Count how many times seen (ignore 1 offs)
    int8_t try_connect_state;      // Zero = never tried, 1..N-1 = Try in progress, N = Done
    int8_t try_connect_attempts;   // How many attempts have been made to connect

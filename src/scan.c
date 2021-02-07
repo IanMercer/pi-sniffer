@@ -820,7 +820,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
     if (update_latest)
     {
         // DO NOT DO THIS IF THE MESSAGE IS "DISCONNECTED" AS THAT IS SENT AFTER IT HAS GONE!
-        time(&existing->latest);
+        time(&existing->latest_local);
+        time(&existing->latest_any);
         existing->count++;
     }
 
@@ -1181,7 +1182,7 @@ gboolean should_remove(struct Device *existing)
     time_t now;
     time(&now);
 
-    int delta_time = difftime(now, existing->latest);
+    int delta_time = difftime(now, existing->latest_any);
 
     // 3 min for a regular device
     int max_time_ago_seconds = 3 * 60;
@@ -1274,7 +1275,7 @@ void dump_device(struct OverallState* state, struct Device *d)
         }
     }
 
-    g_info("%4i %s %4i %3s %5.1fm  %6li-%6li %20s %13s %5.1fm %s", d->id % 10000, d->mac, d->count, addressType, d->distance, (d->earliest - state->started), (d->latest - state->started), d->name, closest_ap, closest_dist, category);
+    g_info("%4i %s %4i %3s %5.1fm  %6li-%6li %20s %13s %5.1fm %s", d->id % 10000, d->mac, d->count, addressType, d->distance, (d->earliest - state->started), (d->latest_local - state->started), d->name, closest_ap, closest_dist, category);
 }
 
 
