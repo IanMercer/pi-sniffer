@@ -410,6 +410,8 @@ bool print_counts_by_closest(struct OverallState* state)
     int count_examined = 0;
     int count_not_marked = 0;
     int count_in_age_range = 0;
+    // Log the first 10 items, enough to cover a small site, limit output for a large site
+    int log_n = 10;
 
     for (int i = state->closest_n - 1; i >= 0; i--)
     {
@@ -427,14 +429,13 @@ bool print_counts_by_closest(struct OverallState* state)
         }
 
         struct ClosestTo* test = &state->closest[i];
-
-        bool loggingOn = test->latest > last_run;
-
-        // moved down to counting ... if (test->category != CATEGORY_PHONE) continue;
-
         count_examined++;
         if (test->mark) continue;  // already claimed (by second scan on mac address)
+
         count_not_marked++;
+        log_n--;
+        bool logging = log_n > 0;
+        bool detailedLogging = false;
 
         int age = difftime(now, test->latest);
         // If this hasn't been seen in > 300s (5min), skip it
@@ -450,7 +451,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         char* category = category_from_int(test->category);
 
-        if (loggingOn)
+        if (logging)
         {
             char sup_mac[18];
             if (test->supersededby != 0)
@@ -471,7 +472,6 @@ bool print_counts_by_closest(struct OverallState* state)
 
         int earliest = difftime(now, test->earliest);
 
-        bool superseded = false;
         int count_same_mac = 0;
         bool skipping = false;
 
@@ -479,7 +479,7 @@ bool print_counts_by_closest(struct OverallState* state)
         // ALL EARLIER POSSIBLE SUPERSEEDED VALUES ARE IRRELEVANT IF ONE CAME IN LATER ON A
         // DIFFERENT ACCESS POINT Right?
 
-        superseded = test->supersededby != 0;
+        bool superseded = test->supersededby != 0;
 
         // find all instances on this mac address in the array
         // mark them as seen as we go so they can't seed a new scan
@@ -511,7 +511,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 mac_64_to_string(other_mac, 18, other->supersededby);
 
                 //Verbose logging
-                if (loggingOn && false)  // debugging 
+                if (detailedLogging)
                 {
                     struct AccessPoint *ap2 = other->access_point;
                     g_debug(" %15s distance %5.1fm at=%3is dt=%3is [%5li-%5li] (%3i) %s%s", ap2->client_id, other->distance, 
@@ -564,14 +564,14 @@ bool print_counts_by_closest(struct OverallState* state)
 
         if (score > 0)
         {
-            bool debug = strcmp(test->name, "F350XXX") == 0;
+            bool debug = strcmp(test->name, "F350") == 0;
 
             struct top_k best_three[3];
             calculate_location(state, test, access_distances, access_times,
                 best_three, 3,
-                test->is_training_beacon, loggingOn, debug);
+                test->is_training_beacon, logging, debug);
 
-            if (!loggingOn && false)
+            if (logging)
             {
                 // Just the location
                 g_debug("'%s' score: %.3f p=%.2f x s=%.2f", best_three[0].patch_name, best_three[0].distance, best_three[0].probability, score);
@@ -581,11 +581,6 @@ bool print_counts_by_closest(struct OverallState* state)
             char *json = NULL;
             cJSON *jobject = cJSON_CreateObject();
 
-            //cJSON_AddStringToObject(jobject, "patch", best.patch_name);
-
-            // char buf[64];
-            // strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", localtime(&now));
-            // cJSON_AddStringToObject(jobject, "time", buf);
             cJSON *jdistances = cJSON_AddObjectToObject(jobject, "distances");
  
             for (struct AccessPoint* current = access_points_list; current != NULL; current = current->next)
@@ -601,7 +596,7 @@ bool print_counts_by_closest(struct OverallState* state)
             json = cJSON_PrintUnformatted(jobject);
             cJSON_Delete(jobject);
             // Summary of access distances
-            if (loggingOn) 
+            if (logging) 
             {
               g_debug("%s", json);
             }
@@ -611,7 +606,7 @@ bool print_counts_by_closest(struct OverallState* state)
             // wasn't or because they didn't see the later mac address.
             if (superseded)
             {
-                if (loggingOn)
+                if (logging)
                 {
                     g_info("Superseded (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, score);
                 }
@@ -621,6 +616,10 @@ bool print_counts_by_closest(struct OverallState* state)
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
                     rcurrent->tablet_total += rcurrent->knn_score * score;        // probability x incidence
+                    if (logging && rcurrent->knn_score > 0)
+                    {
+                        g_info("Tablet in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
+                    }
                 }
             }
             else if (test->category == CATEGORY_COMPUTER)
@@ -668,7 +667,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 total_count += score;
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    if (rcurrent->knn_score > 0)
+                    if (logging && rcurrent->knn_score > 0)
                     {
                         g_info("Phone in %s +%.2f x %.2f, total %.1f", rcurrent->name, rcurrent->knn_score, score, total_count);
                     }
@@ -719,7 +718,7 @@ bool print_counts_by_closest(struct OverallState* state)
         }
         else
         {
-            if (loggingOn) 
+            if (logging) 
             {
               g_debug("   score %.2f", score);
             }
