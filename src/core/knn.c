@@ -40,7 +40,7 @@ char* recording_to_json (struct recording* r, struct AccessPoint* access_points)
     for (struct AccessPoint* ap = access_points; ap != NULL; ap = ap->next)
     {
         double distance = r->access_point_distances[ap->id];
-        if (distance > 0 && distance != EFFECTIVE_INFINITE)
+        if (distance > 0 && distance < EFFECTIVE_INFINITE)
         {
             char print_num[18];
             snprintf(print_num, 18, "%.2f", distance);
@@ -146,7 +146,7 @@ bool json_to_recording(char* buffer, struct OverallState* state, struct patch** 
             }
             else
             {
-                ralloc->access_point_distances[ap->id]=30.0;  // effective infinite distance away
+                ralloc->access_point_distances[ap->id]=EFFECTIVE_INFINITE;
             }
         }
 
@@ -189,21 +189,21 @@ float get_probability (struct recording* recording, double access_points_distanc
             float recording_distance = recording->access_point_distances[ap->id];
             float measured_distance = access_points_distance[ap->id];
 
-            if (recording_distance > EFFECTIVE_INFINITE-0.10 && measured_distance > EFFECTIVE_INFINITE-0.10)
+            if (recording_distance >= EFFECTIVE_INFINITE_TEST && measured_distance >= EFFECTIVE_INFINITE_TEST)
             {
                 // OK: did not expect this distance to be here, and it's not but less information than a match
                 // but better than a bad match on distances, e.g. 4m and 14m
                 probability = probability * 0.99;
                 //if (debug) g_debug("%s neither x 0.99", ap->client_id);
             }
-            else if (recording_distance > EFFECTIVE_INFINITE - 0.10)
+            else if (recording_distance >= EFFECTIVE_INFINITE_TEST)
             {
                 probability = probability * 0.2;
                 // the observation could see the AP but this recording says you cannot
                 // e.g. barn says you cannot see study, so if you can see study you can't be here
                 if (debug) g_debug("%s was not expected, but %.2fm found x 0.2", ap->client_id, measured_distance);
             }
-            else if (measured_distance > EFFECTIVE_INFINITE - 0.10)
+            else if (measured_distance >= EFFECTIVE_INFINITE_TEST)
             {
                probability = probability * 0.30;
                 if (debug) g_debug("%s was expected not found, expected at %.2f x 0.4", ap->client_id, recording_distance);

@@ -410,8 +410,9 @@ bool print_counts_by_closest(struct OverallState* state)
     int count_examined = 0;
     int count_not_marked = 0;
     int count_in_age_range = 0;
-    // Log the first 10 items, enough to cover a small site, limit output for a large site
-    int log_n = 10;
+    // Log the first 5 items, enough to cover a small site, limit output for a large site
+    // TODO: Make logging configurable, turn off over time?
+    int log_n = 5;
 
     for (int i = state->closest_n - 1; i >= 0; i--)
     {
@@ -585,7 +586,7 @@ bool print_counts_by_closest(struct OverallState* state)
  
             for (struct AccessPoint* current = access_points_list; current != NULL; current = current->next)
             {
-                if (access_distances[current->id] != EFFECTIVE_INFINITE)
+                if (access_distances[current->id] < EFFECTIVE_INFINITE)
                 {
                     cJSON_AddRounded(jdistances, current->client_id, access_distances[current->id]);
                 }
@@ -757,16 +758,15 @@ bool print_counts_by_closest(struct OverallState* state)
     summary = NULL;
     summarize_by_group(patch_list, &summary);
 
+    g_info("              phones   watches   tablets wearables");
     for (struct summary* s=summary; s!=NULL; s=s->next)
     {
-        // This makes reception hard: if (any_present(s))
-        {
-            cJSON* item = cJSON_CreateObject();
-            cJSON_AddStringToObject(item, "name", s->category);
-            //cJSON_AddStringToObject(item, "tag", s->extra);
-            cJSON_AddSummary(item, s);
-            cJSON_AddItemToArray(jzones, item);
-        }
+        cJSON* item = cJSON_CreateObject();
+        cJSON_AddStringToObject(item, "name", s->category);
+        //cJSON_AddStringToObject(item, "tag", s->extra);
+        cJSON_AddSummary(item, s);
+        cJSON_AddItemToArray(jzones, item);
+        g_info("%10s %9.1f %9.1f %9.1f %9.1f", s->category, s->phone_total, s->watch_total, s->tablet_total, s->wearable_total);
     }
     free_summary(&summary);
 
@@ -864,7 +864,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
     //g_info("Summary by room: %s", json_rooms);
     //g_info(" ");
-    g_info("Total %.2f people: %s", total_count, json_groups);
+    //g_info("Total %.2f people: %s", total_count, json_groups);
     //g_info("%s ", json_complete);
     g_info(" ");
 

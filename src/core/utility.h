@@ -15,7 +15,9 @@
 #include "cJSON.h"
 
 // Infinite distance
-#define EFFECTIVE_INFINITE 30.0
+#define EFFECTIVE_INFINITE 60.0
+// Easy comparison avoiding == on floating types, use > on this
+#define EFFECTIVE_INFINITE_TEST 59.9
 
 /*
  * Measures the current (and peak) resident and virtual memories
