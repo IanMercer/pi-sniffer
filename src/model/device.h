@@ -221,7 +221,7 @@ enum Verbosity
 #define CJ_NAME "n"
 #define CJ_ALIAS "a"
 #define CJ_ADDRESS_TYPE "at"
-#define CJ_CATEGORY "c"
+#define CJ_CATEGORY "cat"
 #define CJ_PAIRED "paired"
 #define CJ_CONNECTED "connected"
 #define CJ_TRUSTED "trusted"

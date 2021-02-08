@@ -282,10 +282,10 @@ struct AccessPoint* device_from_json(const char* json, struct AccessPoint** acce
         device->raw_rssi = (float)raw_rssi->valuedouble;
     }
 
-    cJSON *count = cJSON_GetObjectItemCaseSensitive(djson, CJ_COUNT);
-    if (cJSON_IsNumber(count))
+    cJSON *countj = cJSON_GetObjectItemCaseSensitive(djson, CJ_COUNT);
+    if (cJSON_IsNumber(countj))
     {
-        device->count = count->valueint;
+        device->count = countj->valueint;
     }
 
     cJSON *earliest = cJSON_GetObjectItemCaseSensitive(djson, CJ_EARLIEST);

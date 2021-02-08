@@ -181,14 +181,13 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
 }
 
 
-
 /*
    Calculates room scores using access point distances
 */
-void calculate_location(struct OverallState* state, struct ClosestTo* closest, 
+int calculate_location(struct OverallState* state, struct ClosestTo* closest, 
     double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS], 
     struct top_k* best_three, int best_three_len,
-    bool is_training_beacon, bool loggingOn, bool debug)
+    bool is_training_beacon, bool debug)
 {
     (void)accesstimes;
 
@@ -230,14 +229,6 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
                 1.0);
                 // e.g. 0.426, 0.346, 0.289 => 0.080, 0.057 => * 5 => .4, .275 => 0.9 and ...
             best_three[bi].probability = pallocation;
-            if (best_three[bi].distance > best_three[0].distance * 0.5)
-            {
-                if (loggingOn && bi == 0)
-                {
-                    g_debug("'%s' score: %.3f (%i) p=%.3f", best_three[bi].patch_name, best_three[bi].distance, bi, pallocation);
-                    // TODO: How to get persistent patch addresses closest->patch = best_three[bi].patch;
-                }
-            }
             allocation = allocation - pallocation;
 
             if (pallocation > 0.0001)
@@ -259,7 +250,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
 
         }
 
-        return;
+        return k_found;
     }
 
     // Try again including unconfirmed recordings (beacon subdirectory)
@@ -294,6 +285,7 @@ void calculate_location(struct OverallState* state, struct ClosestTo* closest,
             }
     }
 
+    return 0;
 }
 
 
@@ -467,14 +459,15 @@ bool print_counts_by_closest(struct OverallState* state)
                 mac_64_to_string(sup_mac, 18, test->supersededby);
             else
                 sup_mac[0]='\0';
-            g_info("%3i.--- %s%s %10s %23s [%5li-%5li] (%i) %s%s", 
+            g_debug("%3i.--- %s%s %10s [%5li-%5li] (%3i) %23s %s%s", 
                      i,
                      mac, 
                      test->addressType == PUBLIC_ADDRESS_TYPE ? "*" : " ",
-                     category, test->name, 
+                     category, 
                      now - test->earliest,
                      now - test->latest,
-                     test->count, 
+                     test->count,
+                     test->name,
                      test->supersededby == 0 ? "" : "-- super:",
                      sup_mac);
         }
@@ -523,8 +516,8 @@ bool print_counts_by_closest(struct OverallState* state)
                 if (logging)
                 {
                     struct AccessPoint *ap2 = other->access_point;
-                    g_debug(" %15s distance %5.1fm at=%3is dt=%3is [%5li-%5li] (%3i) %s%s", ap2->client_id, other->distance, 
-                    abs_diff, time_diff, 
+                    g_debug(" %15s distance %5.1fm      [%5li-%5li] (%3i) %s%s", 
+                    ap2->client_id, other->distance, 
                     now - other->earliest,
                     now - other->latest,
                     other->count,
@@ -584,14 +577,21 @@ bool print_counts_by_closest(struct OverallState* state)
             bool debug = false; //strcmp(test->name, "F350") == 0;
 
             struct top_k best_three[3];
-            calculate_location(state, test, access_distances, access_times,
+            int k_found = calculate_location(state, test, access_distances, access_times,
                 best_three, 3,
-                test->is_training_beacon, logging, debug);
+                test->is_training_beacon, debug);
 
-            if (!logging && detailedLogging)
+            for (int bi = 0; bi < k_found; bi++)
             {
-                // Just the location when not logging if detailed logging
-                g_debug("'%s' score: %.3f p=%.3f x s=%.2f", best_three[0].patch_name, best_three[0].distance, best_three[0].probability, score);
+                if (best_three[bi].distance > best_three[0].distance * 0.5)
+                {
+                    if (logging || (detailedLogging && bi == 0))
+                    {
+                        g_debug("'%s' sc: %.3f (%i) p=%.3f x %.3f", 
+                            best_three[bi].patch_name, best_three[bi].distance, bi, best_three[bi].probability, score);
+                        // TODO: How to get persistent patch addresses closest->patch = best_three[bi].patch;
+                    }
+                }
             }
 
             // JSON - in a suitable format for copying into a recording

@@ -22,15 +22,6 @@ struct ClosestTo
    time_t earliest;
    // Latest for this mac on this access point
    time_t latest;
-
-   // Remove this, cannot go retroactive on sending data
-   // Superseded by another: i.e. access_id has seen this mac address
-   // in a column more recently than this one that it superseeds
-   int64_t supersededby;
-   // mark and sweep flag
-   bool mark;
-   // second sweep pass
-   bool mark_pass_2;
    // count from access point
    int count;
    // for debugging
@@ -41,6 +32,14 @@ struct ClosestTo
    bool is_training_beacon;
    // address type is public or random
    int8_t addressType; // 0, 1, 2
+
+   // Superseded by another: i.e. access_id has seen this mac address
+   // in a column more recently than this one that it superseeds
+   int64_t supersededby;
+   // mark and sweep flag
+   bool mark;
+   // second sweep pass
+   bool mark_pass_2;
    // the most likely patch for this device
    struct patch* patch;
 };
