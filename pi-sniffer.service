@@ -1,6 +1,7 @@
 [Unit]
 Description=Pi Sniffer
 After=network.target
+After=bluetooth.service
 
 [Service]
 # Env Vars - set these using sudo systemctl edit pi-sniffer.service and NOT here

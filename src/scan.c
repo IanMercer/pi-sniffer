@@ -1304,6 +1304,35 @@ int report_to_http_post_tick()
     return TRUE;
 }
 
+/*
+* Ensure that Bluetooth is powered on and in discovery mode
+*/
+int ensure_bluetooth_tick()
+{
+    int rc = bluez_adapter_set_property(conn, "Powered", g_variant_new("b", TRUE));
+    if (rc)
+    {
+        g_warning("Not able to enable the adapter");
+        return TRUE;
+    }
+
+    rc = bluez_set_discovery_filter(conn);
+    if (rc)
+    {
+        g_warning("Not able to set discovery filter");
+        return TRUE;
+    }
+
+    rc = bluez_adapter_call_method(conn, "StartDiscovery", NULL, NULL);
+    if (rc)
+    {
+        g_warning("Not able to scan for new devices");
+        return TRUE;
+    }
+
+    return TRUE;
+}
+
 
 /*
     Report summaries to InfluxDB
@@ -1970,27 +1999,9 @@ int main(int argc, char **argv)
                                                        loop,
                                                        NULL);
 
-    rc = bluez_adapter_set_property(conn, "Powered", g_variant_new("b", TRUE));
-    if (rc)
-    {
-        g_warning("Not able to enable the adapter");
-        goto fail;
-    }
-
-    rc = bluez_set_discovery_filter(conn);
-    if (rc)
-    {
-        g_warning("Not able to set discovery filter");
-        goto fail;
-    }
-
-    rc = bluez_adapter_call_method(conn, "StartDiscovery", NULL, NULL);
-    if (rc)
-    {
-        g_warning("Not able to scan for new devices");
-        goto fail;
-    }
+    ensure_bluetooth_tick(&state);
     g_info("Started discovery");
+
 #ifdef MQTT
     prepare_mqtt(state.mqtt_server, state.mqtt_topic, 
         state.local->client_id, 
@@ -2017,6 +2028,9 @@ int main(int argc, char **argv)
 
     // Every 5 min dump access point metadata
     g_timeout_add_seconds(301, print_access_points_tick, loop);
+
+    // Every 10min make sure Bluetooth is in scan mode
+    g_timeout_add_seconds(603, ensure_bluetooth_tick, loop);
 
     // Every 2s see if any unnamed device is ready to be connected
     g_timeout_add_seconds(TRY_CONNECT_INTERVAL_S, try_connect_tick, loop);
@@ -2046,10 +2060,6 @@ int main(int argc, char **argv)
         g_warning("Not able to stop scanning");
     g_usleep(100);
 
-//    rc = bluez_adapter_set_property(conn, "Powered", g_variant_new("b", FALSE));
-//    if (rc)
-//        g_warning("Not able to disable the adapter");
-fail:
     g_bus_unown_name(name_connection_id);
 
     g_dbus_connection_signal_unsubscribe(conn, prop_changed);
