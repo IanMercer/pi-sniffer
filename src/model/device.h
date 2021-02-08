@@ -22,7 +22,7 @@ typedef uint64_t u_int64_t;
 #define CLOSEST_N 8192
 
 // Maximum number of access points (sensors) allowed
-#define N_ACCESS_POINTS 256
+#define N_ACCESS_POINTS 32
 
 #define PUBLIC_ADDRESS_TYPE 1
 #define RANDOM_ADDRESS_TYPE 2
@@ -140,6 +140,7 @@ struct AccessPoint
 {
    int id;                        // sequential ID
    char client_id[META_LENGTH];   // linux allows more, truncated
+   char* short_client_id;         // points to client_id except for prefix crowd- or m-
    char description[META_LENGTH]; // optional description for dashboard
    char platform[META_LENGTH];    // optional platform (e.g. Pi3, Pi4, ...) for dashboard
 
@@ -154,6 +155,7 @@ struct AccessPoint
    struct AccessPoint* next;     // Linked list
    int64_t sequence;             // Message sequence number so we can spot missing messages
 };
+
 
 /*
    A named beacon to track and report on

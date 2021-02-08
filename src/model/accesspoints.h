@@ -5,6 +5,7 @@
 */
 
 #include "device.h"
+#include "state.h"
 
 struct AccessPoint* get_or_create_access_point(struct AccessPoint** access_points_list, const char* client_id, bool* created);
 
@@ -14,6 +15,8 @@ struct AccessPoint* add_access_point(struct AccessPoint** access_points_list, ch
 struct AccessPoint *get_access_point(struct AccessPoint* access_point_list, int id);
 
 void print_access_points(struct AccessPoint* access_points_list);
+
+void print_min_distance_matrix(struct OverallState* state);
 
 int get_index(struct AccessPoint* head, int id);
 

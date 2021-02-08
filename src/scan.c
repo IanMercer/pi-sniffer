@@ -1501,6 +1501,10 @@ int print_access_points_tick(void *parameters)
     (void)parameters;
     print_access_points(state.access_points);
 
+    g_info(" ");
+    print_min_distance_matrix(&state);
+    g_info(" ");
+
     // And send access point to everyone over UDP - so that even if no activity everyone gets a list of active access points
     send_access_point_udp(&state);
 
@@ -2026,7 +2030,7 @@ int main(int argc, char **argv)
     // Every 30s report counts
     g_timeout_add_seconds(20, report_counts, loop);
 
-    // Every 5 min dump access point metadata
+    // Every 5 min dump access point metadata and matrix
     g_timeout_add_seconds(301, print_access_points_tick, loop);
 
     // Every 10min make sure Bluetooth is in scan mode
