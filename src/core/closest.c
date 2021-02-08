@@ -655,7 +655,7 @@ bool print_counts_by_closest(struct OverallState* state)
                     rcurrent->watch_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
-            else if (test->category == CATEGORY_WEARABLE)
+            else if (test->category == CATEGORY_WEARABLE || test->category == CATEGORY_FITNESS)
             {
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
@@ -774,7 +774,7 @@ bool print_counts_by_closest(struct OverallState* state)
     summary = NULL;
     summarize_by_group(patch_list, &summary);
 
-    g_info("              phones   watches   tablets wearables     covid percent");
+    g_info("              phones   watches   tablets wearables     other     covid percent");
     for (struct summary* s=summary; s!=NULL; s=s->next)
     {
         cJSON* item = cJSON_CreateObject();
@@ -782,7 +782,10 @@ bool print_counts_by_closest(struct OverallState* state)
         //cJSON_AddStringToObject(item, "tag", s->extra);
         cJSON_AddSummary(item, s);
         cJSON_AddItemToArray(jzones, item);
-        g_info("%10s %9.1f %9.1f %9.1f %9.1f %9.1f    %3.0f%%", s->category, s->phone_total, s->watch_total, s->tablet_total, s->wearable_total, 
+        g_info("%10s %9.1f %9.1f %9.1f %9.1f %9.1f %9.1f    %3.0f%%", s->category, s->phone_total, s->watch_total, 
+            s->tablet_total, 
+            s->wearable_total,
+            s->other_total, 
             s->covid_total, 
             s->phone_total > 0 ? 100 * s->covid_total / s->phone_total : 0);
     }
