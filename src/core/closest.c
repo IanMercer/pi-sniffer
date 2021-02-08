@@ -434,8 +434,16 @@ bool print_counts_by_closest(struct OverallState* state)
         if (test->mark) continue;  // already claimed (by second scan on mac address)
 
         count_not_marked++;
-        log_n--;
-        bool logging = log_n > 0;
+
+        // First n phones get logged
+        bool logging = false;
+        if (test->category == CATEGORY_PHONE)
+        {
+            if (log_n-- > 0)
+            {
+                logging = true;
+            }
+        }
         bool detailedLogging = false;
 
         int age = difftime(now, test->latest);
