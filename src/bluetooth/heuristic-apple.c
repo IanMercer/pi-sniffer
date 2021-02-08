@@ -30,6 +30,11 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
             //send_to_mqtt_single_value(existing->mac, "temperature", temperature);
         }
     }
+    else if (apple_device_type == 0x13)     // New Apple device type - what is it?
+    {
+        set_name(existing, "Apple Type 0x13", nt_manufacturer);
+        g_info("  %s '%s' Apple 0x13", existing->mac, existing->name);
+    }
     else if (apple_device_type == 0x03)     // On user action
     {
         set_name(existing, "AirPrint", nt_manufacturer);
