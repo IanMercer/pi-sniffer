@@ -30,12 +30,12 @@ bool overlapsOneWay(time_t a_earliest, time_t b_latest)
 {
     if (a_earliest >= b_latest)  // a is entirely after b
     {
-        return FALSE;
+        //return FALSE;
         int delta_time = difftime(a_earliest, b_latest);
-        return delta_time > 150;  // more than 150s and these are probably unrelated devices
+        return delta_time > 180;  // more than 180s and these are certainly unrelated devices
         // Apple Watch 137s apart - this is where probability would come in, reduce over time
     }
-    return TRUE;      // must overlap if not entirely after or before
+    return TRUE;      // must overlap if not entirely after or too far after
 }
 
 
