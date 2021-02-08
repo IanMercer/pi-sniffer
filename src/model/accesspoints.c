@@ -115,6 +115,10 @@ struct AccessPoint* get_or_create_access_point(struct AccessPoint** access_point
     strncpy(ap->description, "Not known yet", META_LENGTH);
     strncpy(ap->platform, "Not known yet", META_LENGTH);
 
+    ap->rssi_factor = 0.0;
+    ap->rssi_one_meter = 0.0;
+    ap->sequence = 0;
+
     ap->next = NULL;
     ap->id = access_point_id_generator++;
 
