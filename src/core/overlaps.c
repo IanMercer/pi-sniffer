@@ -28,7 +28,7 @@ bool overlapsClosest(time_t a_earliest, time_t a_latest, time_t b_earliest, time
 // When we know A is after B, only need to compare one way
 bool overlapsOneWay(time_t a_earliest, time_t b_latest)
 {
-    if (a_earliest >= b_latest)  // a is entirely after b
+    if (a_earliest >= b_latest - 3)  // a is entirely after b (3s allowance for clock skew - bug should not need it)
     {
         //return FALSE;
         int delta_time = difftime(a_earliest, b_latest);

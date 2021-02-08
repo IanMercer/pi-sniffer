@@ -92,7 +92,7 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
 
     if (safe)  // i.e. difference between our clock and theirs was zero
     {
-        if (remote->latest_local > local->latest_any)
+        if (remote->latest_any > local->latest_any)
         {
             //g_debug("Bumping %s '%s' by %.1fs from %s", local->mac, local->name, difftime(remote->latest, local->latest), access_name);
             local->latest_any = remote->latest_any;
@@ -255,12 +255,12 @@ struct AccessPoint* device_from_json(const char* json, struct AccessPoint** acce
         strncpy(device->name, name->valuestring, NAME_LENGTH);
     }
 
-    cJSON *latest = cJSON_GetObjectItemCaseSensitive(djson, CJ_LATEST);
-    if (cJSON_IsNumber(latest))
+    cJSON *latestj = cJSON_GetObjectItemCaseSensitive(djson, CJ_LATEST);
+    if (cJSON_IsNumber(latestj))
     {
         // TODO: Full date time serialization and deserialization
-        device->latest_local = latest->valueint;
-        device->latest_any = latest->valueint;
+        device->latest_local = latestj->valueint;
+        device->latest_any = latestj->valueint;
     }
 
     cJSON *distance = cJSON_GetObjectItemCaseSensitive(djson, CJ_DISTANCE);

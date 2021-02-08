@@ -520,7 +520,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 mac_64_to_string(other_mac, 18, other->supersededby);
 
                 //Verbose logging
-                if (detailedLogging)
+                if (logging)
                 {
                     struct AccessPoint *ap2 = other->access_point;
                     g_debug(" %15s distance %5.1fm at=%3is dt=%3is [%5li-%5li] (%3i) %s%s", ap2->client_id, other->distance, 
