@@ -104,7 +104,7 @@ void handle_manufacturer(struct Device *existing, uint16_t manufacturer, unsigne
     else if (manufacturer == 0xc688)
     {
 		set_name(existing, "Logitech", nt_manufacturer);
-        existing->category = CATEGORY_FIXED;
+        existing->category = CATEGORY_ACCESSORY;
     }
     else if (manufacturer == 0x0059)
     {

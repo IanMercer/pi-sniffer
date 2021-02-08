@@ -547,17 +547,22 @@ bool print_counts_by_closest(struct OverallState* state)
 
         int delta_time = difftime(now, test->latest);
         // beacons and other fixed devices last longer, tend to transmit less often
-        double x_scale = (test->category == CATEGORY_BEACON || 
-            test->category == CATEGORY_LIGHTING ||
-            test->category == CATEGORY_APPLIANCE ||
-            test->category == CATEGORY_POS ||
-            test->category == CATEGORY_PRINTER ||
-            test->category == CATEGORY_SPRINKLERS ||
-            test->category == CATEGORY_TOOTHBRUSH ||
-            test->category == CATEGORY_HEALTH ||
-            test->category == CATEGORY_FITNESS ||
-            test->category == CATEGORY_TV || 
-            test->category == CATEGORY_FIXED) ? 160.0 :
+        double x_scale = (
+                // Very fixed devices don't decay, some are very infrequent
+                test->category == CATEGORY_LIGHTING ||
+                test->category == CATEGORY_APPLIANCE ||
+                test->category == CATEGORY_POS ||
+                test->category == CATEGORY_SPRINKLERS ||
+                test->category == CATEGORY_TOOTHBRUSH ||
+                test->category == CATEGORY_FIXED
+            ) ? 240.0 :
+            (
+                test->category == CATEGORY_HEALTH ||
+                test->category == CATEGORY_PRINTER ||
+                test->category == CATEGORY_BEACON || 
+                test->category == CATEGORY_FITNESS ||
+                test->category == CATEGORY_TV
+            ) ? 160 :
             test->category == CATEGORY_TABLET ? 120 :
              80.0;
 

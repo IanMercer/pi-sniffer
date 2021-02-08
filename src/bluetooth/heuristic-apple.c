@@ -162,7 +162,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
 
         if (lower_bits == 0x00){
             // iPad sends this, unused
-            g_info("  %s '%s' Nearby Info 0x00: unknown u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+            g_info("  %s '%s' Nearby Info 0x00: unknown  u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
         }
         else if (lower_bits == 0x01){
             g_info("  %s '%s' Nearby Info 0x01: disabled u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
@@ -170,16 +170,19 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
             //soft_set_category(&existing->category, CATEGORY_PHONE);  // most likely category
         }
         else if (lower_bits == 0x02){
-            g_info("  %s '%s' Nearby Info 0x02: unknown? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+            // iPhone yes
+            g_info("  %s '%s' Nearby Info 0x02: unknown  u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
         }
         else if (lower_bits == 0x03){
             // locked screen
-            g_info("  %s '%s' Nearby Info 0x03: locked u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+            // Watch, iPhone sends this
+            g_info("  %s '%s' Nearby Info 0x03: locked   u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
         }
         else if (lower_bits == 0x04){
-            g_info("  %s '%s' Nearby Info 0x04: unknown? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+            g_info("  %s '%s' Nearby Info 0x04: unknown  u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
         }
         else if (lower_bits == 0x05){
+            // iPhone, iPad
             g_info("  %s '%s' Nearby Info 0x05: audio playing, screen off u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
         }
         else if (lower_bits == 0x06){
@@ -209,22 +212,29 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
             // is sent by both ipads and iphones
             g_info("  %s '%s' Nearby Info 0x0a: iPhone/Pad u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
         }
-        else if (lower_bits == 0x0B){
+        else if (lower_bits == 0x0B)
+        {
             // active user
             soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad?
             g_info("  %s '%s' Nearby Info 0x0b: Recent user interaction u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
         }
-        else if (lower_bits == 0x0C){
-            g_info("  %s '%s' Nearby Info 0x0c: ???? %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+        else if (lower_bits == 0x0C)
+        {
+            g_info("  %s '%s' Nearby Info 0x0c: _____ %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
         }
-        else if (lower_bits == 0x0D){
-            g_info("  %s '%s' Nearby Info 0x0d: ???? %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+        else if (lower_bits == 0x0D)
+        {
+            // iPhone sends this
+            g_info("  %s '%s' Nearby Info 0x0d: _____ %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
         }
-        else if (lower_bits == 0x0E){
+        else if (lower_bits == 0x0E)
+        {
             g_info("  %s '%s' Nearby Info 0x0e: Phone call or Facetime %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
         }
-        else if (lower_bits == 0x0F){
-            g_info("  %s '%s' Nearby Info 0x0f: unknown? watch? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+        else if (lower_bits == 0x0F)
+        {
+            // Could be a mac book pro
+            g_info("  %s '%s' Nearby Info 0x0f: _____ u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
         }
         else
             g_info("  %s '%s' Nearby Info 0x%2x: Unknown device status upper=%2x info=%.2x %s", existing->mac, existing->name, lower_bits, upper_bits, information_byte, wifi);
