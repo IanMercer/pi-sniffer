@@ -404,7 +404,7 @@ bool print_counts_by_closest(struct OverallState* state)
     int count_in_age_range = 0;
     // Log the first 5 items, enough to cover a small site, limit output for a large site
     // TODO: Make logging configurable, turn off over time?
-    int log_n = 5;
+    int log_n = 15;
 
     for (int i = state->closest_n - 1; i >= 0; i--)
     {
@@ -429,7 +429,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         // First n phones get logged
         bool logging = false;
-        if (test->category == CATEGORY_PHONE)
+        if (test->category == CATEGORY_PHONE || test->category == CATEGORY_TV || test->category == CATEGORY_COMPUTER || test->category == CATEGORY_FIXED)
         {
             if (log_n-- > 0)
             {
