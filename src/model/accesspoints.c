@@ -24,7 +24,7 @@ struct AccessPoint *add_access_point(struct AccessPoint** access_point_list, cha
     g_assert(strcmp(ap->client_id, client_id) == 0);
 
     // have to assign it always if changed
-    if (strcmp(ap->description, description) != 0)
+    if (strlen(description)>0 && strcmp(ap->description, description) != 0)
     {
         g_utf8_strncpy(ap->description, description, META_LENGTH);
         g_utf8_strncpy(ap->platform, platform, META_LENGTH);

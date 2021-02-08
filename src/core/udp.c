@@ -109,26 +109,14 @@ void *listen_loop(void *param)
 
         struct Device d;
         d.mac64 = 0;
-
-        struct AccessPoint dummy;
-        strncpy(dummy.client_id, "notset", 7);
-        strncpy(dummy.description, "notset", 7);
-        strncpy(dummy.platform, "notset", 7);
-        dummy.id = -1;
-        dummy.people_distance = 0.0;
-        dummy.rssi_factor = 0.0;
-        dummy.rssi_one_meter = 0.0;
-        dummy.sequence = 0;
-
         strncpy(d.mac, "notset", 7);  // access point only messages have no device mac address
 
-        if (device_from_json(buffer, &dummy, &d))
-        {
-            struct AccessPoint *actual = update_accessPoints(&state->access_points, dummy);
-            g_assert(actual != NULL);
+        struct AccessPoint* ap = device_from_json(buffer, &state->access_points, &d);
 
+        if (ap != NULL)
+        {
             // ignore messages from self
-            if (strcmp(actual->client_id, state->local->client_id) == 0)
+            if (strcmp(ap->client_id, state->local->client_id) == 0)
             {
                 //g_debug("Ignoring message from self %s : %s\n", dummy.client_id, d.mac);
                 continue;
@@ -150,7 +138,7 @@ void *listen_loop(void *param)
                 {
                     int delta_time = difftime(now, d.latest_local);
 
-                    merge(&state->devices[i], &d, actual->client_id, delta_time == 0);
+                    merge(&state->devices[i], &d, ap->client_id, delta_time == 0);
 
                     // This is a current observation, time should match
 
@@ -158,19 +146,17 @@ void *listen_loop(void *param)
                     if (delta_time < 0)
                     {
                         // This is problematic, they are ahead of us
-                        g_warning("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, actual->client_id, d.distance, delta_time);
+                        g_warning("%s '%s' %s dist=%.2fm time=%is", d.mac, d.name, ap->client_id, d.distance, delta_time);
                     }
 
-                    g_assert(actual != NULL);
-                   
                     break;
                 }
             }
 
             // Update the closest data structure
-            g_assert(actual != NULL);
+
             //g_debug("UDP: %s %s count=%i ap=%s %s %.1fm", d.mac, d.name, d.count, actual->client_id, dummy.client_id, d.distance);
-            add_closest(state, d.mac64, actual, d.earliest, d.latest_local, d.distance, d.category, d.count, d.name, 
+            add_closest(state, d.mac64, ap, d.earliest, d.latest_local, d.distance, d.category, d.count, d.name, 
                 d.name_type, d.address_type,
                 d.is_training_beacon);
 

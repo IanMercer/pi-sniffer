@@ -1,5 +1,6 @@
 #include "device.h"
 #include "utility.h"
+#include "accesspoints.h"
 #include "cJSON.h"
 #include <glib.h>
 #include <string.h>
@@ -100,6 +101,9 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
 
 }
 
+/*
+*  Send full access point statistics occasionally to all other mesh devices
+*/
 char* access_point_to_json (struct AccessPoint* a)
 {
     char *string = NULL;
@@ -118,6 +122,9 @@ char* access_point_to_json (struct AccessPoint* a)
     return string;
 }
 
+/*
+*  Send minimal access point information and minimal device information over mesh
+*/
 char* device_to_json (struct AccessPoint* a, struct Device* device)
 {
     char *string = NULL;
@@ -125,11 +132,11 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
 
     // AccessPoint details
     cJSON_AddStringToObject(j, CJ_FROM, a->client_id);
-    cJSON_AddStringToObject(j, CJ_DESCRIPTION, a->description);
-    cJSON_AddStringToObject(j, CJ_PLATFORM, a->platform);
-    cJSON_AddRounded(j, CJ_RSSI_ONE_METER, a->rssi_one_meter);
-    cJSON_AddRounded(j, CJ_RSSI_FACTOR, a->rssi_factor);
-    cJSON_AddRounded(j, CJ_PEOPLE_DISTANCE, a->people_distance);
+    //cJSON_AddStringToObject(j, CJ_DESCRIPTION, a->description);
+    //cJSON_AddStringToObject(j, CJ_PLATFORM, a->platform);
+    //cJSON_AddRounded(j, CJ_RSSI_ONE_METER, a->rssi_one_meter);
+    //cJSON_AddRounded(j, CJ_RSSI_FACTOR, a->rssi_factor);
+    //cJSON_AddRounded(j, CJ_PEOPLE_DISTANCE, a->people_distance);
     cJSON_AddNumberToObject(j, CJ_SEQ, a->sequence);
 
     // Device details
@@ -139,16 +146,16 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     cJSON_AddStringToObject(j, CJ_ALIAS, device->alias);
     cJSON_AddNumberToObject(j, CJ_ADDRESS_TYPE, device->address_type);
     cJSON_AddStringToObject(j, CJ_CATEGORY, category_from_int(device->category));
-    cJSON_AddBoolToObject(j, CJ_PAIRED, device->paired);
-    cJSON_AddBoolToObject(j, CJ_CONNECTED, device->connected);
-    cJSON_AddBoolToObject(j, CJ_TRUSTED, device->trusted);
-    cJSON_AddNumberToObject(j, CJ_DEVICE_CLASS, device->deviceclass);
-    cJSON_AddNumberToObject(j, CJ_APPEARANCE, device->appearance);
-    cJSON_AddNumberToObject(j, CJ_MANUFACTURER_DATA_HASH, device->manufacturer_data_hash);
-    cJSON_AddNumberToObject(j, CJ_SERVICE_DATA_HASH, device->service_data_hash);
-    cJSON_AddNumberToObject(j, CJ_UUIDS_LENGTH, device->uuids_length);
-    cJSON_AddNumberToObject(j, CJ_UUIDS_HASH, device->uuid_hash);
-    cJSON_AddNumberToObject(j, CJ_TXPOWER, device->txpower);
+//    cJSON_AddBoolToObject(j, CJ_PAIRED, device->paired);
+//    cJSON_AddBoolToObject(j, CJ_CONNECTED, device->connected);
+//    cJSON_AddBoolToObject(j, CJ_TRUSTED, device->trusted);
+//    cJSON_AddNumberToObject(j, CJ_DEVICE_CLASS, device->deviceclass);
+//    cJSON_AddNumberToObject(j, CJ_APPEARANCE, device->appearance);
+//    cJSON_AddNumberToObject(j, CJ_MANUFACTURER_DATA_HASH, device->manufacturer_data_hash);
+//    cJSON_AddNumberToObject(j, CJ_SERVICE_DATA_HASH, device->service_data_hash);
+//    cJSON_AddNumberToObject(j, CJ_UUIDS_LENGTH, device->uuids_length);
+//    cJSON_AddNumberToObject(j, CJ_UUIDS_HASH, device->uuid_hash);
+//    cJSON_AddNumberToObject(j, CJ_TXPOWER, device->txpower);
     cJSON_AddNumberToObject(j, CJ_LAST_SENT, device->last_sent);
     cJSON_AddRounded3(j, CJ_DISTANCE, device->distance);
     cJSON_AddNumberToObject(j, CJ_EARLIEST, device->earliest);
@@ -171,52 +178,65 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
 
 
 
-bool device_from_json(const char* json, struct AccessPoint* access_point, struct Device* device)
+struct AccessPoint* device_from_json(const char* json, struct AccessPoint** access_point_list, struct Device* device)
 {
     cJSON *djson = cJSON_Parse(json);
 
     // ACCESS POINT
+    struct AccessPoint* ap = NULL;
 
     cJSON *fromj = cJSON_GetObjectItemCaseSensitive(djson, CJ_FROM);
     if (cJSON_IsString(fromj) && (fromj->valuestring != NULL))
     {
-        strncpy(access_point->client_id, fromj->valuestring, META_LENGTH);
+        bool created = FALSE;
+        ap = get_or_create_access_point(access_point_list, fromj->valuestring, &created);
+
+        time(&ap->last_seen);
     }
 
     cJSON *descriptionj = cJSON_GetObjectItemCaseSensitive(djson, CJ_DESCRIPTION);
-    if (cJSON_IsString(descriptionj) && (descriptionj->valuestring != NULL))
+    if (ap != NULL && cJSON_IsString(descriptionj) && (descriptionj->valuestring != NULL))
     {
-        strncpy(access_point->description, descriptionj->valuestring, META_LENGTH);
+        strncpy(ap->description, descriptionj->valuestring, META_LENGTH);
     }
 
     cJSON *platformj = cJSON_GetObjectItemCaseSensitive(djson, CJ_PLATFORM);
-    if (cJSON_IsString(platformj) && (platformj->valuestring != NULL))
+    if (ap != NULL && cJSON_IsString(platformj) && (platformj->valuestring != NULL))
     {
-        strncpy(access_point->platform, platformj->valuestring, META_LENGTH);
+        strncpy(ap->platform, platformj->valuestring, META_LENGTH);
     }
 
     cJSON *rssi_one_meter = cJSON_GetObjectItemCaseSensitive(djson, CJ_RSSI_ONE_METER);
-    if (cJSON_IsNumber(rssi_one_meter))
+    if (ap != NULL && cJSON_IsNumber(rssi_one_meter))
     {
-        access_point->rssi_one_meter = rssi_one_meter->valueint;
+        ap->rssi_one_meter = rssi_one_meter->valueint;
     }
 
     cJSON *rssi_factor = cJSON_GetObjectItemCaseSensitive(djson, CJ_RSSI_FACTOR);
-    if (cJSON_IsNumber(rssi_one_meter))
+    if (ap != NULL && cJSON_IsNumber(rssi_one_meter))
     {
-        access_point->rssi_factor = (float)rssi_factor->valuedouble;
+        ap->rssi_factor = (float)rssi_factor->valuedouble;
     }
 
     cJSON *people_distance = cJSON_GetObjectItemCaseSensitive(djson, CJ_PEOPLE_DISTANCE);
-    if (cJSON_IsNumber(people_distance))
+    if (ap != NULL && cJSON_IsNumber(people_distance))
     {
-        access_point->people_distance = (float)people_distance->valuedouble;
+        ap->people_distance = (float)people_distance->valuedouble;
     }
 
     cJSON *sequence = cJSON_GetObjectItemCaseSensitive(djson, CJ_SEQ);
-    if (cJSON_IsNumber(sequence))
+    if (ap != NULL && cJSON_IsNumber(sequence))
     {
-        access_point->sequence = (int64_t)sequence->valuedouble;
+        int64_t seq = (int64_t)sequence->valuedouble;
+
+        // Make sure we aren't dropping too many messages
+        if (ap->sequence !=0 && 
+            (seq - ap->sequence) > 1 &&
+            (seq - ap->sequence) < 1E6)
+        {
+            g_warning("Missed %li messages from %s", (long)((seq - ap->sequence) - 1), ap->client_id);
+        }
+        ap->sequence = seq;
     }
 
     // DEVICE
@@ -304,7 +324,7 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
 
     cJSON_Delete(djson);
 
-    return true;
+    return ap;
 }
 
 
