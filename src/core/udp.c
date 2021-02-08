@@ -187,10 +187,15 @@ void *listen_loop(void *param)
 */
 GCancellable *create_socket_service(struct OverallState *state)
 {
-    g_info("Creating UDP listener on port %i", state->udp_mesh_port);
-
     cancellable = g_cancellable_new();
+    if (state->udp_mesh_port == 0)
+    {
+        g_warning("No UDP mesh port configured");
+        return cancellable;
+    }
 
+    g_info("Creating UDP listener on port %i", state->udp_mesh_port);
+ 
     if (pthread_create(&listen_thread, NULL, listen_loop, state))
     {
         fprintf(stderr, "Error creating thread\n");
