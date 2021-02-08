@@ -1581,12 +1581,12 @@ gboolean try_disconnect(struct Device *a)
 gboolean try_connect(struct Device *a)
 {
     // If we already have a category and a non-temporary name
-    if (a->category != CATEGORY_UNKNOWN && a->name_type == nt_known)
+    if (a->category != CATEGORY_UNKNOWN && a->name_type >= nt_known)
         return FALSE; // already has a category and a name
 
     // Don't attempt connection until a device is close enough, or has been seen enough
     // otherwise likely to fail for a transient device at 12.0+m
-    if (a->count == 1 && a->distance > 5.0)
+    if (a->count == 1 && a->distance > 12.0)
         return FALSE;
 
     // At some point we just give up
