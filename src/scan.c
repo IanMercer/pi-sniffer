@@ -1615,7 +1615,7 @@ gboolean try_connect(struct Device *a)
 
     // Don't attempt connection until a device is close enough, or has been seen enough
     // otherwise likely to fail for a transient device at 12.0+m
-    if (a->count == 1 && a->distance > 12.0)
+    if (a->count == 1 && a->distance > 18.0)
         return FALSE;
 
     // At some point we just give up
