@@ -146,14 +146,11 @@ static int bluez_adapter_get_property(const char* path, const char *prop, method
 
 
 /*
-   get_discovery_filter
+   get_discovery_filter callback
 */
 void bluez_get_discovery_filter_cb(GObject *conn, GAsyncResult *res, gpointer data)
 {
     (void)data;
-
-    g_debug("START bluez_get_discovery_filter_cb\n");
-
     GVariant *result = NULL;
     GError *error = NULL;
 
@@ -161,7 +158,7 @@ void bluez_get_discovery_filter_cb(GObject *conn, GAsyncResult *res, gpointer da
 
     if (result == NULL || error) 
     {
-        g_warning("Unable to get result for GetDiscoveryFilter\n");
+        g_warning("Unable to get result for GetDiscoveryFilter");
         print_and_free_error(error);
     }
 
@@ -172,7 +169,6 @@ void bluez_get_discovery_filter_cb(GObject *conn, GAsyncResult *res, gpointer da
         g_variant_unref(child);
     }
     g_variant_unref(result);
-    g_debug("DONE bluez_get_discovery_filter_cb\n");
 }
 
 /*
