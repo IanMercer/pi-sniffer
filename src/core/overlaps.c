@@ -174,6 +174,10 @@ void pack_closest_columns(struct OverallState* state)
                 // A can only supersede one of the B
                 break;
             }
+            else if (might_supersede)
+            {
+                //g_debug("%s might have superceded %s but no matching access points", a->name, b->name);
+            }
 
             // Log to see why entries with the same name are failing
             // if (g_strcmp0(a->name, "Apple Pencil") == 0 && g_strcmp0(b->name, "Apple Pencil") == 0)

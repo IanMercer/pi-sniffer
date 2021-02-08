@@ -64,31 +64,32 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     //    existing->category = CATEGORY_FIXED;
 
     else if (string_starts_with(name, "Galaxy Fit"))
-        existing->category = CATEGORY_WEARABLE;
+        existing->category = CATEGORY_FITNESS;
     else if (string_starts_with(name, "Ionic"))
-        existing->category = CATEGORY_WEARABLE; // FITBIT
+        existing->category = CATEGORY_FITNESS; // FITBIT
     else if (string_starts_with(name, "Zip"))
-        existing->category = CATEGORY_WEARABLE; // FITBIT Zip
+        existing->category = CATEGORY_FITNESS; // FITBIT Zip
     else if (string_starts_with(name, "Versa"))
-        existing->category = CATEGORY_WEARABLE; // FITBIT
+        existing->category = CATEGORY_FITNESS; // FITBIT
     else if (string_starts_with(name, "Charge "))  //  Charge 2, 3, 4
-        existing->category = CATEGORY_WEARABLE; // FITBIT
+        existing->category = CATEGORY_FITNESS; // FITBIT
     else if (string_starts_with(name, "Inspire HR"))
-        existing->category = CATEGORY_WEARABLE; // FITBIT
+        existing->category = CATEGORY_FITNESS; // FITBIT
     else if (string_starts_with(name, "Mi Smart Band"))
-        existing->category = CATEGORY_WEARABLE; // Fitness
+        existing->category = CATEGORY_FITNESS; // Fitness
     else if (string_starts_with(name, "TICKR X"))
-        existing->category = CATEGORY_WEARABLE; // Heartrate
+        existing->category = CATEGORY_FITNESS; // Heartrate
     else if (string_starts_with(name, "ID115Plus HR"))
-        existing->category = CATEGORY_WEARABLE; // Heartrate
+        existing->category = CATEGORY_FITNESS; // Heartrate
     else if (string_starts_with(name, "ID128Color HM"))
-        existing->category = CATEGORY_WEARABLE; // ID128Color HM fitness band
+        existing->category = CATEGORY_FITNESS; // ID128Color HM fitness band
     else if (string_starts_with(name, "HR-BT"))
-        existing->category = CATEGORY_WEARABLE; // Heartrate
+        existing->category = CATEGORY_FITNESS; // Heartrate
     else if (string_starts_with(name, "WHOOP"))
-        existing->category = CATEGORY_WEARABLE; // Heartrate
+        existing->category = CATEGORY_FITNESS; // Heartrate
     else if (string_starts_with(name, "Alta HR"))
-        existing->category = CATEGORY_WEARABLE; // Fitbit Alta Heartrate
+        existing->category = CATEGORY_FITNESS; // Fitbit Alta Heartrate
+
     else if (strncmp(name, "LumosHelmet", 11) == 0)  // Bike Helmet
         existing->category = CATEGORY_WEARABLE;
 
@@ -300,11 +301,11 @@ void apply_name_heuristics (struct Device* existing, const char* name)
 
     // Accessories
     else if (string_starts_with(name, "Apple Pencil"))
-        existing->category = CATEGORY_WEARABLE;  // Not really wearable
+        existing->category = CATEGORY_PENCIL;
     else if (string_starts_with(name, "SPEN 02"))
-        existing->category = CATEGORY_FIXED;  // Not really fixed WACOM
+        existing->category = CATEGORY_ACCESSORY;  // Not really fixed WACOM
     else if (string_starts_with(name, "Oculus"))
-        existing->category = CATEGORY_FIXED; //Oculus Quest etc.
+        existing->category = CATEGORY_ACCESSORY; //Oculus Quest etc.
 
     // POS
 

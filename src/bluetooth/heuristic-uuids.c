@@ -116,7 +116,14 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
             existing->is_training_beacon = TRUE;
             append_text(gatts, gatts_length, "Indoor Positioning, ");
         }
-        else if (ble_uuid == 0x00002A37ul) append_text(gatts, gatts_length, "Heart rate measurement ");
+        else if (ble_uuid == 0x00002A37ul) {
+            append_text(gatts, gatts_length, "Heart rate measurement ");
+            soft_set_category(&existing->category, CATEGORY_FITNESS);
+        }
+        else if (ble_uuid == 0x04000000ul) {
+            append_text(gatts, gatts_length, "Toothbrush ");  // looks like an unofficial UUID
+            soft_set_category(&existing->category, CATEGORY_TOOTHBRUSH);
+        }
         else if (ble_uuid == 0x00006666ul) append_text(gatts, gatts_length, "Bad 0x6666, ");
         else if (ble_uuid == 0x6ada028cul) 
         {
@@ -154,7 +161,7 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         }
         else if (ble_uuid == 0xadabfb00ul) {
             append_text(gatts, gatts_length, "FitbitHR?, ");
-            soft_set_category(&existing->category, CATEGORY_WEARABLE);
+            soft_set_category(&existing->category, CATEGORY_FITNESS);
         }
         else if (ble_uuid == 0x0f9652d2ul) {
             append_text(gatts, gatts_length, "Truck, ");    // air suspension etc.

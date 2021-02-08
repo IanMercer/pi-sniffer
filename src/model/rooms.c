@@ -88,7 +88,7 @@ struct patch* get_or_create_patch(const char* patch_name, const char* room_name,
         found->confirmed = confirmed;
         // no strdup here, get_or_add_group handles that
         found->group = get_or_add_group(groups_list, group_name, tags);
-        g_info("Added patch %s in %s with tags %s", found->name, group_name, tags);
+        //g_info("Added patch %s in %s with tags %s", found->name, group_name, tags);
 
         found->phone_total = 0;
         found->beacon_total = 0;

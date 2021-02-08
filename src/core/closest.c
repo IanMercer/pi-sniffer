@@ -553,6 +553,9 @@ bool print_counts_by_closest(struct OverallState* state)
             test->category == CATEGORY_POS ||
             test->category == CATEGORY_PRINTER ||
             test->category == CATEGORY_SPRINKLERS ||
+            test->category == CATEGORY_TOOTHBRUSH ||
+            test->category == CATEGORY_HEALTH ||
+            test->category == CATEGORY_FITNESS ||
             test->category == CATEGORY_TV || 
             test->category == CATEGORY_FIXED) ? 160.0 :
             test->category == CATEGORY_TABLET ? 120 :
@@ -758,7 +761,7 @@ bool print_counts_by_closest(struct OverallState* state)
     summary = NULL;
     summarize_by_group(patch_list, &summary);
 
-    g_info("              phones   watches   tablets wearables    covid  percent");
+    g_info("              phones   watches   tablets wearables     covid percent");
     for (struct summary* s=summary; s!=NULL; s=s->next)
     {
         cJSON* item = cJSON_CreateObject();

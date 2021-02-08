@@ -1413,7 +1413,7 @@ const char *company_id_to_string(int company_id, int8_t* category)
         *category = CATEGORY_FIXED;
 		return "Sonos";
 	case 0x460:
-        *category = CATEGORY_FIXED;  // Toothbrush
+        *category = CATEGORY_TOOTHBRUSH;  // Toothbrush
 		return "Kolibree";
     case 0x0601:
         *category = CATEGORY_CAR;  // TPMS

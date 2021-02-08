@@ -53,6 +53,13 @@ typedef uint64_t u_int64_t;
 #define CATEGORY_CAMERA 19
 #define CATEGORY_WATCH 20     
 #define CATEGORY_COVID 21
+// Heart rate, hearing aid, ...
+#define CATEGORY_HEALTH 22
+// Toothbrush etc.
+#define CATEGORY_TOOTHBRUSH 23
+// Pencil or wacom tablet
+#define CATEGORY_PENCIL 24
+#define CATEGORY_ACCESSORY 25
 
 // Max allowed length of names and aliases (plus 1 for null)
 #define NAME_LENGTH 21
