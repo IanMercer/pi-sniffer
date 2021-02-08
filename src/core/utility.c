@@ -529,7 +529,6 @@ bool any_present(struct summary* s)
            s->tablet_total > 0 || s->beacon_total > 0 || s->covid_total > 0 || s->other_total > 0;
 }
 
-
 /*
     Add a one decimal value to a JSON object
 */
@@ -537,6 +536,26 @@ void cJSON_AddRounded(cJSON * item, const char* label, double value)
 {
     char print_num[18];
     snprintf(print_num, 18, "%.1f", value);
+    cJSON_AddRawToObject(item, label, print_num);
+}
+
+/*
+    Add a two decimals value to a JSON object
+*/
+void cJSON_AddRounded2(cJSON * item, const char* label, double value)
+{
+    char print_num[19];
+    snprintf(print_num, 18, "%.2f", value);
+    cJSON_AddRawToObject(item, label, print_num);
+}
+
+/*
+    Add a three decimals value to a JSON object
+*/
+void cJSON_AddRounded3(cJSON * item, const char* label, double value)
+{
+    char print_num[20];
+    snprintf(print_num, 18, "%.3f", value);
     cJSON_AddRawToObject(item, label, print_num);
 }
 

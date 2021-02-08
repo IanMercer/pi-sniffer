@@ -106,12 +106,12 @@ char* access_point_to_json (struct AccessPoint* a)
     cJSON *j = cJSON_CreateObject();
 
     // AccessPoint details
-    cJSON_AddStringToObject(j, "from", a->client_id);
-    cJSON_AddStringToObject(j, "description", a->description);
-    cJSON_AddStringToObject(j, "platform", a->platform);
-    cJSON_AddNumberToObject(j, "rssi_one_meter", a->rssi_one_meter);
-    cJSON_AddNumberToObject(j, "rssi_factor", a->rssi_factor);
-    cJSON_AddNumberToObject(j, "people_distance", a->people_distance);
+    cJSON_AddStringToObject(j, CJ_FROM, a->client_id);
+    cJSON_AddStringToObject(j, CJ_DESCRIPTION, a->description);
+    cJSON_AddStringToObject(j, CJ_PLATFORM, a->platform);
+    cJSON_AddRounded(j, CJ_RSSI_ONE_METER, a->rssi_one_meter);
+    cJSON_AddRounded(j, CJ_RSSI_FACTOR, a->rssi_factor);
+    cJSON_AddRounded(j, CJ_PEOPLE_DISTANCE, a->people_distance);
 
     string = cJSON_PrintUnformatted(j);
     cJSON_Delete(j);
@@ -124,50 +124,52 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     cJSON *j = cJSON_CreateObject();
 
     // AccessPoint details
-    cJSON_AddStringToObject(j, "from", a->client_id);
-    cJSON_AddStringToObject(j, "description", a->description);
-    cJSON_AddStringToObject(j, "platform", a->platform);
-    cJSON_AddNumberToObject(j, "rssi_one_meter", a->rssi_one_meter);
-    cJSON_AddNumberToObject(j, "rssi_factor", a->rssi_factor);
-    cJSON_AddNumberToObject(j, "people_distance", a->people_distance);
-    cJSON_AddNumberToObject(j, "seq", a->sequence);
+    cJSON_AddStringToObject(j, CJ_FROM, a->client_id);
+    cJSON_AddStringToObject(j, CJ_DESCRIPTION, a->description);
+    cJSON_AddStringToObject(j, CJ_PLATFORM, a->platform);
+    cJSON_AddRounded(j, CJ_RSSI_ONE_METER, a->rssi_one_meter);
+    cJSON_AddRounded(j, CJ_RSSI_FACTOR, a->rssi_factor);
+    cJSON_AddRounded(j, CJ_PEOPLE_DISTANCE, a->people_distance);
+    cJSON_AddNumberToObject(j, CJ_SEQ, a->sequence);
 
     // Device details
-    cJSON_AddStringToObject(j, "mac", device->mac);
-    cJSON_AddStringToObject(j, "name", device->name);
+    cJSON_AddStringToObject(j, CJ_MAC, device->mac);
+    cJSON_AddStringToObject(j, CJ_NAME, device->name);
 
-    cJSON_AddStringToObject(j, "alias", device->alias);
-    cJSON_AddNumberToObject(j, "addressType", device->address_type);
-    cJSON_AddStringToObject(j, "category", category_from_int(device->category));
-    cJSON_AddBoolToObject(j, "paired", device->paired);
-    cJSON_AddBoolToObject(j, "connected", device->connected);
-    cJSON_AddBoolToObject(j, "trusted", device->trusted);
-    cJSON_AddNumberToObject(j, "deviceclass", device->deviceclass);
-    cJSON_AddNumberToObject(j, "appearance", device->appearance);
-    cJSON_AddNumberToObject(j, "manufacturer_data_hash", device->manufacturer_data_hash);
-    cJSON_AddNumberToObject(j, "service_data_hash", device->service_data_hash);
-    cJSON_AddNumberToObject(j, "uuids_length", device->uuids_length);
-    cJSON_AddNumberToObject(j, "uuid_hash", device->uuid_hash);
-    cJSON_AddNumberToObject(j, "txpower", device->txpower);
-    cJSON_AddNumberToObject(j, "last_sent", device->last_sent);
-    cJSON_AddNumberToObject(j, "distance", device->distance);
-    cJSON_AddNumberToObject(j, "earliest", device->earliest);
-    cJSON_AddNumberToObject(j, "latest", device->latest_local);
-    cJSON_AddNumberToObject(j, "count", device->count);
-    cJSON_AddNumberToObject(j, "filtered_rssi", device->filtered_rssi.current_estimate);
-    cJSON_AddNumberToObject(j, "raw_rssi", device->raw_rssi);
-    cJSON_AddNumberToObject(j, "try_connect_state", device->try_connect_state);
-    cJSON_AddNumberToObject(j, "nt", device->name_type);
-    cJSON_AddNumberToObject(j, "at", device->address_type);
-    if (device->is_training_beacon){
-        cJSON_AddNumberToObject(j, "training", 1);
+    cJSON_AddStringToObject(j, CJ_ALIAS, device->alias);
+    cJSON_AddNumberToObject(j, CJ_ADDRESS_TYPE, device->address_type);
+    cJSON_AddStringToObject(j, CJ_CATEGORY, category_from_int(device->category));
+    cJSON_AddBoolToObject(j, CJ_PAIRED, device->paired);
+    cJSON_AddBoolToObject(j, CJ_CONNECTED, device->connected);
+    cJSON_AddBoolToObject(j, CJ_TRUSTED, device->trusted);
+    cJSON_AddNumberToObject(j, CJ_DEVICE_CLASS, device->deviceclass);
+    cJSON_AddNumberToObject(j, CJ_APPEARANCE, device->appearance);
+    cJSON_AddNumberToObject(j, CJ_MANUFACTURER_DATA_HASH, device->manufacturer_data_hash);
+    cJSON_AddNumberToObject(j, CJ_SERVICE_DATA_HASH, device->service_data_hash);
+    cJSON_AddNumberToObject(j, CJ_UUIDS_LENGTH, device->uuids_length);
+    cJSON_AddNumberToObject(j, CJ_UUIDS_HASH, device->uuid_hash);
+    cJSON_AddNumberToObject(j, CJ_TXPOWER, device->txpower);
+    cJSON_AddNumberToObject(j, CJ_LAST_SENT, device->last_sent);
+    cJSON_AddRounded3(j, CJ_DISTANCE, device->distance);
+    cJSON_AddNumberToObject(j, CJ_EARLIEST, device->earliest);
+    cJSON_AddNumberToObject(j, CJ_LATEST, device->latest_local);
+    cJSON_AddNumberToObject(j, CJ_COUNT, device->count);  // integer
+    cJSON_AddRounded3(j, CJ_FILTERED_RSSI, device->filtered_rssi.current_estimate);
+    cJSON_AddNumberToObject(j, CJ_RAW_RSSI, device->raw_rssi);  // integer
+    cJSON_AddNumberToObject(j, CJ_TRY_CONNECT_STATE, device->try_connect_state);
+    cJSON_AddNumberToObject(j, CJ_NAME_TYPE, device->name_type);
+    cJSON_AddNumberToObject(j, CJ_ADDRESS_TYPE, device->address_type);
+    if (device->is_training_beacon)
+    {
+        cJSON_AddNumberToObject(j, CJ_TRAINING, 1);
     }
-    cJSON_AddNumberToObject(j, "nt", device->name_type);
 
     string = cJSON_PrintUnformatted(j);
     cJSON_Delete(j);
     return string;
 }
+
+
 
 bool device_from_json(const char* json, struct AccessPoint* access_point, struct Device* device)
 {
@@ -175,43 +177,43 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
 
     // ACCESS POINT
 
-    cJSON *fromj = cJSON_GetObjectItemCaseSensitive(djson, "from");
+    cJSON *fromj = cJSON_GetObjectItemCaseSensitive(djson, CJ_FROM);
     if (cJSON_IsString(fromj) && (fromj->valuestring != NULL))
     {
         strncpy(access_point->client_id, fromj->valuestring, META_LENGTH);
     }
 
-    cJSON *descriptionj = cJSON_GetObjectItemCaseSensitive(djson, "description");
+    cJSON *descriptionj = cJSON_GetObjectItemCaseSensitive(djson, CJ_DESCRIPTION);
     if (cJSON_IsString(descriptionj) && (descriptionj->valuestring != NULL))
     {
         strncpy(access_point->description, descriptionj->valuestring, META_LENGTH);
     }
 
-    cJSON *platformj = cJSON_GetObjectItemCaseSensitive(djson, "platform");
+    cJSON *platformj = cJSON_GetObjectItemCaseSensitive(djson, CJ_PLATFORM);
     if (cJSON_IsString(platformj) && (platformj->valuestring != NULL))
     {
         strncpy(access_point->platform, platformj->valuestring, META_LENGTH);
     }
 
-    cJSON *rssi_one_meter = cJSON_GetObjectItemCaseSensitive(djson, "rssi_one_meter");
+    cJSON *rssi_one_meter = cJSON_GetObjectItemCaseSensitive(djson, CJ_RSSI_ONE_METER);
     if (cJSON_IsNumber(rssi_one_meter))
     {
         access_point->rssi_one_meter = rssi_one_meter->valueint;
     }
 
-    cJSON *rssi_factor = cJSON_GetObjectItemCaseSensitive(djson, "rssi_factor");
+    cJSON *rssi_factor = cJSON_GetObjectItemCaseSensitive(djson, CJ_RSSI_FACTOR);
     if (cJSON_IsNumber(rssi_one_meter))
     {
         access_point->rssi_factor = (float)rssi_factor->valuedouble;
     }
 
-    cJSON *people_distance = cJSON_GetObjectItemCaseSensitive(djson, "people_distance");
+    cJSON *people_distance = cJSON_GetObjectItemCaseSensitive(djson, CJ_PEOPLE_DISTANCE);
     if (cJSON_IsNumber(people_distance))
     {
         access_point->people_distance = (float)people_distance->valuedouble;
     }
 
-    cJSON *sequence = cJSON_GetObjectItemCaseSensitive(djson, "seq");
+    cJSON *sequence = cJSON_GetObjectItemCaseSensitive(djson, CJ_SEQ);
     if (cJSON_IsNumber(sequence))
     {
         access_point->sequence = (int64_t)sequence->valuedouble;
@@ -219,7 +221,7 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
 
     // DEVICE
 
-    cJSON *mac = cJSON_GetObjectItemCaseSensitive(djson, "mac");
+    cJSON *mac = cJSON_GetObjectItemCaseSensitive(djson, CJ_MAC);
     if (cJSON_IsString(mac) && (mac->valuestring != NULL))
     {
         strncpy(device->mac, mac->valuestring, 18);
@@ -227,13 +229,13 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
         device->mac64 = mac64;
     }
 
-    cJSON *name = cJSON_GetObjectItemCaseSensitive(djson, "name");
+    cJSON *name = cJSON_GetObjectItemCaseSensitive(djson, CJ_NAME);
     if (cJSON_IsString(name) && (name->valuestring != NULL))
     {
         strncpy(device->name, name->valuestring, NAME_LENGTH);
     }
 
-    cJSON *latest = cJSON_GetObjectItemCaseSensitive(djson, "latest");
+    cJSON *latest = cJSON_GetObjectItemCaseSensitive(djson, CJ_LATEST);
     if (cJSON_IsNumber(latest))
     {
         // TODO: Full date time serialization and deserialization
@@ -241,75 +243,68 @@ bool device_from_json(const char* json, struct AccessPoint* access_point, struct
         device->latest_any = latest->valueint;
     }
 
-    cJSON *distance = cJSON_GetObjectItemCaseSensitive(djson, "distance");
+    cJSON *distance = cJSON_GetObjectItemCaseSensitive(djson, CJ_DISTANCE);
     if (cJSON_IsNumber(distance))
     {
         device->distance = (float)distance->valuedouble;
     }
 
-    cJSON *filtered_rssi = cJSON_GetObjectItemCaseSensitive(djson, "filtered_rssi");
+    cJSON *filtered_rssi = cJSON_GetObjectItemCaseSensitive(djson, CJ_FILTERED_RSSI);
     if (cJSON_IsNumber(filtered_rssi))
     {
         device->filtered_rssi.current_estimate = (float)filtered_rssi->valuedouble;
         device->filtered_rssi.last_estimate = (float)filtered_rssi->valuedouble;
     }
 
-    cJSON *raw_rssi = cJSON_GetObjectItemCaseSensitive(djson, "raw_rssi");
+    cJSON *raw_rssi = cJSON_GetObjectItemCaseSensitive(djson, CJ_RAW_RSSI);
     if (cJSON_IsNumber(raw_rssi))
     {
         device->raw_rssi = (float)raw_rssi->valuedouble;
     }
 
-    cJSON *count = cJSON_GetObjectItemCaseSensitive(djson, "count");
+    cJSON *count = cJSON_GetObjectItemCaseSensitive(djson, CJ_COUNT);
     if (cJSON_IsNumber(count))
     {
         device->count = count->valueint;
     }
 
-    cJSON *earliest = cJSON_GetObjectItemCaseSensitive(djson, "earliest");
+    cJSON *earliest = cJSON_GetObjectItemCaseSensitive(djson, CJ_EARLIEST);
     if (cJSON_IsNumber(earliest))
     {
         // TODO: Full date time serialization and deserialization
         device->earliest = earliest->valueint;
     }
 
-    cJSON *training = cJSON_GetObjectItemCaseSensitive(djson, "training");
+    cJSON *training = cJSON_GetObjectItemCaseSensitive(djson, CJ_TRAINING);
     device->is_training_beacon = cJSON_IsNumber(training);
 
-    cJSON *temp = cJSON_GetObjectItemCaseSensitive(djson, "nt");
-    if (cJSON_IsNumber(temp))
-    {
-        device->name_type = temp->valueint;
-    }
-    else
-    {
-        device->name_type = nt_initial;
-    }
-
     device->category = CATEGORY_UNKNOWN;
-    cJSON *category = cJSON_GetObjectItemCaseSensitive(djson, "category");
+    cJSON *category = cJSON_GetObjectItemCaseSensitive(djson, CJ_CATEGORY);
     if (cJSON_IsString(category) && (category->valuestring != NULL))
     {
         device->category = category_to_int(category->valuestring);
     }
 
     device->address_type = RANDOM_ADDRESS_TYPE;
-    cJSON *addrType = cJSON_GetObjectItemCaseSensitive(djson, "at");
+    cJSON *addrType = cJSON_GetObjectItemCaseSensitive(djson, CJ_ADDRESS_TYPE);
     if (cJSON_IsNumber(addrType))
     {
         device->address_type = addrType->valueint;
     }
 
-    device->name_type = nt_initial;
-    cJSON *nameType = cJSON_GetObjectItemCaseSensitive(djson, "nt");
-    if (cJSON_IsNumber(nameType))
+    cJSON *temp = cJSON_GetObjectItemCaseSensitive(djson, CJ_NAME_TYPE);
+    if (cJSON_IsNumber(temp))
     {
-        device->name_type = (enum name_type)(nameType->valueint);
+        device->name_type = (enum name_type)(temp->valueint);
+    }
+    else
+    {
+        device->name_type = nt_initial;
     }
 
-   cJSON_Delete(djson);
+    cJSON_Delete(djson);
 
-   return true;
+    return true;
 }
 
 

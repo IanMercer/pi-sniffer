@@ -204,4 +204,44 @@ enum Verbosity
 };
 
 
+
+// CJSON property names
+
+// Access points
+#define CJ_FROM "from"
+#define CJ_DESCRIPTION "description"
+#define CJ_PLATFORM "platform"
+#define CJ_RSSI_ONE_METER "rom"
+#define CJ_RSSI_FACTOR "rf"
+#define CJ_PEOPLE_DISTANCE "pd"
+#define CJ_SEQ "seq"
+
+// Device details
+#define CJ_MAC "mac"
+#define CJ_NAME "n"
+#define CJ_ALIAS "a"
+#define CJ_ADDRESS_TYPE "at"
+#define CJ_CATEGORY "c"
+#define CJ_PAIRED "paired"
+#define CJ_CONNECTED "connected"
+#define CJ_TRUSTED "trusted"
+#define CJ_DEVICE_CLASS "dc"
+#define CJ_APPEARANCE "app"
+#define CJ_MANUFACTURER_DATA_HASH "mdh"
+#define CJ_SERVICE_DATA_HASH "sdh"
+#define CJ_UUIDS_LENGTH "ul"
+#define CJ_UUIDS_HASH "uh"
+#define CJ_TXPOWER "tx"
+#define CJ_LAST_SENT "ls"
+#define CJ_DISTANCE "d"
+#define CJ_EARLIEST "e"
+#define CJ_LATEST "l"
+#define CJ_COUNT "c"
+#define CJ_FILTERED_RSSI "fr"
+#define CJ_RAW_RSSI "rr"
+#define CJ_TRY_CONNECT_STATE "tcs"
+#define CJ_NAME_TYPE "nt"
+#define CJ_ADDRESS_TYPE "at"
+#define CJ_TRAINING "train"
+
 #endif

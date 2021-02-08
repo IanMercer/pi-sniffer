@@ -146,6 +146,15 @@ void cJSON_AddSummary(cJSON * item, struct summary* s);
 */
 void cJSON_AddRounded(cJSON * item, const char* label, double value);
 
+/*
+    Add a two decimal value to a JSON object
+*/
+void cJSON_AddRounded2(cJSON * item, const char* label, double value);
+
+/*
+    Add a three decimal value to a JSON object
+*/
+void cJSON_AddRounded3(cJSON * item, const char* label, double value);
 
 /*
    Get a unsigned integer 16 parameter from the environment or default
