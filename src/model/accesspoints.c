@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <time.h>
 
 struct AccessPoint *add_access_point(struct AccessPoint** access_point_list, char *client_id,
                                      const char *description, const char *platform,
@@ -78,6 +79,9 @@ void print_min_distance_matrix(struct OverallState* state)
             struct ClosestTo b = state->closest[j];
             if (b.category != CATEGORY_PHONE && b.category != CATEGORY_COVID) continue;
             if (a.device_64 != b.device_64) continue;       // same device only
+
+            int delta = difftime(a.latest, b.latest);
+            if (delta > 10) continue;                       // must have occurred close in time
 
             int aid = a.access_point->id;
             int bid = b.access_point->id;
