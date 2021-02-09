@@ -81,16 +81,28 @@ void print_min_distance_matrix(struct OverallState* state)
             if (a.device_64 != b.device_64) continue;       // same device only
 
             int delta = abs(difftime(a.latest, b.latest));
-            if (delta > 2) continue;                       // must have occurred close in time
+            if (delta > 6) continue;                       // must have occurred close in time (despite clock skew)
 
             int aid = a.access_point->id;
             int bid = b.access_point->id;
 
             if (aid < N_ACCESS_POINTS && bid < N_ACCESS_POINTS)
             {
-                double d = a.distance + b.distance;
-                if (d < min_dist[aid][bid]) min_dist[aid][bid] = d;
-                if (d < min_dist[bid][aid]) min_dist[bid][aid] = d;
+                double d = a.distance + b.distance; // same ping ... + 1.4 * delta;   // average walking speed is 1.4 m/s
+                if (min_dist[aid][bid] > EFFECTIVE_INFINITE)
+                {
+                    min_dist[bid][aid] = min_dist[aid][bid] = d;
+                }
+                else if (d < min_dist[aid][bid])
+                {
+                    // smoothing function faster on way down
+                    min_dist[bid][aid] = min_dist[aid][bid] = d * 0.5 + min_dist[aid][bid] * 0.5;
+                }
+                else
+                {
+                    // smoothing function up way up
+                    min_dist[bid][aid] = min_dist[aid][bid] = d * 0.1 + min_dist[aid][bid] * 0.9;
+                }
             }
         }
     }
