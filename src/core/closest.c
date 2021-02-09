@@ -296,7 +296,7 @@ int calculate_location(struct OverallState* state, struct ClosestTo* closest,
 */
 bool print_counts_by_closest(struct OverallState* state)
 {
-    //time_t last_run = state->last_summary;
+    time_t last_run = state->last_summary;
     time(&state->last_summary);
 
     //g_debug("pack_closest_columns()");
@@ -429,13 +429,20 @@ bool print_counts_by_closest(struct OverallState* state)
 
         // First n phones get logged
         bool logging = false;
-        if (test->category == CATEGORY_PHONE || test->category == CATEGORY_TV || test->category == CATEGORY_COMPUTER || test->category == CATEGORY_FIXED)
+
+        if (difftime(test->latest, last_run) > 0 ||
+            test->category == CATEGORY_PHONE || 
+            test->category == CATEGORY_TV || 
+            test->category == CATEGORY_PENCIL ||
+            test->category == CATEGORY_COMPUTER || 
+            test->category == CATEGORY_FIXED)
         {
             if (log_n-- > 0)
             {
                 logging = true;
             }
         }
+   
         bool detailedLogging = false;
 
         int age = difftime(now, test->latest);
