@@ -23,6 +23,10 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_PHONE;
     else if (string_contains_insensitive(name, "Galaxy A20"))
         existing->category = CATEGORY_PHONE;
+    else if (string_contains_insensitive(name, "Galaxy A51"))
+        existing->category = CATEGORY_PHONE;
+    else if (string_contains_insensitive(name, "Galaxy"))
+        existing->category = CATEGORY_PHONE;
     else if (string_contains_insensitive(name, "iPad"))
     {
         existing->category = CATEGORY_TABLET;
