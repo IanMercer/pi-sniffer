@@ -81,7 +81,7 @@ void print_min_distance_matrix(struct OverallState* state)
             if (a.device_64 != b.device_64) continue;       // same device only
 
             int delta = abs(difftime(a.latest, b.latest));
-            if (delta > 4) continue;                       // must have occurred close in time
+            if (delta > 2) continue;                       // must have occurred close in time
 
             int aid = a.access_point->id;
             int bid = b.access_point->id;
