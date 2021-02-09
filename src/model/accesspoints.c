@@ -68,13 +68,15 @@ void print_min_distance_matrix(struct OverallState* state)
         min_dist[i][j] = 10 * EFFECTIVE_INFINITE;
     }
 
-    // Triangular matrix
+    // Triangular matrix looking only at phones (similar transmit power)
     for (int i = state->closest_n - 1; i > 0; i--)
     {
         struct ClosestTo a = state->closest[i];
+        if (a.category != CATEGORY_PHONE && a.category != CATEGORY_COVID) continue;
         for (int j = i - 1; j >= 0; j--)
         {
             struct ClosestTo b = state->closest[j];
+            if (b.category != CATEGORY_PHONE && b.category != CATEGORY_COVID) continue;
             if (a.device_64 != b.device_64) continue;       // same device only
 
             int aid = a.access_point->id;
@@ -112,7 +114,6 @@ void print_min_distance_matrix(struct OverallState* state)
     {
         char line[120];
         line[0] = '\0';
-        int len = 0;
 
         append_text(line, sizeof(line), "%8.8s|", ap->short_client_id);
 
