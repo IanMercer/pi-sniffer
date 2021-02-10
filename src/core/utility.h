@@ -8,7 +8,6 @@
 #include <glib.h>
 #include <stdbool.h>
 #include <string.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/types.h>

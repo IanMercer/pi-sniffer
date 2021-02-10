@@ -90,6 +90,95 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
     bool is_training_beacon)
 {
     g_assert(access_point != NULL);
+
+// NEW WAY
+#ifdef NEW_WAY
+    g_debug("NEW WAY START");
+
+    struct ClosestHead* previousHead = NULL;
+    for(struct ClosestHead* h = state->closestHead; h != NULL; h=h->next)
+    {
+        if (h->mac64 == device_64) 
+        {
+            // unlink from chain
+            if (previousHead != NULL) previousHead->next = h->next;
+            // and put it on the front
+            h->next = state->closestHead;
+            state->closestHead = h;
+            break; 
+        }
+        previousHead = h;
+    }
+
+    struct ClosestHead* head = state->closestHead;
+
+    if (head == NULL || head->mac64 != device_64)
+    {
+        head = malloc(sizeof(struct ClosestHead));
+        head->next = state->closestHead;
+        state->closestHead = head;
+        head->addressType = addressType;
+        head->name_type = -1;
+        head->closest = NULL;
+        head->mac64 = device_64;
+        g_debug("Add new head for %s", name);
+    }
+
+    // Update the name on the head IF BETTER
+    if (name_type > head->name_type)
+    {
+        strncpy(head->name, name, NAME_LENGTH);
+        head->name_type = name_type;
+    }
+
+    // Remove same access point if present
+    struct ClosestTo* previous = NULL;
+    for (struct ClosestTo* c = head->closest; c != NULL; c=c->next)
+    {
+        if (c->access_point == access_point)
+        {
+            // unlink from chain
+            if (previous) previous->next = c->next;
+            // and put it on the front
+            c->next = head->closest;
+            head->closest = c;
+            g_debug("Bump entry for %s on %s", name, access_point->client_id);
+            break;
+        }
+        previous = c;
+    }
+
+    struct ClosestTo* closest = head->closest;
+
+    // If it's not at the head now, allocate a new one at the head
+    if (closest == NULL || closest->access_point != access_point)
+    {
+        // no such access point observation found, allocate a new one for head
+        closest = malloc(sizeof(struct ClosestTo));
+        closest->next = head->closest;
+        head->closest = closest;
+        g_debug("Add entry for %s on %s", name, access_point->client_id);
+        closest->access_point = access_point;
+        closest->device_64 = device_64;
+    }
+
+    // Update it
+    closest->addressType = addressType;
+    closest->category = category;
+    closest->count = count;
+    closest->distance = distance;
+    closest->earliest = earliest;
+    closest->is_training_beacon = is_training_beacon;
+    closest->latest = latest;
+    closest->patch = NULL;
+    strncpy(closest->name, name, NAME_LENGTH);           // debug only, remove this later
+    closest->name_type = name_type;
+
+    g_debug("NEW WAY DONE");
+#endif
+// OLD WAY
+
+
     //g_debug("add_closest(%s, %i, %.2fm, %i)", client_id, access_id, distance, count);
     // First scan back, see if this is an update
     for (int j = state->closest_n-1; j >= 0; j--)
@@ -98,21 +187,6 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         if (state->closest[j].device_64 == device_64 
             && state->closest[j].access_point->id == access_point->id)
         {
-            // Not using local superceded any more
-            // if (state->closest[j].supersededby != supersededby && state->closest[j].latest == time)
-            // {
-            //     char mac[18];
-            //     mac_64_to_string(mac, 18, device_64);
-            //     char from[18];
-            //     mac_64_to_string(from, 18, state->closest[j].supersededby);
-            //     char to[18];
-            //     mac_64_to_string(to, 18, supersededby);
-
-            //     g_trace("*** Received an UPDATE %s: changing %s superseded from %s to %s", access_point->client_id, mac, from, to);
-            //     state->closest[j].supersededby = supersededby;
-            //     return;
-            // }
-            // else 
             if (state->closest[j].count == count && state->closest[j].distance == distance)
             {
                 //char mac[18];
@@ -167,6 +241,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
     cl->count = count;
     cl->is_training_beacon = is_training_beacon;
     strncpy(cl->name, name, NAME_LENGTH);           // debug only, remove this later
+    cl->next = NULL;
 
     // If it's a known MAC address or name of a beacon, update the name to the alias
     for (struct Beacon* b = state->beacons; b != NULL; b = b->next)

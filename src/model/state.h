@@ -92,6 +92,9 @@ struct OverallState
 
    struct ClosestTo closest[CLOSEST_N];
 
+   // Chain of chains of closest records
+   struct ClosestHead* closestHead;
+
    // linked list of beacons
    struct Beacon* beacons;
 

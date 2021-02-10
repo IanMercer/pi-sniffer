@@ -31,6 +31,7 @@ void initialize_state(struct OverallState* state)
     state->patch_hash = 0;       // hash to detect changes
     state->beacons = NULL;       // linked list
     state->beacon_hash = 0;      // initial unseen hash
+    state->closestHead = NULL;   // chain of closest heads
     state->json = NULL;          // DBUS JSON message
     state->led_flash_count = 3;  // Fixed for now, TODO: Back to calculated value
     time(&state->influx_last_sent);
