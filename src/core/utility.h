@@ -223,4 +223,9 @@ void add_key_value_double(GVariantBuilder* builder, const char* key, double valu
 void add_summary(GVariantBuilder* builder, double phones, double watches, double wearables, double computers,
     double tablets, double beacons, double covid, double other);
 
+/*
+* Simple hash for string
+*/
+uint32_t hash_string(const char* input, int maxlen);
+
 #endif

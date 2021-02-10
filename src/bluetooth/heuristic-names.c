@@ -5,17 +5,32 @@
 #include "utility.h"
 #include "heuristics.h"
 
+
+/*
+*  Sanitize name no matter what source it came from - another Pi or Bluetooth or a file
+*/
+void sanitize_and_assign_name(const char* name, struct Device* device, char* needle)
+{
+    if (string_contains_insensitive(name, needle))
+    {
+        char* remainder = g_strstr_len(name, strlen(name), needle);
+        // name could be longer than NAME_LENGTH at this point, maybe someone has a very long name
+        uint32_t hash = hash_string(name, NAME_LENGTH);
+        snprintf(device->name, NAME_LENGTH, "%c%c%4x %s", name[0], name[1] || '_', hash & 0xffff, remainder);
+    }
+}
+
+
 void apply_name_heuristics (struct Device* existing, const char* name)
 {
     if (string_contains_insensitive(name, "iPhone"))
     {
+        sanitize_and_assign_name(name, existing, "iPhone");
         existing->category = CATEGORY_PHONE;
     }
-    else if (string_ends_with(name, " phone"))  // some people name them
+    else if (string_ends_with(name, "phone"))  // some people name them
     {
-        // Privacy
-        g_strlcpy(existing->name, "*****'s phone", NAME_LENGTH);
-        existing->category = CATEGORY_PHONE;
+        sanitize_and_assign_name(name, existing, "phone");
     }
     else if (string_contains_insensitive(name, "Galaxy Note"))
         existing->category = CATEGORY_PHONE;
@@ -34,16 +49,12 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     // Privacy
     else if (string_contains_insensitive(name, "s Mac"))  // MacBook, Mac Pro, Mac Book, ..
     {
-        // name could be longer than NAME_LENGTH at this point, maybe someone has a very long name
-        char* remainder = g_strstr_len(name, strlen(name), "Mac");
-        g_strlcpy(existing->name, "*****'s Mac", NAME_LENGTH);
-        g_strlcpy(existing->name+8, remainder, NAME_LENGTH-8);
+        sanitize_and_assign_name(name, existing, "Mac");
         existing->category = CATEGORY_COMPUTER;
     }
     else if (string_contains_insensitive(name, "MacBook"))
     {
-        // Privacy
-        g_strlcpy(existing->name, "*****'s MacBook", NAME_LENGTH);
+        sanitize_and_assign_name(name, existing, "Mac");
         existing->category = CATEGORY_COMPUTER;
     }
     else if (string_starts_with(name, "BOOTCAMP"))
@@ -215,11 +226,13 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_HEADPHONES;
     else if (string_starts_with(name, "LE-"))     // LE-Bose, LE-<name>Bose, LE-Reserved_N
         existing->category = CATEGORY_HEADPHONES;
-    else if (strncmp(name, "LE-reserved_C", 13) == 0)
+    else if (string_starts_with(name, "LE-reserved_C"))
         existing->category = CATEGORY_HEADPHONES;
     else if (strncmp(name, "Blaze", 5) == 0)
         existing->category = CATEGORY_HEADPHONES;
-    else if (strncmp(name, "HarpBT", 6) == 0)
+    else if (string_starts_with(name, "HarpBT"))
+        existing->category = CATEGORY_HEADPHONES;
+    else if (string_starts_with(name, "JBL LIVE500BT"))
         existing->category = CATEGORY_HEADPHONES;
     else if (string_starts_with(name, "LG HBS1120"))
         existing->category = CATEGORY_HEADPHONES;

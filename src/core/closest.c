@@ -93,21 +93,27 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
 
 // NEW WAY
 #ifdef NEW_WAY
-    g_debug("NEW WAY START");
+    g_trace("NEW WAY START %s on %s", name, access_point->client_id);
 
     struct ClosestHead* previousHead = NULL;
+    int c = 0;
     for(struct ClosestHead* h = state->closestHead; h != NULL; h=h->next)
     {
         if (h->mac64 == device_64) 
         {
-            // unlink from chain
-            if (previousHead != NULL) previousHead->next = h->next;
-            // and put it on the front
-            h->next = state->closestHead;
-            state->closestHead = h;
+            if (previousHead != NULL)
+            {
+                // unlink from chain
+                previousHead->next = h->next;
+                // and put it on the front
+                h->next = state->closestHead;
+                state->closestHead = h;
+            }
+            // else, already at head of chain
             break; 
         }
         previousHead = h;
+        if (c++ > 1000) g_error("Stuck scanning head for %s", access_point->client_id);
     }
 
     struct ClosestHead* head = state->closestHead;
@@ -121,7 +127,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         head->name_type = -1;
         head->closest = NULL;
         head->mac64 = device_64;
-        g_debug("Add new head for %s", name);
+        g_trace("Add new head for %s", name);
     }
 
     // Update the name on the head IF BETTER
@@ -133,19 +139,28 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
 
     // Remove same access point if present
     struct ClosestTo* previous = NULL;
-    for (struct ClosestTo* c = head->closest; c != NULL; c=c->next)
+    c = 0;
+    for (struct ClosestTo* close = head->closest; close != NULL; close=close->next)
     {
-        if (c->access_point == access_point)
+        if (close->access_point == access_point)
         {
             // unlink from chain
-            if (previous) previous->next = c->next;
-            // and put it on the front
-            c->next = head->closest;
-            head->closest = c;
-            g_debug("Bump entry for %s on %s", name, access_point->client_id);
+            if (previous != NULL)
+            {
+                previous->next = close->next;
+                // and put it on the front
+                close->next = head->closest;
+                head->closest = close;
+                g_trace("  Bump entry for %s on %s", name, access_point->client_id);
+            }
+            else
+            {
+                g_trace("  Head entry for %s on %s", name, access_point->client_id);
+            }
             break;
         }
-        previous = c;
+        previous = close;
+        if (c++ > N_ACCESS_POINTS) g_error("  Stuck scanning chain %s on %s", name, access_point->client_id);
     }
 
     struct ClosestTo* closest = head->closest;
@@ -157,7 +172,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         closest = malloc(sizeof(struct ClosestTo));
         closest->next = head->closest;
         head->closest = closest;
-        g_debug("Add entry for %s on %s", name, access_point->client_id);
+        g_trace("  Add entry for %s on %s", name, access_point->client_id);
         closest->access_point = access_point;
         closest->device_64 = device_64;
     }
@@ -174,7 +189,6 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
     strncpy(closest->name, name, NAME_LENGTH);           // debug only, remove this later
     closest->name_type = name_type;
 
-    g_debug("NEW WAY DONE");
 #endif
 // OLD WAY
 

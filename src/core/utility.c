@@ -645,3 +645,17 @@ unsigned char *read_byte_array(GVariant *s_value, int *actualLength, uint8_t *ha
     //g_debug("END read_byte_array\n");
     return allocdata;
 }
+
+/*
+* Simple hash for string
+*/
+uint32_t hash_string(const char* input, int maxlen)
+{
+    uint32_t r = 0;
+    while (maxlen-- > 0 && *input++ != '\0')
+    {
+        r = r * 37 + *input;
+    }
+
+    return r;
+}
