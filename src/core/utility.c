@@ -254,7 +254,7 @@ void get_mac_address(char* access_point_address)
 void mac_address_to_string(char* output, int length, char* access_point_address)
 {
     if (length != 18) g_error("Length must be 18");
-    snprintf(output, length, "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x", access_point_address[0], access_point_address[1],
+    snprintf(output, length, "%.2X:%.2X:%.2X:%.2X:%.2X:%.2X", access_point_address[0], access_point_address[1],
         access_point_address[2], access_point_address[3], access_point_address[4], access_point_address[5]);
     output[18] = '\0';
 }
@@ -265,7 +265,7 @@ void mac_address_to_string(char* output, int length, char* access_point_address)
 void mac_64_to_string(char* output, int length, int64_t access_64)
 {
     if (length != 18) g_error("Length must be 18");
-    snprintf(output, length, "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
+    snprintf(output, length, "%.2X:%.2X:%.2X:%.2X:%.2X:%.2X",
         (int8_t)(access_64 >> 40) & 0xff,
         (int8_t)(access_64 >> 32) & 0xff,
         (int8_t)(access_64 >> 24) & 0xff,
