@@ -374,6 +374,12 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 rangefactor = 1.2;
             }
 
+            if (string_starts_with(existing->name, "Tile"))
+            {
+                // Seem to be weak
+                rangefactor = 0.75;
+            }
+
             if (string_starts_with(existing->name, "[TV] Samsung"))
             {
                 rangefactor = 2.0;
@@ -1259,7 +1265,7 @@ void dump_device(struct OverallState* state, struct Device *d)
     //double delta_time = difftime(now, a->latest);
     //if (delta_time > MAX_TIME_AGO_LOGGING_MINUTES * 60) return;
 
-    char *addressType = d->address_type == PUBLIC_ADDRESS_TYPE ? "pub" : d->address_type == RANDOM_ADDRESS_TYPE ? "ran" : "---";
+    char *addressType = d->address_type == PUBLIC_ADDRESS_TYPE ? "*" : d->address_type == RANDOM_ADDRESS_TYPE ? " " : "-";
     char *category = category_from_int(d->category);
 
     float closest_dist = NAN;
@@ -1271,11 +1277,11 @@ void dump_device(struct OverallState* state, struct Device *d)
         struct AccessPoint *ap = closest->access_point;
         if (ap)
         {
-            closest_ap = ap->client_id;
+            closest_ap = ap->short_client_id;
         }
     }
 
-    g_info("%4i %s %4i %3s %5.1fm  %6li-%6li %20s %13s %5.1fm %s", d->id % 10000, d->mac, d->count, addressType, d->distance, (d->earliest - state->started), (d->latest_local - state->started), d->name, closest_ap, closest_dist, category);
+    g_info("%4i %s%s %4i %5.1fm  %6li-%6li %20s %8.8s %5.1fm %s", d->id % 10000, d->mac, addressType, d->count, d->distance, (d->earliest - state->started), (d->latest_local - state->started), d->name, closest_ap, closest_dist, category);
 }
 
 
@@ -1531,7 +1537,7 @@ int dump_all_devices_tick(void *parameters)
         return TRUE; // no changes since last time
     logTable = FALSE;
     g_info("-----------------------------------------------------------------------------------------------------------");
-    g_info("Id   Address          Count Typ   Dist    First   Last                Name             Closest Category");
+    g_info("Id   Address           Count   Dist    First   Last                Name       Closest Category");
     g_info("-----------------------------------------------------------------------------------------------------------");
     time(&now);
     for (int i = 0; i < state.n; i++)

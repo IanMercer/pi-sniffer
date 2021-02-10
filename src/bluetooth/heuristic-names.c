@@ -19,11 +19,9 @@ void apply_name_heuristics (struct Device* existing, const char* name)
     }
     else if (string_contains_insensitive(name, "Galaxy Note"))
         existing->category = CATEGORY_PHONE;
-    else if (string_contains_insensitive(name, "Galaxy A10"))
-        existing->category = CATEGORY_PHONE;
-    else if (string_contains_insensitive(name, "Galaxy A20"))
-        existing->category = CATEGORY_PHONE;
-    else if (string_contains_insensitive(name, "Galaxy A51"))
+    else if (string_contains_insensitive(name, "Galaxy Tab"))
+        existing->category = CATEGORY_TABLET;
+    else if (string_contains_insensitive(name, "Galaxy A"))  //10 20 51
         existing->category = CATEGORY_PHONE;
     else if (string_contains_insensitive(name, "Galaxy"))
         existing->category = CATEGORY_PHONE;
@@ -93,6 +91,8 @@ void apply_name_heuristics (struct Device* existing, const char* name)
         existing->category = CATEGORY_FITNESS; // Heartrate
     else if (string_starts_with(name, "Alta HR"))
         existing->category = CATEGORY_FITNESS; // Fitbit Alta Heartrate
+    else if (string_starts_with(name, "Dexcom6B"))
+        existing->category = CATEGORY_HEALTH; // Diabetic monitor
 
     else if (strncmp(name, "LumosHelmet", 11) == 0)  // Bike Helmet
         existing->category = CATEGORY_WEARABLE;

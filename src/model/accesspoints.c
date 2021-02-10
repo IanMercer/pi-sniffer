@@ -110,16 +110,16 @@ void print_min_distance_matrix(struct OverallState* state)
     // HEADER
     char header[120];
     header[0] = '\0';
-    append_text(header, sizeof(header), "         |");
+    append_text(header, sizeof(header), "        |");
 
     char header2[120];
     header2[0] = '\0';
-    append_text(header2, sizeof(header2), "         .");
+    append_text(header2, sizeof(header2), "        .");
 
     for (struct AccessPoint* ap = state->access_points; ap != NULL; ap = ap->next)
     {
         append_text(header, sizeof(header), "%7.7s|", ap->short_client_id);
-        append_text(header2, sizeof(header2), "---------");
+        append_text(header2, sizeof(header2), "--------");
     }
 
     g_debug("%s", header2);

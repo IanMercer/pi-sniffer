@@ -846,7 +846,7 @@ bool print_counts_by_closest(struct OverallState* state)
             g_info(" ");
             g_info("==============================================================================================");
 
-            g_info ("              Beacon               Patch        Room            Group        When");
+            g_info ("              Beacon               Patch              Room            Group     When");
             g_info("----------------------------------------------------------------------------------------------");
             for (struct Beacon* b = state->beacons; b != NULL; b=b->next)
             {
