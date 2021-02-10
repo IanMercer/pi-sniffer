@@ -231,7 +231,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
         kalman_initialize(&existing->kalman_interval);
 
-        g_info("Added device %i. %s\n", existing->id, address);
+        g_info("Added device %i. %s", existing->id, address);
         apply_known_beacons(existing);
     }
     else
