@@ -11,12 +11,18 @@
 */
 void sanitize_and_assign_name(const char* name, struct Device* device, char* needle)
 {
-    if (string_contains_insensitive(name, needle))
+    if (device->name_type < nt_alias)  // beacon names don't get hashed
     {
-        char* remainder = g_strstr_len(name, strlen(name), needle);
-        // name could be longer than NAME_LENGTH at this point, maybe someone has a very long name
-        uint32_t hash = hash_string(name, NAME_LENGTH);
-        snprintf(device->name, NAME_LENGTH, "%c%c%4x %s", name[0], name[1], hash & 0xffff, remainder);
+        if (string_contains_insensitive(name, needle))
+        {
+            char* remainder = g_strstr_len(name, strlen(name), needle);
+            if (remainder != name)  // If whole string matches don't hash it
+            {
+                // name could be longer than NAME_LENGTH at this point, maybe someone has a very long name
+                uint32_t hash = hash_string(name, NAME_LENGTH);
+                snprintf(device->name, NAME_LENGTH, "%c%c%4x %s", name[0], name[1], hash & 0xffff, remainder);
+            }
+        }
     }
 }
 
