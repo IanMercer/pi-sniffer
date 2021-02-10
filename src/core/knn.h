@@ -45,4 +45,9 @@ struct top_k
 int k_nearest(struct recording* recordings, double* access_point_distances, struct AccessPoint* access_points, struct top_k* top_result, int top_count, 
     bool confirmed, bool debug);
 
+/*
+*  Compare two closest values
+*/
+float compare_closest (int64_t mac1, int64_t mac2, struct OverallState* state);
+
 #endif
