@@ -39,33 +39,6 @@ bool overlapsOneWay(time_t a_earliest, time_t b_latest)
     return TRUE;      // must overlap if not entirely after or too far after
 }
 
-    // This was a 36s gap but the location was a perfect match - should be a superseeded event
-
-    // Feb 09 23:12:24 crowd-3188442a scan[4437]: 2957.--- 6f:04:3b:81:bb:71       phone [  647-  163] (  7)                  iPhone
-    // Feb 09 23:12:24 crowd-3188442a scan[4437]:   crowd-49d37da6 distance  11.5m      [  647-  163] (  7)
-    // Feb 09 23:12:24 crowd-3188442a scan[4437]:   crowd-4d089e9d distance   7.2m      [  651-  165] (  8)
-    // Feb 09 23:12:24 crowd-3188442a scan[4437]:   crowd-3188442a distance  13.9m      [  563-  563] (  1)
-    // Feb 09 23:12:24 crowd-3188442a scan[4437]: 'South' sc: 0.204 (0) p=1.000 x 1.000
-    // Feb 09 23:12:24 crowd-3188442a scan[4437]: 'CBIDFront' sc: 0.157 (1) p=0.000 x 1.000
-    // Feb 09 23:12:24 crowd-3188442a scan[4437]: {"distances":{"crowd-3188442a":13.9,"crowd-49d37da6":11.5,"crowd-4d089e9d":7.2}}
-    // Feb 09 23:12:24 crowd-3188442a scan[4437]: 2910.--- 61:86:c3:95:b5:7a          tv [  361-  361] (  1)          LG Electronics
-    // Feb 09 23:12:24 crowd-3188442a scan[4437]:   crowd-4d089e9d distance  11.8m      [  361-  361] (  1)
-    // Feb 09 23:12:24 crowd-3188442a scan[4437]: 'DesignStudioEast' sc: 0.080 (0) p=0.840 x 1.000
-    // Feb 09 23:12:24 crowd-3188442a scan[4437]: 'South' sc: 0.063 (1) p=0.160 x 1.000
-    // Feb 09 23:12:24 crowd-3188442a scan[4437]: {"distances":{"crowd-4d089e9d":11.8}}
-    // Feb 09 23:12:24 crowd-3188442a scan[4437]: 2905.--- 79:fd:6e:4a:bb:1f       phone [ 1393-  683] ( 14)                  iPhone
-    // Feb 09 23:12:24 crowd-3188442a scan[4437]:   crowd-4d089e9d distance   7.0m      [ 1393-  683] ( 14)
-    // Feb 09 23:12:24 crowd-3188442a scan[4437]:   crowd-49d37da6 distance  10.7m      [ 1390-  757] (  4)
-    // Feb 09 23:12:24 crowd-3188442a scan[4437]:   crowd-9c9a7d8e distance  15.1m      [ 1151- 1151] (  1)
-    // Feb 09 23:12:24 crowd-3188442a scan[4437]:   crowd-3188442a distance  12.8m      [ 1329- 1329] (  1)
-    // Feb 09 23:12:24 crowd-3188442a scan[4437]:    score 0.00
-
-
-
-
-
-
-
 /*
     Was this just a blip?
 */
