@@ -45,7 +45,7 @@ void print_access_points(struct AccessPoint* access_points_list)
 {
     time_t now;
     time(&now);
-    g_info("ACCESS POINTS          Platform       Parameters   Last Seen");
+    g_info("ACCESS POINTS          Platform       Parameters Last Seen");
     for (struct AccessPoint* ap = access_points_list; ap != NULL; ap = ap->next)
     {
         int delta_time = difftime(now, ap->last_seen);

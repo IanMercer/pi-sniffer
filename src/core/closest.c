@@ -416,7 +416,7 @@ bool print_counts_by_closest(struct OverallState* state)
     free_list(&state->recordings);
     int count_recordings = 0;
     int count_recordings_and_beacons = 0;
-    g_debug("Re-read observations files");
+    g_trace("Re-read observations files");
     bool ok = read_observations ("/var/sniffer/recordings", state, TRUE);
     if (!ok) g_warning("Failed to read recordings files back");
     for (struct recording* r = state->recordings; r != NULL; r=r->next)
@@ -645,22 +645,25 @@ bool print_counts_by_closest(struct OverallState* state)
         int delta_time = difftime(now, test->latest);
         // beacons and other fixed devices last longer, tend to transmit less often
         double x_scale = (
-                // Very fixed devices don't decay, some are very infrequent
+                // Very fixed devices don't decay, some are very infrequent transmitters
                 test->category == CATEGORY_LIGHTING ||
                 test->category == CATEGORY_APPLIANCE ||
                 test->category == CATEGORY_POS ||
                 test->category == CATEGORY_SPRINKLERS ||
                 test->category == CATEGORY_TOOTHBRUSH ||
+                test->category == CATEGORY_BEACON || 
                 test->category == CATEGORY_FIXED
             ) ? 240.0 :
             (
                 test->category == CATEGORY_HEALTH ||
-                test->category == CATEGORY_PRINTER ||
-                test->category == CATEGORY_BEACON || 
                 test->category == CATEGORY_FITNESS ||
+                test->category == CATEGORY_PRINTER ||
                 test->category == CATEGORY_TV
             ) ? 160 :
-            test->category == CATEGORY_TABLET ? 120 :
+            (
+                test->category == CATEGORY_COMPUTER ||
+                test->category == CATEGORY_TABLET 
+            )? 120 :
              80.0;
 
         double score = 0.55 - atan(delta_time / x_scale - 4.0) / 3.0;
