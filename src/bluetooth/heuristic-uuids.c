@@ -111,6 +111,7 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x0000111eul) append_text(gatts, gatts_length, "HandsFree, ");
         else if (ble_uuid == 0x0000180aul) append_text(gatts, gatts_length, "Device information, ");
         else if (ble_uuid == 0x0000180dul) append_text(gatts, gatts_length, "Heart rate service, ");
+        else if (ble_uuid == 0x00001812ul) append_text(gatts, gatts_length, "Light?, ");  // not sure
         else if (ble_uuid == 0x00001821ul) {
             // This one is used for beacons used to train the system
             existing->is_training_beacon = TRUE;
@@ -422,6 +423,10 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         // Apple Media Service
         else if (ble_uuid == 0x89d3502bul) append_text(gatts, gatts_length, "Apple MS, ");
         else if (ble_uuid == 0x9fa480e0ul) append_text(gatts, gatts_length, "Apple XX, ");
+        else if (ble_uuid == 0xabbaff00ul) {
+            append_text(gatts, gatts_length, "Fitbit, ");
+            soft_set_category(&existing->category, CATEGORY_FITNESS);
+        }
         else if (ble_uuid == 0xb9401000ul) {
             append_text(gatts, gatts_length, "Estimote 1, ");
             soft_set_category(&existing->category, CATEGORY_BEACON);

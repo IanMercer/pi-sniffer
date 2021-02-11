@@ -197,15 +197,17 @@ void pack_closest_columns(struct OverallState* state)
 
             if (might_supersede && atLeastOneMatch)
             {
-                // All of the observations are consistent with being superceded
-                b->supersededby = a->device_64;
-
                 // How close are the two in distance
                 double delta = compare_closest(a->device_64, b->device_64, state);
-                g_debug("Mark supersede %s x %s with prob=%.2f", a->name, b->name, delta);
 
-                // A can only supersede one of the B
-                break;
+                if (delta > 0.5)
+                {
+                    g_debug("Mark supersede %s x %s with prob=%.2f", a->name, b->name, delta);
+                    // All of the observations are consistent with being superceded
+                    b->supersededby = a->device_64;
+                    // A can only supersede one of the B
+                    break;
+                }
             }
             else if (might_supersede)
             {

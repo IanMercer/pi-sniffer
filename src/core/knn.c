@@ -172,13 +172,13 @@ float get_probability (struct recording* recording, double access_points_distanc
     if (access_points->next == NULL) 
     {
         float sum_delta_squared = 0.0;
-        // single access point
+        // single access point - one over distance squared for probability
         struct AccessPoint* ap = access_points;
         float recording_distance = recording->access_point_distances[ap->id];
         float measured_distance = access_points_distance[ap->id];
         float delta = (recording_distance - measured_distance) / 30.0;  // scale to similar to ratios
         sum_delta_squared += delta*delta;
-        return sum_delta_squared;
+        return fmin(1.0, 1.0 / (sum_delta_squared + 0.001));
     } 
     else 
     {

@@ -17,7 +17,9 @@ struct recording
     bool confirmed;
     // patch name is copied into a fixed length string because the recording object keeps getting recreated
     char patch_name[META_LENGTH];
+    // Distance for each access point in same order
     float access_point_distances[N_ACCESS_POINTS];
+    // next
     struct recording* next;
 };
 
