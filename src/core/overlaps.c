@@ -202,7 +202,6 @@ void pack_closest_columns(struct OverallState* state)
 
                 if (delta > 0.5)
                 {
-                    g_debug("Mark supersede %s x %s with prob=%.2f", a->name, b->name, delta);
                     // All of the observations are consistent with being superceded
                     b->supersededby = a->device_64;
                     // A can only supersede one of the B

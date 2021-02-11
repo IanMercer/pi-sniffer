@@ -243,7 +243,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         }
         else
         {
-            g_debug("Existing device %i. %s '%s' (%s)", existing->id, address, existing->name, existing->alias);
+            g_trace("Existing device %i. %s '%s' (%s)", existing->id, address, existing->name, existing->alias);
         }
     }
 
@@ -317,7 +317,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->address_type = newAddressType;
                 if (newAddressType == PUBLIC_ADDRESS_TYPE)
                 {
-                    g_debug("  %s Address type has changed -> '%s'\n", address, addressType);
+                    g_trace("  %s Address type: '%s'\n", address, addressType);
                     // Not interested in random as most devices are random
                     apply_mac_address_heuristics(existing);
                 }

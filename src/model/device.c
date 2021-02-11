@@ -343,7 +343,7 @@ void set_name(struct Device* d, const char*value, enum name_type name_type)
             }
             else
             {
-                g_info("  %s Upgraded name from '%s' to '%s' (%i->%i)", d->mac, d->name, value, d->name_type, name_type);
+                g_info("  %s Name '%s' to '%s' (%i->%i)", d->mac, d->name, value, d->name_type, name_type);
             }
                 
             d->name_type = name_type;
