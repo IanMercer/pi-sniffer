@@ -446,7 +446,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         char* local_id = state->local->client_id; // Used as group_id
 
-        struct patch* current_patch = get_or_create_patch("Close", "Close", local_id, "group=inside", &state->patches, &state->groups, TRUE);
+        struct patch* current_patch = get_or_create_patch("Close", "<4m", local_id, "group=inside", &state->patches, &state->groups, TRUE);
         struct recording* ralloc = malloc(sizeof(struct recording));
         ralloc->confirmed = TRUE;
         g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
@@ -456,7 +456,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         //--------- 3.5m
 
-        current_patch = get_or_create_patch("Near", "Near", local_id, "group=inside", &state->patches, &state->groups, TRUE);
+        current_patch = get_or_create_patch("Near", "<7m", local_id, "group=inside", &state->patches, &state->groups, TRUE);
         ralloc = malloc(sizeof(struct recording));
         ralloc->confirmed = TRUE;
         g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
@@ -466,7 +466,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         //--------- 7m
 
-        current_patch = get_or_create_patch("Far", "Far", local_id, "group=outside", &state->patches, &state->groups, TRUE);
+        current_patch = get_or_create_patch("Far", "<9m", local_id, "group=outside", &state->patches, &state->groups, TRUE);
         ralloc = malloc(sizeof(struct recording));
         ralloc->confirmed = TRUE;
         g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
@@ -476,7 +476,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         //--------- 10.5m
 
-        current_patch = get_or_create_patch("Distant", "Distant", local_id, "group=outside", &state->patches, &state->groups, TRUE);
+        current_patch = get_or_create_patch("Distant", ">9m", local_id, "group=outside", &state->patches, &state->groups, TRUE);
         ralloc = malloc(sizeof(struct recording));
         ralloc->confirmed = TRUE;
         g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);

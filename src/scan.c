@@ -833,7 +833,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
     if (starting && send_distance)
     {
-        g_debug("Skip sending, starting");
+        g_trace("Skip sending, starting");
     }
     else
     {
