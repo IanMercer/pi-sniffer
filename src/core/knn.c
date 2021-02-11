@@ -180,9 +180,9 @@ float get_probability (struct recording* recording, double access_points_distanc
         sum_delta_squared += delta*delta;
         // 0.5m = 1
         // 1m = 1
-        // 2m = 1/4
-        // 10m = 1/100
-        return fmin(1.0, 1.0 / (sum_delta_squared + 0.1));
+        // 2m = 0.4
+        // 10m = 0.01
+        return fmin(1.0, 2.0 / (sum_delta_squared + 1.0));
     } 
     else 
     {

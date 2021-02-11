@@ -452,7 +452,9 @@ bool print_counts_by_closest(struct OverallState* state)
         g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
         ralloc->next = state->recordings;
         state->recordings = ralloc;
-        ralloc->access_point_distances[0] = 2.0;    // < 3m
+        ralloc->access_point_distances[0] = 2.0;
+
+        //--------- 3.5m
 
         current_patch = get_or_create_patch("Near", "Near", local_id, "group=inside", &state->patches, &state->groups, TRUE);
         ralloc = malloc(sizeof(struct recording));
@@ -460,7 +462,9 @@ bool print_counts_by_closest(struct OverallState* state)
         g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
         ralloc->next = state->recordings;
         state->recordings = ralloc;
-        ralloc->access_point_distances[0] = 6.0;    // < 9m
+        ralloc->access_point_distances[0] = 5.0;
+
+        //--------- 7m
 
         current_patch = get_or_create_patch("Far", "Far", local_id, "group=outside", &state->patches, &state->groups, TRUE);
         ralloc = malloc(sizeof(struct recording));
@@ -468,7 +472,9 @@ bool print_counts_by_closest(struct OverallState* state)
         g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
         ralloc->next = state->recordings;
         state->recordings = ralloc;
-        ralloc->access_point_distances[0] = 12.0;    // > 9m
+        ralloc->access_point_distances[0] = 9.0;
+
+        //--------- 10.5m
 
         current_patch = get_or_create_patch("Distant", "Distant", local_id, "group=outside", &state->patches, &state->groups, TRUE);
         ralloc = malloc(sizeof(struct recording));
@@ -476,7 +482,7 @@ bool print_counts_by_closest(struct OverallState* state)
         g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
         ralloc->next = state->recordings;
         state->recordings = ralloc;
-        ralloc->access_point_distances[0] = 18.0;    // > 14m
+        ralloc->access_point_distances[0] = 12.0;
     }
     
     time_t now = time(0);
