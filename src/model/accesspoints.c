@@ -63,18 +63,16 @@ void print_min_distance_matrix(struct OverallState* state)
 {
     double min_dist[N_ACCESS_POINTS][N_ACCESS_POINTS];
 
-    int count_access = 0;
-
     for (int i = 0; i < N_ACCESS_POINTS; i++)
     {
-        count_access++;
         for (int j = 0; j < N_ACCESS_POINTS; j++)
         {
             min_dist[i][j] = 10 * EFFECTIVE_INFINITE;
         }
     }
 
-    if (count_access < 2) return;  // Not useful on single sensor sites
+    bool multiple_access_points = state->access_points != NULL && state->access_points->next != NULL;
+    if (!multiple_access_points) return;  // Not useful on single sensor sites
 
     // Triangular matrix looking only at phones (similar transmit power)
     for (int i = state->closest_n - 1; i > 0; i--)
