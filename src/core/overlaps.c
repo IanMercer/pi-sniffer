@@ -113,6 +113,16 @@ void pack_closest_columns(struct OverallState* state)
                     (a->name_type>=nt_known && b->name_type>=nt_known))       // both well known enough to be same
                     && (g_strcmp0(a->name, b->name) != 0);
 
+            // A paired phone may have a name and be compared with an unpaired instance of itself (HACK)
+            if (string_ends_with(a->name, " phone") && g_strcmp0(b->name, "iPhone") == 0)
+            {
+                haveDifferentNames = false;
+            }
+            if (string_ends_with(b->name, " phone") && g_strcmp0(a->name, "iPhone") == 0)
+            {
+                haveDifferentNames = false;
+            }
+
             // cannot be the same if they both have known categories and they are different
             bool haveDifferentCategories = (a->category != b->category);
 
