@@ -157,10 +157,13 @@ void pack_closest_columns(struct OverallState* state)
             // How close are the two in distance
             double delta = compare_closest(a, b, state);
 
-            if (might_supersede && delta > 0.3)
+            // Tune the 0.05 parameter: 5% chance they are the same by distances
+            // May improve taking time into account
+            if (might_supersede && delta > 0.05)
             {
                 // All of the observations are consistent with being superceded
                 b->supersededby = a->mac64;
+
                 g_debug("%s superceded %s %s%s%s%s prob %.3f", a->name, b->name, 
                 haveDifferentAddressTypes ? "addressTypes " : " _",
                 haveDifferentNames ? "names ": " _", 
@@ -170,7 +173,7 @@ void pack_closest_columns(struct OverallState* state)
                 // A can only supersede one of the B
                 break;
             }
-            else if (might_supersede)
+            else if (might_supersede && delta > 0)  // logging for development
             {
                 char a_mac[18];
                 char b_mac[18];
