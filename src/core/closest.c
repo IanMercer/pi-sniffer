@@ -490,9 +490,9 @@ bool print_counts_by_closest(struct OverallState* state)
     int count_examined = 0;
     int count_not_marked = 0;
     int count_in_age_range = 0;
-    // Log the first 5 items, enough to cover a small site, limit output for a large site
+    // Log the first N items, enough to cover a small site, limit output for a large site
     // TODO: Make logging configurable, turn off over time?
-    int log_n = 4;
+    int log_n = 10;
 
     for (struct ClosestHead* ahead = state->closestHead; ahead != NULL; ahead = ahead->next)
     {
@@ -761,7 +761,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 total_count += score;
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    if (rcurrent->knn_score > 0) // logging && 
+                    if (rcurrent->knn_score > 0 && rcurrent->phone_total < 6)  // log first six phones only 
                     {
                         g_info("Phone #%.1f in %s +%.2f x %.2f -> %.2f", total_count, rcurrent->name, rcurrent->knn_score, score, rcurrent->phone_total + rcurrent->knn_score * score);
                     }
