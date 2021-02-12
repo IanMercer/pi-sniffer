@@ -594,7 +594,7 @@ bool record (const char* directory, const char* device_name, double access_dista
 /*
 *  Compare two closest values
 */
-float compare_closest (int64_t mac1, int64_t mac2, struct OverallState* state)
+float compare_closest (struct ClosestHead* a, struct ClosestHead* b, struct OverallState* state)
 {
     double probability = 1.0;
     for (struct AccessPoint* ap = state->access_points; ap != NULL; ap=ap->next)
@@ -602,13 +602,14 @@ float compare_closest (int64_t mac1, int64_t mac2, struct OverallState* state)
         double a_distance = EFFECTIVE_INFINITE;
         double b_distance = EFFECTIVE_INFINITE;
 
-        for (int i = state->closest_n - 1; i >= 0; i--)
+        for (struct ClosestTo* c = a->closest; c != NULL; c = c->next)
         {
-            struct ClosestTo c = state->closest[i];
-            if (c.access_point->id != ap->id) continue;
+            if (c->access_point->id == ap->id) a_distance = c->distance;
+        }
 
-            if (c.device_64 == mac1) a_distance = c.distance;
-            if (c.device_64 == mac2) b_distance = c.distance;
+        for (struct ClosestTo* c = b->closest; c != NULL; c = c->next)
+        {
+            if (c->access_point->id == ap->id) b_distance = c->distance;
         }
 
         if (a_distance >= EFFECTIVE_INFINITE_TEST && b_distance >= EFFECTIVE_INFINITE_TEST)

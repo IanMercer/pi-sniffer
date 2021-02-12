@@ -84,13 +84,13 @@ struct OverallState
    // linked list of recorded locations for k-means
    struct recording* recordings;
 
-   // Most recent 2048 closest to observations
-   int closest_n;
+//   // Most recent 2048 closest to observations
+//   int closest_n;
 
    // Hash value of patch scores to calculate if changes have happened
    int patch_hash;
 
-   struct ClosestTo closest[CLOSEST_N];
+//   struct ClosestTo closest[CLOSEST_N];
 
    // Chain of chains of closest records
    struct ClosestHead* closestHead;

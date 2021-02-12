@@ -22,19 +22,22 @@
 
 /*
     Get the closest recent observation for a device
+    TODO: Could just copy patch name from head now?
+    Except this is independent from the closest algorithm which only runs on a gateway
 */
 struct ClosestTo *get_closest_64(struct OverallState* state, int64_t device_64)
 {
     struct ClosestTo *best = NULL;
 
     // Working backwards in time through the array
-    for (int i = state->closest_n - 1; i > 0; i--)
+    for (struct ClosestHead* head = state->closestHead; head != NULL; head = head->next)
     {
-        struct ClosestTo *test = &state->closest[i];
-        g_assert(test->access_point != NULL);
+        if (head->mac64 != device_64) continue;
 
-        if (test->device_64 == device_64)
+        for (struct ClosestTo* test = head->closest; test != NULL; test = test->next)
         {
+            g_assert(test->access_point != NULL);
+
             if (best == NULL)
             {
                 best = test;
@@ -91,9 +94,6 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
 {
     g_assert(access_point != NULL);
 
-// NEW WAY
-#ifndef NEW_WAY
-
     // Find the matching Id in the ClosestTo head list
 
     struct ClosestHead* previousHead = NULL;
@@ -128,11 +128,14 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         head->next = state->closestHead;
         state->closestHead = head;
         // Initialize it
+        head->category = category;
         head->addressType = addressType;
-        head->name_type = -1;
-        head->closest = NULL;
         head->mac64 = device_64;
+        head->is_training_beacon = is_training_beacon;
+        head->patch = NULL;
         g_utf8_strncpy(head->name, name, NAME_LENGTH);
+        head->name_type = name_type;
+        head->closest = NULL;
 
         // If the head array has grown too large (assuming 4 aps per mac)
         // remove the tail entry
@@ -169,6 +172,18 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         strncpy(head->name, name, NAME_LENGTH);
         head->name_type = name_type;
     }
+
+    for (struct Beacon* b = state->beacons; b != NULL; b = b->next)
+    {
+        if (strcmp(b->name, name) == 0 || b->mac64 == device_64)
+        {
+            g_utf8_strncpy(head->name, b->alias, NAME_LENGTH);
+            head->name_type = nt_known;
+        }
+    }
+
+
+    // Now scan along
 
     // Remove same access point if present
     struct ClosestTo* previous = NULL;
@@ -211,25 +226,10 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
     }
 
     // Update it
-    closest->addressType = addressType;
-    closest->category = category;
     closest->count = count;
     closest->distance = distance;
     closest->earliest = earliest;
-    closest->is_training_beacon = is_training_beacon;
     closest->latest = latest;
-    closest->patch = NULL;
-    strncpy(closest->name, name, NAME_LENGTH);           // debug only, remove this later
-    closest->name_type = name_type;
-
-    for (struct Beacon* b = state->beacons; b != NULL; b = b->next)
-    {
-        if (strcmp(b->name, name) == 0 || b->mac64 == device_64)
-        {
-            g_utf8_strncpy(state->closest[state->closest_n].name, b->alias, NAME_LENGTH);
-            closest->name_type = nt_known;
-        }
-    }
 
     // closest is now 'top left' - the first in a chain on the first head
 
@@ -239,91 +239,14 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         //g_warning("Update is identical, skipping %s %s", access_point->client_id, mac);
         return;
     }
-
-#endif
-// OLD WAY -----------------------------------------------------------------------------------------
-
-    //g_debug("add_closest(%s, %i, %.2fm, %i)", client_id, access_id, distance, count);
-    // First scan back, see if this is an update
-    for (int j = state->closest_n-1; j >= 0; j--)
-    {
-        g_assert(state->closest[j].access_point != NULL);
-        if (state->closest[j].device_64 == device_64 
-            && state->closest[j].access_point->id == access_point->id)
-        {
-            if (state->closest[j].count == count && state->closest[j].distance == distance)
-            {
-                //char mac[18];
-                //mac_64_to_string(mac, 18, device_64);
-                //g_warning("Update is identical, skipping %s %s", access_point->client_id, mac);
-                return;
-            }
-        }
-    }
-
-    if (distance < 0.0001)     // erroneous value
-        return;
-
-    // TODO: Move closest to a circular buffer and stop shifting it in memory
-
-    // If it's already here, remove it
-    for (int i = state->closest_n-1; i >= 0; i--)
-    {
-        g_assert(state->closest[i].access_point != NULL);
-        if (state->closest[i].access_point->id == access_point->id && state->closest[i].device_64 == device_64
-        // let's try keeping ones that indicate movement and removing any stationary ones
-        // let's not && fabs(state->closest[i].distance - distance) < 1.0
-         )
-        {
-            if (i < state->closest_n-1)
-            { 
-              memmove(&state->closest[i], &state->closest[i+1], sizeof(struct ClosestTo) * (state->closest_n-1 -i));
-            }
-            state->closest_n--;
-            break;        // if we always do this there will only ever be one
-        }
-    }
-
-    // If the array is full, shuffle it down one
-    if (state->closest_n == CLOSEST_N)
-    {
-        g_debug("Trimming closest array");
-        memmove(&state->closest[0], &state->closest[1], sizeof(struct ClosestTo) * (CLOSEST_N - 1));
-        state->closest_n--;
-    }
-
-    g_assert(access_point != NULL);
-    struct ClosestTo* cl = &state->closest[state->closest_n];
-    cl->access_point = access_point;
-    cl->device_64 = device_64;
-    cl->distance = distance;
-    cl->category = category;
-    cl->name_type = name_type;
-    cl->addressType = addressType;
-    cl->earliest = earliest;
-    cl->latest = latest;
-    cl->count = count;
-    cl->is_training_beacon = is_training_beacon;
-    strncpy(cl->name, name, NAME_LENGTH);           // debug only, remove this later
-    cl->next = NULL;
-
-    // If it's a known MAC address or name of a beacon, update the name to the alias
-    for (struct Beacon* b = state->beacons; b != NULL; b = b->next)
-    {
-        if (strcmp(b->name, name) == 0 || b->mac64 == device_64)
-        {
-            g_utf8_strncpy(state->closest[state->closest_n].name, b->alias, NAME_LENGTH);
-            cl->name_type = nt_known;
-        }
-    }
-    state->closest_n++;
 }
 
 
 /*
    Calculates room scores using access point distances
 */
-int calculate_location(struct OverallState* state, struct ClosestTo* closest, 
+int calculate_location(struct OverallState* state, 
+    struct ClosestHead* head,
     double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS], 
     struct top_k* best_three, int best_three_len,
     bool is_training_beacon, bool debug)
@@ -337,7 +260,7 @@ int calculate_location(struct OverallState* state, struct ClosestTo* closest,
 
     struct AccessPoint* access_points = state->access_points;
 
-    char* device_name = closest->name;
+    char* device_name = head->name;
     //const char* category = category_from_int(closest->category);
 
     // try confirmed
@@ -483,7 +406,7 @@ bool print_counts_by_closest(struct OverallState* state)
     }
 
     g_info(" ");
-    g_info("COUNTS (closest contains %i, recordings: %i, beacons: %i)", state->closest_n, count_recordings, count_recordings_and_beacons);
+    g_info("COUNTS (recordings: %i, beacons: %i)", count_recordings, count_recordings_and_beacons);
     
     if (count_recordings == 0)
     {
@@ -537,12 +460,12 @@ bool print_counts_by_closest(struct OverallState* state)
     
     time_t now = time(0);
 
-    // Unmark every entry in the closest array
-    for (int i = state->closest_n - 1; i >= 0; i--)
-    {
-        g_assert(state->closest[i].access_point != NULL);
-        state->closest[i].mark = false;
-    }
+    // // Unmark every entry in the closest array
+    // for (int i = state->closest_n - 1; i >= 0; i--)
+    // {
+    //     g_assert(state->closest[i].access_point != NULL);
+    //     state->closest[i].mark = false;
+    // }
 
     int count_examined = 0;
     int count_not_marked = 0;
@@ -551,10 +474,8 @@ bool print_counts_by_closest(struct OverallState* state)
     // TODO: Make logging configurable, turn off over time?
     int log_n = 15;
 
-    for (int i = state->closest_n - 1; i >= 0; i--)
+    for (struct ClosestHead* ahead = state->closestHead; ahead != NULL; ahead = ahead->next)
     {
-        g_assert(state->closest[i].access_point != NULL);
-
         // parallel array of distances and times
         double access_distances[N_ACCESS_POINTS];       // latest observation distance
         double access_times[N_ACCESS_POINTS];           // latest observation time
@@ -566,9 +487,8 @@ bool print_counts_by_closest(struct OverallState* state)
             access_times[ap->id] = 0.0;
         }
 
-        struct ClosestTo* test = &state->closest[i];
+        struct ClosestTo* test = ahead->closest;
         count_examined++;
-        if (test->mark) continue;  // already claimed (by second scan on mac address)
 
         count_not_marked++;
 
@@ -576,11 +496,11 @@ bool print_counts_by_closest(struct OverallState* state)
         bool logging = false;
 
         if (difftime(test->latest, last_run) > 0 ||
-            test->category == CATEGORY_PHONE || 
-            test->category == CATEGORY_TV || 
-            test->category == CATEGORY_PENCIL ||
-            test->category == CATEGORY_COMPUTER || 
-            test->category == CATEGORY_FIXED)
+            ahead->category == CATEGORY_PHONE || 
+            ahead->category == CATEGORY_TV || 
+            ahead->category == CATEGORY_PENCIL ||
+            ahead->category == CATEGORY_COMPUTER || 
+            ahead->category == CATEGORY_FIXED)
         {
             if (log_n-- > 0)
             {
@@ -602,25 +522,24 @@ bool print_counts_by_closest(struct OverallState* state)
         mac_64_to_string(mac, sizeof(mac), test->device_64);
         int count = 0;
 
-        char* category = category_from_int(test->category);
+        char* category = category_from_int(ahead->category);
 
         if (logging)
         {
             char sup_mac[18];
-            if (test->supersededby != 0)
-                mac_64_to_string(sup_mac, 18, test->supersededby);
+            if (ahead->supersededby != 0)
+                mac_64_to_string(sup_mac, 18, ahead->supersededby);
             else
                 sup_mac[0]='\0';
-            g_debug("%3i.--- %s%s %10s [%5li-%5li] (%3i) %23s %s%s", 
-                     i,
+                g_debug("%s%s %10s [%5li-%5li] (%3i)     %23s %s%s", 
                      mac, 
-                     test->addressType == PUBLIC_ADDRESS_TYPE ? "*" : " ",
+                     ahead->addressType == PUBLIC_ADDRESS_TYPE ? "*" : " ",
                      category, 
                      now - test->earliest,
                      now - test->latest,
                      test->count,
-                     test->name,
-                     test->supersededby == 0 ? "" : "-- super:",
+                     ahead->name,
+                     ahead->supersededby == 0 ? "" : "-- super:",
                      sup_mac);
         }
 
@@ -633,20 +552,13 @@ bool print_counts_by_closest(struct OverallState* state)
         // ALL EARLIER POSSIBLE SUPERSEEDED VALUES ARE IRRELEVANT IF ONE CAME IN LATER ON A
         // DIFFERENT ACCESS POINT Right?
 
-        bool superseded = test->supersededby != 0;
+        bool superseded = ahead->supersededby != 0;
+        char other_mac[18];
+        mac_64_to_string(other_mac, 18, ahead->supersededby);
 
-        // find all instances on this mac address in the array
-        // mark them as seen as we go so they can't seed a new scan
-        for (int j = i; j >= 0; j--)
+        // Examine all instances of this mac address
+        for (struct ClosestTo* other = test; other != NULL; other = other->next)
         {
-            struct ClosestTo* other = &state->closest[j];
-            if (other->device_64 != test->device_64) continue;
-            
-            // SAME MAC address
-            //g_debug("i=%i j=%i", i, j);
-            // other is test on first iteration
-            other->mark = true;
-
             // Once we get beyond 300s we start skipping any other matches
             if (skipping) continue;
 
@@ -661,8 +573,6 @@ bool print_counts_by_closest(struct OverallState* state)
 
             //if (time_diff < 300)      // only interested in where it has been recently // handled above in outer loop
             {
-                char other_mac[18];
-                mac_64_to_string(other_mac, 18, other->supersededby);
 
                 //Verbose logging
                 if (logging)
@@ -673,8 +583,8 @@ bool print_counts_by_closest(struct OverallState* state)
                     now - other->earliest,
                     now - other->latest,
                     other->count,
-                    other->supersededby==0 ? "" : "superseeded=",
-                    other->supersededby==0 ? "" : other_mac);
+                    !superseded ? "" : "superseeded=",
+                    !superseded ? "" : other_mac);
                 }
 
                 if (time_diff > 600) // or we have seen enough?
@@ -702,23 +612,23 @@ bool print_counts_by_closest(struct OverallState* state)
         // beacons and other fixed devices last longer, tend to transmit less often
         double x_scale = (
                 // Very fixed devices don't decay, some are very infrequent transmitters
-                test->category == CATEGORY_LIGHTING ||
-                test->category == CATEGORY_APPLIANCE ||
-                test->category == CATEGORY_POS ||
-                test->category == CATEGORY_SPRINKLERS ||
-                test->category == CATEGORY_TOOTHBRUSH ||
-                test->category == CATEGORY_BEACON || 
-                test->category == CATEGORY_FIXED
+                ahead->category == CATEGORY_LIGHTING ||
+                ahead->category == CATEGORY_APPLIANCE ||
+                ahead->category == CATEGORY_POS ||
+                ahead->category == CATEGORY_SPRINKLERS ||
+                ahead->category == CATEGORY_TOOTHBRUSH ||
+                ahead->category == CATEGORY_BEACON || 
+                ahead->category == CATEGORY_FIXED
             ) ? 240.0 :
             (
-                test->category == CATEGORY_HEALTH ||
-                test->category == CATEGORY_FITNESS ||
-                test->category == CATEGORY_PRINTER ||
-                test->category == CATEGORY_TV
+                ahead->category == CATEGORY_HEALTH ||
+                ahead->category == CATEGORY_FITNESS ||
+                ahead->category == CATEGORY_PRINTER ||
+                ahead->category == CATEGORY_TV
             ) ? 160 :
             (
-                test->category == CATEGORY_COMPUTER ||
-                test->category == CATEGORY_TABLET 
+                ahead->category == CATEGORY_COMPUTER ||
+                ahead->category == CATEGORY_TABLET 
             )? 120 :
              80.0;
 
@@ -732,9 +642,9 @@ bool print_counts_by_closest(struct OverallState* state)
             bool debug = false; //strcmp(test->name, "F350") == 0;
 
             struct top_k best_three[3];
-            int k_found = calculate_location(state, test, access_distances, access_times,
+            int k_found = calculate_location(state, ahead, access_distances, access_times,
                 best_three, 3,
-                test->is_training_beacon, debug);
+                ahead->is_training_beacon, debug);
 
             for (int bi = 0; bi < k_found; bi++)
             {
@@ -783,7 +693,7 @@ bool print_counts_by_closest(struct OverallState* state)
                     g_info("Superseded (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, score);
                 }
             }
-            else if (test->category == CATEGORY_TABLET)
+            else if (ahead->category == CATEGORY_TABLET)
             {
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
@@ -794,14 +704,14 @@ bool print_counts_by_closest(struct OverallState* state)
                     // }
                 }
             }
-            else if (test->category == CATEGORY_COMPUTER)
+            else if (ahead->category == CATEGORY_COMPUTER)
             {
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
                     rcurrent->computer_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
-            else if (test->category == CATEGORY_WATCH)
+            else if (ahead->category == CATEGORY_WATCH)
             {
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
@@ -810,7 +720,7 @@ bool print_counts_by_closest(struct OverallState* state)
                     rcurrent->watch_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
-            else if (test->category == CATEGORY_WEARABLE || test->category == CATEGORY_FITNESS)
+            else if (ahead->category == CATEGORY_WEARABLE || ahead->category == CATEGORY_FITNESS)
             {
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
@@ -818,7 +728,7 @@ bool print_counts_by_closest(struct OverallState* state)
                     rcurrent->wearable_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
-            else if (test->category == CATEGORY_COVID)
+            else if (ahead->category == CATEGORY_COVID)
             {
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
@@ -826,14 +736,14 @@ bool print_counts_by_closest(struct OverallState* state)
                     rcurrent->covid_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
-            else if (test->category == CATEGORY_BEACON)
+            else if (ahead->category == CATEGORY_BEACON)
             {
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
                     rcurrent->beacon_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
-            else if (test->category == CATEGORY_PHONE)
+            else if (ahead->category == CATEGORY_PHONE)
             {
                 //g_info("Cluster (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, score);
                 total_count += score;
@@ -865,7 +775,7 @@ bool print_counts_by_closest(struct OverallState* state)
             for (struct Beacon* b = beacon_list; b != NULL; b=b->next)
             {
                 // g_debug("'%s' '%s' '%s'", b->name, b->alias, test->name);
-                if (strcmp(b->alias, test->name) == 0 || strcmp(b->name, test->name) == 0 || b->mac64 == test->device_64)
+                if (strcmp(b->alias, ahead->name) == 0 || strcmp(b->name, ahead->name) == 0 || b->mac64 == test->device_64)
                 {
                     beacon = b;
                     break;

@@ -79,25 +79,19 @@ void pack_closest_columns(struct OverallState* state)
 {
     // Working backwards in time through the array
     // Push every device back to column zero as category may have changed
-    for (int i = state->closest_n - 1; i > 0; i--)
+
+    for (struct ClosestHead* a = state->closestHead; a != NULL; a=a->next)
     {
-        struct ClosestTo *a = &state->closest[i];
-        a->mark_pass_2 = false;
         a->supersededby = 0;
     }
 
-    for (int i = state->closest_n - 1; i > 0; i--)
+    for (struct ClosestHead* a = state->closestHead; a != NULL; a=a->next)
     {
-        struct ClosestTo *a = &state->closest[i];
-        if (a->mark_pass_2) continue;   // already did this A as an Am lower down
-
         // TODO: Find the BEST fit and use that, proceed in order, best first, only claim 1 per leading device
 
-        for (int j = i - 1; j >= 0; j--)
+        for (struct ClosestHead* b = state->closestHead; b != NULL; b=b->next)
         {
-            struct ClosestTo *b = &state->closest[j];
-            if (a->device_64 == b->device_64) continue;
-            if (b->mark_pass_2) continue;
+            if (a->mac64 == b->mac64) continue;
             if (b->supersededby != 0) continue;  // already claimed
 
             // We have an A and a B, now do pairwise comparison of all A's and all B's
@@ -129,23 +123,18 @@ void pack_closest_columns(struct OverallState* state)
             // e.g. two devices at opposite ends of the mesh that never overlapped are unlikely to be the same device
             bool atLeastOneMatch = false;
 
-            // scan all records with b as their mac address
-            for (int ii = i; ii >= 0; ii--)
+            for (struct ClosestTo* am = a->closest; am != NULL; am = am->next)
             {
-                struct ClosestTo *am = &state->closest[ii];
-                if (am->device_64 != a->device_64) continue;  // not an 'A'
-                am->mark_pass_2 = true;  // mark seen so outer loop skips all A's
-
                 // After marking As we can skip any comparisons if they cannot work
                 if (!might_supersede)
                 {
                     continue;
                 }
-                for (int jj = j; jj >= 0; jj--)
-                {
-                    struct ClosestTo *bm = &state->closest[jj];
-                    if (bm->device_64 != b->device_64) continue;  // not a 'B'
 
+                // Triangular comparison against earlier last seen pings
+                for (struct ClosestTo* bm = am->next; bm != NULL; bm = bm->next)
+                {
+                    // Compare same access point records
                     if (am->access_point->id != bm->access_point->id) continue;
 
                     atLeastOneMatch = true;
@@ -154,7 +143,7 @@ void pack_closest_columns(struct OverallState* state)
 
                     // Same access point so the times are comparable
 
-                    bool blip = justABlip(am->earliest, am->latest, a->count, bm->earliest, bm->latest, bm->count);
+                    bool blip = justABlip(am->earliest, am->latest, am->count, bm->earliest, bm->latest, bm->count);
                     bool over = overlapsOneWay(am->earliest, bm->latest);
 
                     // // How close are the two in distance
@@ -168,14 +157,14 @@ void pack_closest_columns(struct OverallState* state)
                 }
             }
 
-            double delta = compare_closest(a->device_64, b->device_64, state);
+            double delta = compare_closest(a, b, state);
             if (might_supersede && atLeastOneMatch)
             {
                 // How close are the two in distance
                 if (delta > 0.5)
                 {
                     // All of the observations are consistent with being superceded
-                    b->supersededby = a->device_64;
+                    b->supersededby = a->mac64;
                     // A can only supersede one of the B
                     break;
                 }
@@ -186,18 +175,18 @@ void pack_closest_columns(struct OverallState* state)
             }
 
             //Log to see why entries with the same name are failing
-            if (g_strcmp0(a->name, "Apple Watch") == 0 && g_strcmp0(b->name, "Apple Watch") == 0)
-            {
-                g_debug("%i.%s/%s %i.%s/%s      %s%s%s%s%s delta=%.2f", 
-                    i, a->name, a->access_point->client_id, 
-                    j, b->name, b->access_point->client_id,
-                    might_supersede ? "might supersede" : "not supersede",
-                    haveDifferentAddressTypes ? "addressTypes " : "",
-                    haveDifferentNames ? "names ": "", 
-                    haveDifferentCategories ? "categories ":"", 
-                    haveDifferentMacAndPublic ? "mac ": "",
-                    delta);
-            }
+            // if (g_strcmp0(a->name, "Apple Watch") == 0 && g_strcmp0(b->name, "Apple Watch") == 0)
+            // {
+            //     g_debug("%s/%s %s/%s      %s%s%s%s%s delta=%.2f", 
+            //         a->name, am->access_point->client_id, 
+            //         b->name, bm->access_point->client_id,
+            //         might_supersede ? "might supersede" : "not supersede",
+            //         haveDifferentAddressTypes ? "addressTypes " : "",
+            //         haveDifferentNames ? "names ": "", 
+            //         haveDifferentCategories ? "categories ":"", 
+            //         haveDifferentMacAndPublic ? "mac ": "",
+            //         delta);
+            // }
             // if (g_strcmp0(a->name, "Covid Trace") == 0 && g_strcmp0(b->name, "Covid Trace") == 0)
             // {
             //     g_debug("%i.%s/%s %i.%s/%s Bump to (%i, %i),      %s%s%s%s%s%s", 

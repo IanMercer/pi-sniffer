@@ -75,25 +75,24 @@ void print_min_distance_matrix(struct OverallState* state)
     if (!multiple_access_points) return;  // Not useful on single sensor sites
 
     // Triangular matrix looking only at phones (similar transmit power)
-    for (int i = state->closest_n - 1; i > 0; i--)
+    for (struct ClosestHead* ahead = state->closestHead; ahead != NULL; ahead = ahead->next)
     {
-        struct ClosestTo a = state->closest[i];
-        if (a.category != CATEGORY_PHONE && a.category != CATEGORY_COVID) continue;
-        for (int j = i - 1; j >= 0; j--)
-        {
-            struct ClosestTo b = state->closest[j];
-            if (b.category != CATEGORY_PHONE && b.category != CATEGORY_COVID) continue;
-            if (a.device_64 != b.device_64) continue;       // same device only
+        if (ahead->category != CATEGORY_PHONE && ahead->category != CATEGORY_COVID) continue;
 
-            int delta = abs(difftime(a.latest, b.latest));
+        for (struct ClosestTo* a = ahead->closest; a != NULL; a = a->next)
+        for (struct ClosestTo* b = ahead->closest; b != NULL; b = b->next)
+        {
+            if (a->access_point->id == b->access_point->id) continue;  // same ap
+
+            int delta = abs(difftime(a->latest, b->latest));
             if (delta > 6) continue;                       // must have occurred close in time (despite clock skew)
 
-            int aid = a.access_point->id;
-            int bid = b.access_point->id;
+            int aid = a->access_point->id;
+            int bid = b->access_point->id;
 
             if (aid < N_ACCESS_POINTS && bid < N_ACCESS_POINTS)
             {
-                double d = a.distance + b.distance; // same ping ... + 1.4 * delta;   // average walking speed is 1.4 m/s
+                double d = a->distance + b->distance; // same ping ... + 1.4 * delta;   // average walking speed is 1.4 m/s
                 if (min_dist[aid][bid] > EFFECTIVE_INFINITE)
                 {
                     min_dist[bid][aid] = min_dist[aid][bid] = d;

@@ -50,6 +50,6 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
 /*
 *  Compare two closest values
 */
-float compare_closest (int64_t mac1, int64_t mac2, struct OverallState* state);
+float compare_closest (struct ClosestHead* a, struct ClosestHead* b, struct OverallState* state);
 
 #endif
