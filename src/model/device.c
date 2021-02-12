@@ -53,7 +53,7 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
     {
         if (local->category == CATEGORY_UNKNOWN)
         {
-            g_info("  %s Set category to '%s', message from %s", local->mac, category_from_int(remote->category), access_name);
+            g_info("  %s Set category to '%s', message from %s, was unknown", local->mac, category_from_int(remote->category), access_name);
             local->category = remote->category;
         }
         else if (local->category == CATEGORY_PHONE && (remote->category == CATEGORY_TABLET || remote->category == CATEGORY_WATCH))

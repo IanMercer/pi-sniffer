@@ -517,7 +517,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         if (
             //difftime(test->latest, last_run) > 0 ||
-            ahead->category == CATEGORY_PHONE 
+            ahead->category == CATEGORY_WATCH 
             //ahead->category == CATEGORY_COVID || 
             //ahead->category == CATEGORY_PENCIL
             )
@@ -769,10 +769,10 @@ bool print_counts_by_closest(struct OverallState* state)
                 total_count += score;
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    if (rcurrent->knn_score > 0) // logging && 
-                    {
-                        g_info("Phone #%.1f in %s +%.2f x %.2f -> %.2f", total_count, rcurrent->name, rcurrent->knn_score, score, rcurrent->phone_total + rcurrent->knn_score * score);
-                    }
+                    // if (rcurrent->knn_score > 0) // logging && 
+                    // {
+                    //     g_info("Phone #%.1f in %s +%.2f x %.2f -> %.2f", total_count, rcurrent->name, rcurrent->knn_score, score, rcurrent->phone_total + rcurrent->knn_score * score);
+                    // }
                     rcurrent->phone_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
