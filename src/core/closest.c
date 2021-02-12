@@ -767,7 +767,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 {
                     if (logging && rcurrent->knn_score > 0)
                     {
-                        g_info("Phone in %s +%.2f x %.2f, total %.1f", rcurrent->name, rcurrent->knn_score, score, total_count);
+                        g_info("Phone #%.1f in %s +%.2f x %.2f", total_count, rcurrent->name, rcurrent->knn_score, score);
                     }
                     rcurrent->phone_total += rcurrent->knn_score * score;        // probability x incidence
                 }

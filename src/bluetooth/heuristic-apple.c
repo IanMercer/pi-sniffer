@@ -103,7 +103,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x0c)     // Handoff - phones, iPads and Macbook all do this
     {
-        set_name(existing, "Apple Handoff", nt_device);
+        set_name(existing, "Apple Handoff", nt_manufacturer);
         g_info("  %s '%s' Handoff", existing->mac, existing->name);
         //soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? or Macbook but assume phone
         // 1 byte length
@@ -122,13 +122,15 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     {
         set_name(existing, "Apple Hotspot", nt_device);
         g_info("  %s '%s' Hotspot", existing->mac, existing->name);
+        // Nope, this could be Macbook, iPad or iPhone
         soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? but assume phone
     } 
     else if (apple_device_type == 0x0f)     // Nearby action - On user action (rare)
     {
         set_name(existing, "Apple Nearby 0x0f", nt_device);
-        g_info("  %s '%s' Nearby Action", existing->mac, existing->name);
-        soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? but assume phone
+        g_info("  %s '%s' Nearby Action 0x0f", existing->mac, existing->name);
+        // Could be MacBook, iPad or iPhone
+   
         // Used for WiFi-password messages
         // 1 byte length
         // 1 byte action flags
@@ -140,7 +142,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     {
         // Almost certainly an iPhone
         // too soon ... name comes later ... optional(existing->name, "Apple Device");
-        set_name(existing, "Apple Nearby 0x10", nt_generic);
+        set_name(existing, "Apple Nearby 0x10", nt_manufacturer);
         //soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? but assume phone
 
         //g_debug("  Nearby Info ");
