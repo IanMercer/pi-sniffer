@@ -9,9 +9,10 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     uint8_t apple_device_type = allocdata[00];
     if (apple_device_type == 0x01)
     {
-        set_name(existing, "Apple", nt_device);
+        set_name(existing, "Apple", nt_manufacturer);
         // An iMac causes this
         // Mostly iPhone?
+        // iWatch too?
         g_info("  %s '%s' Apple Device type 0x01 - what is this?", existing->mac, existing->name);
 
     }
