@@ -590,6 +590,30 @@ bool record (const char* directory, const char* device_name, double access_dista
     return TRUE;
 }
 
+/*
+*  Compare two distances using heuristic with cut off and no match handling
+*/
+double score_one_pair(float a_distance, float b_distance)
+{
+    if (a_distance >= EFFECTIVE_INFINITE_TEST && b_distance >= EFFECTIVE_INFINITE_TEST)
+    {
+        return 0.99;
+    }
+    else if (a_distance >= EFFECTIVE_INFINITE_TEST)
+    {
+        return 0.3;
+    }
+    else if (b_distance >= EFFECTIVE_INFINITE_TEST)
+    {
+        return 0.30;
+    }
+    else
+    {
+        float delta = fabs(a_distance - b_distance);
+        double prob = 1.0 - fmin(0.8, 0.1 * fmin(delta, 8));
+        return prob;
+    }
+}
 
 /*
 *  Compare two closest values
@@ -599,8 +623,8 @@ float compare_closest (struct ClosestHead* a, struct ClosestHead* b, struct Over
     double probability = 1.0;
     for (struct AccessPoint* ap = state->access_points; ap != NULL; ap=ap->next)
     {
-        double a_distance = EFFECTIVE_INFINITE;
-        double b_distance = EFFECTIVE_INFINITE;
+        float a_distance = EFFECTIVE_INFINITE;
+        float b_distance = EFFECTIVE_INFINITE;
 
         for (struct ClosestTo* c = a->closest; c != NULL; c = c->next)
         {
@@ -612,25 +636,7 @@ float compare_closest (struct ClosestHead* a, struct ClosestHead* b, struct Over
             if (c->access_point->id == ap->id) b_distance = c->distance;
         }
 
-        if (a_distance >= EFFECTIVE_INFINITE_TEST && b_distance >= EFFECTIVE_INFINITE_TEST)
-        {
-            probability = probability * 0.99;
-        }
-        else if (a_distance >= EFFECTIVE_INFINITE_TEST)
-        {
-            probability = probability * 0.3;
-        }
-        else if (b_distance >= EFFECTIVE_INFINITE_TEST)
-        {
-            probability = probability * 0.30;
-        }
-        else
-        {
-            float delta = fabs(a_distance - b_distance);
-            double prob = 1.0 - fmin(0.8, 0.1 * fmin(delta, 8));
-            probability = probability * prob;
-        }
-        return probability;
+        probability = probability * score_one_pair(a_distance, b_distance);
     }
+    return probability;
 }
-

@@ -67,6 +67,11 @@ void handle_manufacturer(struct Device *device, uint16_t manufacturer, unsigned 
 		set_name(device, "SGL Italia", nt_manufacturer);
         device->category = CATEGORY_HEADPHONES;
     }
+    else if (manufacturer == 0x04d8)
+    {
+		set_name(device, "Fujifilm", nt_manufacturer);
+        device->category = CATEGORY_CAMERA;
+    }
     else if (manufacturer == 0x3042)
     { // 12354 = someone didn't register
 		set_name(device, "Manuf 0x3042", nt_manufacturer);

@@ -52,4 +52,9 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
 */
 float compare_closest (struct ClosestHead* a, struct ClosestHead* b, struct OverallState* state);
 
+/*
+*  Compare two distances using heuristic with cut off and no match handling
+*/
+double score_one_pair(float a_distance, float b_distance);
+
 #endif

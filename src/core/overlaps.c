@@ -158,7 +158,7 @@ void pack_closest_columns(struct OverallState* state)
 
             // How close are the two in distance
             double delta = compare_closest(a, b, state);
-            if (might_supersede && atLeastOneMatch && delta > 0.8)
+            if (might_supersede && atLeastOneMatch && delta > 0.3)
             {
                 // All of the observations are consistent with being superceded
                 b->supersededby = a->mac64;
@@ -173,7 +173,11 @@ void pack_closest_columns(struct OverallState* state)
             }
             else if (might_supersede)
             {
-                g_debug("%s > %s? but%s p=%.3f nt(%i,%i)", a->name, b->name, atLeastOneMatch ? "" : " no AP match and", delta, a->name_type, b->name_type);
+                char a_mac[18];
+                char b_mac[18];
+                mac_64_to_string(a_mac, sizeof(a_mac), a->mac64);
+                mac_64_to_string(b_mac, sizeof(b_mac), b->mac64);
+                g_debug("%s:%s !> %s:%s %s p=%.3f", a_mac, a->name, b_mac, b->name, atLeastOneMatch ? "" : " no AP match", delta);
             }
 
             //Log to see why entries with the same name are failing

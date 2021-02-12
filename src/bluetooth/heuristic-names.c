@@ -11,25 +11,26 @@
 */
 void sanitize_and_assign_name(const char* name, struct Device* device, char* needle)
 {
-    if (device->name_type < nt_alias)  // beacon names don't get hashed
+    if (device->name_type > nt_device) return;  // beacon names don't get hashed
+
+    // name must be the original name not an already sanitized one!
+
+    if (string_contains_insensitive(name, needle))
     {
-        if (string_contains_insensitive(name, needle))
+        char* remainder = g_strstr_len(name, strlen(name), needle);
+        if (remainder != name)  // If whole string matches don't hash it
         {
-            char* remainder = g_strstr_len(name, strlen(name), needle);
-            if (remainder != name)  // If whole string matches don't hash it
-            {
-                // name could be longer than NAME_LENGTH at this point, maybe someone has a very long name
-                uint32_t hash = hash_string(name, NAME_LENGTH);
-                snprintf(device->name, NAME_LENGTH, "%c%c%4x %s", name[0], name[1], hash & 0xffff, remainder);
-            }
+            // name could be longer than NAME_LENGTH at this point, maybe someone has a very long name
+            uint32_t hash = hash_string(name, NAME_LENGTH);
+            snprintf(device->name, NAME_LENGTH, "%c%c%4x %s", name[0], name[1], hash & 0xffff, remainder);
         }
     }
 }
 
 
-void apply_name_heuristics (struct Device* device)
+void apply_name_heuristics (struct Device* device, const char* name)
 {
-    const char* name = device -> name;
+    // name at this point is unsanitized, direct from device
     if (string_contains_insensitive(name, "iPhone"))
     {
         sanitize_and_assign_name(name, device, "iPhone");
@@ -147,7 +148,8 @@ void apply_name_heuristics (struct Device* device)
 
     else if (string_starts_with(name, "D3400"))
         device->category = CATEGORY_CAMERA; // Nikon
-
+    else if (string_starts_with(name, "INSTAX"))
+        device->category = CATEGORY_CAMERA; // Nikon
 
     // Spriklers
 

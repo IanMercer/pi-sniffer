@@ -121,6 +121,10 @@ void handle_uuids(struct Device *device, char *uuidArray[2048], int actualLength
             append_text(gatts, gatts_length, "Heart rate measurement ");
             soft_set_category(&device->category, CATEGORY_FITNESS);
         }
+        else if (ble_uuid == 0x70954782ul) {
+            append_text(gatts, gatts_length, "FujiFilm ");
+            soft_set_category(&device->category, CATEGORY_CAMERA);
+        }
         else if (ble_uuid == 0x04000000ul) {
             append_text(gatts, gatts_length, "Toothbrush ");  // looks like an unofficial UUID
             soft_set_category(&device->category, CATEGORY_TOOTHBRUSH);

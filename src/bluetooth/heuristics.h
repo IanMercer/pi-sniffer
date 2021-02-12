@@ -5,7 +5,7 @@
 
 void apply_mac_address_heuristics (struct Device* device);
 
-void apply_name_heuristics (struct Device* device);
+void apply_name_heuristics (struct Device* device, const char* name);
 
 void handle_manufacturer(struct Device *device, uint16_t manufacturer, unsigned char *allocdata);
 
