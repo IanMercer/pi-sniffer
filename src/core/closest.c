@@ -92,8 +92,9 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
     g_assert(access_point != NULL);
 
 // NEW WAY
-#ifdef NEW_WAY
-    g_trace("NEW WAY START %s on %s", name, access_point->client_id);
+#ifndef NEW_WAY
+
+    // Find the matching Id in the ClosestTo head list
 
     struct ClosestHead* previousHead = NULL;
     int c = 0;
@@ -120,14 +121,46 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
 
     if (head == NULL || head->mac64 != device_64)
     {
+        g_trace("Add new head for %s", name);
+
         head = malloc(sizeof(struct ClosestHead));
+        // Add it to the front of the list
         head->next = state->closestHead;
         state->closestHead = head;
+        // Initialize it
         head->addressType = addressType;
         head->name_type = -1;
         head->closest = NULL;
         head->mac64 = device_64;
-        g_trace("Add new head for %s", name);
+        g_utf8_strncpy(head->name, name, NAME_LENGTH);
+
+        // If the head array has grown too large (assuming 4 aps per mac)
+        // remove the tail entry
+        if (c > CLOSEST_N / 4)
+        {
+            struct ClosestHead* pc = NULL;
+            for (struct ClosestHead* t = state->closestHead; t != NULL && t->next != NULL; t = t->next)
+            {
+                pc = t;
+            }
+
+            if (pc != NULL) // should always be since c > ...
+            {
+                g_trace("Prune %s", pc->next->name);
+
+                // dispose of chain
+                struct ClosestTo* unlink = NULL;
+                while ((unlink = pc->closest) != NULL)
+                {
+                    pc->closest = unlink->next;
+                    g_free(unlink);
+                }
+
+                // dispose of head
+                g_free(pc->next);
+                pc->next = NULL;
+            }
+        }
     }
 
     // Update the name on the head IF BETTER
@@ -189,9 +222,26 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
     strncpy(closest->name, name, NAME_LENGTH);           // debug only, remove this later
     closest->name_type = name_type;
 
-#endif
-// OLD WAY
+    for (struct Beacon* b = state->beacons; b != NULL; b = b->next)
+    {
+        if (strcmp(b->name, name) == 0 || b->mac64 == device_64)
+        {
+            g_utf8_strncpy(state->closest[state->closest_n].name, b->alias, NAME_LENGTH);
+            closest->name_type = nt_known;
+        }
+    }
 
+    // closest is now 'top left' - the first in a chain on the first head
+
+    if (closest->count == count && closest->distance == distance)
+    {
+        // unchanged
+        //g_warning("Update is identical, skipping %s %s", access_point->client_id, mac);
+        return;
+    }
+
+#endif
+// OLD WAY -----------------------------------------------------------------------------------------
 
     //g_debug("add_closest(%s, %i, %.2fm, %i)", client_id, access_id, distance, count);
     // First scan back, see if this is an update
