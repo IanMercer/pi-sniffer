@@ -882,13 +882,13 @@ bool print_counts_by_closest(struct OverallState* state)
 
     if (state->beacons != NULL)
     {
-        // First compute a hash, see if any beacon has moved or been updated within the last minute
+        // First compute a hash, see if any beacon has moved or been updated within the last n minutes
         uint32_t beacon_hash = 0;
         for (struct Beacon* b = state->beacons; b != NULL; b=b->next)
         {
             // TODO: Proper seconds from time_t calculation
             //struct tm *tm = localtime (&b->last_seen);
-            int minutes = b->last_seen == 0 ? 1 : (b->last_seen) / 60;
+            int minutes = 0; // ONLY SEND WHEN ROOM CHANGES ... b->last_seen == 0 ? 1 : (b->last_seen) / 60;
             beacon_hash = beacon_hash * 37 + (((intptr_t)b->patch) & 0x7fffffff) + minutes;
         }
 

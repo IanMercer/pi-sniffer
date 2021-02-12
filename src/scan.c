@@ -1526,8 +1526,22 @@ int print_access_points_tick(void *parameters)
     return TRUE;
 }
 
+
+void print_log_table()
+{
+    g_info("-----------------------------------------------------------------------------------------------------------");
+    g_info("Id   Address           Count   Dist    First   Last                Name       Closest Category");
+    g_info("-----------------------------------------------------------------------------------------------------------");
+
+    for (int i = 0; i < state.n; i++)
+    {
+        dump_device(&state, &state.devices[i]);
+    }
+    g_info("-----------------------------------------------------------------------------------------------------------");
+}
+
 /*
-    Dump all devices present
+    Dump all devices present and reboot as necessary
 */
 int dump_all_devices_tick(void *parameters)
 {
@@ -1540,15 +1554,9 @@ int dump_all_devices_tick(void *parameters)
     if (!logTable)
         return TRUE; // no changes since last time
     logTable = FALSE;
-    g_info("-----------------------------------------------------------------------------------------------------------");
-    g_info("Id   Address           Count   Dist    First   Last                Name       Closest Category");
-    g_info("-----------------------------------------------------------------------------------------------------------");
     time(&now);
-    for (int i = 0; i < state.n; i++)
-    {
-        dump_device(&state, &state.devices[i]);
-    }
-    g_info("-----------------------------------------------------------------------------------------------------------");
+
+    //print_log_table();
 
     unsigned long total_minutes = (now - state.started) / 60; // minutes
     unsigned int minutes = total_minutes % 60;
@@ -1556,18 +1564,13 @@ int dump_all_devices_tick(void *parameters)
     unsigned int days = (total_minutes) / 60 / 24;
 
     const char* connected = is_any_interface_up() ? "" : "NETWORK DOWN ";
-#ifdef MQTT    
-    const char* m_state = mqtt_state();
-#else
-    const char* m_state = "";
-#endif
 
     if (days > 1)
-        g_info("Uptime: %i days %02i:%02i %s%s", days, hours, minutes, connected, m_state);
+        g_info("Uptime: %i days %02i:%02i %s", days, hours, minutes, connected);
     else if (days == 1)
-        g_info("Uptime: 1 day %02i:%02i %s%s", hours, minutes, connected, m_state);
+        g_info("Uptime: 1 day %02i:%02i %s", hours, minutes, connected);
     else
-        g_info("Uptime: %02i:%02i %s%s", hours, minutes, connected, m_state);
+        g_info("Uptime: %02i:%02i %s", hours, minutes, connected);
 
     // Bluez eventually seems to stop sending us data, so for now, just restart every few hours
     struct tm *local_time = localtime( &now );
