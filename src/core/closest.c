@@ -94,7 +94,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
 {
     g_assert(access_point != NULL);
 
-    // Find the matching Id in the ClosestTo head list
+    // Find the matching mac address in the ClosestTo head list
 
     struct ClosestHead* previousHead = NULL;
     int c = 0;
@@ -102,6 +102,20 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
     {
         if (h->mac64 == device_64) 
         {
+            // If it was superseeded, it isn't now
+            if (h->supersededby != 0)
+            {
+                char mac[18];
+                mac_64_to_string(mac, sizeof(mac), h->mac64);
+
+                char othermac[18];
+                mac_64_to_string(mac, sizeof(mac), h->supersededby);
+
+                g_warning("%s %s was superseeded by %s", mac, h->name, othermac);
+                h->supersededby = 0;
+            }
+
+            // Move it to the head of the chain so that they sort in time order always
             if (previousHead != NULL)
             {
                 // unlink from chain
@@ -117,6 +131,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         if (c++ > 1000) g_error("Stuck scanning head for %s", access_point->client_id);
     }
 
+    // We moved it to the head so it should be here
     struct ClosestHead* head = state->closestHead;
 
     if (head == NULL || head->mac64 != device_64)
@@ -222,7 +237,6 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         head->closest = closest;
         g_trace("  Add entry for %s on %s", name, access_point->client_id);
         closest->access_point = access_point;
-        closest->device_64 = device_64;
     }
 
     // Update it
@@ -519,7 +533,7 @@ bool print_counts_by_closest(struct OverallState* state)
         count_in_age_range++;
 
         char mac[18];
-        mac_64_to_string(mac, sizeof(mac), test->device_64);
+        mac_64_to_string(mac, sizeof(mac), ahead->mac64);
         int count = 0;
 
         char* category = category_from_int(ahead->category);
@@ -531,7 +545,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 mac_64_to_string(sup_mac, 18, ahead->supersededby);
             else
                 sup_mac[0]='\0';
-                g_debug("%s%s %10s [%5li-%5li] (%3i)     %23s %s%s", 
+                g_debug("%s%s %10s [%5li-%5li] (%4i)     %23s %s%s", 
                      mac, 
                      ahead->addressType == PUBLIC_ADDRESS_TYPE ? "*" : " ",
                      category, 
@@ -775,7 +789,7 @@ bool print_counts_by_closest(struct OverallState* state)
             for (struct Beacon* b = beacon_list; b != NULL; b=b->next)
             {
                 // g_debug("'%s' '%s' '%s'", b->name, b->alias, test->name);
-                if (strcmp(b->alias, ahead->name) == 0 || strcmp(b->name, ahead->name) == 0 || b->mac64 == test->device_64)
+                if (strcmp(b->alias, ahead->name) == 0 || strcmp(b->name, ahead->name) == 0 || b->mac64 == ahead->mac64)
                 {
                     beacon = b;
                     break;

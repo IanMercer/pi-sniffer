@@ -11,8 +11,6 @@
 
 struct ClosestTo
 {
-   // Which device
-   int64_t device_64;
    // Which access point
    struct AccessPoint* access_point;
    // How far from the access point was it
