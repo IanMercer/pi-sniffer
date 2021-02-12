@@ -26,6 +26,9 @@ struct OverallState
 
    int isMain;                // TRUE for ONE node in a cluster, all others should be not main
 
+   long messagesReceived;     // UDP Message counters
+   long messagesMissed;
+
    // TODO: The following will all move to a new systemd service running on the
    // other end of DBUS.
 

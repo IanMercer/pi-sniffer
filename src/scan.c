@@ -1511,9 +1511,13 @@ int print_access_points_tick(void *parameters)
     (void)parameters;
     print_access_points(state.access_points);
 
-    g_info(" ");
-    print_min_distance_matrix(&state);
-    g_info(" ");
+    // Only the main unit does this
+    if (state.isMain) 
+    {
+        g_info(" ");
+        print_min_distance_matrix(&state);
+        g_info(" ");
+    }
 
     // And send access point to everyone over UDP - so that even if no activity everyone gets a list of active access points
     send_access_point_udp(&state);

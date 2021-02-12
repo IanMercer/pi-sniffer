@@ -187,12 +187,6 @@ int category_to_int(char *category);
 
 char *category_from_int(uint8_t i);
 
-char *device_to_json(struct AccessPoint *a, struct Device *device);
-
-char *access_point_to_json(struct AccessPoint *a);
-
-struct AccessPoint* device_from_json(const char* json, struct AccessPoint** access_point_list, struct Device* device);
-
 void merge(struct Device *local, struct Device *remote, char *access_name, bool safe);
 
 /*

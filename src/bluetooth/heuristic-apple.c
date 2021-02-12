@@ -11,6 +11,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     {
         set_name(existing, "Apple", nt_device);
         // An iMac causes this
+        // Mostly iPhone?
         g_info("  %s '%s' Apple Device type 0x01 - what is this?", existing->mac, existing->name);
 
     }

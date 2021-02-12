@@ -21,6 +21,8 @@ void initialize_state(struct OverallState* state)
     float rssi_factor = 3.5;     // fairly cluttered indoor default
     float people_distance = 7.0; // 7m default range
     state->isMain = true;        // only one will be true after config runs
+    state->messagesMissed = 0;
+    state->messagesReceived = 0;
     state->udp_mesh_port = 7779;
     state->udp_sign_port = 0;    // 7778;
     state->reboot_hour = 7;      // reboot after 7 hours (TODO: Make this time of day)

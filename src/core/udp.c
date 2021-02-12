@@ -5,6 +5,9 @@
 #include "accesspoints.h"
 #include "closest.h"
 #include "state.h"
+#include "cJSON.h"
+#include "knn.h"
+#include "serialization.h"
 
 // internal
 #include <stdio.h>
@@ -17,9 +20,6 @@
 #include <netinet/in.h>
 #include <time.h>
 #include <math.h>
-#include "cJSON.h"
-#include "knn.h"
-#include "state.h"
 
 #define BLOCK_SIZE 1024
 
@@ -111,7 +111,7 @@ void *listen_loop(void *param)
         d.mac64 = 0;
         strncpy(d.mac, "notset", 7);  // access point only messages have no device mac address
 
-        struct AccessPoint* ap = device_from_json(buffer, &state->access_points, &d);
+        struct AccessPoint* ap = device_from_json(buffer, state, &d);
 
         if (ap != NULL)
         {
