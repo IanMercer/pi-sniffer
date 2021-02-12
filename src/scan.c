@@ -284,10 +284,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 set_name(existing, name, nt_known);
 
                 apply_known_beacons(existing);     // must apply beacons first to prevent hashing names
-                if (existing->name_type < nt_known)
-                {
-                    apply_name_heuristics (existing, name);
-                }
+                apply_name_heuristics (existing, name);
             }
 
         }
