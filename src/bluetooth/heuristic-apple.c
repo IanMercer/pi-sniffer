@@ -174,6 +174,9 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
             g_info("  %s '%s' Nearby Info 0x00: unknown  u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
         }
         else if (lower_bits == 0x01){
+            // WATCH: Nearby Info 0x01: disabled u=00 info=18 Wifi ON ()
+            // Apple Nearby 0x10' Nearby Info 0x01: disabled u=05 info=18 Wifi ON ()
+
             g_info("  %s '%s' Nearby Info 0x01: disabled u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
             // Apple TV sends this too, so cannot assume phone here '_Apple' Nearby Info 0x01: disabled u=00 info=00
             //soft_set_category(&existing->category, CATEGORY_PHONE);  // most likely category
@@ -210,6 +213,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
             // Nope, iPad is locked
             // Nope, iPhone X, video was not playing, u=07
             // Nope, iPhone 8, video not playing, u=03, info=1a, wifi was on
+            // iPhone u=05
             g_info("  %s '%s' Nearby Info 0x09: screen is on u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
         }
         else if (lower_bits == 0x0A){
@@ -224,7 +228,10 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
         else if (lower_bits == 0x0B)
         {
             // active user
-            soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad?
+            //soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad?
+            // or a Watch? u=04, info=1c
+            // iPhone u=03 or 07
+            // Macbook Pro u=04
             g_info("  %s '%s' Nearby Info 0x0b: Recent user interaction u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
         }
         else if (lower_bits == 0x0C)
