@@ -181,6 +181,10 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         }
     }
 
+    // Update the type, latest wins
+    head->category = category;
+    head->addressType = addressType;
+
     // Update the name on the head IF BETTER
     if (name_type > head->name_type)
     {
