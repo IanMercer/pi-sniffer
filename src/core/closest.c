@@ -644,7 +644,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 ahead->category == CATEGORY_COMPUTER ||
                 ahead->category == CATEGORY_TABLET 
             )? 120 :
-             80.0;
+             90.0;
 
         double score = 0.55 - atan(delta_time / x_scale - 4.0) / 3.0;
         // A curve that stays a 1.0 for a while and then drops rapidly around 3 minutes out
