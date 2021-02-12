@@ -572,10 +572,6 @@ bool print_counts_by_closest(struct OverallState* state)
         // ALL EARLIER POSSIBLE SUPERSEEDED VALUES ARE IRRELEVANT IF ONE CAME IN LATER ON A
         // DIFFERENT ACCESS POINT Right?
 
-        bool superseded = ahead->supersededby != 0;
-        char other_mac[18];
-        mac_64_to_string(other_mac, 18, ahead->supersededby);
-
         // Examine all instances of this mac address
         for (struct ClosestTo* other = test; other != NULL; other = other->next)
         {
@@ -598,13 +594,11 @@ bool print_counts_by_closest(struct OverallState* state)
                 if (logging)
                 {
                     struct AccessPoint *ap2 = other->access_point;
-                    g_debug(" %15s distance %5.1fm      [%5li-%5li] (%3i) %s%s", 
+                    g_debug(" %15s distance %5.1fm      [%5li-%5li] (%3i)", 
                     ap2->client_id, other->distance, 
                     now - other->earliest,
                     now - other->latest,
-                    other->count,
-                    !superseded ? "" : "superseeded=",
-                    !superseded ? "" : other_mac);
+                    other->count);
                 }
 
                 if (time_diff > 600) // or we have seen enough?
@@ -704,9 +698,7 @@ bool print_counts_by_closest(struct OverallState* state)
             }
             free(json);
 
-            // Several observations, some have it superseded, some don't either because they know it
-            // wasn't or because they didn't see the later mac address.
-            if (superseded)
+            if (ahead->supersededby != 0)
             {
                 if (logging)
                 {
@@ -769,10 +761,10 @@ bool print_counts_by_closest(struct OverallState* state)
                 total_count += score;
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    // if (rcurrent->knn_score > 0) // logging && 
-                    // {
-                    //     g_info("Phone #%.1f in %s +%.2f x %.2f -> %.2f", total_count, rcurrent->name, rcurrent->knn_score, score, rcurrent->phone_total + rcurrent->knn_score * score);
-                    // }
+                    if (rcurrent->knn_score > 0) // logging && 
+                    {
+                        g_info("Phone #%.1f in %s +%.2f x %.2f -> %.2f", total_count, rcurrent->name, rcurrent->knn_score, score, rcurrent->phone_total + rcurrent->knn_score * score);
+                    }
                     rcurrent->phone_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }

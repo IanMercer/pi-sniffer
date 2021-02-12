@@ -129,8 +129,7 @@ void pack_closest_columns(struct OverallState* state)
 
             for (struct ClosestTo* am = a->closest; am != NULL; am = am->next)
             {
-                // Triangular comparison against earlier last seen pings
-                for (struct ClosestTo* bm = am->next; bm != NULL; bm = bm->next)
+                for (struct ClosestTo* bm = b->closest; bm != NULL; bm = bm->next)
                 {
                     // Compare same access point records
                     if (am->access_point->id != bm->access_point->id) continue;
@@ -169,7 +168,7 @@ void pack_closest_columns(struct OverallState* state)
                 // All of the observations are consistent with being superceded
                 b->supersededby = a->mac64;
 
-                //g_debug("%s:%s superceded %s:%s prob %.3f", a_mac, a->name, b_mac, b->name, delta);
+                g_debug("%s:%s superceded %s:%s prob %.3f", a_mac, a->name, b_mac, b->name, delta);
                 // A can only supersede one of the B
                 break;
             }
