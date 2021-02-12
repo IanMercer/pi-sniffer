@@ -168,11 +168,10 @@ void pack_closest_columns(struct OverallState* state)
                 }
             }
 
+            double delta = compare_closest(a->device_64, b->device_64, state);
             if (might_supersede && atLeastOneMatch)
             {
                 // How close are the two in distance
-                double delta = compare_closest(a->device_64, b->device_64, state);
-
                 if (delta > 0.5)
                 {
                     // All of the observations are consistent with being superceded
@@ -186,20 +185,19 @@ void pack_closest_columns(struct OverallState* state)
                 //g_debug("%s might have superceded %s but no matching access points", a->name, b->name);
             }
 
-            // Log to see why entries with the same name are failing
-            // if (g_strcmp0(a->name, "Apple Pencil") == 0 && g_strcmp0(b->name, "Apple Pencil") == 0)
-            // {
-            //     g_debug("%i.%s/%s %i.%s/%s Bump to (%i, %i),      %s%s%s%s%s%s", 
-            //         i, a->name, a->access_point->client_id, 
-            //         j, b->name, b->access_point->client_id,
-            //         a->column, b->column,
-            //         blip ? "blip " : "", 
-            //         over ? "over " : "",
-            //         haveDifferentAddressTypes ? "addressTypes " : "",
-            //         haveDifferentNames ? "names ": "", 
-            //         haveDifferentCategories ? "categories ":"", 
-            //         haveDifferentMacAndPublic ? "mac ": "");
-            // }
+            //Log to see why entries with the same name are failing
+            if (g_strcmp0(a->name, "Apple Watch") == 0 && g_strcmp0(b->name, "Apple Watch") == 0)
+            {
+                g_debug("%i.%s/%s %i.%s/%s      %s%s%s%s%s delta=%.2f", 
+                    i, a->name, a->access_point->client_id, 
+                    j, b->name, b->access_point->client_id,
+                    might_supersede ? "might supersede" : "not supersede",
+                    haveDifferentAddressTypes ? "addressTypes " : "",
+                    haveDifferentNames ? "names ": "", 
+                    haveDifferentCategories ? "categories ":"", 
+                    haveDifferentMacAndPublic ? "mac ": "",
+                    delta);
+            }
             // if (g_strcmp0(a->name, "Covid Trace") == 0 && g_strcmp0(b->name, "Covid Trace") == 0)
             // {
             //     g_debug("%i.%s/%s %i.%s/%s Bump to (%i, %i),      %s%s%s%s%s%s", 
