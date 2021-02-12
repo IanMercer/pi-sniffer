@@ -182,7 +182,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
     }
 
     // Update the type, latest wins
-    head->category = category;
+    if (category != CATEGORY_UNKNOWN) head->category = category;
     head->addressType = addressType;
 
     // Update the name on the head IF BETTER
@@ -490,7 +490,7 @@ bool print_counts_by_closest(struct OverallState* state)
     int count_in_age_range = 0;
     // Log the first 5 items, enough to cover a small site, limit output for a large site
     // TODO: Make logging configurable, turn off over time?
-    int log_n = 15;
+    int log_n = 20;
 
     for (struct ClosestHead* ahead = state->closestHead; ahead != NULL; ahead = ahead->next)
     {
@@ -515,10 +515,8 @@ bool print_counts_by_closest(struct OverallState* state)
 
         if (difftime(test->latest, last_run) > 0 ||
             ahead->category == CATEGORY_PHONE || 
-            ahead->category == CATEGORY_TV || 
-            ahead->category == CATEGORY_PENCIL ||
-            ahead->category == CATEGORY_COMPUTER || 
-            ahead->category == CATEGORY_FIXED)
+            ahead->category == CATEGORY_COVID || 
+            ahead->category == CATEGORY_PENCIL)
         {
             if (log_n-- > 0)
             {
@@ -767,10 +765,10 @@ bool print_counts_by_closest(struct OverallState* state)
                 total_count += score;
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    // if (logging && rcurrent->knn_score > 0)
-                    // {
-                    //     g_info("Phone in %s +%.2f x %.2f, total %.1f", rcurrent->name, rcurrent->knn_score, score, total_count);
-                    // }
+                    if (logging && rcurrent->knn_score > 0)
+                    {
+                        g_info("Phone in %s +%.2f x %.2f, total %.1f", rcurrent->name, rcurrent->knn_score, score, total_count);
+                    }
                     rcurrent->phone_total += rcurrent->knn_score * score;        // probability x incidence
                 }
             }
