@@ -329,7 +329,9 @@ void apply_name_heuristics (struct Device* device, const char* name)
 
     // Accessories
     else if (string_starts_with(name, "Apple Pencil"))
+    {
         device->category = CATEGORY_PENCIL;
+    }
     else if (string_starts_with(name, "SPEN 02"))
         device->category = CATEGORY_ACCESSORY;  // Not really fixed WACOM
     else if (string_starts_with(name, "Oculus"))

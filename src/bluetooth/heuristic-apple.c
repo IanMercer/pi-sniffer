@@ -193,8 +193,8 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
             g_info("  %s '%s' Nearby Info 0x05: audio playing, screen off u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
         }
         else if (lower_bits == 0x06){
-            // iWatch sends this
-            g_info("  %s '%s' Nearby Info 0x06: unknown? watch? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+            // iWatch, MacBook Pro sends this
+            g_info("  %s '%s' Nearby Info 0x06: u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
         }
         else if (lower_bits == 0x07){
             // transition phase

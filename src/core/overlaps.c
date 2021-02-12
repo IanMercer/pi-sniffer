@@ -157,6 +157,11 @@ void pack_closest_columns(struct OverallState* state)
             // How close are the two in distance
             double delta = compare_closest(a, b, state);
 
+            char a_mac[18];
+            char b_mac[18];
+            mac_64_to_string(a_mac, sizeof(a_mac), a->mac64);
+            mac_64_to_string(b_mac, sizeof(b_mac), b->mac64);
+
             // Tune the 0.05 parameter: 5% chance they are the same by distances
             // May improve taking time into account
             if (might_supersede && delta > 0.05)
@@ -164,22 +169,13 @@ void pack_closest_columns(struct OverallState* state)
                 // All of the observations are consistent with being superceded
                 b->supersededby = a->mac64;
 
-                g_debug("%s superceded %s %s%s%s%s prob %.3f", a->name, b->name, 
-                haveDifferentAddressTypes ? "addressTypes " : " _",
-                haveDifferentNames ? "names ": " _", 
-                haveDifferentCategories ? "categories ":" _", 
-                haveDifferentMacAndPublic ? "mac ": " _",
-                delta);
+                //g_debug("%s:%s superceded %s:%s prob %.3f", a_mac, a->name, b_mac, b->name, delta);
                 // A can only supersede one of the B
                 break;
             }
             else if (might_supersede && delta > 0)  // logging for development
             {
-                char a_mac[18];
-                char b_mac[18];
-                mac_64_to_string(a_mac, sizeof(a_mac), a->mac64);
-                mac_64_to_string(b_mac, sizeof(b_mac), b->mac64);
-                g_debug("%s:%s !> %s:%s p=%.3f", a_mac, a->name, b_mac, b->name, delta);
+                //g_debug("%s:%s !> %s:%s p=%.3f", a_mac, a->name, b_mac, b->name, delta);
             }
 
             //Log to see why entries with the same name are failing
