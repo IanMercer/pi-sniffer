@@ -29,11 +29,13 @@ bool overlapsClosest(time_t a_earliest, time_t a_latest, time_t b_earliest, time
 // When we know A is after B, only need to compare one way
 bool overlapsOneWay(time_t a_earliest, time_t b_latest)
 {
-    if (a_earliest >= b_latest - 3)  // a is entirely after b (3s allowance for clock skew - bug should not need it)
+    if (a_earliest >= b_latest)  // a is entirely after b
     {
-        //return FALSE;
-        int delta_time = difftime(a_earliest, b_latest);
-        return delta_time > 180;  // more than 180s and these are certainly unrelated devices
+        // int delta_time = difftime(a_earliest, b_latest);
+        // TODO: Return a probability distribution for these being related
+        return FALSE;
+        // return delta_time > 180;  // more than 180s and these are certainly unrelated devices, except not
+        // could leave an area and come back
         // Apple Watch 137s apart - this is where probability would come in, reduce over time
     }
     return TRUE;      // must overlap if not entirely after or too far after
@@ -150,7 +152,13 @@ void pack_closest_columns(struct OverallState* state)
                     // Same access point so the times are comparable
 
                     bool blip = justABlip(am->earliest, am->latest, am->count, bm->earliest, bm->latest, bm->count);
+
+                    // We know A was around after B was last seen so only need to check one direction                    
+                    // to see if A could be entirely after B
                     bool over = overlapsOneWay(am->earliest, bm->latest);
+
+                    // Could model probability based on non-overlap distance
+                    // int delta_time = difftime(a_earliest, b_latest);
 
                     // // How close are the two in distance
                     // double delta = compare_closest(am->device_64, bm->device_64, state);
