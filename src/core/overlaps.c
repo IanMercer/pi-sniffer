@@ -126,7 +126,6 @@ void pack_closest_columns(struct OverallState* state)
 
             // Require at least one matching access point
             // e.g. two devices at opposite ends of the mesh that never overlapped are unlikely to be the same device
-            bool atLeastOneMatch = false;
 
             for (struct ClosestTo* am = a->closest; am != NULL; am = am->next)
             {
@@ -136,7 +135,6 @@ void pack_closest_columns(struct OverallState* state)
                     // Compare same access point records
                     if (am->access_point->id != bm->access_point->id) continue;
 
-                    atLeastOneMatch = true;
                     //g_debug("Compare %s(%i) x %s(%i) for %s", am->name, am->name_type, bm->name, bm->name_type,
                     //    am->access_point->client_id);
 
@@ -158,7 +156,8 @@ void pack_closest_columns(struct OverallState* state)
 
             // How close are the two in distance
             double delta = compare_closest(a, b, state);
-            if (might_supersede && atLeastOneMatch && delta > 0.3)
+
+            if (might_supersede && delta > 0.3)
             {
                 // All of the observations are consistent with being superceded
                 b->supersededby = a->mac64;
@@ -177,7 +176,7 @@ void pack_closest_columns(struct OverallState* state)
                 char b_mac[18];
                 mac_64_to_string(a_mac, sizeof(a_mac), a->mac64);
                 mac_64_to_string(b_mac, sizeof(b_mac), b->mac64);
-                g_debug("%s:%s !> %s:%s %s p=%.3f", a_mac, a->name, b_mac, b->name, atLeastOneMatch ? "" : " no AP match", delta);
+                g_debug("%s:%s !> %s:%s p=%.3f", a_mac, a->name, b_mac, b->name, delta);
             }
 
             //Log to see why entries with the same name are failing

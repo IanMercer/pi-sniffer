@@ -621,6 +621,7 @@ double score_one_pair(float a_distance, float b_distance)
 float compare_closest (struct ClosestHead* a, struct ClosestHead* b, struct OverallState* state)
 {
     double probability = 1.0;
+    bool at_least_one = false;
     for (struct AccessPoint* ap = state->access_points; ap != NULL; ap=ap->next)
     {
         float a_distance = EFFECTIVE_INFINITE;
@@ -628,15 +629,15 @@ float compare_closest (struct ClosestHead* a, struct ClosestHead* b, struct Over
 
         for (struct ClosestTo* c = a->closest; c != NULL; c = c->next)
         {
-            if (c->access_point->id == ap->id) a_distance = c->distance;
+            if (c->access_point->id == ap->id) { a_distance = c->distance; at_least_one = TRUE; }
         }
 
         for (struct ClosestTo* c = b->closest; c != NULL; c = c->next)
         {
-            if (c->access_point->id == ap->id) b_distance = c->distance;
+            if (c->access_point->id == ap->id) { b_distance = c->distance; at_least_one = TRUE; }
         }
 
         probability = probability * score_one_pair(a_distance, b_distance);
     }
-    return probability;
+    return at_least_one ? probability : 0.0;
 }
