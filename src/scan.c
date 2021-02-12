@@ -282,10 +282,11 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 #endif
                 send_distance = TRUE;
                 set_name(existing, name, nt_known);
+
+                apply_known_beacons(existing);     // must apply beacons first to prevent hashing names
+                apply_name_heuristics (existing);
             }
 
-            apply_known_beacons(existing);
-            apply_name_heuristics (existing, name);
         }
         else if (strcmp(property_name, "Alias") == 0)
         {

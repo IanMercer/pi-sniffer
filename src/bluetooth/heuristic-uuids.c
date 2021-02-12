@@ -13,7 +13,7 @@
 #include <sys/types.h>
 #include <string.h>
 
-void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLength, char* gatts, int gatts_length)
+void handle_uuids(struct Device *device, char *uuidArray[2048], int actualLength, char* gatts, int gatts_length)
 {
     // Print off the UUIDs here
     for (int i = 0; i < actualLength; i++)
@@ -36,7 +36,7 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x00001818ul) 
         {
             append_text(gatts, gatts_length, "CyclingPower, ");
-            soft_set_category(&existing->category, CATEGORY_WEARABLE);
+            soft_set_category(&device->category, CATEGORY_WEARABLE);
         }
         else if (ble_uuid == 0x00001101ul) append_text(gatts, gatts_length, "SerialPort, ");
         else if (ble_uuid == 0x00001102ul) append_text(gatts, gatts_length, "LANAccessUsingPPP, ");
@@ -48,7 +48,7 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x00001108ul) 
         {
             append_text(gatts, gatts_length, "Headset, ");
-            soft_set_category(&existing->category, CATEGORY_HEADPHONES);
+            soft_set_category(&device->category, CATEGORY_HEADPHONES);
         }
         else if (ble_uuid == 0x00001109ul) append_text(gatts, gatts_length, "CordlessTelephony, ");
         else if (ble_uuid == 0x0000110Aul) append_text(gatts, gatts_length, "AudioSource, ");
@@ -74,7 +74,7 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x0000111Eul)
         {
             append_text(gatts, gatts_length, "Handsfree, ");
-            soft_set_category(&existing->category, CATEGORY_HEADPHONES);
+            soft_set_category(&device->category, CATEGORY_HEADPHONES);
         }
         else if (ble_uuid == 0x0000111Ful) append_text(gatts, gatts_length, "HandsfreeAudioGateway, ");
         else if (ble_uuid == 0x00001120ul) append_text(gatts, gatts_length, "DirectPrintingReferenceObjects, ");
@@ -82,7 +82,7 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x00001122ul) 
         {
             append_text(gatts, gatts_length, "BasicPrinting, ");
-            soft_set_category(&existing->category, CATEGORY_PRINTER);
+            soft_set_category(&device->category, CATEGORY_PRINTER);
         }
         else if (ble_uuid == 0x00001123ul) append_text(gatts, gatts_length, "PrintingStatus, ");
         else if (ble_uuid == 0x00001124ul) append_text(gatts, gatts_length, "HumanInterfaceDevice, ");
@@ -114,16 +114,16 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x00001812ul) append_text(gatts, gatts_length, "Light?, ");  // not sure
         else if (ble_uuid == 0x00001821ul) {
             // This one is used for beacons used to train the system
-            existing->is_training_beacon = TRUE;
+            device->is_training_beacon = TRUE;
             append_text(gatts, gatts_length, "Indoor Positioning, ");
         }
         else if (ble_uuid == 0x00002A37ul) {
             append_text(gatts, gatts_length, "Heart rate measurement ");
-            soft_set_category(&existing->category, CATEGORY_FITNESS);
+            soft_set_category(&device->category, CATEGORY_FITNESS);
         }
         else if (ble_uuid == 0x04000000ul) {
             append_text(gatts, gatts_length, "Toothbrush ");  // looks like an unofficial UUID
-            soft_set_category(&existing->category, CATEGORY_TOOTHBRUSH);
+            soft_set_category(&device->category, CATEGORY_TOOTHBRUSH);
         }
         else if (ble_uuid == 0x00006666ul) append_text(gatts, gatts_length, "Bad 0x6666, ");
         else if (ble_uuid == 0x6ada028cul) 
@@ -133,48 +133,48 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0xa3c87500) 
         {
             append_text(gatts, gatts_length, "Eddystone Configuration, ");
-            soft_set_category(&existing->category, CATEGORY_BEACON);
+            soft_set_category(&device->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0x0000feaaul) 
         {
             append_text(gatts, gatts_length, "Eddystone, ");
-            soft_set_category(&existing->category, CATEGORY_BEACON);
+            soft_set_category(&device->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0x0000de00ul){
             append_text(gatts, gatts_length, "Nikon, ");
-            soft_set_category(&existing->category, CATEGORY_CAMERA);
+            soft_set_category(&device->category, CATEGORY_CAMERA);
         }
         else if (ble_uuid == 0x0000ffa0ul) append_text(gatts, gatts_length, "Accelerometer, ");
         else if (ble_uuid == 0x0000ffe0ul) append_text(gatts, gatts_length, "Temperature, ");
 
         else if (ble_uuid == 0x0000feecul) {
             append_text(gatts, gatts_length, "Tile, ");
-            soft_set_category(&existing->category, CATEGORY_BEACON);
+            soft_set_category(&device->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0x0000feedul) {
-            set_name(existing, "Tile", nt_device);
+            set_name(device, "Tile", nt_known);       // better than device, they all have same name
             append_text(gatts, gatts_length, "Tile, ");
-            soft_set_category(&existing->category, CATEGORY_BEACON);
+            soft_set_category(&device->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0x0000feaful) {
             append_text(gatts, gatts_length, "Nest, ");
-            soft_set_category(&existing->category, CATEGORY_SECURITY);
+            soft_set_category(&device->category, CATEGORY_SECURITY);
         }
         else if (ble_uuid == 0xadabfb00ul) {
             append_text(gatts, gatts_length, "FitbitHR?, ");
-            soft_set_category(&existing->category, CATEGORY_FITNESS);
+            soft_set_category(&device->category, CATEGORY_FITNESS);
         }
         else if (ble_uuid == 0x0f9652d2ul) {
             append_text(gatts, gatts_length, "Truck, ");    // air suspension etc.
-            soft_set_category(&existing->category, CATEGORY_CAR);
+            soft_set_category(&device->category, CATEGORY_CAR);
         }
         else if (ble_uuid == 0x18ea0000ul) {
             append_text(gatts, gatts_length, "DeWalt, ");
-            soft_set_category(&existing->category, CATEGORY_BEACON);
+            soft_set_category(&device->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0xc374034ful) {
             append_text(gatts, gatts_length, "DeWalt, ");
-            soft_set_category(&existing->category, CATEGORY_BEACON);
+            soft_set_category(&device->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0x0000fff0ul) append_text(gatts, gatts_length, "ISSC Transparent Service, ");
         else if (ble_uuid == 0x0000fff1ul) append_text(gatts, gatts_length, "ISSC Transparent RX, ");
@@ -190,7 +190,7 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x0000fe20ul) append_text(gatts, gatts_length, "Emerson");
         else if (ble_uuid == 0x0000fe21ul) {
             append_text(gatts, gatts_length, "Bose Corporation");
-            soft_set_category(&existing->category, CATEGORY_HEADPHONES);
+            soft_set_category(&device->category, CATEGORY_HEADPHONES);
         }
         else if (ble_uuid == 0x0000fe22ul) append_text(gatts, gatts_length, "Zoll Medical Corporation");
         else if (ble_uuid == 0x0000fe23ul) append_text(gatts, gatts_length, "Zoll Medical Corporation");
@@ -350,7 +350,7 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x0000febdul) append_text(gatts, gatts_length, "Clover Network, Inc.");
         else if (ble_uuid == 0x0000febeul) {
             append_text(gatts, gatts_length, "Bose Corporation");
-            soft_set_category(&existing->category, CATEGORY_HEADPHONES);
+            soft_set_category(&device->category, CATEGORY_HEADPHONES);
         }
         else if (ble_uuid == 0x0000febful) append_text(gatts, gatts_length, "Nod, Inc.");
         else if (ble_uuid == 0x0000fec0ul) append_text(gatts, gatts_length, "KDDI Corporation");
@@ -425,35 +425,35 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x9fa480e0ul) append_text(gatts, gatts_length, "Apple XX, ");
         else if (ble_uuid == 0xabbaff00ul) {
             append_text(gatts, gatts_length, "Fitbit, ");
-            soft_set_category(&existing->category, CATEGORY_FITNESS);
+            soft_set_category(&device->category, CATEGORY_FITNESS);
         }
         else if (ble_uuid == 0xb9401000ul) {
             append_text(gatts, gatts_length, "Estimote 1, ");
-            soft_set_category(&existing->category, CATEGORY_BEACON);
+            soft_set_category(&device->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0xb9402000ul) {
             append_text(gatts, gatts_length, "Estimote 2,");
-            soft_set_category(&existing->category, CATEGORY_BEACON);
+            soft_set_category(&device->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0xb9403000ul) {
             append_text(gatts, gatts_length, "Estimote 3, ");
-            soft_set_category(&existing->category, CATEGORY_BEACON);
+            soft_set_category(&device->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0xb9404000ul) {
             append_text(gatts, gatts_length, "Estimote 4, ");
-            soft_set_category(&existing->category, CATEGORY_BEACON);
+            soft_set_category(&device->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0xb9405000ul) {
             append_text(gatts, gatts_length, "Estimote 5, ");
-            soft_set_category(&existing->category, CATEGORY_BEACON);
+            soft_set_category(&device->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0xb9406000ul) {
             append_text(gatts, gatts_length, "Estimote 6, ");
-            soft_set_category(&existing->category, CATEGORY_BEACON);
+            soft_set_category(&device->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0xa3e68a83ul) {
             append_text(gatts, gatts_length, "Milwaukee, ");
-            soft_set_category(&existing->category, CATEGORY_BEACON);
+            soft_set_category(&device->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0xc7f94713ul) append_text(gatts, gatts_length, "CDP, ");
         else if (ble_uuid == 0xd0611e78ul) 
@@ -463,8 +463,8 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         else if (ble_uuid == 0x0000fd6ful) 
         {
             append_text(gatts, gatts_length, "CovidTrace, ");
-            set_name(existing, "Covid Trace", nt_generic);
-            soft_set_category(&existing->category, CATEGORY_COVID);
+            set_name(device, "Covid Trace", nt_generic);
+            soft_set_category(&device->category, CATEGORY_COVID);
         }
         else if (ble_uuid == 0x0000fe79ul) 
         {
@@ -472,11 +472,11 @@ void handle_uuids(struct Device *existing, char *uuidArray[2048], int actualLeng
         }
         else if (ble_uuid == 0xcbbfe0e1ul) {
             append_text(gatts, gatts_length, "ATT STB?, ");
-            soft_set_category(&existing->category, CATEGORY_TV);
+            soft_set_category(&device->category, CATEGORY_TV);
         }
         else if (ble_uuid == 0x5918f000ul) {
             append_text(gatts, gatts_length, "Ezurio MTM, ");
-            soft_set_category(&existing->category, CATEGORY_FIXED);
+            soft_set_category(&device->category, CATEGORY_FIXED);
         }
         else if (ble_uuid == 0x0000fef5ul) {
             append_text(gatts, gatts_length, "Notfound(0xfef5), ");

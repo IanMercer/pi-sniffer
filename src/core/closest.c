@@ -109,9 +109,9 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
                 mac_64_to_string(mac, sizeof(mac), h->mac64);
 
                 char othermac[18];
-                mac_64_to_string(mac, sizeof(mac), h->supersededby);
+                mac_64_to_string(othermac, sizeof(mac), h->supersededby);
 
-                g_warning("%s %s was superseeded by %s", mac, h->name, othermac);
+                g_warning("%s %s was marked superseded by %s but it's no longer", mac, h->name, othermac);
                 h->supersededby = 0;
             }
 
@@ -151,6 +151,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         g_utf8_strncpy(head->name, name, NAME_LENGTH);
         head->name_type = name_type;
         head->closest = NULL;
+        head->supersededby = 0;
 
         // If the head array has grown too large (assuming 4 aps per mac)
         // remove the tail entry
@@ -192,12 +193,13 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         head->name_type = name_type;
     }
 
+    // Use apply_known_beacons method instead?
     for (struct Beacon* b = state->beacons; b != NULL; b = b->next)
     {
         if (strcmp(b->name, name) == 0 || b->mac64 == device_64)
         {
             g_utf8_strncpy(head->name, b->alias, NAME_LENGTH);
-            head->name_type = nt_known;
+            head->name_type = nt_alias;
         }
     }
 
@@ -513,9 +515,10 @@ bool print_counts_by_closest(struct OverallState* state)
         // First n phones get logged
         bool logging = false;
 
-        if (difftime(test->latest, last_run) > 0 ||
+        if (
+            //difftime(test->latest, last_run) > 0 ||
             ahead->category == CATEGORY_PHONE || 
-            ahead->category == CATEGORY_COVID || 
+            //ahead->category == CATEGORY_COVID || 
             ahead->category == CATEGORY_PENCIL)
         {
             if (log_n-- > 0)
@@ -765,9 +768,9 @@ bool print_counts_by_closest(struct OverallState* state)
                 total_count += score;
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    if (logging && rcurrent->knn_score > 0)
+                    if (rcurrent->knn_score > 0) // logging && 
                     {
-                        g_info("Phone #%.1f in %s +%.2f x %.2f", total_count, rcurrent->name, rcurrent->knn_score, score);
+                        g_info("Phone #%.1f in %s +%.2f x %.2f -> %.2f", total_count, rcurrent->name, rcurrent->knn_score, score, rcurrent->phone_total + rcurrent->knn_score * score);
                     }
                     rcurrent->phone_total += rcurrent->knn_score * score;        // probability x incidence
                 }

@@ -89,7 +89,8 @@ void pack_closest_columns(struct OverallState* state)
     {
         // TODO: Find the BEST fit and use that, proceed in order, best first, only claim 1 per leading device
 
-        for (struct ClosestHead* b = state->closestHead; b != NULL; b=b->next)
+        // Examine lower triangle, only looking at ones that were last seen prior to this one's last seen time
+        for (struct ClosestHead* b = a->next; b != NULL; b=b->next)
         {
             if (a->mac64 == b->mac64) continue;
             if (b->supersededby != 0) continue;  // already claimed
@@ -107,8 +108,10 @@ void pack_closest_columns(struct OverallState* state)
             bool haveDifferentNames =
                 // can reject as soon as they both have a partial name that is same type but doesn't match
                 // but cannot reject while one or other has a temporary name as it may match
-                (a->name_type == b->name_type || (a->name_type>=nt_known && b->name_type>=nt_known)) && 
-                    (g_strcmp0(a->name, b->name) != 0);
+                (a->name_type == b->name_type || 
+                    (a->name_type==nt_alias || b->name_type == nt_alias) ||   // if known beacon both obs would know it
+                    (a->name_type>=nt_known && b->name_type>=nt_known))       // both well known enough to be same
+                    && (g_strcmp0(a->name, b->name) != 0);
 
             // cannot be the same if they both have known categories and they are different
             bool haveDifferentCategories = (a->category != b->category);
@@ -119,18 +122,14 @@ void pack_closest_columns(struct OverallState* state)
             bool might_supersede = !(haveDifferentAddressTypes || haveDifferentNames || haveDifferentCategories || 
                     haveDifferentMacAndPublic);
 
+            if (!might_supersede) continue;
+
             // Require at least one matching access point
             // e.g. two devices at opposite ends of the mesh that never overlapped are unlikely to be the same device
             bool atLeastOneMatch = false;
 
             for (struct ClosestTo* am = a->closest; am != NULL; am = am->next)
             {
-                // After marking As we can skip any comparisons if they cannot work
-                if (!might_supersede)
-                {
-                    continue;
-                }
-
                 // Triangular comparison against earlier last seen pings
                 for (struct ClosestTo* bm = am->next; bm != NULL; bm = bm->next)
                 {
@@ -157,21 +156,24 @@ void pack_closest_columns(struct OverallState* state)
                 }
             }
 
+            // How close are the two in distance
             double delta = compare_closest(a, b, state);
-            if (might_supersede && atLeastOneMatch)
+            if (might_supersede && atLeastOneMatch && delta > 0.8)
             {
-                // How close are the two in distance
-                if (delta > 0.5)
-                {
-                    // All of the observations are consistent with being superceded
-                    b->supersededby = a->mac64;
-                    // A can only supersede one of the B
-                    break;
-                }
+                // All of the observations are consistent with being superceded
+                b->supersededby = a->mac64;
+                g_debug("%s superceded %s %s%s%s%s prob %.3f", a->name, b->name, 
+                haveDifferentAddressTypes ? "addressTypes " : " _",
+                haveDifferentNames ? "names ": " _", 
+                haveDifferentCategories ? "categories ":" _", 
+                haveDifferentMacAndPublic ? "mac ": " _",
+                delta);
+                // A can only supersede one of the B
+                break;
             }
             else if (might_supersede)
             {
-                //g_debug("%s might have superceded %s but no matching access points", a->name, b->name);
+                g_debug("%s > %s? but%s p=%.3f nt(%i,%i)", a->name, b->name, atLeastOneMatch ? "" : " no AP match and", delta, a->name_type, b->name_type);
             }
 
             //Log to see why entries with the same name are failing
@@ -200,7 +202,7 @@ void pack_closest_columns(struct OverallState* state)
             //         haveDifferentCategories ? "categories ":"", 
             //         haveDifferentMacAndPublic ? "mac ": "");
             // }
-        } // for j
-    }  // for i
+        }
+    }
 
 }
