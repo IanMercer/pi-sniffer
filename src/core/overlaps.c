@@ -95,7 +95,7 @@ void pack_closest_columns(struct OverallState* state)
         // Examine lower triangle, only looking at ones that were last seen prior to this one's last seen time
         for (struct ClosestHead* b = a->next; b != NULL; b=b->next)
         {
-            if (a->mac64 == b->mac64) continue;
+            g_assert(a->mac64 == b->mac64);
             if (b->supersededby != 0) continue;  // already claimed
 
             // We have an A and a B, now do pairwise comparison of all A's and all B's
@@ -186,7 +186,7 @@ void pack_closest_columns(struct OverallState* state)
             {
                 if (a->category == CATEGORY_PHONE)
                 {
-                    //g_debug("%s:%s superceded %s:%s prob %.3f", a_mac, a->name, b_mac, b->name, probability_by_distance);
+                    g_debug("%s:%s superceded %s:%s prob %.5f", a_mac, a->name, b_mac, b->name, probability_by_distance);
                 }
 
                 if (probability_by_distance > 0.025)   // 0.046 observed as valid
@@ -203,6 +203,18 @@ void pack_closest_columns(struct OverallState* state)
                     {
                         b->superseded_probability = probability_by_distance;
                     }
+                }
+            }
+            else
+            {
+                if (a->category == CATEGORY_PHONE)
+                {
+                    g_debug("%s:%s cannot superceded %s:%s %s%s%s%s prob %.5f", a_mac, a->name, b_mac, b->name, 
+                        haveDifferentAddressTypes ? "addressTypes " : "",
+                        haveDifferentNames ? "names ": "", 
+                        haveDifferentCategories ? "categories ":"", 
+                        haveDifferentMacAndPublic ? "mac ": "",
+                        probability_by_distance);
                 }
             }
 

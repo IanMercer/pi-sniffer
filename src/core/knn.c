@@ -626,18 +626,43 @@ float compare_closest (struct ClosestHead* a, struct ClosestHead* b, struct Over
     {
         float a_distance = EFFECTIVE_INFINITE;
         float b_distance = EFFECTIVE_INFINITE;
+        time_t a_time = time(0);
+        time_t b_time = time(0);
+
+        // a is later than b
 
         for (struct ClosestTo* c = a->closest; c != NULL; c = c->next)
         {
-            if (c->access_point->id == ap->id) { a_distance = c->distance; at_least_one = TRUE; }
+            if (c->access_point->id == ap->id) 
+            { 
+                a_distance = c->distance; at_least_one = TRUE;
+                a_time = c->earliest;
+            }
         }
 
         for (struct ClosestTo* c = b->closest; c != NULL; c = c->next)
         {
-            if (c->access_point->id == ap->id) { b_distance = c->distance; at_least_one = TRUE; }
+            if (c->access_point->id == ap->id) 
+            { 
+                b_distance = c->distance; at_least_one = TRUE; 
+                b_time = c->latest;
+            }
         }
 
-        probability = probability * score_one_pair(a_distance, b_distance);
+        double delta_time = fabs(difftime(a_time, b_time));
+
+
+        // as delta_time gets longer, probability has less impact
+        double pair_score = score_one_pair(a_distance, b_distance);
+
+        // If delta_time is small (16s) these are more likely to be related
+        // How to handle rapidly moving subjects?
+        if (delta_time < 30)
+        {
+            pair_score = (pair_score + pair_score) - pair_score * pair_score;
+        }
+
+        probability = probability * pair_score;
     }
     return at_least_one ? probability : 0.0;
 }
