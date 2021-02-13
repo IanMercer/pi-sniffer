@@ -86,6 +86,7 @@ void pack_closest_columns(struct OverallState* state)
 
     for (struct ClosestHead* a = state->closestHead; a != NULL; a=a->next)
     {
+        a->debug_supersededby_prior = a->supersededby;
         a->supersededby = 0;
         a->superseded_probability = 0.0;
     }
@@ -204,7 +205,10 @@ void pack_closest_columns(struct OverallState* state)
                     b->superseded_probability = probability_by_distance;
                     if (a->category == CATEGORY_PHONE)
                     {
-                        g_debug("%s:%s SUPERCEDED %s:%s prob %.5f", a_mac, a->name, b_mac, b->name, probability_by_distance);
+                        char* summary = b->supersededby == b->debug_supersededby_prior ?
+                            "superceded" :
+                            (b->debug_supersededby_prior == 0 ? "NEW SUPERSEDED" : "REPLACE SUPERSEDED");
+                        g_debug("%s:%s %s %s:%s prob %.5f", a_mac, a->name, summary, b_mac, b->name, probability_by_distance);
                     }
                     // A can only supersede one of the B
                     break;
