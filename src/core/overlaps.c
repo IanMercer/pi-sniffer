@@ -140,6 +140,9 @@ void pack_closest_columns(struct OverallState* state)
             // Require at least one matching access point
             // e.g. two devices at opposite ends of the mesh that never overlapped are unlikely to be the same device
 
+            bool blip = false;
+            bool over = false;
+
             for (struct ClosestTo* am = a->closest; am != NULL; am = am->next)
             {
                 for (struct ClosestTo* bm = b->closest; bm != NULL; bm = bm->next)
@@ -152,11 +155,11 @@ void pack_closest_columns(struct OverallState* state)
 
                     // Same access point so the times are comparable
 
-                    bool blip = justABlip(am->earliest, am->latest, am->count, bm->earliest, bm->latest, bm->count);
+                    bool blip2 = justABlip(am->earliest, am->latest, am->count, bm->earliest, bm->latest, bm->count);
 
                     // We know A was around after B was last seen so only need to check one direction                    
                     // to see if A could be entirely after B
-                    bool over = overlapsOneWay(am->earliest, bm->latest);
+                    bool over2 = overlapsOneWay(am->earliest, bm->latest);
 
                     // Could model probability based on non-overlap distance
                     // int delta_time = difftime(a_earliest, b_latest);
@@ -164,12 +167,15 @@ void pack_closest_columns(struct OverallState* state)
                     // // How close are the two in distance
                     // double delta = compare_closest(am->device_64, bm->device_64, state);
 
-                    if (blip || over)
-                    {
-                        // could not be same device with new MAC address
-                        might_supersede = false;
-                    }
+                    blip = blip || blip2;
+                    over = over || over2;
                 }
+            }
+
+            if (blip || over)
+            {
+                // could not be same device with new MAC address
+                might_supersede = false;
             }
 
             // How close are the two in distance
@@ -209,7 +215,9 @@ void pack_closest_columns(struct OverallState* state)
             {
                 if (a->category == CATEGORY_PHONE)
                 {
-                    g_debug("%s:%s cannot superceded %s:%s %s%s%s%s prob %.5f", a_mac, a->name, b_mac, b->name, 
+                    g_debug("%s:%s cannot superceded %s:%s %s%s%s%s%s%s prob %.5f", a_mac, a->name, b_mac, b->name, 
+                        blip ? "blip " : "",
+                        over ? "over " : "",
                         haveDifferentAddressTypes ? "addressTypes " : "",
                         haveDifferentNames ? "names ": "", 
                         haveDifferentCategories ? "categories ":"", 
