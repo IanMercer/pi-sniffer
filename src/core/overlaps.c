@@ -82,6 +82,8 @@ void pack_closest_columns(struct OverallState* state)
     // Working backwards in time through the array
     // Push every device back to column zero as category may have changed
 
+    time_t now = time(0);
+
     for (struct ClosestHead* a = state->closestHead; a != NULL; a=a->next)
     {
         a->supersededby = 0;
@@ -90,6 +92,11 @@ void pack_closest_columns(struct OverallState* state)
 
     for (struct ClosestHead* a = state->closestHead; a != NULL; a=a->next)
     {
+        int delta_time = difftime(now, a->closest->latest);
+
+        // Ignore any that are expired
+        if (delta_time > 400) continue;
+
         // TODO: Find the BEST fit and use that, proceed in order, best first, only claim 1 per leading device
 
         // Examine lower triangle, only looking at ones that were last seen prior to this one's last seen time
