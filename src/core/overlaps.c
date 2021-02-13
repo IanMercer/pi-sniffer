@@ -186,7 +186,7 @@ void pack_closest_columns(struct OverallState* state)
                 // All of the observations are consistent with being superceded
                 b->supersededby = a->mac64;
 
-                g_debug("%s:%s superceded %s:%s prob %.3f", a_mac, a->name, b_mac, b->name, delta);
+                //g_debug("%s:%s superceded %s:%s prob %.3f", a_mac, a->name, b_mac, b->name, delta);
                 // A can only supersede one of the B
                 break;
             }

@@ -1447,7 +1447,7 @@ int report_counts(void *parameters)
 
     report_count++;
 
-    if (state.isMain != FALSE)
+    if (state.isMain != FALSE)   // handle 1 or any other number
     {
         time(&now);
         // Set JSON for all ways to receive it (GET, POST, INFLUX, MQTT)
@@ -1557,7 +1557,8 @@ int dump_all_devices_tick(void *parameters)
     logTable = FALSE;
     time(&now);
 
-    //print_log_table();
+    // TODO: Restrict logging this
+    print_log_table();
 
     unsigned long total_minutes = (now - state.started) / 60; // minutes
     unsigned int minutes = total_minutes % 60;
