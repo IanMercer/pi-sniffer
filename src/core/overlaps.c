@@ -197,21 +197,25 @@ void pack_closest_columns(struct OverallState* state)
             // May improve taking time into account
             if (might_supersede)
             {
-                if (a->category == CATEGORY_PHONE)
-                {
-                    g_debug("%s:%s superceded %s:%s prob %.5f", a_mac, a->name, b_mac, b->name, probability_by_distance);
-                }
-
                 if (probability_by_distance > 0.01)   // 0.046, 0.0212 observed as valid
                 {
                     // All of the observations are consistent with being superceded
                     b->supersededby = a->mac64;
                     b->superseded_probability = probability_by_distance;
+                    if (a->category == CATEGORY_PHONE)
+                    {
+                        g_debug("%s:%s SUPERCEDED %s:%s prob %.5f", a_mac, a->name, b_mac, b->name, probability_by_distance);
+                    }
                     // A can only supersede one of the B
                     break;
                 }
                 else
                 {
+                    if (a->category == CATEGORY_PHONE)
+                    {
+                        g_debug("%s:%s almost superceded %s:%s prob %.5f", a_mac, a->name, b_mac, b->name, probability_by_distance);
+                    }
+
                     if (b->supersededby == 0 || b->superseded_probability < probability_by_distance)
                     {
                         b->superseded_probability = probability_by_distance;
@@ -220,7 +224,7 @@ void pack_closest_columns(struct OverallState* state)
             }
             else
             {
-                if (a->category == CATEGORY_PHONE)
+                if (a->category == CATEGORY_PHONE && !over)
                 {
                     g_debug("%s:%s cannot superceded %s:%s %s%s%s%s%s%s prob %.5f", a_mac, a->name, b_mac, b->name, 
                         blip ? "blip " : "",

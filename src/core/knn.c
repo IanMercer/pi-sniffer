@@ -597,15 +597,15 @@ double score_one_pair(float a_distance, float b_distance)
 {
     if (a_distance >= EFFECTIVE_INFINITE_TEST && b_distance >= EFFECTIVE_INFINITE_TEST)
     {
-        return 0.99;
+        return 1.00;
     }
     else if (a_distance >= EFFECTIVE_INFINITE_TEST)
     {
-        return 0.3;
+        return 0.50;
     }
     else if (b_distance >= EFFECTIVE_INFINITE_TEST)
     {
-        return 0.30;
+        return 0.50;
     }
     else
     {
@@ -650,7 +650,6 @@ float compare_closest (struct ClosestHead* a, struct ClosestHead* b, struct Over
         }
 
         double delta_time = fabs(difftime(a_time, b_time));
-
 
         // as delta_time gets longer, probability has less impact
         double pair_score = score_one_pair(a_distance, b_distance);
