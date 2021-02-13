@@ -182,27 +182,26 @@ void pack_closest_columns(struct OverallState* state)
 
             // Tune the 0.05 parameter: 5% chance they are the same by distances
             // May improve taking time into account
-            if (might_supersede && probability_by_distance > 0.05)
+            if (might_supersede)
             {
-                // All of the observations are consistent with being superceded
-                b->supersededby = a->mac64;
-                b->superseded_probability = probability_by_distance;
-
                 if (a->category == CATEGORY_PHONE)
                 {
                     g_debug("%s:%s superceded %s:%s prob %.3f", a_mac, a->name, b_mac, b->name, probability_by_distance);
                 }
-                // A can only supersede one of the B
-                break;
-            }
-            else if (might_supersede && probability_by_distance > 0)  // logging for development
-            {
-                if (b->supersededby == 0 || b->superseded_probability < probability_by_distance)
+
+                if (probability_by_distance > 0.05)
                 {
+                    // All of the observations are consistent with being superceded
+                    b->supersededby = a->mac64;
                     b->superseded_probability = probability_by_distance;
-                    if (a->category == CATEGORY_PHONE)
+                    // A can only supersede one of the B
+                    break;
+                }
+                else
+                {
+                    if (b->supersededby == 0 || b->superseded_probability < probability_by_distance)
                     {
-                        g_debug("%s:%s !> %s:%s p=%.3f", a_mac, a->name, b_mac, b->name, probability_by_distance);
+                        b->superseded_probability = probability_by_distance;
                     }
                 }
             }
