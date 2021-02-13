@@ -551,7 +551,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 mac_64_to_string(sup_mac, 18, ahead->supersededby);
             else
                 sup_mac[0]='\0';
-                g_debug("%s%s %10s [%5li-%5li] (%4i)     %23s %s%s", 
+                g_debug("%s%s %10s [%5li-%5li] (%4i)     %23s p(%.3f) x %s%s", 
                      mac, 
                      ahead->addressType == PUBLIC_ADDRESS_TYPE ? "*" : " ",
                      category, 
@@ -559,6 +559,7 @@ bool print_counts_by_closest(struct OverallState* state)
                      now - test->latest,
                      test->count,
                      ahead->name,
+                     ahead->superseded_probability,
                      ahead->supersededby == 0 ? "" : "-- super:",
                      sup_mac);
         }

@@ -85,6 +85,9 @@ struct ClosestHead
     // in a column more recently than this one that it superseeds
     int64_t supersededby;
 
+    // Max probabiity that it was superseded even if didn't mark it as such
+    float superseded_probability;
+
     // the most likely patch for this device
     struct patch* patch;
 
