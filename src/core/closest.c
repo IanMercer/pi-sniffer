@@ -577,7 +577,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         if (logging)
         {
-            char prob_s[10];
+            char prob_s[32];
             prob_s[0] = '\0';
             if (ahead->supersededby != 0)
             {
@@ -626,7 +626,7 @@ bool print_counts_by_closest(struct OverallState* state)
             {
 
                 //Verbose logging
-                if (logging)
+                if (logging && ahead->supersededby == 0)
                 {
                     struct AccessPoint *ap2 = other->access_point;
                     g_debug(" %15s distance %5.1fm      [%5li-%5li] (%3i)", 
