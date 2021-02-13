@@ -512,6 +512,37 @@ bool print_counts_by_closest(struct OverallState* state)
 
         count_not_marked++;
 
+
+        int delta_time = difftime(now, test->latest);
+        // beacons and other fixed devices last longer, tend to transmit less often
+        double x_scale = (
+                // Very fixed devices don't decay, some are very infrequent transmitters
+                ahead->category == CATEGORY_LIGHTING ||
+                ahead->category == CATEGORY_APPLIANCE ||
+                ahead->category == CATEGORY_POS ||
+                ahead->category == CATEGORY_SPRINKLERS ||
+                ahead->category == CATEGORY_TOOTHBRUSH ||
+                ahead->category == CATEGORY_BEACON || 
+                ahead->category == CATEGORY_FIXED
+            ) ? 240.0 :
+            (
+                ahead->category == CATEGORY_HEALTH ||
+                ahead->category == CATEGORY_FITNESS ||
+                ahead->category == CATEGORY_PRINTER ||
+                ahead->category == CATEGORY_TV
+            ) ? 160 :
+            (
+                ahead->category == CATEGORY_COMPUTER ||
+                ahead->category == CATEGORY_TABLET 
+            )? 120 :
+             90.0;
+
+        double time_score = 0.55 - atan(delta_time / x_scale - 4.0) / 3.0;
+        // A curve that stays a 1.0 for a while and then drops rapidly around 3 minutes out
+        if (time_score > 0.90) time_score = 1.0;
+
+        if (time_score < 0.1) continue;
+
         // First n phones get logged
         bool logging = false;
 
@@ -546,22 +577,25 @@ bool print_counts_by_closest(struct OverallState* state)
 
         if (logging)
         {
-            char sup_mac[18];
+            char prob_s[10];
+            prob_s[0] = '\0';
             if (ahead->supersededby != 0)
-                mac_64_to_string(sup_mac, 18, ahead->supersededby);
-            else
+            {
+                char sup_mac[18];
                 sup_mac[0]='\0';
-                g_debug("%s%s %10s [%5li-%5li] (%4i)     %23s p(%.3f) x %s%s", 
-                     mac, 
-                     ahead->addressType == PUBLIC_ADDRESS_TYPE ? "*" : " ",
-                     category, 
-                     now - test->earliest,
-                     now - test->latest,
-                     test->count,
-                     ahead->name,
-                     ahead->superseded_probability,
-                     ahead->supersededby == 0 ? "" : "-- super:",
-                     sup_mac);
+                mac_64_to_string(sup_mac, 18, ahead->supersededby);
+                snprintf(prob_s, sizeof(prob_s), "p(%.3f) x %s", ahead->superseded_probability, sup_mac);
+            }
+
+            g_debug("%s%s %10s [%5li-%5li] (%4i)     %23s %s", 
+                    mac, 
+                    ahead->addressType == PUBLIC_ADDRESS_TYPE ? "*" : " ",
+                    category, 
+                    now - test->earliest,
+                    now - test->latest,
+                    test->count,
+                    ahead->name,
+                    prob_s);
         }
 
         int earliest = difftime(now, test->earliest);
@@ -623,36 +657,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         //struct AccessPoint *ap = test->access_point;
 
-        int delta_time = difftime(now, test->latest);
-        // beacons and other fixed devices last longer, tend to transmit less often
-        double x_scale = (
-                // Very fixed devices don't decay, some are very infrequent transmitters
-                ahead->category == CATEGORY_LIGHTING ||
-                ahead->category == CATEGORY_APPLIANCE ||
-                ahead->category == CATEGORY_POS ||
-                ahead->category == CATEGORY_SPRINKLERS ||
-                ahead->category == CATEGORY_TOOTHBRUSH ||
-                ahead->category == CATEGORY_BEACON || 
-                ahead->category == CATEGORY_FIXED
-            ) ? 240.0 :
-            (
-                ahead->category == CATEGORY_HEALTH ||
-                ahead->category == CATEGORY_FITNESS ||
-                ahead->category == CATEGORY_PRINTER ||
-                ahead->category == CATEGORY_TV
-            ) ? 160 :
-            (
-                ahead->category == CATEGORY_COMPUTER ||
-                ahead->category == CATEGORY_TABLET 
-            )? 120 :
-             90.0;
-
-        double score = 0.55 - atan(delta_time / x_scale - 4.0) / 3.0;
-        // A curve that stays a 1.0 for a while and then drops rapidly around 3 minutes out
-        if (score > 0.90) score = 1.0;
-        if (score < 0.1) score = 0.0;
-
-        if (score > 0)
+        if (time_score > 0)
         {
             bool debug = false; //strcmp(test->name, "F350") == 0;
 
@@ -668,7 +673,7 @@ bool print_counts_by_closest(struct OverallState* state)
                     if (logging || (detailedLogging && bi == 0))
                     {
                         g_debug("'%s' sc: %.3f (%i) p=%.3f x %.3f", 
-                            best_three[bi].patch_name, best_three[bi].distance, bi, best_three[bi].probability, score);
+                            best_three[bi].patch_name, best_three[bi].distance, bi, best_three[bi].probability, time_score);
                         // TODO: How to get persistent patch addresses closest->patch = best_three[bi].patch;
                     }
                 }
@@ -703,14 +708,14 @@ bool print_counts_by_closest(struct OverallState* state)
             {
                 if (logging)
                 {
-                    g_info("Superseded (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, score);
+                    g_info("Superseded (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, time_score);
                 }
             }
             else if (ahead->category == CATEGORY_TABLET)
             {
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    rcurrent->tablet_total += rcurrent->knn_score * score;        // probability x incidence
+                    rcurrent->tablet_total += rcurrent->knn_score * time_score;        // probability x incidence
                     // if (logging && rcurrent->knn_score > 0)
                     // {
                     //     g_info("Tablet in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
@@ -721,7 +726,7 @@ bool print_counts_by_closest(struct OverallState* state)
             {
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    rcurrent->computer_total += rcurrent->knn_score * score;        // probability x incidence
+                    rcurrent->computer_total += rcurrent->knn_score * time_score;        // probability x incidence
                 }
             }
             else if (ahead->category == CATEGORY_WATCH)
@@ -730,7 +735,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 {
                     //if (rcurrent->knn_score > 0)
                     //    g_debug("Watch in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
-                    rcurrent->watch_total += rcurrent->knn_score * score;        // probability x incidence
+                    rcurrent->watch_total += rcurrent->knn_score * time_score;        // probability x incidence
                 }
             }
             else if (ahead->category == CATEGORY_WEARABLE || ahead->category == CATEGORY_FITNESS)
@@ -738,7 +743,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
                     //g_debug("Wearable in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
-                    rcurrent->wearable_total += rcurrent->knn_score * score;        // probability x incidence
+                    rcurrent->wearable_total += rcurrent->knn_score * time_score;        // probability x incidence
                 }
             }
             else if (ahead->category == CATEGORY_COVID)
@@ -746,34 +751,34 @@ bool print_counts_by_closest(struct OverallState* state)
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
                     //g_debug("Covid in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
-                    rcurrent->covid_total += rcurrent->knn_score * score;        // probability x incidence
+                    rcurrent->covid_total += rcurrent->knn_score * time_score;        // probability x incidence
                 }
             }
             else if (ahead->category == CATEGORY_BEACON)
             {
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    rcurrent->beacon_total += rcurrent->knn_score * score;        // probability x incidence
+                    rcurrent->beacon_total += rcurrent->knn_score * time_score;        // probability x incidence
                 }
             }
             else if (ahead->category == CATEGORY_PHONE)
             {
                 //g_info("Cluster (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, score);
-                total_count += score;
+                total_count += time_score;
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
                     if (rcurrent->knn_score > 0 && rcurrent->phone_total < 6)  // log first six phones only 
                     {
-                        g_info("Phone #%.1f in %s +%.2f x %.2f -> %.2f", total_count, rcurrent->name, rcurrent->knn_score, score, rcurrent->phone_total + rcurrent->knn_score * score);
+                        g_info("Phone #%.1f in %s +%.2f x %.2f -> %.2f", total_count, rcurrent->name, rcurrent->knn_score, time_score, rcurrent->phone_total + rcurrent->knn_score * time_score);
                     }
-                    rcurrent->phone_total += rcurrent->knn_score * score;        // probability x incidence
+                    rcurrent->phone_total += rcurrent->knn_score * time_score;        // probability x incidence
                 }
             }
             else //if (test->distance < 7.5)
             {
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    rcurrent->other_total += rcurrent->knn_score * score;
+                    rcurrent->other_total += rcurrent->knn_score * time_score;
                 }
             }
             // else 
@@ -815,7 +820,7 @@ bool print_counts_by_closest(struct OverallState* state)
         {
             if (logging) 
             {
-              g_debug("   score %.2f", score);
+              g_debug("   score %.2f", time_score);
             }
         }
         //g_debug(" ");
