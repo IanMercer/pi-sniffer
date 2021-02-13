@@ -186,7 +186,7 @@ void pack_closest_columns(struct OverallState* state)
             {
                 if (a->category == CATEGORY_PHONE)
                 {
-                    g_debug("%s:%s superceded %s:%s prob %.3f", a_mac, a->name, b_mac, b->name, probability_by_distance);
+                    //g_debug("%s:%s superceded %s:%s prob %.3f", a_mac, a->name, b_mac, b->name, probability_by_distance);
                 }
 
                 if (probability_by_distance > 0.025)   // 0.046 observed as valid
