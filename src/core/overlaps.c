@@ -148,7 +148,7 @@ void pack_closest_columns(struct OverallState* state)
             // Require at least one matching access point
             // e.g. two devices at opposite ends of the mesh that never overlapped are unlikely to be the same device
 
-            bool blip = false;
+            bool allBlips = true;  // When looking for a blip, all of the readings need to be single values
             bool over = false;
 
             for (struct ClosestTo* am = a->closest; am != NULL; am = am->next)
@@ -175,12 +175,12 @@ void pack_closest_columns(struct OverallState* state)
                     // // How close are the two in distance
                     // double delta = compare_closest(am->device_64, bm->device_64, state);
 
-                    blip = blip || blip2;
+                    allBlips = allBlips && blip2;
                     over = over || over2;
                 }
             }
 
-            if (blip || over)
+            if (allBlips || over)
             {
                 // could not be same device with new MAC address
                 might_supersede = false;
@@ -231,7 +231,7 @@ void pack_closest_columns(struct OverallState* state)
                 if (a->category == CATEGORY_PHONE && !over)
                 {
                     g_debug("%s:%s cannot superceded %s:%s %s%s%s%s%s%s prob %.5f", a_mac, a->name, b_mac, b->name, 
-                        blip ? "blip " : "",
+                        allBlips ? "blip " : "",
                         over ? "overlaps " : "",
                         haveDifferentAddressTypes ? "addressTypes " : "",
                         haveDifferentNames ? "names ": "", 

@@ -769,7 +769,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 {
                     if (rcurrent->knn_score > 0 && rcurrent->phone_total < 6)  // log first six phones only 
                     {
-                        g_info("Phone #%.1f in %s +%.2f x %.2f -> %.2f", total_count, rcurrent->name, rcurrent->knn_score, time_score, rcurrent->phone_total + rcurrent->knn_score * time_score);
+                        g_info("Phone #%.1f in %s +p(%.3f) x %.2f -> %.2f", total_count, rcurrent->name, rcurrent->knn_score, time_score, rcurrent->phone_total + rcurrent->knn_score * time_score);
                     }
                     rcurrent->phone_total += rcurrent->knn_score * time_score;        // probability x incidence
                 }
