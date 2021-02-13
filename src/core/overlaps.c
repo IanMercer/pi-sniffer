@@ -95,7 +95,7 @@ void pack_closest_columns(struct OverallState* state)
         // Examine lower triangle, only looking at ones that were last seen prior to this one's last seen time
         for (struct ClosestHead* b = a->next; b != NULL; b=b->next)
         {
-            g_assert(a->mac64 == b->mac64);
+            g_assert(a->mac64 != b->mac64);
             if (b->supersededby != 0) continue;  // already claimed
 
             // We have an A and a B, now do pairwise comparison of all A's and all B's
