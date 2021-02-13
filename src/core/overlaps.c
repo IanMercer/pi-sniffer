@@ -202,7 +202,7 @@ void pack_closest_columns(struct OverallState* state)
                     g_debug("%s:%s superceded %s:%s prob %.5f", a_mac, a->name, b_mac, b->name, probability_by_distance);
                 }
 
-                if (probability_by_distance > 0.025)   // 0.046 observed as valid
+                if (probability_by_distance > 0.01)   // 0.046, 0.0212 observed as valid
                 {
                     // All of the observations are consistent with being superceded
                     b->supersededby = a->mac64;
@@ -224,7 +224,7 @@ void pack_closest_columns(struct OverallState* state)
                 {
                     g_debug("%s:%s cannot superceded %s:%s %s%s%s%s%s%s prob %.5f", a_mac, a->name, b_mac, b->name, 
                         blip ? "blip " : "",
-                        over ? "over " : "",
+                        over ? "overlaps " : "",
                         haveDifferentAddressTypes ? "addressTypes " : "",
                         haveDifferentNames ? "names ": "", 
                         haveDifferentCategories ? "categories ":"", 
