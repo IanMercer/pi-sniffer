@@ -197,7 +197,7 @@ float get_probability (struct recording* recording, double access_points_distanc
             {
                 // OK: did not expect this distance to be here, and it's not but less information than a match
                 // but better than a bad match on distances, e.g. 4m and 14m
-                probability = probability * 0.99;
+                probability = probability * 0.8;
                 //if (debug) g_debug("%s neither x 0.99", ap->client_id);
             }
             else if (recording_distance >= EFFECTIVE_INFINITE_TEST)
@@ -224,6 +224,8 @@ float get_probability (struct recording* recording, double access_points_distanc
                 if (debug) g_debug("%s was expected and found %.2fm delta, x %.3f", ap->client_id, delta, prob);
             }
         }
+
+
         return probability;
     }
 }
