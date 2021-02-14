@@ -49,13 +49,16 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x06)     // Constantly
     {
-        set_name(existing, "Homekit", nt_device);
-        g_info("  %s '%s' Homekit", existing->mac, existing->name);
-        // 1 byte adv internal length
-        // 1 byte status flags
-        // 6 bytes device id
-        // 2 bytes category
-        // 2 bytes global state number
+        if (existing->name_type < nt_device)  // Homekit status is sent constantly, reduce logging
+        {
+            set_name(existing, "Homekit", nt_device);
+            g_info("  %s '%s' Homekit", existing->mac, existing->name);
+            // 1 byte adv internal length
+            // 1 byte status flags
+            // 6 bytes device id
+            // 2 bytes category
+            // 2 bytes global state number
+        }
     }
     else if (apple_device_type == 0x07)     // Proximity Pairing - Constantly (rare)
     {

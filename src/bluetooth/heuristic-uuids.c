@@ -198,7 +198,11 @@ void handle_uuids(struct Device *device, char *uuidArray[2048], int actualLength
         }
         else if (ble_uuid == 0x0000fe22ul) append_text(gatts, gatts_length, "Zoll Medical Corporation");
         else if (ble_uuid == 0x0000fe23ul) append_text(gatts, gatts_length, "Zoll Medical Corporation");
-        else if (ble_uuid == 0x0000fe24ul) append_text(gatts, gatts_length, "August Home Inc");
+        else if (ble_uuid == 0x0000fe24ul) 
+        {
+            append_text(gatts, gatts_length, "August Home Inc");    // smart locks
+            soft_set_category(&device->category, CATEGORY_SECURITY);
+        }
         else if (ble_uuid == 0x0000fe25ul) append_text(gatts, gatts_length, "Apple, Inc.");
         else if (ble_uuid == 0x0000fe26ul) append_text(gatts, gatts_length, "Google Inc.");
         else if (ble_uuid == 0x0000fe27ul) append_text(gatts, gatts_length, "Google Inc.");
