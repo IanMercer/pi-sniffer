@@ -165,6 +165,47 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
         uint8_t upper_bits = allocdata[02] >> 4;
         uint8_t information_byte = allocdata[03];
 
+
+        if (information_byte == 0x1a)
+        {
+            soft_set_category(&existing->category, CATEGORY_PHONE);
+            set_name(existing, "iPhone8", nt_device);
+        }
+        else if (upper_bits == 4 && information_byte == 0x1c)
+        {
+            // Macbook pro? Works for home
+            soft_set_category(&existing->category, CATEGORY_COMPUTER);
+            set_name(existing, "MacBook", nt_device);
+        }
+        else if (upper_bits == 6 && information_byte == 0x1c)
+        {
+            // 0/1c? 1/1c? 2/1c? 6/1c
+            // Macbook pro? Works for home
+            soft_set_category(&existing->category, CATEGORY_COMPUTER);
+            set_name(existing, "MacBook", nt_device);
+        }
+        else if (information_byte == 0x1d)
+        {
+            soft_set_category(&existing->category, CATEGORY_TABLET);
+            set_name(existing, "iPad", nt_device);
+        }
+        else if (information_byte == 0x1e)
+        {
+            soft_set_category(&existing->category, CATEGORY_PHONE);
+            set_name(existing, "iPhone8?", nt_device);
+        }
+        else if (information_byte == 0x1f)
+        {
+            // iPhone later generation
+            soft_set_category(&existing->category, CATEGORY_PHONE);
+            set_name(existing, "iPhone", nt_device);
+        }
+        else if (information_byte == 0x98)
+        {
+            soft_set_category(&existing->category, CATEGORY_WATCH);
+            set_name(existing, "Apple Watch", nt_device);
+        }
+
         char* wifi = 
             information_byte == 0x10 ? "iPhone6?" : 
             information_byte == 0x18 ? "Wifi ON ()" : 
@@ -174,7 +215,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
 
         if (lower_bits == 0x00){
             // iPad sends this, unused
-            g_info("  %s '%s' Nearby Info 0x00: unknown  u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+            g_info("  %s '%s' Nearby Info 0x00: u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
         }
         else if (lower_bits == 0x01){
             // WATCH: Nearby Info 0x01: disabled u=00 info=18 Wifi ON ()
