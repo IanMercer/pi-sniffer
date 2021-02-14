@@ -593,24 +593,38 @@ bool record (const char* directory, const char* device_name, double access_dista
 /*
 *  Compare two distances using heuristic with cut off and no match handling
 */
-double score_one_pair(float a_distance, float b_distance)
+double score_one_pair(float a_distance, float b_distance, time_t a_time, time_t b_time)
 {
+    double delta_time = fabs(difftime(a_time, b_time));
     if (a_distance >= EFFECTIVE_INFINITE_TEST && b_distance >= EFFECTIVE_INFINITE_TEST)
     {
         return 1.00;
     }
     else if (a_distance >= EFFECTIVE_INFINITE_TEST)
     {
-        return 0.50;
+        // We have a B but no A.  Maybe A is too new and we haven't seen same AP yet.
+        // If B is really old we may have moved away from it.
+        if (delta_time > 300) return 1.0;
+        else if (delta_time > 200) return 0.9;
+        else return 0.8;
     }
     else if (b_distance >= EFFECTIVE_INFINITE_TEST)
     {
+        // We have an A but no B, maybe we moved but less likely than prior case
+        // we should have seen the same AP if we switched mac address
         return 0.50;
     }
     else
     {
         float delta = fabs(a_distance - b_distance);
         double prob = 1.0 - fmin(0.8, 0.1 * fmin(delta, 8));
+
+        // The closer these are in time, the more likely they are to be related
+        if (delta_time < 30)
+        {
+            prob = (prob + prob) - prob * prob;
+        }
+
         return prob;
     }
 }
@@ -622,11 +636,35 @@ float compare_closest (struct ClosestHead* a, struct ClosestHead* b, struct Over
 {
     double probability = 1.0;
     bool at_least_one = false;
+
+    // Find a representative start time for comparison with earlier ranges that don't have a match
+    // Use median start time
+    time_t ordered_start_times[N_ACCESS_POINTS];
+    int n = 0;
+    for (struct ClosestTo* c = a->closest; c != NULL; c=c->next)
+    {
+        int insertion_point = 0;
+        for (int i = 0; i < n; i++)
+        {
+            insertion_point = i;
+            if (c->earliest < ordered_start_times[i]) break;
+        }
+        if (insertion_point < n)
+        {
+            g_memmove(&ordered_start_times[insertion_point+1], 
+                    &ordered_start_times[insertion_point], 
+                    sizeof(time_t) * (n - insertion_point));
+        }
+        ordered_start_times[insertion_point] = c->earliest;
+    }
+
+    time_t median_start_time = ordered_start_times[n / 2];
+
     for (struct AccessPoint* ap = state->access_points; ap != NULL; ap=ap->next)
     {
         float a_distance = EFFECTIVE_INFINITE;
         float b_distance = EFFECTIVE_INFINITE;
-        time_t a_time = time(0);
+        time_t a_time = median_start_time;
         time_t b_time = time(0);
 
         // a is later than b
@@ -649,17 +687,7 @@ float compare_closest (struct ClosestHead* a, struct ClosestHead* b, struct Over
             }
         }
 
-        double delta_time = fabs(difftime(a_time, b_time));
-
-        // as delta_time gets longer, probability has less impact
-        double pair_score = score_one_pair(a_distance, b_distance);
-
-        // If delta_time is small (16s) these are more likely to be related
-        // How to handle rapidly moving subjects?
-        if (delta_time < 30)
-        {
-            pair_score = (pair_score + pair_score) - pair_score * pair_score;
-        }
+        double pair_score = score_one_pair(a_distance, b_distance, a_time, b_time);
 
         probability = probability * pair_score;
     }

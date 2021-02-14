@@ -203,22 +203,22 @@ void pack_closest_columns(struct OverallState* state)
                     // All of the observations are consistent with being superceded
                     b->supersededby = a->mac64;
                     b->superseded_probability = probability_by_distance;
-                    if (a->category == CATEGORY_PHONE)
-                    {
-                        char* summary = b->supersededby == b->debug_supersededby_prior ?
-                            "superceded" :
-                            (b->debug_supersededby_prior == 0 ? "NEW SUPERSEDED" : "REPLACE SUPERSEDED");
-                        g_debug("%s:%s %s %s:%s prob %.5f", a_mac, a->name, summary, b_mac, b->name, probability_by_distance);
-                    }
+                    // // if (a->category == CATEGORY_PHONE)
+                    // // {
+                    // //     char* summary = b->supersededby == b->debug_supersededby_prior ?
+                    // //         "superceded" :
+                    // //         (b->debug_supersededby_prior == 0 ? "NEW SUPERSEDED" : "REPLACE SUPERSEDED");
+                    // //     g_debug("%s:%s %s %s:%s prob %.5f", a_mac, a->name, summary, b_mac, b->name, probability_by_distance);
+                    // // }
                     // A can only supersede one of the B
                     break;
                 }
                 else
                 {
-                    if (a->category == CATEGORY_PHONE)
-                    {
-                        g_debug("%s:%s almost superceded %s:%s prob %.5f", a_mac, a->name, b_mac, b->name, probability_by_distance);
-                    }
+                    // // if (a->category == CATEGORY_PHONE)
+                    // // {
+                    // //     g_debug("%s:%s almost superceded %s:%s prob %.5f", a_mac, a->name, b_mac, b->name, probability_by_distance);
+                    // // }
 
                     if (b->supersededby == 0 || b->superseded_probability < probability_by_distance)
                     {
@@ -228,45 +228,18 @@ void pack_closest_columns(struct OverallState* state)
             }
             else
             {
-                if (a->category == CATEGORY_PHONE && !over)
-                {
-                    g_debug("%s:%s cannot superceded %s:%s %s%s%s%s%s%s prob %.5f", a_mac, a->name, b_mac, b->name, 
-                        allBlips ? "blip " : "",
-                        over ? "overlaps " : "",
-                        haveDifferentAddressTypes ? "addressTypes " : "",
-                        haveDifferentNames ? "names ": "", 
-                        haveDifferentCategories ? "categories ":"", 
-                        haveDifferentMacAndPublic ? "mac ": "",
-                        probability_by_distance);
-                }
+                // // if (a->category == CATEGORY_PHONE && !over)
+                // // {
+                // //     g_debug("%s:%s cannot superceded %s:%s %s%s%s%s%s%s prob %.5f", a_mac, a->name, b_mac, b->name, 
+                // //         allBlips ? "blip " : "",
+                // //         over ? "overlaps " : "",
+                // //         haveDifferentAddressTypes ? "addressTypes " : "",
+                // //         haveDifferentNames ? "names ": "", 
+                // //         haveDifferentCategories ? "categories ":"", 
+                // //         haveDifferentMacAndPublic ? "mac ": "",
+                // //         probability_by_distance);
+                // // }
             }
-
-            //Log to see why entries with the same name are failing
-            // if (g_strcmp0(a->name, "Apple Watch") == 0 && g_strcmp0(b->name, "Apple Watch") == 0)
-            // {
-            //     g_debug("%s/%s %s/%s      %s%s%s%s%s delta=%.2f", 
-            //         a->name, am->access_point->client_id, 
-            //         b->name, bm->access_point->client_id,
-            //         might_supersede ? "might supersede" : "not supersede",
-            //         haveDifferentAddressTypes ? "addressTypes " : "",
-            //         haveDifferentNames ? "names ": "", 
-            //         haveDifferentCategories ? "categories ":"", 
-            //         haveDifferentMacAndPublic ? "mac ": "",
-            //         delta);
-            // }
-            // if (g_strcmp0(a->name, "Covid Trace") == 0 && g_strcmp0(b->name, "Covid Trace") == 0)
-            // {
-            //     g_debug("%i.%s/%s %i.%s/%s Bump to (%i, %i),      %s%s%s%s%s%s", 
-            //         i, a->name, a->access_point->client_id, 
-            //         j, b->name, b->access_point->client_id,
-            //         a->column, b->column,
-            //         blip ? "blip " : "", 
-            //         over ? "over " : "",
-            //         haveDifferentAddressTypes ? "addressTypes " : "",
-            //         haveDifferentNames ? "names ": "", 
-            //         haveDifferentCategories ? "categories ":"", 
-            //         haveDifferentMacAndPublic ? "mac ": "");
-            // }
         }
     }
 

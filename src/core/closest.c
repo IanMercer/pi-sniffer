@@ -587,11 +587,17 @@ bool print_counts_by_closest(struct OverallState* state)
                 snprintf(prob_s, sizeof(prob_s), "p(%.3f) x %s", ahead->superseded_probability, sup_mac);
             }
 
+            time_t earliest = test->earliest;
+            for (struct ClosestTo* other = test; other != NULL; other = other->next)
+            {
+                if (other->earliest < earliest) earliest = other->earliest;
+            }
+
             g_debug("%s%s %10s [%5li-%5li] (%4i)     %23s %s", 
-                    mac, 
+                    mac,
                     ahead->addressType == PUBLIC_ADDRESS_TYPE ? "*" : " ",
                     category, 
-                    now - test->earliest,
+                    now - earliest,
                     now - test->latest,
                     test->count,
                     ahead->name,
@@ -626,15 +632,15 @@ bool print_counts_by_closest(struct OverallState* state)
             {
 
                 //Verbose logging
-                if (logging && ahead->supersededby == 0)
-                {
-                    struct AccessPoint *ap2 = other->access_point;
-                    g_debug(" %15s distance %5.1fm      [%5li-%5li] (%3i)", 
-                    ap2->client_id, other->distance, 
-                    now - other->earliest,
-                    now - other->latest,
-                    other->count);
-                }
+                // if (logging && ahead->supersededby == 0)
+                // {
+                //     struct AccessPoint *ap2 = other->access_point;
+                //     g_debug(" %15s distance %5.1fm [%5li-%5li] (%3i)", 
+                //     ap2->client_id, other->distance, 
+                //     now - other->earliest,
+                //     now - other->latest,
+                //     other->count);
+                // }
 
                 if (time_diff > 600) // or we have seen enough?
                 {
@@ -672,8 +678,10 @@ bool print_counts_by_closest(struct OverallState* state)
                 {
                     if (logging || (detailedLogging && bi == 0))
                     {
-                        g_debug("'%s' sc: %.3f (%i) p=%.3f x %.3f", 
-                            best_three[bi].patch_name, best_three[bi].distance, bi, best_three[bi].probability, time_score);
+                        g_debug("%15s sc: %.3f p=%.3f x %.3f -> %.3f",
+                            best_three[bi].patch_name, best_three[bi].distance, 
+                            best_three[bi].probability, time_score,
+                            best_three[bi].probability * time_score);
                         // TODO: How to get persistent patch addresses closest->patch = best_three[bi].patch;
                     }
                 }
@@ -767,10 +775,6 @@ bool print_counts_by_closest(struct OverallState* state)
                 total_count += time_score;
                 for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
                 {
-                    if (rcurrent->knn_score > 0 && rcurrent->phone_total < 6)  // log first six phones only 
-                    {
-                        g_info("Phone #%.1f in %s +p(%.3f) x %.2f -> %.2f", total_count, rcurrent->name, rcurrent->knn_score, time_score, rcurrent->phone_total + rcurrent->knn_score * time_score);
-                    }
                     rcurrent->phone_total += rcurrent->knn_score * time_score;        // probability x incidence
                 }
             }

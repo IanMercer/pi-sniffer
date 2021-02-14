@@ -55,6 +55,6 @@ float compare_closest (struct ClosestHead* a, struct ClosestHead* b, struct Over
 /*
 *  Compare two distances using heuristic with cut off and no match handling
 */
-double score_one_pair(float a_distance, float b_distance);
+double score_one_pair(float a_distance, float b_distance, time_t a_time, time_t b_time);
 
 #endif
