@@ -165,11 +165,28 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
         uint8_t upper_bits = allocdata[02] >> 4;
         uint8_t information_byte = allocdata[03];
 
+        // It looks like the bottom bit of the information_byte may signify screen off
 
-        if (information_byte == 0x1a)
+        if (information_byte == 0x18)
+        {
+            soft_set_category(&existing->category, CATEGORY_PHONE);
+            set_name(existing, "iPhone 0x18", nt_device);
+        }
+        else if (information_byte == 0x19)
+        {
+            soft_set_category(&existing->category, CATEGORY_PHONE);
+            set_name(existing, "iPhone 0x19", nt_device);
+        }
+        else if (information_byte == 0x1a)
         {
             soft_set_category(&existing->category, CATEGORY_PHONE);
             set_name(existing, "iPhone8", nt_device);
+        }
+        else if (information_byte == 0x1b)
+        {
+            // Not iPhone8, not iPhone10
+            soft_set_category(&existing->category, CATEGORY_PHONE);
+            set_name(existing, "iPhone 0x1b", nt_device);
         }
         else if (upper_bits == 4 && information_byte == 0x1c)
         {
