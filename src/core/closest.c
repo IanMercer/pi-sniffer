@@ -128,7 +128,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
             break; 
         }
         previousHead = h;
-        if (c++ > 1000) g_error("Stuck scanning head for %s", access_point->client_id);
+        if (c++ > CLOSEST_N) g_error("Stuck scanning head for %s", access_point->client_id);
     }
 
     // We moved it to the head so it should be here
