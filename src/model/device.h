@@ -18,8 +18,11 @@ typedef uint64_t u_int64_t;
 // Max allowed devices on this sensor
 #define N 2048
 
-// How many closest observations to track
-#define CLOSEST_N 8192
+// How many closest mac addresses to track
+#define CLOSEST_N 2048
+
+// How long to keep any observation around, max age in seconds, testing 2 min, for real, 20 min
+#define MAX_AGE 20*60
 
 // Maximum number of access points (sensors) allowed
 #define N_ACCESS_POINTS 32

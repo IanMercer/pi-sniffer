@@ -82,6 +82,62 @@ struct ClosestTo *get_closest_64(struct OverallState* state, int64_t device_64)
     return best;
 }
 
+/*
+*  Prune based on time, removing old data, not strictly necessary but keeps memory requirement lower
+*  and saves unnecessary CPU cycles
+*/
+void prune(struct OverallState* state, time_t latest)
+{
+    struct ClosestHead* cut_off_after = NULL;
+    struct ClosestHead* pc = NULL;
+    int debug_cutoff_index = 0;
+    int c = 0;
+    for (struct ClosestHead* t = state->closestHead; t != NULL && t->next != NULL; t = t->next)
+    {
+        if (t->closest != NULL)  // First item isn't initialized yet
+        {
+            c++;
+            int age = difftime(latest, t->closest->latest); // latest is a substitute for now, close enough
+            if (age > MAX_AGE)
+            {
+                cut_off_after = pc;  // not t, the one before
+                g_debug("Prune head array (too old) starting at %i. %s", debug_cutoff_index, t->name);
+                break;
+            }
+            if (c > CLOSEST_N)
+            {
+                cut_off_after = pc;  // not t, the one before
+                g_debug("Prune head array (too many) starting at %i. %s", debug_cutoff_index, t->name);
+                break;
+            }
+          
+            debug_cutoff_index++;
+            pc = t;
+        }
+    }
+
+    if (cut_off_after != NULL)
+    {
+        // dispose of head chain
+        struct ClosestHead* unlink_head = NULL;
+        while ((unlink_head = cut_off_after->next) != NULL)
+        {
+            int age = difftime(latest, unlink_head->closest->latest);
+            //g_debug("Prune %s, %is old", unlink_head->name, age);
+
+            // dispose of side chain
+            struct ClosestTo* unlink = NULL;
+            while ((unlink = unlink_head->closest) != NULL)
+            {
+                unlink_head->closest = unlink->next;
+                g_free(unlink);
+            }
+
+            cut_off_after->next = unlink_head->next;
+            g_free(unlink_head);
+        }
+    }
+}
 
 /*
    Add a closest observation (get a lock before you call this)
@@ -128,7 +184,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
             break; 
         }
         previousHead = h;
-        if (c++ > CLOSEST_N) g_error("Stuck scanning head for %s", access_point->client_id);
+        if (c++ > 2*CLOSEST_N) g_error("Stuck scanning head for %s", access_point->client_id);
     }
 
     // We moved it to the head so it should be here
@@ -153,33 +209,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         head->closest = NULL;
         head->supersededby = 0;
 
-        // If the head array has grown too large (assuming 4 aps per mac)
-        // remove the tail entry
-        if (c > CLOSEST_N / 4)
-        {
-            struct ClosestHead* pc = NULL;
-            for (struct ClosestHead* t = state->closestHead; t != NULL && t->next != NULL; t = t->next)
-            {
-                pc = t;
-            }
-
-            if (pc != NULL) // should always be since c > ...
-            {
-                g_trace("Prune %s", pc->next->name);
-
-                // dispose of chain
-                struct ClosestTo* unlink = NULL;
-                while ((unlink = pc->closest) != NULL)
-                {
-                    pc->closest = unlink->next;
-                    g_free(unlink);
-                }
-
-                // dispose of head
-                g_free(pc->next);
-                pc->next = NULL;
-            }
-        }
+        prune(state, latest);
     }
 
     // Update the type, latest wins
