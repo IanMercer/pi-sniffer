@@ -577,9 +577,9 @@ bool print_counts_by_closest(struct OverallState* state)
         bool logging = false;
 
         if (
-            //difftime(test->latest, last_run) > 0 ||
-            ahead->category == CATEGORY_PHONE || 
-            ahead->category == CATEGORY_BEACON
+            difftime(test->latest, last_run) > 0
+            //|| ahead->category == CATEGORY_PHONE 
+            //|| ahead->category == CATEGORY_BEACON
             //ahead->category == CATEGORY_COVID || 
             //ahead->category == CATEGORY_PENCIL
             )
@@ -663,15 +663,15 @@ bool print_counts_by_closest(struct OverallState* state)
             {
 
                 //Verbose logging
-                // if (logging && ahead->supersededby == 0)
-                // {
-                //     struct AccessPoint *ap2 = other->access_point;
-                //     g_debug(" %15s distance %5.1fm [%5li-%5li] (%3i)", 
-                //     ap2->client_id, other->distance, 
-                //     now - other->earliest,
-                //     now - other->latest,
-                //     other->count);
-                // }
+                if (logging && ahead->supersededby == 0)
+                {
+                    struct AccessPoint *ap2 = other->access_point;
+                    g_debug(" %15s distance %5.1fm [%5li-%5li] (%3i)", 
+                    ap2->client_id, other->distance, 
+                    now - other->earliest,
+                    now - other->latest,
+                    other->count);
+                }
 
                 if (time_diff > 600) // or we have seen enough?
                 {
