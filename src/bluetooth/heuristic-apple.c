@@ -169,8 +169,8 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
 
         if (information_byte == 0x18)
         {
-            soft_set_category(&existing->category, CATEGORY_PHONE);
-            set_name(existing, "iPhone 0x18", nt_device);
+            //soft_set_category(&existing->category, CATEGORY_PHONE);
+            //set_name(existing, "iPhone or Mac 0x18", nt_device);
         }
         else if (information_byte == 0x19)
         {
@@ -203,6 +203,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
         }
         else if (information_byte == 0x1d)
         {
+            // ?? computer?
             soft_set_category(&existing->category, CATEGORY_TABLET);
             set_name(existing, "iPad", nt_device);
         }

@@ -633,12 +633,25 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             uint16_t appearance = g_variant_get_uint16(prop_val);
             if (existing->appearance != appearance)
             {
-                g_debug("  %s Appearance has changed %i->%i", address, existing->appearance, appearance);
+                g_debug("  %s '%s' Appearance %i->%i", address, existing->name, existing->appearance, appearance);
 #ifdef MQTT
                 if (state.network_up) send_to_mqtt_single_value(address, "appearance", appearance);
 #endif
                 existing->appearance = appearance;
             }
+            if (appearance == 64)
+            {
+                soft_set_category(&existing->category, CATEGORY_PHONE);
+            }
+            else if (appearance == 128)
+            {
+                soft_set_category(&existing->category, CATEGORY_COMPUTER);
+            }
+            else if (appearance == 192)
+            {
+                soft_set_category(&existing->category, CATEGORY_WATCH);
+            }
+            // iPad, Watch, ... seem to do 640 so not useful
         }
         else if (strcmp(property_name, "ServiceData") == 0)
         {
