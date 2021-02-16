@@ -174,21 +174,35 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
         g_info("  %s '%s' Nearby Info 0x00: s=%.1x d=%.1x a=%.2x info=%.2x", existing->mac, existing->name,
              screen_bit, device_bit, activity_bits, information_byte);
 
-        if (device_bit == 0x00 && information_byte == 0x1c)
+        if (device_bit == 0x0 && information_byte == 0x1c)
         {
             soft_set_category(&existing->category, CATEGORY_COMPUTER);
             char tempName[NAME_LENGTH];
             g_snprintf(tempName, sizeof(tempName), "Macbook di=%.1x%.2x", device_bit, information_byte);
             set_name(existing, tempName, nt_manufacturer);
         }
-        else if (information_byte == 0x1d)
+        else if (device_bit == 0x1 && information_byte == 0x1c)
+        {
+            soft_set_category(&existing->category, CATEGORY_COMPUTER);
+            char tempName[NAME_LENGTH];
+            g_snprintf(tempName, sizeof(tempName), "Macbook Air or iPhone di=%.1x%.2x", device_bit, information_byte);
+            set_name(existing, tempName, nt_manufacturer);
+        }
+        else if (device_bit == 0x0 &&information_byte == 0x1d)
+        {
+            soft_set_category(&existing->category, CATEGORY_TABLET);
+            char tempName[NAME_LENGTH];
+            g_snprintf(tempName, sizeof(tempName), "Macbook di=%.1x%.2x", device_bit, information_byte);
+            set_name(existing, tempName, nt_manufacturer);
+        }
+        else if (device_bit == 0x1 && information_byte == 0x1d)
         {
             soft_set_category(&existing->category, CATEGORY_TABLET);
             char tempName[NAME_LENGTH];
             g_snprintf(tempName, sizeof(tempName), "iPad di=%.1x%.2x", device_bit, information_byte);
             set_name(existing, tempName, nt_manufacturer);
         }
-        else if ((device_bit == 0x00) && information_byte == 0x18)
+        else if ((device_bit == 0x0) && information_byte == 0x18)
         {
             // Could be anything? iWatch yes
         }

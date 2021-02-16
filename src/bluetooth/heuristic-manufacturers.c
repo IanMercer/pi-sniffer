@@ -1429,6 +1429,8 @@ const char *company_id_to_string(int company_id, int8_t* category)
 		return "Milwaukee";
 	case 0x0a01:
 		return "Bose";  // Maybe
+	case 0x0901:
+		return "Bose";
     case 0x0399:
         *category = CATEGORY_FIXED;
 		return "Nikon";
