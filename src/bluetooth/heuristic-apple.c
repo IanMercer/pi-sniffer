@@ -32,10 +32,12 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
             //send_to_mqtt_single_value(existing->mac, "temperature", temperature);
         }
     }
-    else if (apple_device_type == 0x13)     // New Apple device type - what is it?
+    else if (apple_device_type == 0x13)     // New Apple device type - what is it? M1 laptop?
     {
+        // 100% sure this is a laptop not a phone
         set_name(existing, "Apple Type 0x13", nt_manufacturer);
         g_info("  %s '%s' Apple 0x13", existing->mac, existing->name);
+        soft_set_category(&existing->category, CATEGORY_COMPUTER);
     }
     else if (apple_device_type == 0x03)     // On user action
     {
@@ -147,7 +149,6 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     {
         // Almost certainly an iPhone
         // too soon ... name comes later ... optional(existing->name, "Apple Device");
-        set_name(existing, "Apple Nearby 0x10", nt_manufacturer);
         //soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? but assume phone
 
         //g_debug("  Nearby Info ");
@@ -159,163 +160,126 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
 
         // e.g. phone: <[byte 0x10, 0x06, 0x51, 0x1e, 0xc1, 0x36, 0x99, 0xe1]>}
 
-        // Not right, MacBook Pro seems to send this too
-
-        uint8_t lower_bits = allocdata[02] & 0x0f;
-        uint8_t upper_bits = allocdata[02] >> 4;
+        uint8_t device_bits = allocdata[02] & 0x03;  // combined with information byte
+        uint8_t screen_bit = (allocdata[02] & 0x04) >> 3;   // on/off?
+        uint8_t activity_bits = allocdata[02] >> 3;
         uint8_t information_byte = allocdata[03];
 
-        // It looks like the bottom bit of the information_byte may signify screen off
+        // activity bits
+        // locked
+        // home screen
 
-        if (information_byte == 0x18)
+        g_info("  %s '%s' Nearby Info 0x00: s=%.1x d=%.1x a=%.2x info=%.2x", existing->mac, existing->name,
+             screen_bit, device_bits, activity_bits, information_byte);
+
+        if (device_bits == 0x00 && information_byte == 0x1c)
         {
-            //soft_set_category(&existing->category, CATEGORY_PHONE);
-            //set_name(existing, "iPhone or Mac 0x18", nt_device);
-        }
-        else if (information_byte == 0x19)
-        {
-            soft_set_category(&existing->category, CATEGORY_PHONE);
-            set_name(existing, "iPhone 0x19", nt_device);
-        }
-        else if (information_byte == 0x1a)
-        {
-            soft_set_category(&existing->category, CATEGORY_PHONE);
-            set_name(existing, "iPhone8", nt_device);
-        }
-        else if (information_byte == 0x1b)
-        {
-            // Not iPhone8, not iPhone10
-            soft_set_category(&existing->category, CATEGORY_PHONE);
-            set_name(existing, "iPhone 0x1b", nt_device);
-        }
-        else if (upper_bits == 4 && information_byte == 0x1c)
-        {
-            // Macbook pro? Works for home
             soft_set_category(&existing->category, CATEGORY_COMPUTER);
-            set_name(existing, "MacBook", nt_device);
+            char tempName[NAME_LENGTH];
+            g_snprintf(tempName, sizeof(tempName), "Macbook d=%.1x i=%.2x", device_bits, information_byte);
+            set_name(existing, tempName, nt_manufacturer);
         }
-        else if (upper_bits == 6 && information_byte == 0x1c)
+        else if (device_bits == 0x00 && information_byte == 0x1d)
         {
-            // 0/1c? 1/1c? 2/1c? 6/1c
-            // Macbook pro? Works for home
-            soft_set_category(&existing->category, CATEGORY_COMPUTER);
-            set_name(existing, "MacBook", nt_device);
-        }
-        else if (information_byte == 0x1d)
-        {
-            // ?? computer?
             soft_set_category(&existing->category, CATEGORY_TABLET);
-            set_name(existing, "iPad", nt_device);
+            char tempName[NAME_LENGTH];
+            g_snprintf(tempName, sizeof(tempName), "iPad d=%.1x i=%.2x", device_bits, information_byte);
+            set_name(existing, tempName, nt_manufacturer);
         }
-        else if (information_byte == 0x1e)
+        else 
         {
             soft_set_category(&existing->category, CATEGORY_PHONE);
-            set_name(existing, "iPhone8?", nt_device);
-        }
-        else if (information_byte == 0x1f)
-        {
-            // iPhone later generation
-            soft_set_category(&existing->category, CATEGORY_PHONE);
-            set_name(existing, "iPhone", nt_device);
-        }
-        else if (information_byte == 0x98)
-        {
-            soft_set_category(&existing->category, CATEGORY_WATCH);
-            set_name(existing, "Apple Watch", nt_device);
+            char tempName[NAME_LENGTH];
+            g_snprintf(tempName, sizeof(tempName), "iPhone d=%.1x i=%.2x", device_bits, information_byte);
+            set_name(existing, tempName, nt_manufacturer);
         }
 
-        char* wifi = 
-            information_byte == 0x10 ? "iPhone6?" : 
-            information_byte == 0x18 ? "Wifi ON ()" : 
-            information_byte == 0x1c ? "Wifi ON ()" : 
-            information_byte == 0x1e ? "Wifi ON ()" : 
-            information_byte == 0x1a ? "Wifi OFF()" : " ";
+        // if (lower_bits == 0x00){
+        //     // iPad sends this, unused
+        //     g_info("  %s '%s' Nearby Info 0x00: u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+        // }
+        // else if (lower_bits == 0x01){
+        //     // WATCH: Nearby Info 0x01: disabled u=00 info=18 Wifi ON ()
+        //     // Apple Nearby 0x10' Nearby Info 0x01: disabled u=05 info=18 Wifi ON ()
 
-        if (lower_bits == 0x00){
-            // iPad sends this, unused
-            g_info("  %s '%s' Nearby Info 0x00: u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
-        }
-        else if (lower_bits == 0x01){
-            // WATCH: Nearby Info 0x01: disabled u=00 info=18 Wifi ON ()
-            // Apple Nearby 0x10' Nearby Info 0x01: disabled u=05 info=18 Wifi ON ()
+        //     g_info("  %s '%s' Nearby Info 0x01: disabled u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+        //     // Apple TV sends this too, so cannot assume phone here '_Apple' Nearby Info 0x01: disabled u=00 info=00
+        //     //soft_set_category(&existing->category, CATEGORY_PHONE);  // most likely category
+        // }
+        // else if (lower_bits == 0x02){
+        //     // iPhone yes
+        //     g_info("  %s '%s' Nearby Info 0x02: unknown  u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+        // }
+        // else if (lower_bits == 0x03){
+        //     // locked screen
+        //     // Watch, iPhone sends this
+        //     g_info("  %s '%s' Nearby Info 0x03: locked   u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+        // }
+        // else if (lower_bits == 0x04){
+        //     g_info("  %s '%s' Nearby Info 0x04: unknown  u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+        // }
+        // else if (lower_bits == 0x05){
+        //     // iPhone, iPad
+        //     g_info("  %s '%s' Nearby Info 0x05: audio playing, screen off u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+        // }
+        // else if (lower_bits == 0x06){
+        //     // iWatch, MacBook Pro sends this
+        //     g_info("  %s '%s' Nearby Info 0x06: u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+        // }
+        // else if (lower_bits == 0x07){
+        //     // transition phase
+        //     g_info("  %s '%s' Nearby Info 0x07: on lock screen? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
 
-            g_info("  %s '%s' Nearby Info 0x01: disabled u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
-            // Apple TV sends this too, so cannot assume phone here '_Apple' Nearby Info 0x01: disabled u=00 info=00
-            //soft_set_category(&existing->category, CATEGORY_PHONE);  // most likely category
-        }
-        else if (lower_bits == 0x02){
-            // iPhone yes
-            g_info("  %s '%s' Nearby Info 0x02: unknown  u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
-        }
-        else if (lower_bits == 0x03){
-            // locked screen
-            // Watch, iPhone sends this
-            g_info("  %s '%s' Nearby Info 0x03: locked   u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
-        }
-        else if (lower_bits == 0x04){
-            g_info("  %s '%s' Nearby Info 0x04: unknown  u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
-        }
-        else if (lower_bits == 0x05){
-            // iPhone, iPad
-            g_info("  %s '%s' Nearby Info 0x05: audio playing, screen off u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
-        }
-        else if (lower_bits == 0x06){
-            // iWatch, MacBook Pro sends this
-            g_info("  %s '%s' Nearby Info 0x06: u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
-        }
-        else if (lower_bits == 0x07){
-            // transition phase
-            g_info("  %s '%s' Nearby Info 0x07: on lock screen? u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
-        }
-        else if (lower_bits == 0x08){
-            // iPhoneX 
-            g_info("  %s '%s' Nearby Info 0x08: screen is on u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
-        }
-        else if (lower_bits == 0x09){
-            // Nope, iPad is locked
-            // Nope, iPhone X, video was not playing, u=07
-            // Nope, iPhone 8, video not playing, u=03, info=1a, wifi was on
-            // iPhone u=05
-            g_info("  %s '%s' Nearby Info 0x09: screen is on u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
-        }
-        else if (lower_bits == 0x0A){
-            // Elsewhere it says this is a message from phone to watch?
-            // This message is sent by phones not watches, seems to have nothing to do with them
-            // iPhone X
-            // See https://arxiv.org/pdf/1904.10600.pdf
-            //soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad?
-            // is sent by both ipads and iphones
-            g_info("  %s '%s' Nearby Info 0x0a: iPhone/Pad u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
-        }
-        else if (lower_bits == 0x0B)
-        {
-            // active user
-            //soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad?
-            // or a Watch? u=04, info=1c
-            // iPhone u=03 or 07
-            // Macbook Pro u=04
-            g_info("  %s '%s' Nearby Info 0x0b: Recent user interaction u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
-        }
-        else if (lower_bits == 0x0C)
-        {
-            g_info("  %s '%s' Nearby Info 0x0c: _____ %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
-        }
-        else if (lower_bits == 0x0D)
-        {
-            // iPhone sends this
-            g_info("  %s '%s' Nearby Info 0x0d: _____ %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
-        }
-        else if (lower_bits == 0x0E)
-        {
-            g_info("  %s '%s' Nearby Info 0x0e: Phone call or Facetime %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
-        }
-        else if (lower_bits == 0x0F)
-        {
-            // Could be a mac book pro
-            g_info("  %s '%s' Nearby Info 0x0f: _____ u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
-        }
-        else
-            g_info("  %s '%s' Nearby Info 0x%2x: Unknown device status upper=%2x info=%.2x %s", existing->mac, existing->name, lower_bits, upper_bits, information_byte, wifi);
+        // }
+        // else if (lower_bits == 0x08){
+        //     // iPhoneX 
+        //     g_info("  %s '%s' Nearby Info 0x08: screen is on u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+        // }
+        // else if (lower_bits == 0x09){
+        //     // Nope, iPad is locked
+        //     // Nope, iPhone X, video was not playing, u=07
+        //     // Nope, iPhone 8, video not playing, u=03, info=1a, wifi was on
+        //     // iPhone u=05
+        //     g_info("  %s '%s' Nearby Info 0x09: screen is on u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+        // }
+        // else if (lower_bits == 0x0A){
+        //     // Elsewhere it says this is a message from phone to watch?
+        //     // This message is sent by phones not watches, seems to have nothing to do with them
+        //     // iPhone X
+        //     // See https://arxiv.org/pdf/1904.10600.pdf
+        //     //soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad?
+        //     // is sent by both ipads and iphones
+        //     g_info("  %s '%s' Nearby Info 0x0a: iPhone/Pad u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+        // }
+        // else if (lower_bits == 0x0B)
+        // {
+        //     // active user
+        //     //soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad?
+        //     // or a Watch? u=04, info=1c
+        //     // iPhone u=03 or 07
+        //     // Macbook Pro u=04
+        //     g_info("  %s '%s' Nearby Info 0x0b: Recent user interaction u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+        // }
+        // else if (lower_bits == 0x0C)
+        // {
+        //     g_info("  %s '%s' Nearby Info 0x0c: _____ %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+        // }
+        // else if (lower_bits == 0x0D)
+        // {
+        //     // iPhone sends this
+        //     g_info("  %s '%s' Nearby Info 0x0d: _____ %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+        // }
+        // else if (lower_bits == 0x0E)
+        // {
+        //     g_info("  %s '%s' Nearby Info 0x0e: Phone call or Facetime %.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+        // }
+        // else if (lower_bits == 0x0F)
+        // {
+        //     // Could be a mac book pro
+        //     g_info("  %s '%s' Nearby Info 0x0f: _____ u=%.2x info=%.2x %s", existing->mac, existing->name, upper_bits, information_byte, wifi);
+        // }
+        // else
+        //     g_info("  %s '%s' Nearby Info 0x%2x: Unknown device status upper=%2x info=%.2x %s", existing->mac, existing->name, lower_bits, upper_bits, information_byte, wifi);
     }
     else
     {

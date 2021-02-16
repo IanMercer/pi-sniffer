@@ -247,7 +247,11 @@ void handle_uuids(struct Device *device, char *uuidArray[2048], int actualLength
         else if (ble_uuid == 0x0000fe4eul) append_text(gatts, gatts_length, "NTT docomo");
         else if (ble_uuid == 0x0000fe4ful) append_text(gatts, gatts_length, "Molekule, Inc.");
         else if (ble_uuid == 0x0000fe50ul) append_text(gatts, gatts_length, "Google Inc.");
-        else if (ble_uuid == 0x0000fe51ul) append_text(gatts, gatts_length, "SRAM");
+        else if (ble_uuid == 0x0000fe51ul) 
+        {
+            append_text(gatts, gatts_length, "SRAM");
+            soft_set_category(&device->category, CATEGORY_CAR);  // Actually a bike
+        }
         else if (ble_uuid == 0x0000fe52ul) append_text(gatts, gatts_length, "SetPoint Medical");
         else if (ble_uuid == 0x0000fe53ul) append_text(gatts, gatts_length, "3M");
         else if (ble_uuid == 0x0000fe54ul) append_text(gatts, gatts_length, "Motiv, Inc.");

@@ -114,6 +114,9 @@ void pack_closest_columns(struct OverallState* state)
             bool haveDifferentAddressTypes = (a->addressType > 0 && b->addressType > 0 && 
                 a->addressType != b->addressType);
 
+            // cannot be the same device if either is a public mac address (already know macs are different)
+            bool haveDifferentMacAndPublic = (a->addressType == PUBLIC_ADDRESS_TYPE || b->addressType == PUBLIC_ADDRESS_TYPE);
+
             // cannot be the same if they both have names and the names are different
             // but don't reject _ names as they are temporary and will get replaced
             bool haveDifferentNames =
@@ -135,10 +138,7 @@ void pack_closest_columns(struct OverallState* state)
             }
 
             // cannot be the same if they both have known categories and they are different
-            bool haveDifferentCategories = (a->category != b->category);
-
-            // cannot be the same device if either is a public mac address (already know macs are different)
-            bool haveDifferentMacAndPublic = (a->addressType == PUBLIC_ADDRESS_TYPE || b->addressType == PUBLIC_ADDRESS_TYPE);
+            bool haveDifferentCategories = (a->category != b->category) || (a->category == CATEGORY_UNKNOWN);
 
             bool might_supersede = !(haveDifferentAddressTypes || haveDifferentNames || haveDifferentCategories || 
                     haveDifferentMacAndPublic);
