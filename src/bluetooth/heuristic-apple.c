@@ -178,14 +178,14 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
         {
             soft_set_category(&existing->category, CATEGORY_COMPUTER);
             char tempName[NAME_LENGTH];
-            g_snprintf(tempName, sizeof(tempName), "Macbook d=%.1x i=%.2x", device_bit, information_byte);
+            g_snprintf(tempName, sizeof(tempName), "Macbook di=%.1x%.2x", device_bit, information_byte);
             set_name(existing, tempName, nt_manufacturer);
         }
         else if (information_byte == 0x1d)
         {
             soft_set_category(&existing->category, CATEGORY_TABLET);
             char tempName[NAME_LENGTH];
-            g_snprintf(tempName, sizeof(tempName), "iPad d=%.1x i=%.2x", device_bit, information_byte);
+            g_snprintf(tempName, sizeof(tempName), "iPad di=%.1x%.2x", device_bit, information_byte);
             set_name(existing, tempName, nt_manufacturer);
         }
         else if ((device_bit == 0x00) && information_byte == 0x18)
@@ -196,14 +196,14 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
         {
             soft_set_category(&existing->category, CATEGORY_WATCH);
             char tempName[NAME_LENGTH];
-            g_snprintf(tempName, sizeof(tempName), "Apple Watch d=%.1x i=%.2x", device_bit, information_byte);
+            g_snprintf(tempName, sizeof(tempName), "Apple Watch di=%.1x%.2x", device_bit, information_byte);
             set_name(existing, tempName, nt_manufacturer);
         }
         else 
         {
             soft_set_category(&existing->category, CATEGORY_PHONE);
             char tempName[NAME_LENGTH];
-            g_snprintf(tempName, sizeof(tempName), "iPhone d=%.1x i=%.2x", device_bit, information_byte);
+            g_snprintf(tempName, sizeof(tempName), "iPhone di=%.1x%.2x", device_bit, information_byte);
             set_name(existing, tempName, nt_manufacturer);
         }
 
