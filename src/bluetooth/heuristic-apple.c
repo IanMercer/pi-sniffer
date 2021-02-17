@@ -112,7 +112,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     {
         set_name(existing, "Apple Handoff", nt_manufacturer);
         g_info("  %s '%s' Handoff", existing->mac, existing->name);
-        //soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? or Macbook but assume phone
+        soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? or Macbook but assume phone
         // 1 byte length
         // 1 byte version
         // 2 bytes IV
@@ -134,9 +134,11 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     } 
     else if (apple_device_type == 0x0f)     // Nearby action - On user action (rare)
     {
-        set_name(existing, "Apple Nearby 0x0f", nt_manufacturer);
-        g_info("  %s '%s' Nearby Action 0x0f", existing->mac, existing->name);
+        char tempName[NAME_LENGTH];
+        g_snprintf(tempName, sizeof(tempName), "Apple Nearby af=%.2x at=%.2x", allocdata[2], allocdata[3]);
+        set_name(existing, tempName, nt_manufacturer);
         // Could be MacBook, iPad or iPhone
+        g_info("  %s '%s' Nearby Action 0x0f", existing->mac, existing->name);
    
         // Used for WiFi-password messages
         // 1 byte length
@@ -181,11 +183,12 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
             g_snprintf(tempName, sizeof(tempName), "Macbook di=%.1x%.2x", device_bit, information_byte);
             set_name(existing, tempName, nt_manufacturer);
         }
-        else if (device_bit == 0x1 && information_byte == 0x1c)
+        // 11c is mostly a phone
+        else if (device_bit == 0x1 && information_byte == 0x1c && activity_bits == 0x11)
         {
-            //soft_set_category(&existing->category, CATEGORY_COMPUTER);
+            soft_set_category(&existing->category, CATEGORY_PHONE);
             char tempName[NAME_LENGTH];
-            g_snprintf(tempName, sizeof(tempName), "Apple di=%.1x%.2x", device_bit, information_byte);
+            g_snprintf(tempName, sizeof(tempName), "iPhone di=%.1x%.2x", device_bit, information_byte);
             set_name(existing, tempName, nt_manufacturer);
         }
         else if (device_bit == 0x0 &&information_byte == 0x1d)
@@ -204,7 +207,8 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
         }
         else if (device_bit == 0x01 && information_byte == 0x18 && activity_bits == 0x01)
         {
-            // activity = 1 seems to imply watch
+            // activity = 08 watch
+            // activity = 01 watch
             soft_set_category(&existing->category, CATEGORY_WATCH);
             char tempName[NAME_LENGTH];
             g_snprintf(tempName, sizeof(tempName), "Apple Watch di=%.1x%.2x", device_bit, information_byte);
