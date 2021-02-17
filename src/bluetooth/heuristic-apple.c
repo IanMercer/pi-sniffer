@@ -134,7 +134,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     } 
     else if (apple_device_type == 0x0f)     // Nearby action - On user action (rare)
     {
-        set_name(existing, "Apple Nearby 0x0f", nt_device);
+        set_name(existing, "Apple Nearby 0x0f", nt_manufacturer);
         g_info("  %s '%s' Nearby Action 0x0f", existing->mac, existing->name);
         // Could be MacBook, iPad or iPhone
    
@@ -183,9 +183,9 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
         }
         else if (device_bit == 0x1 && information_byte == 0x1c)
         {
-            soft_set_category(&existing->category, CATEGORY_COMPUTER);
+            //soft_set_category(&existing->category, CATEGORY_COMPUTER);
             char tempName[NAME_LENGTH];
-            g_snprintf(tempName, sizeof(tempName), "Macbook Air or iPhone di=%.1x%.2x", device_bit, information_byte);
+            g_snprintf(tempName, sizeof(tempName), "Apple something di=%.1x%.2x", device_bit, information_byte);
             set_name(existing, tempName, nt_manufacturer);
         }
         else if (device_bit == 0x0 &&information_byte == 0x1d)

@@ -639,17 +639,26 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 #endif
                 existing->appearance = appearance;
             }
-            if (appearance == 64)
+            if (appearance == BLE_APPEARANCE_GENERIC_PHONE)
             {
                 soft_set_category(&existing->category, CATEGORY_PHONE);
             }
-            else if (appearance == 128)
+            else if (appearance == BLE_APPEARANCE_GENERIC_COMPUTER)
             {
                 soft_set_category(&existing->category, CATEGORY_COMPUTER);
             }
-            else if (appearance == 192)
+            else if (appearance == BLE_APPEARANCE_GENERIC_WATCH)
             {
                 soft_set_category(&existing->category, CATEGORY_WATCH);
+            }
+            else if (appearance == BLE_APPEARANCE_WATCH_SPORTS_WATCH)
+            {
+                soft_set_category(&existing->category, CATEGORY_WATCH);
+            }
+            else if (appearance == BLE_APPEARANCE_GENERIC_TAG)
+            {
+                // DeWalt sends this
+                soft_set_category(&existing->category, CATEGORY_BEACON);
             }
             // iPad, Watch, ... seem to do 640 so not useful
         }

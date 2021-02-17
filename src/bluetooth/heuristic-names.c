@@ -48,6 +48,8 @@ void apply_name_heuristics (struct Device* device, const char* name)
         device->category = CATEGORY_PHONE;
     else if (string_contains_insensitive(name, "Galaxy S"))  //9+
         device->category = CATEGORY_PHONE;
+    else if (string_starts_with(name, "Galaxy Fit"))  // Galaxy Fitⓔ phone/fitness
+        device->category = CATEGORY_PHONE;
     else if (string_contains_insensitive(name, "Galaxy"))
         device->category = CATEGORY_PHONE;
     else if (string_contains_insensitive(name, "iPad"))
