@@ -205,6 +205,23 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
         else if ((device_bit == 0x0) && information_byte == 0x18)
         {
             // Could be anything? iWatch yes
+            char tempName[NAME_LENGTH];
+            g_snprintf(tempName, sizeof(tempName), "Apple di=%.1x%.2x", device_bit, information_byte);
+            set_name(existing, tempName, nt_manufacturer);
+        }
+        else if ((device_bit == 0x01) && information_byte == 0x18)
+        {
+            // Could be anything? iWatch yes
+            char tempName[NAME_LENGTH];
+            g_snprintf(tempName, sizeof(tempName), "Apple di=%.1x%.2x", device_bit, information_byte);
+            set_name(existing, tempName, nt_manufacturer);
+        }
+        else if ((device_bit == 0x00) && information_byte == 0x98)
+        {
+            soft_set_category(&existing->category, CATEGORY_WATCH);
+            char tempName[NAME_LENGTH];
+            g_snprintf(tempName, sizeof(tempName), "Apple Watch di=%.1x%.2x", device_bit, information_byte);
+            set_name(existing, tempName, nt_manufacturer);
         }
         else if ((device_bit == 0x01) && information_byte == 0x98)
         {
