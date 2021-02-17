@@ -185,14 +185,14 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
         {
             //soft_set_category(&existing->category, CATEGORY_COMPUTER);
             char tempName[NAME_LENGTH];
-            g_snprintf(tempName, sizeof(tempName), "Apple something di=%.1x%.2x", device_bit, information_byte);
+            g_snprintf(tempName, sizeof(tempName), "Apple di=%.1x%.2x", device_bit, information_byte);
             set_name(existing, tempName, nt_manufacturer);
         }
         else if (device_bit == 0x0 &&information_byte == 0x1d)
         {
-            soft_set_category(&existing->category, CATEGORY_TABLET);
+            // can be a phone, a=18 soft_set_category(&existing->category, CATEGORY_TABLET);
             char tempName[NAME_LENGTH];
-            g_snprintf(tempName, sizeof(tempName), "Macbook di=%.1x%.2x", device_bit, information_byte);
+            g_snprintf(tempName, sizeof(tempName), "Apple di=%.1x%.2x", device_bit, information_byte);
             set_name(existing, tempName, nt_manufacturer);
         }
         else if (device_bit == 0x1 && information_byte == 0x1d)
