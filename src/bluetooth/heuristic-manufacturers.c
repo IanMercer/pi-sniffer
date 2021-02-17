@@ -197,9 +197,9 @@ void handle_manufacturer(struct Device *device, uint16_t manufacturer, unsigned 
 			if (device->address_type == PUBLIC_ADDRESS_TYPE)
 			{
 		        char postfixed[NAME_LENGTH];
-				// Use last six in name
+				// Use last six in name to distinguish them, e.g. Milwaukee beacons
 				snprintf(postfixed, sizeof(postfixed), "_%s %s", manuf, (device->mac+9));  // Skip 9 characters XX:XX:XX:
-				set_name(device, manuf, nt_manufacturer);
+				set_name(device, postfixed, nt_manufacturer);
 			}
 			else
 			{
@@ -1429,10 +1429,32 @@ const char *company_id_to_string(int company_id, int8_t* category)
 		return "Milwaukee";
 	case 0x0a01:
 		return "Bose";  // Maybe
+	case 0x02f2:
+		*category = CATEGORY_CAMERA;
+		return "Gopro";
 	case 0x0901:
-		return "Bose";
+		// Glasses with lights in them??
+		// But also LE-Bose QC35 II
+		*category = CATEGORY_HEADPHONES; // or health?
+		return "Lucimed or Bose";
+    case 0x4634:
+        //*category = CATEGORY_FIXED;
+		return "Unknown 0x4634";
+    case 0x4e3:
+		*category = CATEGORY_WEARABLE;		// shoes!
+		return "Under Armor";
+    case 0x5148:
+		return "Unknown 0x5148";
+    case 0x7500:
+		return "Unknown 0x7500";
+    case 0x559a:
+		return "Unknown 0x559a";
+    case 0xc45:
+		return "Unknown 0x0c45";
+    case 0xb01:
+		return "Unknown 0x0b01";
     case 0x0399:
-        *category = CATEGORY_FIXED;
+        *category = CATEGORY_CAMERA;
 		return "Nikon";
 	case 0x8617:
 		return "Undefined";  // Not in any web search
