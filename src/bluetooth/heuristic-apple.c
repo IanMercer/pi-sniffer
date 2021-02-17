@@ -48,6 +48,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     {
         set_name(existing, "AirDrop", nt_device);
         g_info("  %s '%s' Airdrop", existing->mac, existing->name);
+        soft_set_category(&existing->category, CATEGORY_PHONE);
     }
     else if (apple_device_type == 0x06)     // Constantly
     {
@@ -76,8 +77,9 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x08)     // On user action (rare)
     {
-        set_name(existing, "Siri", nt_device);
+        set_name(existing, "Siri", nt_manufacturer);
         g_info("  %s '%s' Siri", existing->mac, existing->name);
+        soft_set_category(&existing->category, CATEGORY_PHONE);     // Could be anything, assume phone
         // 1 byte length
         // 2 bytes perceptual hash
         // 1 byte SNR
@@ -87,7 +89,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x09)     // On user action (some)
     {
-        set_name(existing, "AirPlay", nt_device);
+        set_name(existing, "AirPlay", nt_manufacturer);
         g_info("  %s '%s' Airplay", existing->mac, existing->name);
         existing->category = CATEGORY_FIXED;  // probably an Apple TV?
         // 1 byte length
@@ -97,8 +99,8 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x0a)     // ?? (rare)
     {
-        set_name(existing, "Apple 0x0a", nt_device);
-        g_info("  %s '%s' Apple 0a??", existing->mac, existing->name);
+        set_name(existing, "Apple 0x0a", nt_manufacturer);
+        g_info("  %s '%s' Apple 0x0a", existing->mac, existing->name);
     }
     else if (apple_device_type == 0x0b)     // On physical action
     {
@@ -178,6 +180,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
 
         if (device_bit == 0x0 && information_byte == 0x1c)
         {
+            // s=0 d=0 a=51 info=1c was a probably a phone
             soft_set_category(&existing->category, CATEGORY_COMPUTER);
             char tempName[NAME_LENGTH];
             g_snprintf(tempName, sizeof(tempName), "Macbook di=%.1x%.2x", device_bit, information_byte);
@@ -194,6 +197,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
         else if (device_bit == 0x0 &&information_byte == 0x1d)
         {
             // can be a phone, a=18 soft_set_category(&existing->category, CATEGORY_TABLET);
+            soft_set_category(&existing->category, CATEGORY_PHONE);
             char tempName[NAME_LENGTH];
             g_snprintf(tempName, sizeof(tempName), "Apple di=%.1x%.2x", device_bit, information_byte);
             set_name(existing, tempName, nt_manufacturer);
