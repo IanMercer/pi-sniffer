@@ -46,7 +46,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x05)     // On user action
     {
-        set_name(existing, "AirDrop", nt_device);
+        set_name(existing, "AirDrop", nt_manufacturer);
         g_info("  %s '%s' Airdrop", existing->mac, existing->name);
         soft_set_category(&existing->category, CATEGORY_PHONE);
     }
@@ -137,7 +137,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     else if (apple_device_type == 0x0f)     // Nearby action - On user action (rare)
     {
         char tempName[NAME_LENGTH];
-        g_snprintf(tempName, sizeof(tempName), "Apple Nearby af=%.2x at=%.2x", allocdata[2], allocdata[3]);
+        g_snprintf(tempName, sizeof(tempName), "Apple Near af=%.2x at=%.2x", allocdata[2], allocdata[3]);
         set_name(existing, tempName, nt_manufacturer);
         // Could be MacBook, iPad or iPhone
         g_info("  %s '%s' Nearby Action 0x0f", existing->mac, existing->name);
@@ -180,10 +180,12 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
 
         if (device_bit == 0x0 && information_byte == 0x1c)
         {
+            // s=0 d=0 a=71 info=1c was a phone
             // s=0 d=0 a=51 info=1c was a probably a phone
-            soft_set_category(&existing->category, CATEGORY_COMPUTER);
+            // s=0 d=1 a=09 info=1a
+            //soft_set_category(&existing->category, CATEGORY_COMPUTER);
             char tempName[NAME_LENGTH];
-            g_snprintf(tempName, sizeof(tempName), "Macbook di=%.1x%.2x", device_bit, information_byte);
+            g_snprintf(tempName, sizeof(tempName), "Apple di=%.1x%.2x", device_bit, information_byte);
             set_name(existing, tempName, nt_manufacturer);
         }
         // 11c is mostly a phone
