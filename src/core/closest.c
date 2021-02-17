@@ -101,13 +101,13 @@ void prune(struct OverallState* state, time_t latest)
             if (age > MAX_AGE)
             {
                 cut_off_after = pc;  // not t, the one before
-                g_debug("Prune head array (too old) starting at %i. %s", debug_cutoff_index, t->name);
+                //g_debug("Prune head array (too old) starting at %i. %s", debug_cutoff_index, t->name);
                 break;
             }
             if (c > CLOSEST_N)
             {
                 cut_off_after = pc;  // not t, the one before
-                g_debug("Prune head array (too many) starting at %i. %s", debug_cutoff_index, t->name);
+                //g_debug("Prune head array (too many) starting at %i. %s", debug_cutoff_index, t->name);
                 break;
             }
           

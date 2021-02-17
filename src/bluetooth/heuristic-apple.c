@@ -202,28 +202,15 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
             g_snprintf(tempName, sizeof(tempName), "iPad di=%.1x%.2x", device_bit, information_byte);
             set_name(existing, tempName, nt_manufacturer);
         }
-        else if ((device_bit == 0x0) && information_byte == 0x18)
+        else if (device_bit == 0x01 && information_byte == 0x18 && activity_bits == 0x01)
         {
-            // Could be anything? iWatch yes
-            char tempName[NAME_LENGTH];
-            g_snprintf(tempName, sizeof(tempName), "Apple di=%.1x%.2x", device_bit, information_byte);
-            set_name(existing, tempName, nt_manufacturer);
-        }
-        else if ((device_bit == 0x01) && information_byte == 0x18)
-        {
-            // Could be anything? iWatch yes
-            char tempName[NAME_LENGTH];
-            g_snprintf(tempName, sizeof(tempName), "Apple di=%.1x%.2x", device_bit, information_byte);
-            set_name(existing, tempName, nt_manufacturer);
-        }
-        else if ((device_bit == 0x00) && information_byte == 0x98)
-        {
+            // activity = 1 seems to imply watch
             soft_set_category(&existing->category, CATEGORY_WATCH);
             char tempName[NAME_LENGTH];
             g_snprintf(tempName, sizeof(tempName), "Apple Watch di=%.1x%.2x", device_bit, information_byte);
             set_name(existing, tempName, nt_manufacturer);
         }
-        else if ((device_bit == 0x01) && information_byte == 0x98)
+        else if (information_byte == 0x98)
         {
             soft_set_category(&existing->category, CATEGORY_WATCH);
             char tempName[NAME_LENGTH];
