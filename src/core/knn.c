@@ -199,7 +199,8 @@ float get_probability (struct recording* recording,
             float deltatime = accesstimes[ap->id];
 
             // 500s later could have moved a long way
-            float p_gone_away = atan(deltatime/100)/3.14159*2;
+            // first 30s are 0 as that's typical a gap in transmissions
+            float p_gone_away = deltatime < 30 ? 0.0 : atan((deltatime-30)/100)/3.14159*2;
 
             if (recording_distance >= EFFECTIVE_INFINITE_TEST && measured_distance >= EFFECTIVE_INFINITE_TEST)
             {
