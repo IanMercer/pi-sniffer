@@ -26,7 +26,7 @@ struct recording
 
 // SAVE AND LOAD recordings
 
-bool record (const char* directory, const char* device_name, double access_distances[N_ACCESS_POINTS], struct AccessPoint* access_points, char* location);
+bool record (const char* directory, const char* device_name, float access_distances[N_ACCESS_POINTS], struct AccessPoint* access_points, char* location);
 
 bool read_observations (const char * dirname, struct OverallState* state, bool confirmed);
 
@@ -44,7 +44,10 @@ struct top_k
     float probability;
 };
 
-int k_nearest(struct recording* recordings, double* access_point_distances, struct AccessPoint* access_points, struct top_k* top_result, int top_count, 
+int k_nearest(struct recording* recordings, 
+    float accessdistances[N_ACCESS_POINTS],
+    float accesstimes[N_ACCESS_POINTS], 
+    struct AccessPoint* access_points, struct top_k* top_result, int top_count, 
     bool confirmed, bool debug);
 
 /*

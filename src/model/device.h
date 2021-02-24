@@ -122,7 +122,7 @@ struct Device
    time_t earliest;               // Earliest time seen, used to calculate overlap
    time_t latest_local;           // Latest time seen by this sensor, used to calculate overlap
    time_t latest_any;             // Latest time seen by ANY sensor, used to keep alive
-   int count;                     // Count how many times seen (ignore 1 offs)
+   int count;                     // Count how many times seen
    int8_t try_connect_state;      // Zero = never tried, 1..N-1 = Try in progress, N = Done
    int8_t try_connect_attempts;   // How many attempts have been made to connect
    // TODO: Collect data, SVM or trilateration TBD

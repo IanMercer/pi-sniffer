@@ -167,15 +167,19 @@ bool json_to_recording(char* buffer, struct OverallState* state, struct patch** 
 
 // KNN CLASSIFIER
 
-float get_probability (struct recording* recording, double access_points_distance[N_ACCESS_POINTS], struct AccessPoint* access_points, bool debug)
+float get_probability (struct recording* recording,
+    float accessdistances[N_ACCESS_POINTS],
+    float accesstimes[N_ACCESS_POINTS], 
+    struct AccessPoint* access_points, bool debug)
 {
     if (access_points->next == NULL) 
     {
         float sum_delta_squared = 0.0;
         // single access point - one over distance squared for probability
+        // and no need to take time into account
         struct AccessPoint* ap = access_points;
         float recording_distance = recording->access_point_distances[ap->id];
-        float measured_distance = access_points_distance[ap->id];
+        float measured_distance = accessdistances[ap->id];
         float delta = (recording_distance - measured_distance);
         sum_delta_squared += delta*delta;
         // 0.5m = 1
@@ -191,7 +195,11 @@ float get_probability (struct recording* recording, double access_points_distanc
         for (struct AccessPoint* ap = access_points; ap != NULL; ap=ap->next)
         {
             float recording_distance = recording->access_point_distances[ap->id];
-            float measured_distance = access_points_distance[ap->id];
+            float measured_distance = accessdistances[ap->id];
+            float deltatime = accesstimes[ap->id];
+
+            // 500s later could have moved a long way
+            float p_gone_away = atan(deltatime/100)/3.14159*2;
 
             if (recording_distance >= EFFECTIVE_INFINITE_TEST && measured_distance >= EFFECTIVE_INFINITE_TEST)
             {
@@ -202,14 +210,14 @@ float get_probability (struct recording* recording, double access_points_distanc
             }
             else if (recording_distance >= EFFECTIVE_INFINITE_TEST)
             {
-                probability = probability * 0.2;
+                probability = probability * p_gone_away;
                 // the observation could see the AP but this recording says you cannot
                 // e.g. barn says you cannot see study, so if you can see study you can't be here
                 if (debug) g_debug("%s was not expected, but %.2fm found x 0.2", ap->client_id, measured_distance);
             }
             else if (measured_distance >= EFFECTIVE_INFINITE_TEST)
             {
-               probability = probability * 0.30;
+               probability = probability * 0.30;  // there is no time for a reading we don't have!
                 if (debug) g_debug("%s was expected not found, expected at %.2f x 0.4", ap->client_id, recording_distance);
                // could not see an AP at all, but should have been able to, could just be a missing observation
             }
@@ -218,13 +226,15 @@ float get_probability (struct recording* recording, double access_points_distanc
                 // activation function, and max 0.8 for a reading with the same ap
                 float delta = fabs(measured_distance - recording_distance);
                 //float delta_squared = (delta * delta);
+                float p_in_range = 1.0 - atan(delta/2)/3.14159*2;
 
-                double prob = 1.0 - fmin(0.8, 0.1 * fmin(delta, 8));
+                // The more likely you are to be here, the more signficant it is if the distance is a miss
+                // Either you have left this place or you are in range for this reading to be useful
+                double prob = p_in_range + p_gone_away - (p_in_range * p_gone_away);
                 probability = probability * prob;
                 if (debug) g_debug("%s was expected and found %.2fm delta, x %.3f", ap->client_id, delta, prob);
             }
         }
-
 
         return probability;
     }
@@ -241,9 +251,12 @@ float get_probability (struct recording* recording, double access_points_distanc
   NB You must free() the returned string
 
 */
-int k_nearest(struct recording* recordings, double* access_point_distances, struct AccessPoint* access_points,
-              struct top_k* top_result, int top_count, 
-              bool confirmed, bool debug)
+int k_nearest(struct recording* recordings,
+            float accessdistances[N_ACCESS_POINTS],
+            float accesstimes[N_ACCESS_POINTS], 
+            struct AccessPoint* access_points,
+            struct top_k* top_result, int top_count, 
+            bool confirmed, bool debug)
 {
     int k_result = 0;   // length of the final array after summarization
 
@@ -258,7 +271,7 @@ int k_nearest(struct recording* recordings, double* access_point_distances, stru
         bool debug2 = strcmp(recording->patch_name, "Gravel") == 0 || strcmp(recording->patch_name, "Garage") == 0; 
 
         // Insert recording into the list if it's a better match
-        float distance = get_probability(recording, access_point_distances, access_points, debug && debug2);
+        float distance = get_probability(recording, accessdistances, accesstimes, access_points, debug && debug2);
 
         struct top_k current;
         g_utf8_strncpy(current.patch_name, recording->patch_name, META_LENGTH);
@@ -508,7 +521,7 @@ bool read_observations (const char * dirname,  struct OverallState* state, bool 
 /*
     record_observation
 */
-bool record (const char* directory, const char* device_name, double access_distances[N_ACCESS_POINTS], struct AccessPoint* access_points, char* location)
+bool record (const char* directory, const char* device_name, float access_distances[N_ACCESS_POINTS], struct AccessPoint* access_points, char* location)
 {
 	GError *error_local = NULL;
 

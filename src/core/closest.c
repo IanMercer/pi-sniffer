@@ -122,9 +122,6 @@ void prune(struct OverallState* state, time_t latest)
         struct ClosestHead* unlink_head = NULL;
         while ((unlink_head = cut_off_after->next) != NULL)
         {
-            int age = difftime(latest, unlink_head->closest->latest);
-            //g_debug("Prune %s, %is old", unlink_head->name, age);
-
             // dispose of side chain
             struct ClosestTo* unlink = NULL;
             while ((unlink = unlink_head->closest) != NULL)
@@ -297,7 +294,8 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
 */
 int calculate_location(struct OverallState* state, 
     struct ClosestHead* head,
-    double accessdistances[N_ACCESS_POINTS], double accesstimes[N_ACCESS_POINTS], 
+    float accessdistances[N_ACCESS_POINTS],
+    float accesstimes[N_ACCESS_POINTS], 
     struct top_k* best_three, int best_three_len,
     bool is_training_beacon, bool debug)
 {
@@ -314,7 +312,7 @@ int calculate_location(struct OverallState* state,
     //const char* category = category_from_int(closest->category);
 
     // try confirmed
-    int k_found = k_nearest(state->recordings, accessdistances, access_points, best_three, best_three_len, TRUE, debug);
+    int k_found = k_nearest(state->recordings, accessdistances, accesstimes, access_points, best_three, best_three_len, TRUE, debug);
 
     // if (k_found < 3)
     // {
@@ -366,7 +364,7 @@ int calculate_location(struct OverallState* state,
     }
 
     // Try again including unconfirmed recordings (beacon subdirectory)
-    k_found = k_nearest(state->recordings, accessdistances, access_points, best_three, best_three_len, FALSE, debug);
+    k_found = k_nearest(state->recordings, accessdistances, accesstimes, access_points, best_three, best_three_len, FALSE, debug);
 
     if (k_found == 0 || best_three[0].distance > 1.0)
     {
@@ -527,8 +525,8 @@ bool print_counts_by_closest(struct OverallState* state)
     for (struct ClosestHead* ahead = state->closestHead; ahead != NULL; ahead = ahead->next)
     {
         // parallel array of distances and times
-        double access_distances[N_ACCESS_POINTS];       // latest observation distance
-        double access_times[N_ACCESS_POINTS];           // latest observation time
+        float access_distances[N_ACCESS_POINTS];       // latest observation distance
+        float access_times[N_ACCESS_POINTS];           // latest observation time
 
         // Set all distances to zero
         for (struct AccessPoint* ap = access_points_list; ap != NULL; ap = ap->next)
