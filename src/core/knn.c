@@ -226,7 +226,8 @@ float get_probability (struct recording* recording,
                 // activation function, and max 0.8 for a reading with the same ap
                 float delta = fabs(measured_distance - recording_distance);
                 //float delta_squared = (delta * delta);
-                float p_in_range = 1.0 - atan(delta/2)/3.14159*2;
+                // activation function - level until 2m and then drops off 1/x curve
+                float p_in_range = delta < 2 ? 1.0 : 1.0 / (delta-1.0);
 
                 // The more likely you are to be here, the more signficant it is if the distance is a miss
                 // Either you have left this place or you are in range for this reading to be useful
