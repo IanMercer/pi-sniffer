@@ -245,8 +245,9 @@ float get_probability (struct recording* recording,
                 // activation function, and max 0.8 for a reading with the same ap
                 // if recording_distance is large, delta can be smaller
                 // if recording_distance is small, delta must be very small
-                float error = fabs(measured_distance - recording_distance) / recording_distance;
-                float p_in_range = 1.0 - atan(error)/3.14158*2;
+                // 1+ smooths it out a bit at bottom end, stops 0.5 from doubling the error vs 1.0
+                float error = fabs(measured_distance - recording_distance) / (1 + recording_distance);
+                float p_in_range = 1.0 - atan(2 * error)/3.14158*2;
 
                 // The more likely you are to be here, the more signficant it is if the distance is a miss
                 // Either you have left this place or you are in range for this reading to be useful

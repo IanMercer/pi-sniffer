@@ -1006,7 +1006,7 @@ bool print_counts_by_closest(struct OverallState* state)
         {
             char ago[20];
             double diff = b->last_seen == 0 ? -1 : difftime(now, b->last_seen) / 60.0;
-            if (b->last_seen == 0) snprintf(ago, sizeof(ago), "---");
+            if (diff < 0) snprintf(ago, sizeof(ago), "---");
             else if (diff < 2) snprintf(ago, sizeof(ago), "now");
             else if (diff < 60) snprintf(ago, sizeof(ago), "%.0f min ago", diff);
             else if (diff < 24*60) snprintf(ago, sizeof(ago), "%.1f hours ago", diff / 60.0);
