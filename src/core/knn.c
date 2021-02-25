@@ -192,11 +192,19 @@ float get_probability (struct recording* recording,
     {
         double probability = 1.0;
 
+        // Rebase all times to since the latest observation
+        // We want to know where the device WAS even if it has since left
+        double min_delta = 30.0;
+        for (struct AccessPoint* ap = access_points; ap != NULL; ap=ap->next)
+        {
+            if (accesstimes[ap->id] < min_delta) min_delta = accesstimes[ap->id];
+        }
+
         for (struct AccessPoint* ap = access_points; ap != NULL; ap=ap->next)
         {
             float recording_distance = recording->access_point_distances[ap->id];
             float measured_distance = accessdistances[ap->id];
-            float deltatime = accesstimes[ap->id];
+            float deltatime = accesstimes[ap->id] - min_delta;
 
             // 500s later could have moved a long way
             // first 30s are 0 as that's typical a gap in transmissions
@@ -668,9 +676,10 @@ float compare_closest (struct ClosestHead* a, struct ClosestHead* b, struct Over
         }
         if (insertion_point < n)
         {
-            g_memmove(&ordered_start_times[insertion_point+1], 
-                    &ordered_start_times[insertion_point], 
-                    sizeof(time_t) * (n - insertion_point));
+            for (int k = n; k > insertion_point; k--)
+            {
+                ordered_start_times[k] = ordered_start_times[k-1];
+            }
         }
         ordered_start_times[insertion_point] = c->earliest;
     }
