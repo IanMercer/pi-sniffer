@@ -213,7 +213,7 @@ float get_probability (struct recording* recording,
             // 500s later could have moved a long way
             // first 30s are 0 as that's typical a gap in transmissions
             // now using the average interval instead, a tag with 214s gaps for example has much longer
-            float p_gone_away = deltatime < average_gap ? 0.0 : atan((deltatime-average_gap)/100)/3.14159*2;
+            float p_gone_away = deltatime < average_gap ? 0.0 : atan(2*deltatime/average_gap)/3.14159*2;
 
             if (recording_distance >= EFFECTIVE_INFINITE_TEST && measured_distance >= EFFECTIVE_INFINITE_TEST)
             {
