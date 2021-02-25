@@ -296,6 +296,7 @@ int calculate_location(struct OverallState* state,
     struct ClosestHead* head,
     float accessdistances[N_ACCESS_POINTS],
     float accesstimes[N_ACCESS_POINTS], 
+    double average_gap,
     struct top_k* best_three, int best_three_len,
     bool is_training_beacon, bool debug)
 {
@@ -312,7 +313,7 @@ int calculate_location(struct OverallState* state,
     //const char* category = category_from_int(closest->category);
 
     // try confirmed
-    int k_found = k_nearest(state->recordings, accessdistances, accesstimes, access_points, best_three, best_three_len, TRUE, debug);
+    int k_found = k_nearest(state->recordings, accessdistances, accesstimes, average_gap, access_points, best_three, best_three_len, TRUE, debug);
 
     // if (k_found < 3)
     // {
@@ -364,7 +365,7 @@ int calculate_location(struct OverallState* state,
     }
 
     // Try again including unconfirmed recordings (beacon subdirectory)
-    k_found = k_nearest(state->recordings, accessdistances, accesstimes, access_points, best_three, best_three_len, FALSE, debug);
+    k_found = k_nearest(state->recordings, accessdistances, accesstimes, average_gap, access_points, best_three, best_three_len, FALSE, debug);
 
     if (k_found == 0 || best_three[0].distance > 1.0)
     {
@@ -535,7 +536,6 @@ bool print_counts_by_closest(struct OverallState* state)
             access_times[ap->id] = 0.0;
         }
 
-        struct ClosestTo* test = ahead->closest;
         count_examined++;
 
         count_not_marked++;
@@ -553,6 +553,8 @@ bool print_counts_by_closest(struct OverallState* state)
 
         // How long does this device typically go between transmits
         double average_gap = sum_duration / sum_readings;
+
+        struct ClosestTo* test = ahead->closest;
 
         int delta_time = difftime(now, test->latest);
         // beacons and other fixed devices last longer, tend to transmit less often
@@ -630,7 +632,7 @@ bool print_counts_by_closest(struct OverallState* state)
             }
 
             time_t earliest = test->earliest;
-            for (struct ClosestTo* other = test; other != NULL; other = other->next)
+            for (struct ClosestTo* other = ahead->closest; other != NULL; other = other->next)
             {
                 if (other->earliest < earliest) earliest = other->earliest;
             }
@@ -658,7 +660,7 @@ bool print_counts_by_closest(struct OverallState* state)
         // DIFFERENT ACCESS POINT Right?
 
         // Examine all instances of this mac address
-        for (struct ClosestTo* other = test; other != NULL; other = other->next)
+        for (struct ClosestTo* other = ahead->closest; other != NULL; other = other->next)
         {
             // Once we get beyond 300s we start skipping any other matches
             if (skipping) continue;
@@ -712,7 +714,9 @@ bool print_counts_by_closest(struct OverallState* state)
             bool debug = false; //strcmp(test->name, "F350") == 0;
 
             struct top_k best_three[3];
-            int k_found = calculate_location(state, ahead, access_distances, access_times,
+            int k_found = calculate_location(state, ahead, 
+                access_distances, access_times,
+                average_gap,
                 best_three, 3,
                 ahead->is_training_beacon, debug);
 

@@ -169,9 +169,13 @@ bool json_to_recording(char* buffer, struct OverallState* state, struct patch** 
 
 float get_probability (struct recording* recording,
     float accessdistances[N_ACCESS_POINTS],
-    float accesstimes[N_ACCESS_POINTS], 
+    float accesstimes[N_ACCESS_POINTS],
+    double average_gap, 
     struct AccessPoint* access_points, bool debug)
 {
+    if (average_gap < 25) average_gap = 25;   // unlikely value
+    if (average_gap > 360) average_gap = 360; // also unlikely
+
     if (access_points->next == NULL) 
     {
         float sum_delta_squared = 0.0;
@@ -208,7 +212,8 @@ float get_probability (struct recording* recording,
 
             // 500s later could have moved a long way
             // first 30s are 0 as that's typical a gap in transmissions
-            float p_gone_away = deltatime < 30 ? 0.0 : atan((deltatime-30)/100)/3.14159*2;
+            // now using the average interval instead, a tag with 214s gaps for example has much longer
+            float p_gone_away = deltatime < average_gap ? 0.0 : atan((deltatime-average_gap)/100)/3.14159*2;
 
             if (recording_distance >= EFFECTIVE_INFINITE_TEST && measured_distance >= EFFECTIVE_INFINITE_TEST)
             {
@@ -265,7 +270,8 @@ float get_probability (struct recording* recording,
 */
 int k_nearest(struct recording* recordings,
             float accessdistances[N_ACCESS_POINTS],
-            float accesstimes[N_ACCESS_POINTS], 
+            float accesstimes[N_ACCESS_POINTS],
+            double average_gap, 
             struct AccessPoint* access_points,
             struct top_k* top_result, int top_count, 
             bool confirmed, bool debug)
@@ -283,7 +289,7 @@ int k_nearest(struct recording* recordings,
         bool debug2 = strcmp(recording->patch_name, "Gravel") == 0 || strcmp(recording->patch_name, "Garage") == 0; 
 
         // Insert recording into the list if it's a better match
-        float distance = get_probability(recording, accessdistances, accesstimes, access_points, debug && debug2);
+        float distance = get_probability(recording, accessdistances, accesstimes, average_gap, access_points, debug && debug2);
 
         struct top_k current;
         g_utf8_strncpy(current.patch_name, recording->patch_name, META_LENGTH);

@@ -47,6 +47,7 @@ struct top_k
 int k_nearest(struct recording* recordings, 
     float accessdistances[N_ACCESS_POINTS],
     float accesstimes[N_ACCESS_POINTS], 
+    double average_gap,
     struct AccessPoint* access_points, struct top_k* top_result, int top_count, 
     bool confirmed, bool debug);
 
