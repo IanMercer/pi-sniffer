@@ -224,9 +224,12 @@ float get_probability (struct recording* recording,
             }
             else if (recording_distance >= EFFECTIVE_INFINITE_TEST)
             {
-                probability = probability * p_gone_away;
+                // This makes it very important that every recording has every possible AP listed in it
+                // Too severe, so added a 0.5 factor
+                probability = probability * (p_gone_away + 0.5 - 0.5 * p_gone_away);
                 // the observation could see the AP but this recording says you cannot
                 // e.g. barn says you cannot see study, so if you can see study you can't be here
+                // as p_gone_away increases this allows old values to not block newer ones
                 if (debug) g_debug("%s was not expected, but %.2fm found x 0.2", ap->client_id, measured_distance);
             }
             else if (measured_distance >= EFFECTIVE_INFINITE_TEST)
@@ -243,7 +246,7 @@ float get_probability (struct recording* recording,
                 float delta = fabs(measured_distance - recording_distance);
                 //float delta_squared = (delta * delta);
                 // activation function - level until 2m and then drops off 1/x curve
-                float p_in_range = delta < 2 ? 1.0 : 1.0 / (delta-1.0);
+                float p_in_range = delta < 2.5 ? 1.0 : 1.0 / (delta-1.0);
 
                 // The more likely you are to be here, the more signficant it is if the distance is a miss
                 // Either you have left this place or you are in range for this reading to be useful
