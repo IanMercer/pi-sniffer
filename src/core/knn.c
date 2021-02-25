@@ -243,16 +243,16 @@ float get_probability (struct recording* recording,
             else
             {
                 // activation function, and max 0.8 for a reading with the same ap
-                float delta = fabs(measured_distance - recording_distance);
-                //float delta_squared = (delta * delta);
-                // activation function - level until 2m and then drops off 1/x curve
-                float p_in_range = delta < 2.5 ? 1.0 : 1.0 / (delta-1.0);
+                // if recording_distance is large, delta can be smaller
+                // if recording_distance is small, delta must be very small
+                float error = fabs(measured_distance - recording_distance) / recording_distance;
+                float p_in_range = 1.0 - atan(error)/3.14158*2;
 
                 // The more likely you are to be here, the more signficant it is if the distance is a miss
                 // Either you have left this place or you are in range for this reading to be useful
                 double prob = p_in_range + p_gone_away/2 - (p_in_range * p_gone_away/2);
                 probability = probability * prob;
-                if (debug) g_debug("%s was expected and found %.2fm delta, x %.3f", ap->client_id, delta, prob);
+                if (debug) g_debug("%s was expected and found %.2fm delta, x %.3f", ap->client_id, error, prob);
             }
         }
 
