@@ -219,7 +219,7 @@ float get_probability (struct recording* recording,
             {
                 // OK: did not expect this distance to be here, and it's not but less information than a match
                 // but better than a bad match on distances, e.g. 4m and 14m
-                probability = probability * 0.8;
+                probability = probability * 0.99;
                 //if (debug) g_debug("%s neither x 0.99", ap->client_id);
             }
             else if (recording_distance >= EFFECTIVE_INFINITE_TEST)
