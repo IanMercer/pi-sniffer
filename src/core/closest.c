@@ -540,6 +540,19 @@ bool print_counts_by_closest(struct OverallState* state)
 
         count_not_marked++;
 
+        // Calculate frequency with which this device normally transmits
+
+        int sum_readings = 0;
+        int sum_duration = 0;
+
+        for (struct ClosestTo* other = ahead->closest; other != NULL; other = other->next)
+        {
+            sum_duration += difftime(other->latest, other->earliest);
+            sum_readings += other->count;
+        }
+
+        // How long does this device typically go between transmits
+        double average_gap = sum_duration / sum_readings;
 
         int delta_time = difftime(now, test->latest);
         // beacons and other fixed devices last longer, tend to transmit less often
@@ -622,7 +635,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 if (other->earliest < earliest) earliest = other->earliest;
             }
 
-            g_debug("%s%s %10s [%5li-%5li] (%4i)     %23s %s", 
+            g_debug("%s%s %10s [%5li-%5li] (%4i)     %23s %s  (%.1fs)", 
                     mac,
                     ahead->addressType == PUBLIC_ADDRESS_TYPE ? "*" : " ",
                     category, 
@@ -630,7 +643,9 @@ bool print_counts_by_closest(struct OverallState* state)
                     now - test->latest,
                     test->count,
                     ahead->name,
-                    prob_s);
+                    prob_s,
+                    average_gap
+                    );
         }
 
         int earliest = difftime(now, test->earliest);
