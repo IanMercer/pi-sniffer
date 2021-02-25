@@ -225,8 +225,8 @@ float get_probability (struct recording* recording,
             else if (recording_distance >= EFFECTIVE_INFINITE_TEST)
             {
                 // This makes it very important that every recording has every possible AP listed in it
-                // Too severe, so added a 0.5 factor
-                probability = probability * (p_gone_away + 0.5 - 0.5 * p_gone_away);
+                // Too severe, so added a 0.4 factor
+                probability = probability * (p_gone_away + 0.4 - 0.4 * p_gone_away);
                 // the observation could see the AP but this recording says you cannot
                 // e.g. barn says you cannot see study, so if you can see study you can't be here
                 // as p_gone_away increases this allows old values to not block newer ones
@@ -234,7 +234,7 @@ float get_probability (struct recording* recording,
             }
             else if (measured_distance >= EFFECTIVE_INFINITE_TEST)
             {
-               float p_should_have_seen_it = recording_distance < 2 ? 0.9 : 0.9 / (recording_distance-1.0);
+               float p_should_have_seen_it = recording_distance < 2 ? 0.95 : 0.95 / (recording_distance-1.0);
 
                probability = probability * (1.0 - p_should_have_seen_it);
                 if (debug) g_debug("%s was expected not found, expected at %.2f x 0.4", ap->client_id, recording_distance);
