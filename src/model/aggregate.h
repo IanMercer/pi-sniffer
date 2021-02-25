@@ -31,30 +31,18 @@ struct ClosestTo
 
 
 /*
- * A remote device (could be local too)
- * Maintained in a Linked list
+* Short linked list of recent patches for a device
 */
-// struct RemoteDevice
-// {
-//     int64_t mac64;
-//     // for debugging
-//     char name [NAME_LENGTH];
-//     // name type
-//     enum name_type name_type;      // 'not set', 'heuristic', 'known', or 'alias'
+struct RecentRoom
+{
+    // patch name
+    char name[NAME_LENGTH];
 
-//     time_t earliest;
-//     time_t latest;
+    // time started
+    time_t started;
 
-//     int64_t supersededby;
-
-//     // for training location to patch mappings
-//     bool is_training_beacon;
-
-//     // Most likely patch for this device
-//     char patch_name[18];
-
-//     struct RemoteDevice* next;
-// };
+    struct RecentRoom* next;
+};
 
 
 /*
@@ -96,6 +84,9 @@ struct ClosestHead
 
     // for training location to patch mappings
     bool is_training_beacon;
+
+    // linked list of recent rooms
+    struct RecentRoom* recent_rooms; 
 
     // next closest head in chain
     struct ClosestHead* next;

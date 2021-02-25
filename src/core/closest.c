@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <string.h>
 
 #include <time.h>
 #include <math.h>
@@ -130,6 +131,14 @@ void prune(struct OverallState* state, time_t latest)
                 g_free(unlink);
             }
 
+            // dispose of side chain
+            struct RecentRoom* rr = NULL;
+            while ((rr = unlink_head->recent_rooms) != NULL)
+            {
+                unlink_head->recent_rooms = rr->next;
+                g_free(rr);
+            }
+
             cut_off_after->next = unlink_head->next;
             g_free(unlink_head);
         }
@@ -205,6 +214,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         head->name_type = name_type;
         head->closest = NULL;
         head->supersededby = 0;
+        head->recent_rooms = NULL;
 
         prune(state, latest);
     }
@@ -637,7 +647,9 @@ bool print_counts_by_closest(struct OverallState* state)
                 if (other->earliest < earliest) earliest = other->earliest;
             }
 
-            g_debug("%s%s %10s [%5li-%5li] (%4i)     %23s %s  (%.1fs)", 
+            const char* room_name = (ahead->recent_rooms == NULL) ? "" : ahead->recent_rooms->name;
+
+            g_debug("%s%s %10s [%5li-%5li] (%4i)     %23s %s  (%.1fs) %s", 
                     mac,
                     ahead->addressType == PUBLIC_ADDRESS_TYPE ? "*" : " ",
                     category, 
@@ -646,7 +658,8 @@ bool print_counts_by_closest(struct OverallState* state)
                     test->count,
                     ahead->name,
                     prob_s,
-                    average_gap
+                    average_gap,
+                    room_name
                     );
         }
 
@@ -839,6 +852,52 @@ bool print_counts_by_closest(struct OverallState* state)
             //     g_info("%s Far %s (earliest=%4is, chosen=%4is latest=%4is) count=%i dist=%.1f score=%.2f", mac, category, -earliest, -delta_time, -age, count, test->distance, score);
             //     g_info("  %s", json);
             // }
+
+
+            // TODO: MAINTAIN A HISTORY OF LOCATIONS ON EACH DEVICE
+
+            struct patch* best_patch = patch_list;
+
+            for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
+            {
+                // If this is a known beacon and the score is > best, place it in this room
+                if (rcurrent->knn_score > best_patch->knn_score)
+                {
+                    best_patch = rcurrent;
+                }
+            }
+
+            if (best_patch != NULL && 
+                (ahead->recent_rooms == NULL || strcmp(ahead->recent_rooms->name, best_patch->name) != 0))
+            {
+                struct RecentRoom* recent = malloc(sizeof(struct RecentRoom));
+                g_utf8_strncpy(recent->name, best_patch->name, NAME_LENGTH);
+                recent->next = ahead->recent_rooms;
+                ahead->recent_rooms = recent;
+
+                // prune
+
+                int keep = 10;
+
+                struct RecentRoom* last_room = ahead->recent_rooms;
+                while ((last_room != NULL) && (keep-- > 0))
+                {
+                    last_room = last_room->next;
+                }
+
+                // unlink after here
+                if (last_room != NULL)
+                {
+                    // dispose of tail
+                    struct RecentRoom* rr = NULL;
+                    while ((rr = last_room->next) != NULL)
+                    {
+                        last_room->next = rr->next;
+                        rr->next = NULL;
+                        g_free(rr);
+                    }
+                }
+            }
 
             // Is this a known Device that we want to track?
             struct Beacon* beacon = NULL;
