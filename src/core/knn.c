@@ -250,7 +250,7 @@ float get_probability (struct recording* recording,
 
                 // The more likely you are to be here, the more signficant it is if the distance is a miss
                 // Either you have left this place or you are in range for this reading to be useful
-                double prob = p_in_range + p_gone_away - (p_in_range * p_gone_away);
+                double prob = p_in_range + p_gone_away/2 - (p_in_range * p_gone_away/2);
                 probability = probability * prob;
                 if (debug) g_debug("%s was expected and found %.2fm delta, x %.3f", ap->client_id, delta, prob);
             }
