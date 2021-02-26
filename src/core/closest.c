@@ -343,11 +343,12 @@ int calculate_location(struct OverallState* state,
         {
             // Adjust this to control how probability is spread over possibiities
             // lower number = less precise, more spread 5 = too much spread
-            double scale_factor = 20.0;
+            double scale_factor = 10.0;
             // 0.180 0.179 => 0.001 * 100 = 0.1 
-            double pallocation =  allocation * (bi < k_found-1 ?
+            double pallocation =  allocation * ((bi < k_found-1 ?
+                // split 50:50 plus a scale factor favoring the one with the higher score
                 fmin(1.0, 0.5 + scale_factor * (best_three[bi].distance - best_three[bi+1].distance)) : 
-                1.0);
+                1.0));
                 // e.g. 0.426, 0.346, 0.289 => 0.080, 0.057 => * 5 => .4, .275 => 0.9 and ...
             best_three[bi].probability = pallocation;
             allocation = allocation - pallocation;
