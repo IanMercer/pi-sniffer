@@ -724,7 +724,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         if (time_score > 0)
         {
-            bool debug = strcmp(ahead->name, "Covid Trace") == 0;
+            bool debug = false;//strcmp(ahead->name, "Covid Trace") == 0;
 
             struct top_k best_three[3];
             int k_found = calculate_location(state, ahead, 
@@ -1005,7 +1005,7 @@ bool print_counts_by_closest(struct OverallState* state)
         for (struct Beacon* b = state->beacons; b != NULL; b=b->next)
         {
             char ago[20];
-            double diff = b->last_seen == 0 ? -1 : difftime(now, b->last_seen) / 60.0;
+            double diff = (b->last_seen == 0) ? -1 : difftime(now, b->last_seen) / 60.0;
             if (diff < 0) snprintf(ago, sizeof(ago), "---");
             else if (diff < 2) snprintf(ago, sizeof(ago), "now");
             else if (diff < 60) snprintf(ago, sizeof(ago), "%.0f min ago", diff);
