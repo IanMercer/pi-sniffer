@@ -165,6 +165,15 @@ bool json_to_recording(char* buffer, struct OverallState* state, struct patch** 
     return TRUE;
 }
 
+/*
+*   Or two probabilities
+*/
+double or(double a, double b)
+{
+    return a + b - a * b;
+}
+
+
 // KNN CLASSIFIER
 
 float get_probability (struct recording* recording,
@@ -195,6 +204,7 @@ float get_probability (struct recording* recording,
     else 
     {
         double probability = 1.0;
+        double probability_isnt = 0.0;
 
         // Rebase all times to since the latest observation
         // We want to know where the device WAS even if it has since left
@@ -223,6 +233,9 @@ float get_probability (struct recording* recording,
                 // but better than a bad match on distances, e.g. 4m and 14m
                 probability = probability * 0.99;
                 if (debug) g_debug("%s neither x 0.99", ap->client_id);
+
+                // doesn't tell us anything, but only matches increase probability
+                probability_isnt = or(probability_isnt, 0.05);
             }
             else if (recording_distance >= EFFECTIVE_INFINITE_TEST)
             {
@@ -236,6 +249,8 @@ float get_probability (struct recording* recording,
                 // e.g. barn says you cannot see study, so if you can see study you can't be here
                 // as p_gone_away increases this allows old values to not block newer ones
                 if (debug) g_debug("%s was not expected, but %.2fm found x 0.2", ap->client_id, measured_distance);
+
+                probability_isnt = or(probability_isnt, (1.0 - p_gone_away));
             }
             else if (measured_distance >= EFFECTIVE_INFINITE_TEST)
             {
@@ -247,6 +262,8 @@ float get_probability (struct recording* recording,
 
                 if (debug) g_debug("%s was expected not found, expected at %.2f x 0.4", ap->client_id, recording_distance);
                // could not see an AP at all, but should have been able to, could just be a missing observation
+
+                probability_isnt = or(probability_isnt, (1.0 - p_might_miss_it));
             }
             else
             {
@@ -259,13 +276,18 @@ float get_probability (struct recording* recording,
                 double prob = p_in_range + p_gone_away/2 - (p_in_range * p_gone_away/2);
                 probability = probability * prob;
                 if (debug) g_debug("%s was expected and found %.2fm delta, x %.3f", ap->client_id, error, prob);
+
+                // If it's close, increase probability that it's a match
+                // It it's not close, increase probability it isn't
+                probability_isnt = or(probability_isnt, 1.0 - prob);
             }
         }
 
         // We need to see actual matches to be confidence, the more matches the closer to 1.0
         double confidence = atan(matches)/3.14159*2;
 
-        return probability * confidence;
+        //return probability * confidence;
+        return (1.0 - probability_isnt) * confidence;
     }
 }
 
