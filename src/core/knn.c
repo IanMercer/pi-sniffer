@@ -235,7 +235,7 @@ float get_probability (struct recording* recording,
                 if (debug) g_debug("%s neither x 0.99", ap->client_id);
 
                 // doesn't tell us anything, but only matches increase probability
-                probability_isnt = or(probability_isnt, 0.05);
+                //probability_isnt = or(probability_isnt, 0.01);
             }
             else if (recording_distance >= EFFECTIVE_INFINITE_TEST)
             {
