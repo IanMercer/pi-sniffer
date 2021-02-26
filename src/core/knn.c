@@ -203,7 +203,7 @@ float get_probability (struct recording* recording,
     } 
     else 
     {
-        double probability = 1.0;
+        double probability_is = 0.0;
         double probability_isnt = 0.0;
 
         // Rebase all times to since the latest observation
@@ -231,7 +231,6 @@ float get_probability (struct recording* recording,
             {
                 // OK: did not expect this distance to be here, and it's not but less information than a match
                 // but better than a bad match on distances, e.g. 4m and 14m
-                probability = probability * 0.99;
                 if (debug) g_debug("%s neither x 0.99", ap->client_id);
 
                 // doesn't tell us anything, but only matches increase probability
@@ -243,8 +242,7 @@ float get_probability (struct recording* recording,
                 // but it should not be, so unless this is an old recording this means
                 // it cannot be a match
                 // Too severe, so added a 0.1 factor
-                double p_gone_max = fmin(0.8, (p_gone_away + 0.1 - 0.1 * p_gone_away));
-                probability = probability * p_gone_max;
+                double p_gone_max = fmin(0.9, (p_gone_away + 0.1 - 0.1 * p_gone_away));
                 // the observation could see the AP but this recording says you cannot
                 // e.g. barn says you cannot see study, so if you can see study you can't be here
                 // as p_gone_away increases this allows old values to not block newer ones
@@ -258,7 +256,6 @@ float get_probability (struct recording* recording,
                 // more likely we didn't see it just because the signal is weak
                 // 0.8 is a fudge factor to keep this smaller than a good match below
                 float p_might_miss_it = 0.8 * atan(recording_distance/10)/3.14159*2;
-                probability = probability * p_might_miss_it;
 
                 if (debug) g_debug("%s was expected not found, expected at %.2f x 0.4", ap->client_id, recording_distance);
                // could not see an AP at all, but should have been able to, could just be a missing observation
@@ -276,21 +273,23 @@ float get_probability (struct recording* recording,
                 // The more likely you are to be here, the more signficant it is if the distance is a miss
                 // Either you have left this place or you are in range for this reading to be useful
                 double prob = or(p_in_range, p_gone_away/2);
-                probability = probability * prob;
+                //probability = probability * prob;
                 if (debug) g_debug("%s was expected and found %.2fm delta, x %.3f", ap->client_id, error, prob);
+
+                probability_is = or(probability_is, p_in_range);
 
                 // If it's close, increase probability that it's a match
                 // It it's not close, increase probability it isn't
-                probability_isnt = or(probability_isnt, p_not_a_match);
+                //probability_isnt = or(probability_isnt, p_not_a_match);
             }
         }
 
         // We need to see actual matches to be confidence, the more matches the closer to 1.0
-        double confidence = atan(matches)/3.14159*2;
+        //double confidence = atan(matches)/3.14159*2;
         // don't need confidence for negative inference
 
         //return probability * confidence;
-        return (1.0 - probability_isnt) * confidence;
+        return (1.0 - probability_isnt) * probability_is;
     }
 }
 
