@@ -230,7 +230,8 @@ float get_probability (struct recording* recording,
                 // but it should not be, so unless this is an old recording this means
                 // it cannot be a match
                 // Too severe, so added a 0.1 factor
-                probability = probability * (p_gone_away + 0.1 - 0.1 * p_gone_away);
+                double p_gone_max = fmin(0.8, (p_gone_away + 0.1 - 0.1 * p_gone_away));
+                probability = probability * p_gone_max;
                 // the observation could see the AP but this recording says you cannot
                 // e.g. barn says you cannot see study, so if you can see study you can't be here
                 // as p_gone_away increases this allows old values to not block newer ones
