@@ -268,18 +268,20 @@ float get_probability (struct recording* recording,
             else
             {
                 matches++;
-                double error = fabs(log(measured_distance) - log(recording_distance));
-                float p_in_range = 1.0 - atan(5 * error)/3.14159*2;
+                double error = fabs(log(1+measured_distance) - log(1+recording_distance));
+                double p_not_a_match =  atan(2 * error)/3.14159*2;
+
+                double p_in_range = 1.0 - atan(5 * error)/3.14159*2;
 
                 // The more likely you are to be here, the more signficant it is if the distance is a miss
                 // Either you have left this place or you are in range for this reading to be useful
-                double prob = p_in_range + p_gone_away/2 - (p_in_range * p_gone_away/2);
+                double prob = or(p_in_range, p_gone_away/2);
                 probability = probability * prob;
                 if (debug) g_debug("%s was expected and found %.2fm delta, x %.3f", ap->client_id, error, prob);
 
                 // If it's close, increase probability that it's a match
                 // It it's not close, increase probability it isn't
-                probability_isnt = or(probability_isnt, 1.0 - prob);
+                probability_isnt = or(probability_isnt, p_not_a_match);
             }
         }
 
