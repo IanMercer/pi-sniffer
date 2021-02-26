@@ -204,6 +204,8 @@ float get_probability (struct recording* recording,
             if (accesstimes[ap->id] < min_delta) min_delta = accesstimes[ap->id];
         }
 
+        int matches = 0;
+
         for (struct AccessPoint* ap = access_points; ap != NULL; ap=ap->next)
         {
             float recording_distance = recording->access_point_distances[ap->id];
@@ -247,6 +249,7 @@ float get_probability (struct recording* recording,
             }
             else
             {
+                matches++;
                 double error = fabs(log(measured_distance) - log(recording_distance));
                 float p_in_range = 1.0 - atan(5 * error)/3.14159*2;
 
@@ -258,7 +261,10 @@ float get_probability (struct recording* recording,
             }
         }
 
-        return probability;
+        // We need to see actual matches to be confidence, the more matches the closer to 1.0
+        double confidence = atan(matches)/3.14159*2;
+
+        return probability * confidence;
     }
 }
 
