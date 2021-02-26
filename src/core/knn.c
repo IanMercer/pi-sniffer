@@ -224,9 +224,11 @@ float get_probability (struct recording* recording,
             }
             else if (recording_distance >= EFFECTIVE_INFINITE_TEST)
             {
-                // This makes it very important that every recording has every possible AP listed in it
-                // Too severe, so added a 0.4 factor
-                probability = probability * (p_gone_away + 0.4 - 0.4 * p_gone_away);
+                // We have an observation, the device is in range of this access point
+                // but it should not be, so unless this is an old recording this means
+                // it cannot be a match
+                // Too severe, so added a 0.1 factor
+                probability = probability * (p_gone_away + 0.1 - 0.1 * p_gone_away);
                 // the observation could see the AP but this recording says you cannot
                 // e.g. barn says you cannot see study, so if you can see study you can't be here
                 // as p_gone_away increases this allows old values to not block newer ones
