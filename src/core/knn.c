@@ -286,7 +286,7 @@ float get_probability (struct recording* recording,
         }
 
         // We need to see actual matches to be confidence, the more matches the closer to 1.0
-        double confidence = 1.0; // atan(matches)/3.14159*2;
+        double confidence = atan(matches)/3.14159*2;
         // don't need confidence for negative inference
 
         //return probability * confidence;
