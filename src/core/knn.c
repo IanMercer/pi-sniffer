@@ -220,7 +220,7 @@ float get_probability (struct recording* recording,
                 // OK: did not expect this distance to be here, and it's not but less information than a match
                 // but better than a bad match on distances, e.g. 4m and 14m
                 probability = probability * 0.99;
-                //if (debug) g_debug("%s neither x 0.99", ap->client_id);
+                if (debug) g_debug("%s neither x 0.99", ap->client_id);
             }
             else if (recording_distance >= EFFECTIVE_INFINITE_TEST)
             {
@@ -246,8 +246,17 @@ float get_probability (struct recording* recording,
                 // if recording_distance is large, delta can be smaller
                 // if recording_distance is small, delta must be very small
 
-                double error = sqrt(fabs(measured_distance - recording_distance));
-                float p_in_range = 1.0 - atan(2 * error)/3.14158*2;
+                double error = fabs(measured_distance - recording_distance) / sqrt(recording_distance);
+
+                // delta  distance error
+                //  0.1     0.1     0.1/0.31 = 0.322
+                //  1.0     0.1     1.0/0.31 = 3.22
+                // 10.0     0.1     10.0/0.31 = 32.2
+                //  1.0     1.0     1.0/1.0 = 1.0
+                // 10.0     1.0     10.0/1.0 = 10.0
+                // 10.0    30.0     10.0/5.4 = 1.85
+           
+                float p_in_range = 1.0 - atan(error)/3.14159*2;
 
                 // The more likely you are to be here, the more signficant it is if the distance is a miss
                 // Either you have left this place or you are in range for this reading to be useful
@@ -290,10 +299,8 @@ int k_nearest(struct recording* recordings,
         if (confirmed && !recording->confirmed) continue;
         test_count++;
 
-        bool debug2 = strcmp(recording->patch_name, "Gravel") == 0 || strcmp(recording->patch_name, "Garage") == 0; 
-
         // Insert recording into the list if it's a better match
-        float distance = get_probability(recording, accessdistances, accesstimes, average_gap, access_points, debug && debug2);
+        float distance = get_probability(recording, accessdistances, accesstimes, average_gap, access_points, debug);
 
         struct top_k current;
         g_utf8_strncpy(current.patch_name, recording->patch_name, META_LENGTH);
