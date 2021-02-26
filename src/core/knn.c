@@ -236,9 +236,9 @@ float get_probability (struct recording* recording,
             }
             else if (measured_distance >= EFFECTIVE_INFINITE_TEST)
             {
-               float p_should_have_seen_it = recording_distance < 2 ? 0.95 : 0.95 / (recording_distance-1.0);
-
-               probability = probability * (1.0 - p_should_have_seen_it);
+               float p_might_miss_it = atan(recording_distance/10)/3.14159*2;
+               probability = probability * p_might_miss_it;
+               
                 if (debug) g_debug("%s was expected not found, expected at %.2f x 0.4", ap->client_id, recording_distance);
                // could not see an AP at all, but should have been able to, could just be a missing observation
             }
