@@ -323,6 +323,8 @@ int k_nearest(struct recording* recordings,
         if (confirmed && !recording->confirmed) continue;
         test_count++;
 
+        debug = debug && string_starts_with(recording->patch_name, "East");
+
         // Insert recording into the list if it's a better match
         float distance = get_probability(recording, accessdistances, accesstimes, average_gap, access_points, debug);
 

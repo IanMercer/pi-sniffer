@@ -725,7 +725,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         if (time_score > 0)
         {
-            bool debug = false;//strcmp(ahead->name, "Covid Trace") == 0;
+            bool debug = string_contains_insensitive(ahead->name, "iPhone");
 
             struct top_k best_three[3];
             int k_found = calculate_location(state, ahead, 
