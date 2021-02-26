@@ -566,7 +566,6 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         else if (strcmp(property_name, "Class") == 0)
         {
             // Very few devices send this information (not very useful)
-            // 7936 was a heart-rate monitor
             uint32_t deviceclass = g_variant_get_uint32(prop_val);
             if (existing->deviceclass != deviceclass)
             {
@@ -576,61 +575,26 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 #endif
                 existing->deviceclass = deviceclass;
 
-                if (deviceclass == 0x200404 || 
-                    deviceclass == 0x240404 ||
-                    deviceclass == 0x340404)
-                {
-                     // Wearable headset device
-
-                    // 21 | 10 | 2Major Service Class
-                    // CoD Bit 21: Audio (Speaker, Microphone, Headset service, …)
-                    // Major Device Class
-                    // CoD Bits 10: Audio/Video (headset,speaker,stereo, video display, vcr…)
-                    // Minor Device Class
-                    // CoD Bits 2: Wearable Headset Device
-                    soft_set_category(&existing->category, CATEGORY_HEADPHONES);
-                }
-                else if (deviceclass == 0x240408)
-                {
-                    // handsfree car kit
-                    soft_set_category(&existing->category, CATEGORY_CAR);
-                }
-                else if (deviceclass == 0x043c || deviceclass == 0x8043c)
-                {
-                    soft_set_category(&existing->category, CATEGORY_TV);
-                }
-                else if (deviceclass == 0x5a020c)
-                {
-                    soft_set_category(&existing->category, CATEGORY_PHONE);
-                }
-                else if (deviceclass == 0x60680)
-                {
-                    // TBD Zebra beacon? checkout scanner?
-                }
-
+                handle_class(existing, deviceclass);
             }
         }
         else if (strcmp(property_name, "Icon") == 0)
         {
             char *icon = g_variant_dup_string(prop_val, NULL);
+
             if (&existing->category == CATEGORY_UNKNOWN)
             {
                 // Should track icon and test against that instead
                 g_debug("  %s Icon: '%s'\n", address, icon);
             }
-            if (strcmp(icon, "computer") == 0)
-                soft_set_category(&existing->category, CATEGORY_COMPUTER);
-            else if (strcmp(icon, "phone") == 0)
-                soft_set_category(&existing->category, CATEGORY_PHONE);
-            else if (strcmp(icon, "multimedia-player") == 0)
-                soft_set_category(&existing->category, CATEGORY_TV);
-            else if (strcmp(icon, "audio-card") == 0)
-                soft_set_category(&existing->category, CATEGORY_AUDIO_CARD);
+            handle_icon(existing, icon);
+
             g_free(icon);
         }
         else if (strcmp(property_name, "Appearance") == 0)
         { // type 'q' which is uint16
             uint16_t appearance = g_variant_get_uint16(prop_val);
+
             if (existing->appearance != appearance)
             {
                 g_debug("  %s '%s' Appearance %i->%i", address, existing->name, existing->appearance, appearance);
@@ -639,28 +603,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 #endif
                 existing->appearance = appearance;
             }
-            if (appearance == BLE_APPEARANCE_GENERIC_PHONE)
-            {
-                soft_set_category(&existing->category, CATEGORY_PHONE);
-            }
-            else if (appearance == BLE_APPEARANCE_GENERIC_COMPUTER)
-            {
-                soft_set_category(&existing->category, CATEGORY_COMPUTER);
-            }
-            else if (appearance == BLE_APPEARANCE_GENERIC_WATCH)
-            {
-                soft_set_category(&existing->category, CATEGORY_WATCH);
-            }
-            else if (appearance == BLE_APPEARANCE_WATCH_SPORTS_WATCH)
-            {
-                soft_set_category(&existing->category, CATEGORY_WATCH);
-            }
-            else if (appearance == BLE_APPEARANCE_GENERIC_TAG)
-            {
-                // DeWalt sends this
-                soft_set_category(&existing->category, CATEGORY_BEACON);
-            }
-            // iPad, Watch, ... seem to do 640 so not useful
+
+            handle_appearance(existing, appearance);
         }
         else if (strcmp(property_name, "ServiceData") == 0)
         {

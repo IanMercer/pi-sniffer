@@ -13,6 +13,12 @@ void handle_apple(struct Device *device, unsigned char *allocdata);
 
 void handle_uuids(struct Device *device, char *uuidArray[2048], int actualLength, char* gatts, int gatts_length);
 
+void handle_class(struct Device *device, uint32_t class);
+
+void handle_icon(struct Device *existing, const char* icon);
+
+void handle_appearance(struct Device *existing, const uint16_t appearance);
+
 /*
     Database of Bluetooth company Ids (see Bluetooth website)
 */

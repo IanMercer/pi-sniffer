@@ -600,10 +600,11 @@ bool print_counts_by_closest(struct OverallState* state)
         bool logging = false;
 
         if (
-            difftime(test->latest, last_run) > 0
-            //|| ahead->category == CATEGORY_PHONE 
+            //difftime(test->latest, last_run) > 0
+            ahead->category == CATEGORY_PHONE 
             //|| ahead->category == CATEGORY_BEACON
-            //ahead->category == CATEGORY_COVID || 
+            || ahead->category == CATEGORY_BEACON
+            // || 
             //ahead->category == CATEGORY_PENCIL
             )
         {
