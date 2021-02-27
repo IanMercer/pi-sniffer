@@ -565,37 +565,9 @@ bool print_counts_by_closest(struct OverallState* state)
         // How long does this device typically go between transmits
         double average_gap = sum_duration / sum_readings;
 
-        struct ClosestTo* test = ahead->closest;
+        struct ClosestTo* latest_observation = ahead->closest;
 
-        int delta_time = difftime(now, test->latest);
-        // beacons and other fixed devices last longer, tend to transmit less often
-        double x_scale = (
-                // Very fixed devices don't decay, some are very infrequent transmitters
-                ahead->category == CATEGORY_LIGHTING ||
-                ahead->category == CATEGORY_APPLIANCE ||
-                ahead->category == CATEGORY_POS ||
-                ahead->category == CATEGORY_SPRINKLERS ||
-                ahead->category == CATEGORY_TOOTHBRUSH ||
-                ahead->category == CATEGORY_BEACON || 
-                ahead->category == CATEGORY_FIXED
-            ) ? 240.0 :
-            (
-                ahead->category == CATEGORY_HEALTH ||
-                ahead->category == CATEGORY_FITNESS ||
-                ahead->category == CATEGORY_PRINTER ||
-                ahead->category == CATEGORY_TV
-            ) ? 160 :
-            (
-                ahead->category == CATEGORY_COMPUTER ||
-                ahead->category == CATEGORY_TABLET 
-            )? 120 :
-             90.0;
-
-        double time_score = 0.55 - atan(delta_time / x_scale - 4.0) / 3.0;
-        // A curve that stays a 1.0 for a while and then drops rapidly around 3 minutes out
-        if (time_score > 0.90) time_score = 1.0;
-
-        if (time_score < 0.1) continue;
+        int delta_time = difftime(now, latest_observation->latest);
 
         // First n phones get logged
         bool logging = false;
@@ -617,7 +589,7 @@ bool print_counts_by_closest(struct OverallState* state)
    
         bool detailedLogging = false;
 
-        int age = difftime(now, test->latest);
+        int age = difftime(now, latest_observation->latest);
         // If this hasn't been seen in > 300s (5min), skip it
         // and therefore all later instances of it (except beacons, keep them in the list longer)
         // if (age > 400 && test->category != CATEGORY_BEACON) continue;
@@ -643,7 +615,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 snprintf(prob_s, sizeof(prob_s), "p(%.3f) x %s", ahead->superseded_probability, sup_mac);
             }
 
-            time_t earliest = test->earliest;
+            time_t earliest = latest_observation->earliest;
             for (struct ClosestTo* other = ahead->closest; other != NULL; other = other->next)
             {
                 if (other->earliest < earliest) earliest = other->earliest;
@@ -656,8 +628,8 @@ bool print_counts_by_closest(struct OverallState* state)
                     ahead->addressType == PUBLIC_ADDRESS_TYPE ? "*" : " ",
                     category, 
                     now - earliest,
-                    now - test->latest,
-                    test->count,
+                    now - latest_observation->latest,
+                    latest_observation->count,
                     ahead->name,
                     prob_s,
                     average_gap,
@@ -665,7 +637,7 @@ bool print_counts_by_closest(struct OverallState* state)
                     );
         }
 
-        int earliest = difftime(now, test->earliest);
+        int earliest = difftime(now, latest_observation->earliest);
 
         int count_same_mac = 0;
 
@@ -673,19 +645,20 @@ bool print_counts_by_closest(struct OverallState* state)
         // ALL EARLIER POSSIBLE SUPERSEEDED VALUES ARE IRRELEVANT IF ONE CAME IN LATER ON A
         // DIFFERENT ACCESS POINT Right?
 
-        // Examine all instances of this mac address
+        // Examine all observations of this same mac address
         for (struct ClosestTo* other = ahead->closest; other != NULL; other = other->next)
         {
             count += other->count;
 
-            // Is this a better match than the current one?
-            int time_diff = difftime(test->latest, other->latest);
+            int time_diff = difftime(latest_observation->latest, other->latest);
             int abs_diff = difftime(now, other->latest);
             // Should always be +ve as we are scanning back in time
 
             count_same_mac++;
 
             bool worth_including = 
+                // must use at least one no matter how old
+                count_same_mac < 2 ||
                 // could also cut off after N but doesn't seem to help
                 (time_diff < 4 * average_gap);      // only interested in where it has been recently
 
@@ -710,6 +683,10 @@ bool print_counts_by_closest(struct OverallState* state)
         }
 
         //struct AccessPoint *ap = test->access_point;
+
+        // Same calculation in knn.c
+        double p_gone_away = delta_time < average_gap ? 0.0 : atan(2*delta_time/average_gap)/3.14159*2;
+        double time_score = 1.0 - p_gone_away;
 
         if (time_score > 0)
         {
@@ -911,7 +888,7 @@ bool print_counts_by_closest(struct OverallState* state)
                     {
                         best_room = rcurrent->knn_score;
                         beacon->patch = rcurrent;
-                        beacon->last_seen = test->latest;
+                        beacon->last_seen = latest_observation->latest;
                     }
                 }
             }
