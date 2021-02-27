@@ -659,8 +659,8 @@ bool print_counts_by_closest(struct OverallState* state)
             bool worth_including = 
                 // must use at least one no matter how old
                 count_same_mac < 2 ||
-                // could also cut off after N but doesn't seem to help
-                (time_diff < 4 * average_gap);      // only interested in where it has been recently
+                // only interested in where it has been recently, but if average_gap is stupidly small bump it to 25s
+                (time_diff < 4 * fmin(25, average_gap));
 
             //Verbose logging
             if (logging && ahead->supersededby == 0)
