@@ -564,6 +564,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         // How long does this device typically go between transmits
         double average_gap = sum_duration / sum_readings;
+        double adjusted_average_gap = fmax(average_gap, 25.0);
 
         struct ClosestTo* latest_observation = ahead->closest;
 
@@ -660,7 +661,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 // must use at least one no matter how old
                 count_same_mac < 2 ||
                 // only interested in where it has been recently, but if average_gap is stupidly small bump it to 25s
-                (time_diff < 4 * fmin(25, average_gap));
+                (time_diff < 4 * adjusted_average_gap);
 
             //Verbose logging
             if (logging && ahead->supersededby == 0)
@@ -685,7 +686,7 @@ bool print_counts_by_closest(struct OverallState* state)
         //struct AccessPoint *ap = test->access_point;
 
         // Same calculation in knn.c
-        double p_gone_away = delta_time < average_gap ? 0.0 : atan(2*delta_time/average_gap)/3.14159*2;
+        double p_gone_away = delta_time < adjusted_average_gap ? 0.0 : atan(2*delta_time/adjusted_average_gap)/3.14159*2;
         double time_score = 1.0 - p_gone_away;
 
         if (time_score > 0)
