@@ -668,7 +668,6 @@ bool print_counts_by_closest(struct OverallState* state)
         int earliest = difftime(now, test->earliest);
 
         int count_same_mac = 0;
-        bool skipping = false;
 
         // BY DEFINITION WE ONLY CARE ABOUT SUPERSEDED ON THE FIRST INSTANCE OF A MAC ADDRESS
         // ALL EARLIER POSSIBLE SUPERSEEDED VALUES ARE IRRELEVANT IF ONE CAME IN LATER ON A
@@ -677,9 +676,6 @@ bool print_counts_by_closest(struct OverallState* state)
         // Examine all instances of this mac address
         for (struct ClosestTo* other = ahead->closest; other != NULL; other = other->next)
         {
-            // Once we get beyond 300s we start skipping any other matches
-            if (skipping) continue;
-
             count += other->count;
 
             // Is this a better match than the current one?
@@ -689,37 +685,28 @@ bool print_counts_by_closest(struct OverallState* state)
 
             count_same_mac++;
 
-            //if (time_diff < 300)      // only interested in where it has been recently // handled above in outer loop
+            bool worth_including = 
+                (time_diff < 4 * average_gap ||
+                count_same_mac < 4);      // only interested in where it has been recently
+
+            //Verbose logging
+            if (logging && ahead->supersededby == 0)
             {
-
-                //Verbose logging
-                if (logging && ahead->supersededby == 0)
-                {
-                    struct AccessPoint *ap2 = other->access_point;
-                    g_debug(" %15s distance %5.1fm [%5li-%5li] (%3i)", 
-                    ap2->client_id, other->distance, 
-                    now - other->earliest,
-                    now - other->latest,
-                    other->count);
-                }
-
-                if (time_diff > 600) // or we have seen enough?
-                {
-                    if (!skipping)
-                    {
-                        //g_debug("Skip remainder, %s '%s' delta time %i > 600", mac, test->name, time_diff);
-                        skipping = true;
-                    }
-                    continue;
-                }
-
-                // So, instead of this, with duplicates in the list ...
-                // build a list of all the points that contribute and their times
-
-                int index = other->access_point->id;
-                access_distances[index] = other->distance; // was why? round(other->distance * 10.0) / 10.0;
-                access_times[index] = abs_diff;
+                struct AccessPoint *ap2 = other->access_point;
+                g_debug(" %15s distance %5.1fm [%5li-%5li] (%3i)%s", 
+                ap2->client_id, other->distance, 
+                now - other->earliest,
+                now - other->latest,
+                other->count, worth_including ? "" : " (ignore)");
             }
+
+            if (!worth_including) continue;
+
+            // add this one to the ones to calculate location on
+
+            int index = other->access_point->id;
+            access_distances[index] = other->distance; // was why? round(other->distance * 10.0) / 10.0;
+            access_times[index] = abs_diff;
         }
 
         //struct AccessPoint *ap = test->access_point;
@@ -758,6 +745,7 @@ bool print_counts_by_closest(struct OverallState* state)
  
             for (struct AccessPoint* current = access_points_list; current != NULL; current = current->next)
             {
+                // Include only those that are within sensible time interval
                 if (access_distances[current->id] < EFFECTIVE_INFINITE)
                 {
                     cJSON_AddRounded(jdistances, current->client_id, access_distances[current->id]);
