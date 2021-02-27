@@ -242,7 +242,7 @@ float get_probability (struct recording* recording,
                 // but it should not be, so unless this is an old recording this means
                 // it cannot be a match
                 // Too severe, so added a 0.1 factor
-                double p_gone_max = fmin(0.9, (p_gone_away + 0.1 - 0.1 * p_gone_away));
+                //double p_gone_max = fmin(0.9, (p_gone_away + 0.1 - 0.1 * p_gone_away));
                 // the observation could see the AP but this recording says you cannot
                 // e.g. barn says you cannot see study, so if you can see study you can't be here
                 // as p_gone_away increases this allows old values to not block newer ones
@@ -269,6 +269,15 @@ float get_probability (struct recording* recording,
                 //double p_not_a_match =  atan(2 * error) / 3.14159*2;
 
                 double p_in_range = 1.0 - atan(5 * error) / 3.14159*2;
+
+                // boost really close values as they are more certain
+                double boost = 1.0 / fmax(1.0, recording_distance);
+                // Up to double the probability for anything under 1.0m 
+                // At 10m range the boost is 1/10
+                // At 30m range the boost is 1/30
+                p_in_range = or(p_in_range, p_in_range * boost);
+
+                // Now that only relevant timed values are passed, no need to dilate based on time
 
                 // The more likely you are to be here, the more signficant it is if the distance is a miss
                 // Either you have left this place or you are in range for this reading to be useful
