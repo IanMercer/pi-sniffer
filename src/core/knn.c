@@ -272,8 +272,8 @@ float get_probability (struct recording* recording,
 
                 // reduce far values as they tell us less - dilution of precision
                 // At 30m reduce probability by half
-                double p_accurate = 1.0 - atan(recording_distance / 30) / 3.14159 * 2;
-                p_in_range = p_in_range * fmax(1.0, fmin(0.2, p_accurate));
+                double p_accurate = 1.0 - atan(recording_distance / 10) / 3.14159 * 2;
+                p_in_range = p_in_range * fmin(1.0, fmax(0.2, p_accurate));
 
                 // Now that only relevant timed values are passed, no need to dilate based on time
 
