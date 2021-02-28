@@ -1242,7 +1242,7 @@ void dump_device(struct OverallState* state, struct Device *d)
         }
     }
 
-    g_info("%4i %s%s %4i %5.1fm  %6li-%6li %20s %8.8s %5.1fm %s", d->id % 10000, d->mac, addressType, d->count, d->distance, (d->earliest - state->started), (d->latest_local - state->started), d->name, closest_ap, closest_dist, category);
+    g_info("%4i %s%s %4i %5.1fm  %6li-%6li %20s %8.8s %5.1fm %i2 %s", d->id % 10000, d->mac, addressType, d->count, d->distance, (d->earliest - state->started), (d->latest_local - state->started), d->name, closest_ap, closest_dist, d->txpower, category);
 }
 
 
@@ -1491,7 +1491,7 @@ int print_access_points_tick(void *parameters)
 void print_log_table()
 {
     g_info("-----------------------------------------------------------------------------------------------------------");
-    g_info("Id   Address           Count   Dist    First   Last                Name       Closest Category");
+    g_info("Id   Address           Count   Dist    First  Last                 Name         Closest Tx Category");
     g_info("-----------------------------------------------------------------------------------------------------------");
 
     for (int i = 0; i < state.n; i++)

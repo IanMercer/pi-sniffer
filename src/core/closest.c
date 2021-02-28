@@ -566,6 +566,9 @@ bool print_counts_by_closest(struct OverallState* state)
         double average_gap = sum_duration / sum_readings;
         double adjusted_average_gap = fmax(average_gap, 30.0);
 
+        // Unreliable iBeacons are *really* unreliable
+        if (adjusted_average_gap > 90) adjusted_average_gap = 2 * adjusted_average_gap;
+
         struct ClosestTo* latest_observation = ahead->closest;
 
         int delta_time = difftime(now, latest_observation->latest);
