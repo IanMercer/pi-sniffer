@@ -375,12 +375,6 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 rangefactor = 1.2;
             }
 
-            if (string_starts_with(existing->name, "Tile"))
-            {
-                // Seem to be weak
-                rangefactor = 0.75;
-            }
-
             if (string_starts_with(existing->name, "[TV] Samsung"))
             {
                 rangefactor = 2.0;
