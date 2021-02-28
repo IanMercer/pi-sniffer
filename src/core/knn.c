@@ -233,8 +233,8 @@ float get_probability (struct recording* recording,
                 // but better than a bad match on distances, e.g. 4m and 14m
                 if (debug) g_debug("%s neither x 0.99", ap->client_id);
 
-                // doesn't tell us anything, but only matches increase probability
-                //probability_isnt = or(probability_isnt, 0.01);
+                // very slight increase in probability that this is a match (since many are missing values)
+                probability_is = or(probability_is, 0.05);
             }
             else if (recording_distance >= EFFECTIVE_INFINITE_TEST)
             {
@@ -274,8 +274,8 @@ float get_probability (struct recording* recording,
                 // At 30m reduce probability by half
                 // S -shaped curve emphasizing distances under 5m
                 // y =1 + atan(-2)/pi - atan((x-10)/5)/pi from 0 to 30
-                double p_accurate = 1.0 - atan(-2)/3.14159 - atan((recording_distance-10) / 5) / 3.14159 * 2;
-                p_in_range = p_in_range * fmin(1.0, fmax(0.2, p_accurate));
+                double p_reliable = 1.0 - atan(-2)/3.14159 - atan((recording_distance-10) / 5) / 3.14159 * 2;
+                p_reliable = fmin(1.0, fmax(0.2, p_reliable));  // just to be safe
 
                 // Now that only relevant timed values are passed, no need to dilate based on time
 
@@ -285,11 +285,11 @@ float get_probability (struct recording* recording,
                 //probability = probability * prob;
                 //if (debug) g_debug("%s was expected and found %.2fm delta, x %.3f", ap->client_id, error, prob);
 
-                probability_is = or(probability_is, p_in_range);
-
                 // If it's close, increase probability that it's a match
-                // It it's not close, increase probability it isn't
-                //probability_isnt = or(probability_isnt, p_not_a_match);
+                // It it's not close, increase probability that it isn't
+                // Temper both probabilities by how much dilution of precision we have in the measurement
+                probability_is = or(probability_is, p_in_range * p_reliable);
+                probability_isnt = or(probability_isnt, (1.0 - p_in_range) * p_reliable);
             }
         }
 
