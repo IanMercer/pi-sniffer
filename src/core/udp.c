@@ -129,7 +129,7 @@ void *listen_loop(void *param)
 
             if (d.mac64 == 0)
             {
-                //g_info("Ignoring access point only message from %s", dummy.client_id);
+                g_info("Ignoring access point only message from %s", ap->client_id);
                 continue;
             }
 
@@ -166,6 +166,10 @@ void *listen_loop(void *param)
                 d.is_training_beacon);
 
             pthread_mutex_unlock(&state->lock);
+        }
+        else
+        {
+            g_warning("Did not find ap in %s", buffer);
         }
     }
     g_info("LT: Listen thread finished");
