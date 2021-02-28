@@ -946,7 +946,7 @@ bool print_counts_by_closest(struct OverallState* state)
         g_info("%10s %9.1f %9.1f    %3.0f%% %9.1f %9.1f %9.1f %9.1f %9.1f %9.1f", s->category, 
             s->phone_total, 
             s->covid_total, 
-            s->phone_total > 0 ? 100 * s->covid_total / s->phone_total : 0,
+            s->phone_total > 0 ? 100 * fmin(1.0, s->covid_total / s->phone_total) : 0,
             s->watch_total,
             s->tablet_total, 
             s->wearable_total,
