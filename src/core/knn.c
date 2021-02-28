@@ -234,7 +234,7 @@ float get_probability (struct recording* recording,
                 if (debug) g_debug("%s neither x 0.99", ap->client_id);
 
                 // very slight increase in probability that this is a match (since many are missing values)
-                probability_is = or(probability_is, 0.05);
+                // no, doesn't help probability_is = or(probability_is, 0.05);
             }
             else if (recording_distance >= EFFECTIVE_INFINITE_TEST)
             {
