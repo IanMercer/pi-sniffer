@@ -22,6 +22,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#define PI 3.141592653
+
 // UTILITY METHODS
 
 /*
@@ -266,15 +268,16 @@ float get_probability (struct recording* recording,
             {
                 matches++;
                 double error = fabs(measured_distance - recording_distance);
-                //double p_not_a_match =  atan(2 * error) / 3.14159*2;
-
-                double p_in_range = 1.0 - atan(5 * error) / 3.14159 * 2;
+                
+                // S-shaped curve, stays near 1.0 up to 2m delta, drops rapidly after
+                // y =1 + atan(-2)/pi - atan(x - 2)/pi from -1 to 10
+                double p_in_range = 1.0 + atan(-2.0) / PI - atan(error - 2.0) / PI;
 
                 // reduce far values as they tell us less - dilution of precision
                 // At 30m reduce probability by half
                 // S -shaped curve emphasizing distances under 5m
                 // y =1 + atan(-2)/pi - atan((x-10)/5)/pi from 0 to 30
-                double p_reliable = 1.0 - atan(-2)/3.14159 - atan((recording_distance-10) / 5) / 3.14159 * 2;
+                double p_reliable = 1.0 - atan(-2.0)/PI - atan(recording_distance/5.0 - 2.0) / PI;
                 p_reliable = fmin(1.0, fmax(0.2, p_reliable));  // just to be safe
 
                 // Now that only relevant timed values are passed, no need to dilate based on time
