@@ -101,8 +101,17 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
     cJSON *fromj = cJSON_GetObjectItemCaseSensitive(djson, CJ_FROM);
     if (cJSON_IsString(fromj) && (fromj->valuestring != NULL))
     {
+        char* apname = fromj->valuestring;
+
+        // Map fromj->valuestring to a friendly name if we have one
+        // TODO: Lookups here
+        if (string_contains_insensitive(apname, "30:AE:A4:F5:6F:24"))
+        {
+            apname = "ESP32";
+        }
+
         bool created = FALSE;
-        ap = get_or_create_access_point(access_point_list, fromj->valuestring, &created);
+        ap = get_or_create_access_point(access_point_list, apname, &created);
 
         time(&ap->last_seen);
     }
