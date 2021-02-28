@@ -268,14 +268,12 @@ float get_probability (struct recording* recording,
                 double error = fabs(measured_distance - recording_distance);
                 //double p_not_a_match =  atan(2 * error) / 3.14159*2;
 
-                double p_in_range = 1.0 - atan(5 * error) / 3.14159*2;
+                double p_in_range = 1.0 - atan(5 * error) / 3.14159 * 2;
 
-                // boost really close values as they are more certain
-                double boost = 1.0 / fmax(1.0, recording_distance);
-                // Up to double the probability for anything under 1.0m 
-                // At 10m range the boost is 1/10
-                // At 30m range the boost is 1/30
-                p_in_range = or(p_in_range, p_in_range * boost);
+                // reduce far values as they tell us less - dilution of precision
+                // At 30m reduce probability by half
+                double p_accurate = 1.0 - atan(recording_distance / 30) / 3.14159 * 2;
+                p_in_range = p_in_range * fmax(1.0, fmin(0.2, p_accurate));
 
                 // Now that only relevant timed values are passed, no need to dilate based on time
 
