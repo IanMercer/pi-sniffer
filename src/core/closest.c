@@ -564,7 +564,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
         // How long does this device typically go between transmits
         double average_gap = sum_duration / sum_readings;
-        double adjusted_average_gap = fmax(average_gap, 25.0);
+        double adjusted_average_gap = fmax(average_gap, 30.0);
 
         struct ClosestTo* latest_observation = ahead->closest;
 
@@ -661,7 +661,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 // must use at least one no matter how old
                 count_same_mac < 2 ||
                 // only interested in where it has been recently, but if average_gap is stupidly small bump it to 25s
-                (time_diff < 4 * adjusted_average_gap);
+                (time_diff < 5 * adjusted_average_gap);
 
             //Verbose logging
             if (logging && ahead->supersededby == 0)
