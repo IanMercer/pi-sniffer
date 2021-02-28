@@ -277,25 +277,27 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         // no such access point observation found, allocate a new one for head
         closest = malloc(sizeof(struct ClosestTo));
         closest->next = head->closest;
+        closest->count = 0;
+        // Only set earliest on creation, it's per-access point so that's OK
+        closest->earliest = earliest;
         head->closest = closest;
         g_trace("  Add entry for %s on %s", name, access_point->client_id);
         closest->access_point = access_point;
     }
 
     // Update it
-    closest->count = count;
+    closest->count = count == 0 ? closest->count + 1 : count;  // ESP32 doesn't count, we have to do it
     closest->distance = distance;
-    closest->earliest = earliest;
     closest->latest = latest;
 
     // closest is now 'top left' - the first in a chain on the first head
 
-    if (closest->count == count && closest->distance == distance)
-    {
-        // unchanged
-        //g_warning("Update is identical, skipping %s %s", access_point->client_id, mac);
-        return;
-    }
+    // if (closest->count == count && closest->distance == distance)
+    // {
+    //     // unchanged
+    //     //g_warning("Update is identical, skipping %s %s", access_point->client_id, mac);
+    //     return;
+    // }
 }
 
 

@@ -110,6 +110,11 @@ void *listen_loop(void *param)
         struct Device d;
         d.mac64 = 0;
         strncpy(d.mac, "notset", 7);  // access point only messages have no device mac address
+        
+        // ESP32 sensor don't have RTC, we need to do all the work for them
+        time(&d.latest_any);
+        time(&d.latest_local);
+        time(&d.earliest);
 
         struct AccessPoint* ap = device_from_json(buffer, state, &d);
 
@@ -130,7 +135,7 @@ void *listen_loop(void *param)
 
             pthread_mutex_lock(&state->lock);
 
-            // Find matching device and merge in any data it doesn't have
+            // Find matching local devices and merge in any data it doesn't have
 
             for (int i = 0; i < state->n; i++)
             {
