@@ -309,7 +309,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 send_distance = TRUE;
                 set_name(existing, name, nt_known);
 
-                apply_known_beacons(existing);     // must apply beacons first to prevent hashing names
+                apply_known_beacons(existing);        // must apply beacons first to prevent hashing names
+                apply_known_beacon_hashes(existing);  // in case manufacturer data came first
                 apply_name_heuristics (existing, name);
             }
 
