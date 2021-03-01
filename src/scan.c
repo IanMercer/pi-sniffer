@@ -84,6 +84,14 @@ GDBusConnection *conn;
 */
 void apply_known_beacons(struct Device* device)
 {
+    if (strcmp(device->name, "DEWALT-TAG") == 0)
+    {
+        char dewalt[32];
+        snprintf(dewalt, sizeof(dewalt), "DeWalt 0x%08x", device->manufacturer_data_hash);
+        set_name(device, dewalt, nt_manufacturer);
+        g_warning("Set DEWALT-TAG name %08x", device->manufacturer_data_hash);
+    }
+
     for (struct Beacon* b = state.beacons; b != NULL; b = b->next)
     {
         if (strcmp(b->name, device->name) == 0 || b->mac64 == device->mac64)
