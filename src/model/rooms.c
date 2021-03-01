@@ -223,6 +223,7 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
             cJSON* name = cJSON_GetObjectItemCaseSensitive(beacon, "name");
             cJSON* mac = cJSON_GetObjectItemCaseSensitive(beacon, "mac");
             cJSON* alias = cJSON_GetObjectItemCaseSensitive(beacon, "alias");
+            cJSON* hash = cJSON_GetObjectItemCaseSensitive(beacon, "hash");
             if (cJSON_IsString(name) && name->valuestring != NULL && 
                 cJSON_IsString(mac) && mac->valuestring != NULL &&
                 cJSON_IsString(alias) && alias->valuestring != NULL)
@@ -231,6 +232,7 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
                 beacon->name = strdup(name->valuestring);
                 beacon->mac64 = mac_string_to_int_64(mac->valuestring);
                 beacon->alias = strdup(alias->valuestring);
+                beacon->hash = cJSON_IsNumber(hash) ? hash->valueint : 0;
                 beacon->last_seen = 0;
                 beacon->patch = NULL;
 

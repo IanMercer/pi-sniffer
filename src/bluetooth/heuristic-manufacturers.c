@@ -16,7 +16,7 @@ manufacturer_entry Disney = { .manufacturer = 0x0183, .name = "Disney" };
 /*
      handle the manufacturer data
 */
-void handle_manufacturer(struct Device *device, uint16_t manufacturer, unsigned char *allocdata, uint32_t hash_for_one)
+void handle_manufacturer(struct Device *device, uint16_t manufacturer, unsigned char *allocdata)
 {
 	switch (manufacturer)
 	{
@@ -26,9 +26,7 @@ void handle_manufacturer(struct Device *device, uint16_t manufacturer, unsigned 
 
 		case 0x00fe:
 		{
-            char dewalt[32];
-            snprintf(dewalt, sizeof(dewalt), "DeWalt 0x%08x", hash_for_one);
-			set_name(device, dewalt, nt_manufacturer);
+			set_name(device, "DeWalt", nt_manufacturer);
 			break;
 		}
 

@@ -84,23 +84,41 @@ GDBusConnection *conn;
 */
 void apply_known_beacons(struct Device* device)
 {
-    if (strcmp(device->name, "DEWALT-TAG") == 0)
-    {
-        char dewalt[32];
-        snprintf(dewalt, sizeof(dewalt), "DeWalt 0x%08x", device->manufacturer_data_hash);
-        set_name(device, dewalt, nt_manufacturer);
-        g_warning("Set DEWALT-TAG name %08x", device->manufacturer_data_hash);
-    }
-
     for (struct Beacon* b = state.beacons; b != NULL; b = b->next)
     {
-        if (strcmp(b->name, device->name) == 0 || b->mac64 == device->mac64)
+        // Apply only ones without a hash
+        if (((strcmp(b->name, device->name) == 0) || (b->mac64 == device->mac64)) && b->hash == 0)
         {
             set_name(device, b->alias, nt_alias);
         }
     }
 }
 
+void apply_known_beacon_hashes(struct Device* device)
+{
+    bool matched_name = false;
+
+    for (struct Beacon* b = state.beacons; b != NULL; b = b->next)
+    {
+        if (strcmp(b->name, device->name) == 0)
+        {
+            matched_name = true;
+            if (b->hash == device->manufacturer_data_hash)
+            {
+                set_name(device, b->alias, nt_alias);
+                return;
+            }
+        }
+    }
+
+    if (matched_name)  // but didn't match hash
+    {
+        char dewalt[32];
+        snprintf(dewalt, sizeof(dewalt), "DeWalt 0x%08x", device->manufacturer_data_hash);
+        set_name(device, dewalt, nt_device);
+        g_warning("Set DEWALT-TAG name %08x", device->manufacturer_data_hash);
+    }
+}
 
 /*
    Remove a device from array and move all later devices up one spot
@@ -612,7 +630,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             while (g_variant_iter_next(&i, "{sv}", &service_guid, &s_value))
             { // Just one
 
-                uint32_t hash;
+                uint16_t hash;
                 int actualLength;
                 unsigned char *allocdata = read_byte_array(s_value, &actualLength, &hash);
 
@@ -680,7 +698,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             uint16_t manufacturer;
 
             // First calculate the sum of all the manufacturerdata values to see if they have changed
-            uint32_t hash = 0;
+            uint16_t hash = 0;
 
             g_variant_iter_init(&i, prop_val);
             while (g_variant_iter_next(&i, "{qv}", &manufacturer, &s_value))
@@ -696,10 +714,12 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             {
                 existing->manufacturer_data_hash = hash;
 
+                apply_known_beacon_hashes(existing);
+
                 g_variant_iter_init(&i, prop_val);
                 while (g_variant_iter_next(&i, "{qv}", &manufacturer, &s_value))
                 {
-                    uint32_t hash_for_one = 0;
+                    uint16_t hash_for_one = 0;
                     int actualLength;
                     unsigned char *allocdata = read_byte_array(s_value, &actualLength, &hash_for_one);
 
@@ -729,7 +749,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                         send_distance = TRUE;
                     }
 
-                    handle_manufacturer(existing, manufacturer, allocdata, hash_for_one);
+                    handle_manufacturer(existing, manufacturer, allocdata);
 
                     g_variant_unref(s_value);
                     g_free(allocdata);

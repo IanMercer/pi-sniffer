@@ -190,12 +190,10 @@ void print_and_free_error(GError *error);
 //#define pretty_print2_trace(...) pretty_print2(__VA_ARGS__)
 #define pretty_print2_trace(...) 
 
-
 /*
    Read byte array and compute hash from GVariant
 */
-unsigned char *read_byte_array(GVariant *s_value, int *actualLength, uint32_t *hash);
-
+unsigned char *read_byte_array(GVariant *s_value, int *actualLength, uint16_t *hash);
 
 /*
  * Add a key value pair to a GVariantBuilder
