@@ -96,6 +96,8 @@ void apply_known_beacons(struct Device* device)
 
 void apply_known_beacon_hashes(struct Device* device)
 {
+    if (device->manufacturer_data_hash == 0) return;
+
     bool matched_name = false;
 
     for (struct Beacon* b = state.beacons; b != NULL; b = b->next)
@@ -115,7 +117,7 @@ void apply_known_beacon_hashes(struct Device* device)
     {
         char dewalt[32];
         snprintf(dewalt, sizeof(dewalt), "DeWalt 0x%08x", device->manufacturer_data_hash);
-        set_name(device, dewalt, nt_device);
+        set_name(device, dewalt, nt_known);
         g_warning("Set DEWALT-TAG name %08x", device->manufacturer_data_hash);
     }
 }
