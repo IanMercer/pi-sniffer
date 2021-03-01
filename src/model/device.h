@@ -107,8 +107,8 @@ struct Device
    bool trusted;
    uint32_t deviceclass; // https://www.bluetooth.com/specifications/assigned-numbers/Baseband/
    uint16_t appearance;
-   int manufacturer_data_hash;
-   int service_data_hash;
+   uint32_t manufacturer_data_hash;
+   uint32_t service_data_hash;
    int uuids_length;
    int uuid_hash;                 // Hash value of all UUIDs - may ditinguish devices
    int txpower;                   // TX Power

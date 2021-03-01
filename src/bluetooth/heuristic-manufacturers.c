@@ -16,206 +16,204 @@ manufacturer_entry Disney = { .manufacturer = 0x0183, .name = "Disney" };
 /*
      handle the manufacturer data
 */
-void handle_manufacturer(struct Device *device, uint16_t manufacturer, unsigned char *allocdata)
+void handle_manufacturer(struct Device *device, uint16_t manufacturer, unsigned char *allocdata, uint32_t hash_for_one)
 {
-    if (manufacturer == 0x004c)
-    { 
-        handle_apple(device, allocdata);
-    }
-    else if (manufacturer == 0x022b)
-    {
-		set_name(device, "Tesla", nt_manufacturer);
-        device->category = CATEGORY_CAR;
+	switch (manufacturer)
+	{
+		case 0x004c: 
+        	handle_apple(device, allocdata);
+			break;
+
+		case 0x00fe:
+		{
+            char dewalt[32];
+            snprintf(dewalt, sizeof(dewalt), "Dewalt 0x%08x", hash_for_one);
+			set_name(device, dewalt, nt_manufacturer);
+			break;
+		}
+
+		case 0x022b:
+			set_name(device, "Tesla", nt_manufacturer);
+    	    device->category = CATEGORY_CAR;
+			break;
         //    ManufacturerData: {uint16 555: <[byte 0x04, 0x18, 0x77, 0x9d, 0x16, 0xee, 0x04, 0x6c, 0xf9, 0x49, 0x01, 0xf3, 0
-    }
-    else if (manufacturer == 0x0000)
-    {
-		set_name(device, "Invalid 0x0 Manuf", nt_manufacturer);
-    }
-    else if (manufacturer == 0x0087)
-    {
-		set_name(device, "Garmin", nt_manufacturer);
-		if (device->category == CATEGORY_UNKNOWN)
-	        device->category = CATEGORY_WEARABLE; // could be fitness tracker if not a watch
-    }
-    else if (manufacturer == 0x0141)
-    {
-		set_name(device, "Fedex", nt_manufacturer);
-        device->category = CATEGORY_CAR;   // Fedex delivery? 
-    }
-    else if (manufacturer == 0x0201)
-    {
-		set_name(device, "AR Timing", nt_manufacturer);
-        device->category = CATEGORY_CAR;   // ???
-    }
-    else if (manufacturer == 0x05A7)
-    {
-		set_name(device, "Sonos", nt_manufacturer);
-        device->category = CATEGORY_FIXED;
-    }
-    else if (manufacturer == 0xb4c1)
-    {
-		set_name(device, "Dycoo", nt_manufacturer); // not on official Bluetooth website??
-    }
-    else if (manufacturer == 0x0101)
-    {
-		set_name(device, "Fugoo", nt_manufacturer);
-        device->category = CATEGORY_HEADPHONES;
-    }
-    else if (manufacturer == 0x0310)
-    {
-		set_name(device, "SGL Italia", nt_manufacturer);
-        device->category = CATEGORY_HEADPHONES;
-    }
-    else if (manufacturer == 0x04d8)
-    {
-		set_name(device, "Fujifilm", nt_manufacturer);
-        device->category = CATEGORY_CAMERA;
-    }
-    else if (manufacturer == 0x3042)
-    { // 12354 = someone didn't register
-		set_name(device, "Manuf 0x3042", nt_manufacturer);
-        device->category = CATEGORY_HEADPHONES;
-    }
-    else if (manufacturer == 0x0075)
-    {
-		set_name(device, "Samsung 0x75", nt_manufacturer);
-		// don't set category, wait for connect
-		//soft_set_category(&existing->category, CATEGORY_PHONE); // assume phone until TV comes along (and stays)
 
-        // Galaxy Watch
-        // <[byte 0x01, 0x00, 0x02, 0x00, 0x01, 0x03, 0x02]>
+		case 0x0000:
+			set_name(device, "Invalid 0x0 Manuf", nt_manufacturer);
+			break;
+		
+		case 0x0087:
+			set_name(device, "Garmin", nt_manufacturer);
+			if (device->category == CATEGORY_UNKNOWN)
+	        	device->category = CATEGORY_WEARABLE; // could be fitness tracker if not a watch
+			break;
 
-        // <[byte 0x42, 0x04, 0x01, 0x01, 0x6e, 0x28, 0x39, 0x5e, 0x57, 0x84, 0xb3, 0x2a, 0x39, 0x5e, 0x57, 0x84, 0xb2, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]>
-        // <[byte 0x42, 0x04, 0x01, 0x01, 0x6e, 0x28, 0x39, 0x5e, 0x57, 0x84, 0xb3, 0x2a, 0x39, 0x5e, 0x57, 0x84, 0xb2, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]>
-        // <[byte 0x42, 0x04, 0x01, 0x01, 0x60, 0x00, 0xc3, 0xf4, 0x2d, 0xd5, 0x6e, 0x02, 0xc3, 0xf4, 0x2d, 0xd5, 0x6d, 0x01, 0x93, 0x00, 0x00, 0x00, 0x00, 0x00]>
-        // <[byte 0x42, 0x04, 0x01, 0x20, 0x66, 0x19, 0x05, 0x00, 0x02, 0x01, 0x41, 0x01, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]>
-        // <[byte 0x42, 0x04, 0x01, 0x01, 0x66, 0xb8, 0xbc, 0x5b, 0xfe, 0x21, 0xf7, 0xba, 0xbc, 0x5b, 0xfe, 0x21, 0xf6, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]>
+		case 0x0141:
+			set_name(device, "Fedex", nt_manufacturer);
+			device->category = CATEGORY_CAR;   // Fedex delivery? 
+			break;
 
-        // [TV] Samsung 8 Series (65)
-        // <[byte 0x42, 0x04, 0x01, 0x20, 0x66, 0x19, 0x05, 0x00, 0x02, 0x01, 0x41, 0x01, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]>
-    }
-    else if (manufacturer == 0x9479)
-    {
-		set_name(device, "Unlisted(0x9479)", nt_manufacturer);
-    }
-    else if (manufacturer == 0xff19)
-    {
-		set_name(device, "Samsung 0xff19", nt_manufacturer);
-    }
-    else if (manufacturer == 0x0131)
-    {
-		set_name(device, "Cypress Semi", nt_manufacturer);
-    }
-    else if (manufacturer == 0xc688)
-    {
-		set_name(device, "Logitech", nt_manufacturer);
-        device->category = CATEGORY_ACCESSORY;
-    }
-    else if (manufacturer == 0x0059)
-    {
-		set_name(device, "Nordic Semi", nt_manufacturer);
-        device->category = CATEGORY_FIXED;
-    }
-    else if (manufacturer == 0x0501)
-    {
-		set_name(device, "Polaris ND", nt_manufacturer);
-        device->category = CATEGORY_FIXED;
-    }
-    else if (manufacturer == 0x0649)
-    {
-		set_name(device, "Ryeex", nt_manufacturer);
-        // Makes fitness bands
-        device->category = CATEGORY_WEARABLE;
-    }
-    else if (manufacturer == 0x014f)
-    {
-		set_name(device, "B&W Group Ltd.", nt_manufacturer);
-        device->category = CATEGORY_FIXED;
-    }
-    else if (manufacturer == 0x00c4)
-    {
-		set_name(device, "LG Electronics", nt_manufacturer);
-        device->category = CATEGORY_TV;  // maybe, they did make phones for a while
-    }
-    else if (manufacturer == 0x03ee)
-    {
+		case 0x0201:
+			set_name(device, "AR Timing", nt_manufacturer);
+			device->category = CATEGORY_CAR;   // ???
+			break;
+
+		case 0x05A7:
+			set_name(device, "Sonos", nt_manufacturer);
+			device->category = CATEGORY_FIXED;
+			break;
+
+		case 0xb4c1:
+			set_name(device, "Dycoo", nt_manufacturer); // not on official Bluetooth website??
+			break;
+
+		case 0x0101:
+			set_name(device, "Fugoo", nt_manufacturer);
+        	device->category = CATEGORY_HEADPHONES;
+			break;
+		
+		case 0x0310:
+			set_name(device, "SGL Italia", nt_manufacturer);
+			device->category = CATEGORY_HEADPHONES;
+			break;
+
+		case 0x04d8:
+			set_name(device, "Fujifilm", nt_manufacturer);
+			device->category = CATEGORY_CAMERA;
+			break;
+
+		case 0x3042:
+		 // 12354 = someone didn't register
+			set_name(device, "Manuf 0x3042", nt_manufacturer);
+			device->category = CATEGORY_HEADPHONES;
+			break;
+
+		case 0x0075:
+			set_name(device, "Samsung 0x75", nt_manufacturer);
+			// don't set category, wait for connect
+			//soft_set_category(&existing->category, CATEGORY_PHONE); // assume phone until TV comes along (and stays)
+
+			// Galaxy Watch
+			// <[byte 0x01, 0x00, 0x02, 0x00, 0x01, 0x03, 0x02]>
+
+			// <[byte 0x42, 0x04, 0x01, 0x01, 0x6e, 0x28, 0x39, 0x5e, 0x57, 0x84, 0xb3, 0x2a, 0x39, 0x5e, 0x57, 0x84, 0xb2, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]>
+			// <[byte 0x42, 0x04, 0x01, 0x01, 0x6e, 0x28, 0x39, 0x5e, 0x57, 0x84, 0xb3, 0x2a, 0x39, 0x5e, 0x57, 0x84, 0xb2, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]>
+			// <[byte 0x42, 0x04, 0x01, 0x01, 0x60, 0x00, 0xc3, 0xf4, 0x2d, 0xd5, 0x6e, 0x02, 0xc3, 0xf4, 0x2d, 0xd5, 0x6d, 0x01, 0x93, 0x00, 0x00, 0x00, 0x00, 0x00]>
+			// <[byte 0x42, 0x04, 0x01, 0x20, 0x66, 0x19, 0x05, 0x00, 0x02, 0x01, 0x41, 0x01, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]>
+			// <[byte 0x42, 0x04, 0x01, 0x01, 0x66, 0xb8, 0xbc, 0x5b, 0xfe, 0x21, 0xf7, 0xba, 0xbc, 0x5b, 0xfe, 0x21, 0xf6, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]>
+
+			// [TV] Samsung 8 Series (65)
+			// <[byte 0x42, 0x04, 0x01, 0x20, 0x66, 0x19, 0x05, 0x00, 0x02, 0x01, 0x41, 0x01, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]>
+			break;
+
+		case 0x9479:
+			set_name(device, "Unlisted(0x9479)", nt_manufacturer);
+			break;
+		
+		case 0xff19:
+			set_name(device, "Samsung 0xff19", nt_manufacturer);
+			break;
+
+		case 0xc688:
+			set_name(device, "Logitech", nt_manufacturer);
+			device->category = CATEGORY_ACCESSORY;
+			break;
+
+		case 0x0059:
+			set_name(device, "Nordic Semi", nt_manufacturer);
+			device->category = CATEGORY_FIXED;
+			break;
+
+		case 0x0501:
+			set_name(device, "Polaris ND", nt_manufacturer);
+			device->category = CATEGORY_FIXED;
+			break;
+
+		case 0x0649:
+			set_name(device, "Ryeex", nt_manufacturer);
+			// Makes fitness bands
+			device->category = CATEGORY_WEARABLE;
+			break;
+
+		case 0x014f:
+			set_name(device, "B&W Group Ltd.", nt_manufacturer);
+			device->category = CATEGORY_FIXED;
+			break;
+
+		case 0x00c4:
+			set_name(device, "LG Electronics", nt_manufacturer);
+			device->category = CATEGORY_TV;  // maybe, they did make phones for a while
+			break;
+
+    case  0x03ee:
 		set_name(device, "CUBE Technologies", nt_manufacturer);
         device->category = CATEGORY_FIXED;
-    }
-    else if (manufacturer == 0x0085)
-    {
+		break;
+    case  0x0085:
 		set_name(device, "BlueRadios ODM", nt_manufacturer);
-    }
-    else if (manufacturer == 0x0434)
-    {
+		break;
+    case  0x0434:
 		set_name(device, "Hatch Bay Inc", nt_manufacturer);
         device->category = CATEGORY_FIXED;
-    }
-    else if (manufacturer == 0x0157)
-    {
+		break;
+    case  0x0157:
 		set_name(device, "Anhui Huami", nt_manufacturer);
         device->category = CATEGORY_FIXED;
-    }
-    else if (manufacturer == 0x015e)
-    {
+		break;
+    case  0x015e:
         // Locks
 		set_name(device, "Unikey Technologies", nt_manufacturer);
         device->category = CATEGORY_SECURITY;
-    }
-    else if (manufacturer == 0x01a5)
-    {
+		break;
+    case  0x01a5:
 		set_name(device, "Icon Health and Fitness", nt_manufacturer);
         device->category = CATEGORY_FITNESS;
-    }
-    else if (manufacturer == 0x02ab)
-    {
+		break;
+    case  0x02ab:
 		set_name(device, "BBPOS Limited", nt_manufacturer);
         device->category = CATEGORY_FIXED;
-    }
-    else if (manufacturer == 0x0401)
-    {
+		break;
+    case  0x0401:
 		set_name(device, "Relations Inc", nt_manufacturer);
         device->category = CATEGORY_FIXED;
-    }
-    else if (manufacturer == 0x00d2)
-    {
+		break;
+    case  0x00d2:
 		set_name(device, "AbTemp", nt_manufacturer);
         device->category = CATEGORY_BEACON;
-    }
-    else if (manufacturer == 0xb1bc)
-    {
+		break;
+    case  0xb1bc:
         // This code appears to be some special mesh message
 		set_name(device, "Mesh message", nt_manufacturer);
-    }
-    else
-    {
+		break;
+    default:
+		{
             // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
-        const char* manuf = company_id_to_string(manufacturer, &device->category);
-        if (manuf != NULL)
-        {
-			if (device->address_type == PUBLIC_ADDRESS_TYPE)
+			const char* manuf = company_id_to_string(manufacturer, &device->category);
+			if (manuf != NULL)
 			{
-		        char postfixed[NAME_LENGTH];
-				// Use last six in name to distinguish them, e.g. Milwaukee beacons
-				snprintf(postfixed, sizeof(postfixed), "_%s %s", manuf, (device->mac+9));  // Skip 9 characters XX:XX:XX:
-				set_name(device, postfixed, nt_manufacturer);
+				if (device->address_type == PUBLIC_ADDRESS_TYPE)
+				{
+					char postfixed[NAME_LENGTH];
+					// Use last six in name to distinguish them, e.g. Milwaukee beacons
+					snprintf(postfixed, sizeof(postfixed), "_%s %s", manuf, (device->mac+9));  // Skip 9 characters XX:XX:XX:
+					set_name(device, postfixed, nt_manufacturer);
+				}
+				else
+				{
+					set_name(device, manuf, nt_manufacturer);
+				}
 			}
-			else
+			else 
 			{
+				char manuf[32];
+				snprintf(manuf, sizeof(manuf), "Manuf 0x%04x", manufacturer);
+				g_info("  Did not recognize %s", manuf);
 				set_name(device, manuf, nt_manufacturer);
 			}
-        }
-        else 
-        {
-            char manuf[32];
-            snprintf(manuf, sizeof(manuf), "Manuf 0x%04x", manufacturer);
-            g_info("  Did not recognize %s", manuf);
-			set_name(device, manuf, nt_manufacturer);
-        }
+			break;
+		}
     }
 }
-
 
 /*
     Database of Bluetooth company Ids (see Bluetooth website)
@@ -838,8 +836,9 @@ const char *company_id_to_string(int company_id, int8_t* category)
 		return "Clarion Co., Ltd.";
 	case 304:
 		return "Warehouse Innovations";
-	case 305:
-		return "Cypress Semiconductor Corporation";
+	case 0x0131: // 305
+		//return "Cypress Semiconductor Corporation";
+		return "Cypress Semi";
 	case 306:
 		return "MADS Inc";
 	case 307:

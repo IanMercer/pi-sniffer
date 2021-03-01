@@ -604,7 +604,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             while (g_variant_iter_next(&i, "{sv}", &service_guid, &s_value))
             { // Just one
 
-                uint8_t hash;
+                uint32_t hash;
                 int actualLength;
                 unsigned char *allocdata = read_byte_array(s_value, &actualLength, &hash);
 
@@ -672,7 +672,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             uint16_t manufacturer;
 
             // First calculate the sum of all the manufacturerdata values to see if they have changed
-            uint8_t hash;
+            uint32_t hash = 0;
 
             g_variant_iter_init(&i, prop_val);
             while (g_variant_iter_next(&i, "{qv}", &manufacturer, &s_value))
@@ -683,6 +683,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 g_free(allocdata);
             }
 
+            // Now read it again if it changed
             if (existing->manufacturer_data_hash != hash)
             {
                 existing->manufacturer_data_hash = hash;
@@ -690,9 +691,9 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 g_variant_iter_init(&i, prop_val);
                 while (g_variant_iter_next(&i, "{qv}", &manufacturer, &s_value))
                 {
-                    uint8_t hash;
+                    uint32_t hash_for_one = 0;
                     int actualLength;
-                    unsigned char *allocdata = read_byte_array(s_value, &actualLength, &hash);
+                    unsigned char *allocdata = read_byte_array(s_value, &actualLength, &hash_for_one);
 
                     if (manufacturer == 0x4c && allocdata[0] == 0x02){
                         g_debug("  %s iBeacon  ", address);
@@ -720,7 +721,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                         send_distance = TRUE;
                     }
 
-                    handle_manufacturer(existing, manufacturer, allocdata);
+                    handle_manufacturer(existing, manufacturer, allocdata, hash_for_one);
 
                     g_variant_unref(s_value);
                     g_free(allocdata);

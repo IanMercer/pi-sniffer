@@ -194,7 +194,7 @@ void print_and_free_error(GError *error);
 /*
    Read byte array and compute hash from GVariant
 */
-unsigned char *read_byte_array(GVariant *s_value, int *actualLength, uint8_t *hash);
+unsigned char *read_byte_array(GVariant *s_value, int *actualLength, uint32_t *hash);
 
 
 /*
