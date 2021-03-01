@@ -636,7 +636,7 @@ unsigned char *read_byte_array(GVariant *s_value, int *actualLength, uint32_t *h
 
     for (int i = 0; i < len; i++)
     {
-        *hash += allocdata[i];
+        *hash = *hash <<5 + *hash + allocdata[i];
     }
 
     *actualLength = len;
