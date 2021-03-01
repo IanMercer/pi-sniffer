@@ -27,7 +27,7 @@ void handle_manufacturer(struct Device *device, uint16_t manufacturer, unsigned 
 		case 0x00fe:
 		{
             char dewalt[32];
-            snprintf(dewalt, sizeof(dewalt), "Dewalt 0x%08x", hash_for_one);
+            snprintf(dewalt, sizeof(dewalt), "DeWalt 0x%08x", hash_for_one);
 			set_name(device, dewalt, nt_manufacturer);
 			break;
 		}

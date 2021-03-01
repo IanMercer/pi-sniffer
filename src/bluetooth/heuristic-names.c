@@ -72,6 +72,13 @@ void apply_name_heuristics (struct Device* device, const char* name)
     else if (string_starts_with(name, "BOOTCAMP"))
         device->category = CATEGORY_COMPUTER;
 
+    else if (string_starts_with(name, "DEWALT-TAG"))
+    {
+        // Append unique ID for beacon
+        char dewalt[32];
+        snprintf(dewalt, sizeof(dewalt), "DEWALT 0x%08x", device->manufacturer_data_hash);
+        set_name(device, dewalt, nt_device);
+    }
     // Watches
     else if (string_starts_with(name, "iWatch"))
         device->category = CATEGORY_WATCH;
