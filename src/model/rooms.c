@@ -262,7 +262,7 @@ void read_configuration_file(const char* path, struct AccessPoint** accesspoint_
                     previous->next = beacon;
                 }
 
-                g_debug("Added beacon `%s` = '%s' to list", beacon->name, beacon->alias);
+                g_debug("Added beacon `%s` (%08x) = '%s' to list", beacon->name, beacon->hash, beacon->alias);
             }
             else
             {
