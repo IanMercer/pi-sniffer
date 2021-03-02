@@ -88,7 +88,6 @@ void *listen_loop(void *param)
     g_assert_no_error(error);
 
     g_info("LT: Starting listen thread for mesh operation on port %i", state->udp_mesh_port);
-    g_info("LT: Local client id is %s", state->local->client_id);
     g_cancellable_reset(cancellable);
 
     if (!is_any_interface_up()) g_warning("LT: No interface to listen on");
@@ -107,7 +106,7 @@ void *listen_loop(void *param)
         time_t now;
         time(&now);
 
-        struct Device d;
+        struct Device d = {0}; //  universal zero initializer
         d.mac64 = 0;
         strncpy(d.mac, "notset", 7);  // access point only messages have no device mac address
         

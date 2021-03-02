@@ -1695,7 +1695,7 @@ static gboolean on_handle_settings_request (piSniffer *interface,
 
     // Update settings from json blob passed in
 
-    g_info("*** %s Received settings update %s", state->local->client_id, jsonSettings);
+    g_info("*** Received settings update %s", jsonSettings);
 
     cJSON *json = cJSON_Parse(jsonSettings);
     if (json == NULL)
@@ -1721,7 +1721,7 @@ static gboolean on_handle_settings_request (piSniffer *interface,
     if (cJSON_IsObject(thresholds))
     {
         // Read each threshold, and set it on the state object
-        g_info("Setting threshold object on state (TODO)");
+        g_info("Setting threshold object on state (TODO) %s", state->local->client_id);
     }
 
     cJSON* roomGroups = cJSON_GetObjectItemCaseSensitive(json, "RoomGroups");

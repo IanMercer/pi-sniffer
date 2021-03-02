@@ -142,8 +142,8 @@ void set_name(struct Device* d, const char*value, enum name_type name_type, char
 struct AccessPoint
 {
    int id;                        // sequential ID
-   char client_id[META_LENGTH];   // linux allows more, truncated
-   char* short_client_id;         // points to client_id except for prefix crowd- or m-
+   char* client_id;               // linux allows more, may be truncated
+   char* short_client_id;         // points to client_id except for prefix crowd- or m- or known alias
    char description[META_LENGTH]; // optional description for dashboard
    char platform[META_LENGTH];    // optional platform (e.g. Pi3, Pi4, ...) for dashboard
 
@@ -219,6 +219,7 @@ enum Verbosity
 
 // Access points
 #define CJ_FROM "from"
+#define CJ_SHORT "short"
 #define CJ_DESCRIPTION "description"
 #define CJ_PLATFORM "platform"
 #define CJ_RSSI_ONE_METER "rom"

@@ -190,7 +190,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
             break; 
         }
         previousHead = h;
-        if (c++ > 2*CLOSEST_N) g_error("Stuck scanning head for %s", access_point->client_id);
+        if (c++ > 2*CLOSEST_N) g_error("Stuck scanning head");
     }
 
     // We moved it to the head so it should be here
@@ -261,16 +261,16 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
                 // and put it on the front
                 close->next = head->closest;
                 head->closest = close;
-                g_trace("  Bump entry for %s on %s", name, access_point->client_id);
+                g_trace("  Bump entry for %s on %s", name, access_point->short_client_id);
             }
             else
             {
-                g_trace("  Head entry for %s on %s", name, access_point->client_id);
+                g_trace("  Head entry for %s on %s", name, access_point->short_client_id);
             }
             break;
         }
         previous = close;
-        if (c++ > N_ACCESS_POINTS) g_error("  Stuck scanning chain %s on %s", name, access_point->client_id);
+        if (c++ > N_ACCESS_POINTS) g_error("  Stuck scanning chain %s on %s", name, access_point->short_client_id);
     }
 
     struct ClosestTo* closest = head->closest;
@@ -285,7 +285,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         // Only set earliest on creation, it's per-access point so that's OK
         closest->earliest = earliest;
         head->closest = closest;
-        g_trace("  Add entry for %s on %s", name, access_point->client_id);
+        g_trace("  Add entry for %s on %s", name, access_point->short_client_id);
         closest->access_point = access_point;
     }
 
@@ -673,7 +673,7 @@ bool print_counts_by_closest(struct OverallState* state)
             {
                 struct AccessPoint *ap2 = other->access_point;
                 g_debug(" %18s @ %5.1fm [%5li-%5li] (%3i)%s", 
-                ap2->client_id, other->distance, 
+                ap2->short_client_id, other->distance, 
                 now - other->earliest,
                 now - other->latest,
                 other->count, worth_including ? "" : " (ignore)");
@@ -729,7 +729,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 // Include only those that are within sensible time interval
                 if (access_distances[current->id] < EFFECTIVE_INFINITE)
                 {
-                    cJSON_AddRounded(jdistances, current->client_id, access_distances[current->id]);
+                    cJSON_AddRounded(jdistances, current->short_client_id, access_distances[current->id]);
                 }
             }
 

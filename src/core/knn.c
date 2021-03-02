@@ -42,7 +42,7 @@ char* recording_to_json (float access_point_distances[N_ACCESS_POINTS], struct A
         {
             char print_num[18];
             snprintf(print_num, 18, "%.2f", distance);
-            cJSON_AddRawToObject(distances, ap->client_id, print_num);
+            cJSON_AddRawToObject(distances, ap->short_client_id, print_num);
         }
     }
 
@@ -136,15 +136,22 @@ bool json_to_recording(char* buffer, struct OverallState* state, struct patch** 
 
         for (struct AccessPoint* ap = state->access_points; ap != NULL; ap = ap->next)
         {
-            cJSON* dist = cJSON_GetObjectItem(distances, ap->client_id);
-            if (cJSON_IsNumber(dist))
+            // For backward compatibility allow either long name or short name in file
+            cJSON* dist_long = cJSON_GetObjectItem(distances, ap->client_id);
+            cJSON* dist_short = cJSON_GetObjectItem(distances, ap->short_client_id);
+            if (cJSON_IsNumber(dist_long))
             {
-                ralloc->access_point_distances[ap->id] = dist->valuedouble;
+                ralloc->access_point_distances[ap->id] = dist_long->valuedouble;
+                count++;
+            }
+            else if (cJSON_IsNumber(dist_short))
+            {
+                ralloc->access_point_distances[ap->id] = dist_short->valuedouble;
                 count++;
             }
             else
             {
-                ralloc->access_point_distances[ap->id]=EFFECTIVE_INFINITE;
+                ralloc->access_point_distances[ap->id] = EFFECTIVE_INFINITE;
             }
         }
 
@@ -230,7 +237,7 @@ float get_probability (struct recording* recording,
             {
                 // OK: did not expect this distance to be here, and it's not but less information than a match
                 // but better than a bad match on distances, e.g. 4m and 14m
-                if (debug) g_debug("%s neither x 0.99", ap->client_id);
+                if (debug) g_debug("%s neither x 0.99", ap->short_client_id);
 
                 // very slight increase in probability that this is a match (since many are missing values)
                 // no, doesn't help probability_is = or(probability_is, 0.05);
@@ -245,7 +252,7 @@ float get_probability (struct recording* recording,
                 // the observation could see the AP but this recording says you cannot
                 // e.g. barn says you cannot see study, so if you can see study you can't be here
                 // as p_gone_away increases this allows old values to not block newer ones
-                if (debug) g_debug("%s was not expected, but %.2fm found x 0.2", ap->client_id, measured_distance);
+                if (debug) g_debug("%s was not expected, but %.2fm found x 0.2", ap->short_client_id, measured_distance);
 
                 // We got an observation but the recording doesn't include it, the larger the distance the
                 // more likely the recording might not include it. Recording must include all close observations.
@@ -262,7 +269,7 @@ float get_probability (struct recording* recording,
                 // y = 0.8 * (1 + atan(-3)/pi - atan(x/2-3)/pi) from 0 to 30
                 float p_might_miss_it = 1.0 + atan(-3)/PI - atan(recording_distance/2-3)/PI;
 
-                if (debug) g_debug("%s was expected not found, expected at %.2f x 0.4", ap->client_id, recording_distance);
+                if (debug) g_debug("%s was expected not found, expected at %.2f x 0.4", ap->short_client_id, recording_distance);
                // could not see an AP at all, but should have been able to, could just be a missing observation
 
                 probability_isnt = or(probability_isnt, 0.5 * p_might_miss_it);

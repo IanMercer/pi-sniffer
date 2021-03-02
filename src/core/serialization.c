@@ -22,6 +22,7 @@ char* access_point_to_json (struct AccessPoint* a)
 
     // AccessPoint details
     cJSON_AddStringToObject(j, CJ_FROM, a->client_id);
+    cJSON_AddStringToObject(j, CJ_SHORT, a->short_client_id);
     cJSON_AddStringToObject(j, CJ_DESCRIPTION, a->description);
     cJSON_AddStringToObject(j, CJ_PLATFORM, a->platform);
     cJSON_AddRounded(j, CJ_RSSI_ONE_METER, a->rssi_one_meter);
@@ -41,8 +42,9 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     char *string = NULL;
     cJSON *j = cJSON_CreateObject();
 
-    // AccessPoint details
+    // Minimal AccessPoint details
     cJSON_AddStringToObject(j, CJ_FROM, a->client_id);
+    //cJSON_AddStringToObject(j, CJ_SHORT, a->short_client_id);
     //cJSON_AddStringToObject(j, CJ_DESCRIPTION, a->description);
     //cJSON_AddStringToObject(j, CJ_PLATFORM, a->platform);
     //cJSON_AddRounded(j, CJ_RSSI_ONE_METER, a->rssi_one_meter);
@@ -91,8 +93,6 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
 
 struct AccessPoint* device_from_json(const char* json, struct OverallState* state, struct Device* device)
 {
-    struct AccessPoint** access_point_list = &state->access_points;
-
     cJSON *djson = cJSON_Parse(json);
 
     // ACCESS POINT
@@ -128,7 +128,7 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
         }
 
         bool created = FALSE;
-        ap = get_or_create_access_point(access_point_list, apname, &created);
+        ap = get_or_create_access_point(state, apname, &created);
 
         time(&ap->last_seen);
     }
@@ -173,7 +173,7 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
             (seq - ap->sequence) > 1 &&
             (seq - ap->sequence) < 1E6)
         {
-            g_warning("Missed %li messages from %s", (long)((seq - ap->sequence) - 1), ap->client_id);
+            g_warning("Missed %li messages from %s", (long)((seq - ap->sequence) - 1), ap->short_client_id);
             state->messagesMissed += (long)((seq - ap->sequence) - 1);
         }
         state->messagesReceived++;

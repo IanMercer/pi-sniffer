@@ -13,13 +13,13 @@
 #include <sys/types.h>
 #include <time.h>
 
-struct AccessPoint *add_access_point(struct AccessPoint** access_point_list, char *client_id,
+struct AccessPoint *add_access_point(struct OverallState* state, char *client_id,
                                      const char *description, const char *platform,
                                      int rssi_one_meter, float rssi_factor, float people_distance)
 {
     //g_debug("Check for new access point '%s'\n", client_id);
     bool created;
-    struct AccessPoint* ap = get_or_create_access_point(access_point_list, client_id, &created);
+    struct AccessPoint* ap = get_or_create_access_point(state, client_id, &created);
     g_assert(ap != NULL);
     if (ap == NULL) return NULL;   // full
 
@@ -45,12 +45,14 @@ void print_access_points(struct AccessPoint* access_points_list)
 {
     time_t now;
     time(&now);
-    g_info("ACCESS POINTS          Platform       Parameters Last Seen");
+    g_info("ACCESS POINTS                         Platform       Parameters Last Seen");
     for (struct AccessPoint* ap = access_points_list; ap != NULL; ap = ap->next)
     {
         int delta_time = difftime(now, ap->last_seen);
-        g_info("%20s %16s (%3i, %.1f) %is",
-        ap->client_id, ap->platform,
+        g_info("%20s %16s %16s (%3i, %.1f) %is",
+        ap->client_id, 
+        ap->short_client_id,
+        ap->platform,
         ap->rssi_one_meter, ap->rssi_factor,
         delta_time);
     }
@@ -170,19 +172,20 @@ static int access_point_id_generator = 0;
 /*
     Get or add an access point (THIS IS THE ONLY PLACE WE ADD AN AP)
 */
-struct AccessPoint* get_or_create_access_point(struct AccessPoint** access_points_list, const char* client_id, bool* created)
+struct AccessPoint* get_or_create_access_point(struct OverallState* state, const char* client_id, bool* created)
 {
     *created = FALSE;
-    for (struct AccessPoint* current = *access_points_list; current != NULL; current = current->next)
+    for (struct AccessPoint* current = state->access_points; current != NULL; current = current->next)
     {
-        if (strcmp(current->client_id, client_id) == 0) return current;
+        if (strcmp(current->client_id, client_id) == 0 ||
+            strcmp(current->short_client_id, client_id)) return current;
     }
 
     *created = TRUE;
 
     // Otherwise add a new one
     struct AccessPoint* ap = g_malloc(sizeof(struct AccessPoint));
-    strncpy(ap->client_id, client_id, META_LENGTH);
+    ap->client_id = strdup(client_id);
     strncpy(ap->description, "Not known yet", META_LENGTH);
     strncpy(ap->platform, "Not known yet", META_LENGTH);
 
@@ -190,45 +193,46 @@ struct AccessPoint* get_or_create_access_point(struct AccessPoint** access_point
     else if (string_starts_with(ap->client_id, "m-")) ap->short_client_id = &ap->client_id[2];
     else ap->short_client_id = ap->client_id;
 
+    // Lookup aliases
+
+    for (struct AccessMapping* am = state->access_mappings; am != NULL; am = am->next)
+    {
+        if (g_ascii_strcasecmp(ap->client_id, am->name) == 0)
+        {
+            ap->short_client_id = strdup(am->name);
+        }
+    }
+
     ap->rssi_factor = 0.0;
     ap->rssi_one_meter = 0.0;
     ap->sequence = 0;
 
-    ap->next = NULL;
     ap->id = access_point_id_generator++;
 
-    if (*access_points_list == NULL)
+    // scan to find position
+    struct AccessPoint* previous = NULL;
+    struct AccessPoint* current = state->access_points;
+
+    while (current != NULL && strcmp(current->client_id, client_id) < 0)
     {
-        *access_points_list = ap;
+        previous = current;
+        current = current->next;
+    }
+
+    if (previous == NULL)
+    {
+        // insert at start of list
+        ap->next = state->access_points;
+        state->access_points = ap;
         return ap;
     }
-    else // scan to find position
+    else
     {
-        struct AccessPoint* previous = NULL;
-        struct AccessPoint* current = *access_points_list;
-
-        while (strcmp(current->client_id, client_id) < 0)
-        {
-            previous = current;
-            current = current->next;
-            if (current == NULL) break;
-        }
-
-        if (previous == NULL)
-        {
-            // insert at start of list
-            ap->next = *access_points_list;
-            *access_points_list = ap;
-            return ap;
-        }
-        else
-        {
-            // insert into list
-            previous->next = ap;
-            ap->next = current;
-        }
-        return ap;
+        // insert into list
+        previous->next = ap;
+        ap->next = current;
     }
+    return ap;
 }
 
 /*
