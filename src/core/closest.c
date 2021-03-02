@@ -825,17 +825,17 @@ bool print_counts_by_closest(struct OverallState* state)
 
             // TODO: MAINTAIN A HISTORY OF LOCATIONS ON EACH DEVICE
 
-            // If best_three returned patches this wouldn't be necessary
             struct patch* best_patch = best_three[0].patch;
 
             if (best_patch != NULL && 
-                (ahead->recent_rooms == NULL || strcmp(ahead->recent_rooms->name, best_patch->name) != 0))
+                (ahead->recent_rooms == NULL || strcmp(ahead->recent_rooms->name, best_patch->room) != 0))
             {
                 struct RecentRoom* recent = malloc(sizeof(struct RecentRoom));
-                g_utf8_strncpy(recent->name, best_patch->name, NAME_LENGTH);
+                g_utf8_strncpy(recent->name, best_patch->room, NAME_LENGTH);
                 recent->next = ahead->recent_rooms;
                 ahead->recent_rooms = recent;
 
+                g_debug("Moving %s to %s", ahead->name, best_patch->room);
                 // prune
 
                 int keep = 10;
@@ -853,6 +853,7 @@ bool print_counts_by_closest(struct OverallState* state)
                     struct RecentRoom* rr = NULL;
                     while ((rr = last_room->next) != NULL)
                     {
+                        g_debug("Pruning %s", rr->name);
                         last_room->next = rr->next;
                         rr->next = NULL;
                         g_free(rr);
@@ -862,9 +863,9 @@ bool print_counts_by_closest(struct OverallState* state)
                 // Is this a known Device that we want to track?
                 for (struct Beacon* b = beacon_list; b != NULL; b=b->next)
                 {
-                    // g_debug("'%s' '%s' '%s'", b->name, b->alias, test->name);
                     if (strcmp(b->alias, ahead->name) == 0 || strcmp(b->name, ahead->name) == 0 || b->mac64 == ahead->mac64)
                     {
+                        g_debug("Moving beacon '%s' to %s", b->name, best_patch->room);
                         // patch name should be: ahead->recent_rooms->name;
                         b->patch = best_patch;
                         b->last_seen = latest_observation->latest;
