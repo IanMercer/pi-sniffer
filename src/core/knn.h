@@ -15,8 +15,8 @@ struct recording
 {
     // A confirmed recording has been moved from the beacons directory to the recordings directory
     bool confirmed;
-    // patch name is copied into a fixed length string because the recording object keeps getting recreated
-    char patch_name[META_LENGTH];
+    // Recordings are ephemeral but patches are forever
+    struct patch* patch;
     // Distance for each access point in same order
     float access_point_distances[N_ACCESS_POINTS];
     // next
@@ -26,7 +26,7 @@ struct recording
 
 // SAVE AND LOAD recordings
 
-bool record (const char* directory, const char* device_name, float access_distances[N_ACCESS_POINTS], struct AccessPoint* access_points, char* location);
+bool record (const char* directory, const char* device_name, float access_distances[N_ACCESS_POINTS], struct AccessPoint* access_points);
 
 bool read_observations (const char * dirname, struct OverallState* state, bool confirmed);
 
@@ -39,8 +39,14 @@ void free_list(struct recording** head);
 struct top_k
 {
     float distance;
-    char patch_name[META_LENGTH];
+    /**
+     * Pointer to a patch
+     */
+    struct patch* patch;
     bool used;
+    /*
+    * Probability
+    */
     float probability;
 };
 

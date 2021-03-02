@@ -124,6 +124,12 @@ struct OverallState
 
    // when the last summary of closest was run (to reduce logging)
    time_t last_summary;
+
+   // log all the local devices found
+   bool log_devices;
+
+   // log the closest calculation
+   bool log_closest;
 };
 
 

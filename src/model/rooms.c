@@ -99,17 +99,11 @@ struct patch* get_or_create_patch(const char* patch_name, const char* room_name,
         found->covid_total = 0;
         found->other_total = 0;
 
-        if (*patch_list == NULL)
-        {
-            // First item in chain
-            *patch_list = found;
-        }
-        else
-        {
-            // Insert at front of chain
-            found->next = *patch_list;
-            *patch_list = found;
-        }
+        // Insert at front of chain
+        found->next = *patch_list;
+        *patch_list = found;
+
+        g_debug("Added patch %s", found->name);
     }
     else
     {

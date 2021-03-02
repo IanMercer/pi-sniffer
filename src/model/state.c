@@ -41,6 +41,11 @@ void initialize_state(struct OverallState* state)
         // Grab zero time = time when started
     time(&state->started);
 
+    // Set logging off until told to log by remote
+    state->log_devices = false;
+    // Log until told to not log
+    state->log_closest = true;
+
 
     // no devices yet
     state->n = 0;

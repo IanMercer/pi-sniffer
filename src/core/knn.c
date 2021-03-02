@@ -29,19 +29,15 @@
 /*
    Get JSON for a recording as a string, must call free() on string after use
 */
-char* recording_to_json (struct recording* r, struct AccessPoint* access_points)
+char* recording_to_json (float access_point_distances[N_ACCESS_POINTS], struct AccessPoint* access_points)
 {
     char *string = NULL;
     cJSON *j = cJSON_CreateObject();
 
-//    cJSON_AddStringToObject(j, "patch", r->patch_name);
-
-    // distances
-
     cJSON *distances = cJSON_AddObjectToObject(j, "distances");
     for (struct AccessPoint* ap = access_points; ap != NULL; ap = ap->next)
     {
-        double distance = r->access_point_distances[ap->id];
+        double distance = access_point_distances[ap->id];
         if (distance > 0 && distance < EFFECTIVE_INFINITE)
         {
             char print_num[18];
@@ -134,7 +130,7 @@ bool json_to_recording(char* buffer, struct OverallState* state, struct patch** 
 
         struct recording* ralloc = malloc(sizeof(struct recording));
         ralloc->confirmed = confirmed;
-        g_utf8_strncpy(ralloc->patch_name, (*current_patch)->name, META_LENGTH);
+        ralloc->patch = *current_patch;
         ralloc->next = state->recordings;
         state->recordings = ralloc;
 
@@ -335,13 +331,13 @@ int k_nearest(struct recording* recordings,
         if (confirmed && !recording->confirmed) continue;
         test_count++;
 
-        debug = debug && string_starts_with(recording->patch_name, "East");
+        debug = debug && string_starts_with(recording->patch->name, "East");
 
         // Insert recording into the list if it's a better match
         float distance = get_probability(recording, accessdistances, accesstimes, average_gap, access_points, debug);
 
         struct top_k current;
-        g_utf8_strncpy(current.patch_name, recording->patch_name, META_LENGTH);
+        current.patch = recording->patch;
         current.distance = distance;
         current.used = FALSE;
         //current.patch = recording;
@@ -374,7 +370,7 @@ int k_nearest(struct recording* recordings,
 
     if (k == 0) {
         top_result->distance = 100000;
-        g_utf8_strncpy(top_result->patch_name, "unknown", META_LENGTH);
+        top_result->patch = NULL;
         return 0;
     };
 
@@ -392,11 +388,11 @@ int k_nearest(struct recording* recordings,
         double max_prob = result[i].distance;
         int tc = 1;
 
-        if (debug) { g_debug("%s   %.3f -> %.3f", result[i].patch_name, result[i].distance, cumulative_probability);}
+        if (debug) { g_debug("%s   %.3f -> %.3f", result[i].patch->name, result[i].distance, cumulative_probability);}
 
         for (int j = i+1; j < k; j++)
         {
-            if (strcmp(result[i].patch_name, result[j].patch_name) == 0)
+            if (strcmp(result[i].patch->name, result[j].patch->name) == 0)
             {
                 tc++;
                 result[j].used = TRUE;
@@ -410,12 +406,12 @@ int k_nearest(struct recording* recordings,
                     min_prob = fmin(min_prob, result[j].distance);
                     max_prob = fmax(max_prob, result[j].distance);
 
-                    if (debug) { g_debug("%s + %.3f -> %.3f", result[j].patch_name, result[j].distance, cumulative_probability);}
+                    if (debug) { g_debug("%s + %.3f -> %.3f", result[j].patch->name, result[j].distance, cumulative_probability);}
                 }
             }
         }
 
-        if (debug) g_debug("Patch '%s' has probability %.3f over %i (%.3f-%.3f)", result[i].patch_name,
+        if (debug) g_debug("Patch '%s' has probability %.3f over %i (%.3f-%.3f)", result[i].patch->name,
            cumulative_probability, tc, min_prob, max_prob);
 
         struct top_k current_value = result[i];  // copy name
@@ -588,7 +584,8 @@ bool read_observations (const char * dirname,  struct OverallState* state, bool 
 /*
     record_observation
 */
-bool record (const char* directory, const char* device_name, float access_distances[N_ACCESS_POINTS], struct AccessPoint* access_points, char* location)
+bool record (const char* directory, const char* device_name, 
+    float access_distances[N_ACCESS_POINTS], struct AccessPoint* access_points)
 {
 	GError *error_local = NULL;
 
@@ -632,14 +629,7 @@ bool record (const char* directory, const char* device_name, float access_distan
         g_data_output_stream_put_string(output, header, NULL, &error_local);
     }
 
-    struct recording r;
-    for (int i = 0; i < N_ACCESS_POINTS; i++)
-    {
-        r.access_point_distances[i] = access_distances[i];
-    }
-    g_utf8_strncpy(r.patch_name, location, META_LENGTH);
-
-    char* buffer = recording_to_json(&r, access_points);
+    char* buffer = recording_to_json(access_distances, access_points);
     if (buffer != NULL)
     {
         // time

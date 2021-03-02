@@ -22,6 +22,8 @@ struct group
 };
 
 // A patch: a roughly circular area about 3-5m in radius with similar distances from the sensors, the unit of measurement
+// Patches are persistent, we never throw them away
+// Recordings however that point to patches are ephemeral
 struct patch
 {
     const char* name;

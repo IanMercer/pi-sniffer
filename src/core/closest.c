@@ -359,18 +359,10 @@ int calculate_location(struct OverallState* state,
 
             if (pallocation > 0.0001)
             {
-                for (struct patch* patch = state->patches; patch != NULL; patch = patch->next)
+                best_three[bi].patch->knn_score += pallocation;
+                if (best_three[bi].patch->knn_score > 1.0)
                 {
-                    if (strcmp(patch->name, best_three[bi].patch_name) == 0)
-                    {
-                        //found = TRUE;
-                        patch->knn_score += pallocation;
-                        if (patch -> knn_score > 1.0)
-                        {
-                            g_warning("knn_score %.2f should be < 1.0", patch->knn_score);
-                        }
-                        break;
-                    }
+                    g_warning("%s knn_score %.2f should be < 1.0", best_three[bi].patch->name, best_three[bi].patch->knn_score);
                 }
             }
 
@@ -394,20 +386,20 @@ int calculate_location(struct OverallState* state,
         }
         else if (k_found > 0)
         {
-            g_info("Adding a possible recording '%s' is in %s %.2f", device_name, best_three[0].patch_name, best_three[0].distance);
+            g_info("Adding a possible recording '%s' is in %s %.2f", device_name, best_three[0].patch->name, best_three[0].distance);
         }
         else
         {
             g_info("Adding a possible recording '%s' - Nothing near", device_name);
         }
 
-        record("beacons", device_name, accessdistances, access_points, device_name);
+        record("beacons", device_name, accessdistances, access_points);
 
         //if (k_found > 2 && best_three[0].distance > 2.0)
         //{
             for (int i = 0; i < k_found; i++)
             {
-                g_debug("   KFound %i : %s %.1f", i, best_three[i].patch_name, best_three[i].distance);
+                g_debug("   KFound %i : %s %.1f", i, best_three[i].patch->name, best_three[i].distance);
             }
     }
 
@@ -486,7 +478,7 @@ bool print_counts_by_closest(struct OverallState* state)
         struct patch* current_patch = get_or_create_patch("Close", "4m", local_id, "group=inside", &state->patches, &state->groups, TRUE);
         struct recording* ralloc = malloc(sizeof(struct recording));
         ralloc->confirmed = TRUE;
-        g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
+        ralloc->patch = current_patch;
         ralloc->next = state->recordings;
         state->recordings = ralloc;
         ralloc->access_point_distances[0] = 2.0;
@@ -496,7 +488,7 @@ bool print_counts_by_closest(struct OverallState* state)
         current_patch = get_or_create_patch("Near", "7m", local_id, "group=inside", &state->patches, &state->groups, TRUE);
         ralloc = malloc(sizeof(struct recording));
         ralloc->confirmed = TRUE;
-        g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
+        ralloc->patch = current_patch;
         ralloc->next = state->recordings;
         state->recordings = ralloc;
         ralloc->access_point_distances[0] = 5.0;
@@ -506,7 +498,7 @@ bool print_counts_by_closest(struct OverallState* state)
         current_patch = get_or_create_patch("Far", "9m", local_id, "group=outside", &state->patches, &state->groups, TRUE);
         ralloc = malloc(sizeof(struct recording));
         ralloc->confirmed = TRUE;
-        g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
+        ralloc->patch = current_patch;
         ralloc->next = state->recordings;
         state->recordings = ralloc;
         ralloc->access_point_distances[0] = 9.0;
@@ -516,7 +508,7 @@ bool print_counts_by_closest(struct OverallState* state)
         current_patch = get_or_create_patch("Distant", "Far", local_id, "group=outside", &state->patches, &state->groups, TRUE);
         ralloc = malloc(sizeof(struct recording));
         ralloc->confirmed = TRUE;
-        g_utf8_strncpy(ralloc->patch_name, current_patch->name, META_LENGTH);
+        ralloc->patch = current_patch;
         ralloc->next = state->recordings;
         state->recordings = ralloc;
         ralloc->access_point_distances[0] = 12.0;
@@ -569,7 +561,10 @@ bool print_counts_by_closest(struct OverallState* state)
         // How long does this device typically go between transmits
         double average_gap = sum_duration / sum_readings;
         // Sometimes get a large value for seen ... long gap ... seen again
-        double adjusted_average_gap = fmin(240.0, fmax(30.0, average_gap));
+        double adjusted_average_gap = fmin(5*60.0, fmax(30.0, average_gap));
+
+        // beacons need to last longer
+        if (ahead->category == CATEGORY_BEACON && adjusted_average_gap < 45) adjusted_average_gap = 45.0;
 
         // Unreliable iBeacons are *really* unreliable
         if (adjusted_average_gap > 90) adjusted_average_gap = 2 * adjusted_average_gap;
@@ -714,7 +709,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 if (logging || (detailedLogging && bi == 0))
                 {
                     g_debug("%15s sc: %.3f p=%.3f x %.3f -> %.3f",
-                        best_three[bi].patch_name, best_three[bi].distance, 
+                        best_three[bi].patch->name, best_three[bi].distance, 
                         best_three[bi].probability, time_score,
                         best_three[bi].probability * time_score);
                     // TODO: How to get persistent patch addresses closest->patch = best_three[bi].patch;
@@ -831,15 +826,7 @@ bool print_counts_by_closest(struct OverallState* state)
             // TODO: MAINTAIN A HISTORY OF LOCATIONS ON EACH DEVICE
 
             // If best_three returned patches this wouldn't be necessary
-            struct patch* best_patch = NULL;
-
-            for (struct patch* patch = patch_list; patch != NULL; patch = patch->next)
-            {
-                if (strcmp(patch->name, best_three[0].patch_name) == 0)
-                {
-                    best_patch = patch;
-                }
-            }
+            struct patch* best_patch = best_three[0].patch;
 
             if (best_patch != NULL && 
                 (ahead->recent_rooms == NULL || strcmp(ahead->recent_rooms->name, best_patch->name) != 0))
@@ -871,35 +858,20 @@ bool print_counts_by_closest(struct OverallState* state)
                         g_free(rr);
                     }
                 }
-            }
 
-            // Is this a known Device that we want to track?
-            struct Beacon* beacon = NULL;
-            for (struct Beacon* b = beacon_list; b != NULL; b=b->next)
-            {
-                // g_debug("'%s' '%s' '%s'", b->name, b->alias, test->name);
-                if (strcmp(b->alias, ahead->name) == 0 || strcmp(b->name, ahead->name) == 0 || b->mac64 == ahead->mac64)
+                // Is this a known Device that we want to track?
+                for (struct Beacon* b = beacon_list; b != NULL; b=b->next)
                 {
-                    beacon = b;
-                    break;
-                }
-            }
-
-            if (beacon != NULL)
-            {
-                double best_room = 0.0; // for beacon
-                for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
-                {
-                    // If this is a known beacon and the score is > best, place it in this room
-                    if (rcurrent->knn_score > best_room)
+                    // g_debug("'%s' '%s' '%s'", b->name, b->alias, test->name);
+                    if (strcmp(b->alias, ahead->name) == 0 || strcmp(b->name, ahead->name) == 0 || b->mac64 == ahead->mac64)
                     {
-                        best_room = rcurrent->knn_score;
-                        beacon->patch = rcurrent;
-                        beacon->last_seen = latest_observation->latest;
+                        // patch name should be: ahead->recent_rooms->name;
+                        b->patch = best_patch;
+                        b->last_seen = latest_observation->latest;
+                        break;
                     }
                 }
             }
-
         }
         else
         {
