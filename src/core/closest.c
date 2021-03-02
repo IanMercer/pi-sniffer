@@ -711,16 +711,13 @@ bool print_counts_by_closest(struct OverallState* state)
 
             for (int bi = 0; bi < k_found; bi++)
             {
-                if (best_three[bi].distance > best_three[0].distance * 0.5)
+                if (logging || (detailedLogging && bi == 0))
                 {
-                    if (logging || (detailedLogging && bi == 0))
-                    {
-                        g_debug("%15s sc: %.3f p=%.3f x %.3f -> %.3f",
-                            best_three[bi].patch_name, best_three[bi].distance, 
-                            best_three[bi].probability, time_score,
-                            best_three[bi].probability * time_score);
-                        // TODO: How to get persistent patch addresses closest->patch = best_three[bi].patch;
-                    }
+                    g_debug("%15s sc: %.3f p=%.3f x %.3f -> %.3f",
+                        best_three[bi].patch_name, best_three[bi].distance, 
+                        best_three[bi].probability, time_score,
+                        best_three[bi].probability * time_score);
+                    // TODO: How to get persistent patch addresses closest->patch = best_three[bi].patch;
                 }
             }
 
@@ -833,14 +830,14 @@ bool print_counts_by_closest(struct OverallState* state)
 
             // TODO: MAINTAIN A HISTORY OF LOCATIONS ON EACH DEVICE
 
-            struct patch* best_patch = patch_list;
+            // If best_three returned patches this wouldn't be necessary
+            struct patch* best_patch = NULL;
 
-            for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
+            for (struct patch* patch = patch_list; patch != NULL; patch = patch->next)
             {
-                // If this is a known beacon and the score is > best, place it in this room
-                if (rcurrent->knn_score > best_patch->knn_score)
+                if (strcmp(patch->name, best_three[0].patch_name) == 0)
                 {
-                    best_patch = rcurrent;
+                    best_patch = patch;
                 }
             }
 
