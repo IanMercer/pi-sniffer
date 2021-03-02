@@ -182,6 +182,10 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
 
     // DEVICE
 
+    // ESP32 doesn't send name
+    device->name[0] = '\0';
+    device->name_type = nt_initial;
+
     cJSON *mac = cJSON_GetObjectItemCaseSensitive(djson, CJ_MAC);
     if (cJSON_IsString(mac) && (mac->valuestring != NULL))
     {
