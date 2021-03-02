@@ -226,4 +226,14 @@ void add_summary(GVariantBuilder* builder, double phones, double watches, double
 */
 uint32_t hash_string(const char* input, int maxlen);
 
+/*
+* What's the value of this hex digit
+*/
+int hex_char_to_value(char let);
+
+/*
+* Is this a mac address
+*/
+bool is_mac(char* mac);
+
 #endif

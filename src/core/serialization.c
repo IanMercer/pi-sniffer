@@ -103,7 +103,7 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
     {
         char* apname = fromj->valuestring;
 
-        int64_t maybeMac = mac_string_to_int_64(apname);
+        int64_t maybeMac = is_mac(apname) ? mac_string_to_int_64(apname) : 0;
 
         // Use beacon array to also map sensor names to better names
         // As ESP32 sensors will not have nice names

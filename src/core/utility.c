@@ -276,6 +276,34 @@ void mac_64_to_string(char* output, int length, int64_t access_64)
 }
 
 /*
+* What's the value of this hex digit
+*/
+int hex_char_to_value(char let)
+{
+    if (let >= '0' && let <= '9') return (let - '0');
+    if (let >= 'a' && let <= 'f') return (let - 'a' + 10);
+    if (let >= 'A' && let <= 'F') return (let - 'A' + 10);
+    return -1;
+}
+
+/*
+* Is this a mac address
+*/
+bool is_mac(char* mac)
+{
+    int len = strlen(mac);  // Should be 5 + 6*2 = 17
+    if (len != 17) return false;
+    for (int i = 0; i < len; i++)
+    {
+        char ch = mac[i];
+        if ((i%3 == 0) && hex_char_to_value(ch) < 0) return false;
+        if ((i%3 == 1) && hex_char_to_value(ch) < 0) return false;
+        if ((i%3 == 2) && (ch != ':' || ch != '-')) return false;
+    }
+    return true;
+}
+
+/*
    Mac address string to 64 bit integer (top two bytes zero)
 */
 int64_t mac_string_to_int_64 (char* mac){
@@ -636,7 +664,7 @@ unsigned char *read_byte_array(GVariant *s_value, int *actualLength, uint16_t *h
 
     for (int i = 0; i < len; i++)
     {
-        *hash = *hash <<5 + *hash + allocdata[i];
+        *hash = (*hash <<5) + *hash + allocdata[i];
     }
 
     *actualLength = len;
