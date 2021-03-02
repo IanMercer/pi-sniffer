@@ -103,11 +103,28 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
     {
         char* apname = fromj->valuestring;
 
+        int64_t maybeMac = mac_string_to_int_64(apname);
+
+        // Use beacon array to also map sensor names to better names
+        // As ESP32 sensors will not have nice names
+        for (struct Beacon* beacon = state->beacons; beacon != NULL; beacon = beacon->next)
+        {
+            if (g_ascii_strcasecmp(beacon->name, apname) == 0 || (maybeMac != 0 && beacon->mac64 == maybeMac))
+            {
+                apname = beacon->alias;
+                break;
+            }
+        }
+
         // Map fromj->valuestring to a friendly name if we have one
         // TODO: Lookups here
         if (string_contains_insensitive(apname, "30:AE:A4:F5:6F:24"))
         {
             apname = "ESP32";
+        }
+        else if (string_contains_insensitive(apname, "24:6F:28:AF:FB:CC"))
+        {
+            apname = "TTGO";
         }
 
         bool created = FALSE;
