@@ -865,7 +865,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 {
                     if (strcmp(b->alias, ahead->name) == 0 || strcmp(b->name, ahead->name) == 0 || b->mac64 == ahead->mac64)
                     {
-                        g_debug("Moving beacon '%s' to %s", b->name, best_patch->room);
+                        g_debug("Moving beacon '%s' to %s", b->alias, best_patch->room);
                         // patch name should be: ahead->recent_rooms->name;
                         b->patch = best_patch;
                         b->last_seen = latest_observation->latest;
