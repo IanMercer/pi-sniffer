@@ -288,10 +288,10 @@ void read_configuration_files(struct OverallState* state)
 
     // New file name
     ok = read_all_lines(CONFIG_DIR, "beacons.jsonl", &handle_beacon_jsonl, (void*)state);
-    if (!ok) g_warning_once("Did not read beacons.jsonl");
+    if (!ok) g_warning("Did not read beacons.jsonl");
 
     ok = read_all_lines(CONFIG_DIR, "access.jsonl", &handle_access_translation_jsonl, (void*)state);
-    if (!ok) g_warning_once("Did not read access.jsonl");
+    if (!ok) g_warning("Did not read access.jsonl");
 }
 
 /*
