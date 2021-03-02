@@ -247,7 +247,13 @@ float get_probability (struct recording* recording,
                 // as p_gone_away increases this allows old values to not block newer ones
                 if (debug) g_debug("%s was not expected, but %.2fm found x 0.2", ap->client_id, measured_distance);
 
-                probability_isnt = or(probability_isnt, (1.0 - p_gone_away));
+                // We got an observation but the recording doesn't include it, the larger the distance the
+                // more likely the recording might not include it. Recording must include all close observations.
+                float p_recording_wouldnt_have_this = 1.0 + atan(-3)/PI - atan(recording_distance/2-3)/PI;
+
+                float combined_probability_of_a_miss = or(p_recording_wouldnt_have_this, p_gone_away);
+
+                probability_isnt = or(probability_isnt, (1.0 - combined_probability_of_a_miss));
             }
             else if (measured_distance >= EFFECTIVE_INFINITE_TEST)
             {
