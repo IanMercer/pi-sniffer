@@ -87,38 +87,10 @@ void apply_known_beacons(struct Device* device)
     for (struct Beacon* b = state.beacons; b != NULL; b = b->next)
     {
         // Apply only ones without a hash
-        if (((strcmp(b->name, device->name) == 0) || (b->mac64 == device->mac64)) && b->hash == 0)
+        if ((strcmp(b->name, device->name) == 0) || (b->mac64 == device->mac64))
         {
             set_name(device, b->alias, nt_alias);
         }
-    }
-}
-
-void apply_known_beacon_hashes(struct Device* device)
-{
-    if (device->manufacturer_data_hash == 0) return;
-
-    bool matched_name = false;
-
-    for (struct Beacon* b = state.beacons; b != NULL; b = b->next)
-    {
-        if (strcmp(b->name, device->name) == 0)
-        {
-            matched_name = true;
-            if (b->hash == device->manufacturer_data_hash)
-            {
-                set_name(device, b->alias, nt_alias);
-                return;
-            }
-        }
-    }
-
-    if (matched_name)  // but didn't match hash
-    {
-        char dewalt[32];
-        snprintf(dewalt, sizeof(dewalt), "DeWalt 0x%08x", device->manufacturer_data_hash);
-        set_name(device, dewalt, nt_known);
-        g_warning("Set DEWALT-TAG name %08x", device->manufacturer_data_hash);
     }
 }
 
@@ -312,7 +284,6 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 set_name(existing, name, nt_known);
 
                 apply_known_beacons(existing);        // must apply beacons first to prevent hashing names
-                apply_known_beacon_hashes(existing);  // in case manufacturer data came first
                 apply_name_heuristics (existing, name);
             }
 
@@ -716,8 +687,6 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             if (existing->manufacturer_data_hash != hash)
             {
                 existing->manufacturer_data_hash = hash;
-
-                apply_known_beacon_hashes(existing);
 
                 g_variant_iter_init(&i, prop_val);
                 while (g_variant_iter_next(&i, "{qv}", &manufacturer, &s_value))

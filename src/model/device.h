@@ -168,8 +168,6 @@ struct Beacon
    char* name;
    int64_t mac64;
    char* alias;
-   // optional hash for beacons with same name
-   int16_t hash;
    struct Beacon* next;
    // Which patch it is currently in (or NULL)
    struct patch* patch;

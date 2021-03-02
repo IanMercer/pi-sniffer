@@ -221,7 +221,9 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
 
     // Update the type, latest wins
     if (category != CATEGORY_UNKNOWN) head->category = category;
-    head->addressType = addressType;
+
+    // Don't decrease because ESP32 reports 1 instead of 2
+    if (addressType > head->addressType) head->addressType = addressType;
 
     // Update the name on the head IF BETTER
     if (name_type > head->name_type)
@@ -566,7 +568,8 @@ bool print_counts_by_closest(struct OverallState* state)
 
         // How long does this device typically go between transmits
         double average_gap = sum_duration / sum_readings;
-        double adjusted_average_gap = fmax(average_gap, 30.0);
+        // Sometimes get a large value for seen ... long gap ... seen again
+        double adjusted_average_gap = fmin(240.0, fmax(30.0, average_gap));
 
         // Unreliable iBeacons are *really* unreliable
         if (adjusted_average_gap > 90) adjusted_average_gap = 2 * adjusted_average_gap;
@@ -666,7 +669,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 // must use at least one no matter how old
                 count_same_mac < 2 ||
                 // only interested in where it has been recently, but if average_gap is stupidly small bump it to 25s
-                (time_diff < 8 * adjusted_average_gap);
+                (time_diff < 10 * adjusted_average_gap);
 
             //Verbose logging
             if (logging && ahead->supersededby == 0)
@@ -691,7 +694,8 @@ bool print_counts_by_closest(struct OverallState* state)
         //struct AccessPoint *ap = test->access_point;
 
         // Same calculation in knn.c
-        double p_gone_away = delta_time < adjusted_average_gap ? 0.0 : atan(2*delta_time/adjusted_average_gap)/3.14159*2;
+        double p_gone_away = delta_time < 4*adjusted_average_gap ? 0.0 
+            : atan(10*delta_time/adjusted_average_gap)/3.14159*2;
         double time_score = 1.0 - p_gone_away;
 
         if (time_score > 0)
