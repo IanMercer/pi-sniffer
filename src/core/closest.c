@@ -861,20 +861,24 @@ bool print_counts_by_closest(struct OverallState* state)
                         g_free(rr);
                     }
                 }
+            }
 
-                // Is this a known Device that we want to track?
-                for (struct Beacon* b = beacon_list; b != NULL; b=b->next)
+            // If not changed room, still want to update last seen state for beacons
+
+            for (struct Beacon* b = beacon_list; b != NULL; b=b->next)
+            {
+                if (strcmp(b->alias, ahead->name) == 0 || strcmp(b->name, ahead->name) == 0 || b->mac64 == ahead->mac64)
                 {
-                    if (strcmp(b->alias, ahead->name) == 0 || strcmp(b->name, ahead->name) == 0 || b->mac64 == ahead->mac64)
+                    if (b->patch != best_patch)
                     {
                         g_debug("Moving beacon '%s' to %s", b->alias, best_patch->room);
-                        // patch name should be: ahead->recent_rooms->name;
                         b->patch = best_patch;
-                        b->last_seen = latest_observation->latest;
-                        break;
                     }
+                    b->last_seen = latest_observation->latest;
+                    break;
                 }
             }
+
         }
         else
         {
