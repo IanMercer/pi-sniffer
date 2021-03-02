@@ -239,9 +239,11 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
     {
         if ((strcmp(b->name, name) == 0 && strcmp(b->alias, name) != 0) || b->mac64 == device_64)
         {
+            if (strcmp(head->name, b->alias) == 0) break;  // already set
             g_debug("Alias head name from %s to %s (%i->%i)", head->name, b->alias, head->name_type, nt_alias);
             g_utf8_strncpy(head->name, b->alias, NAME_LENGTH);
             head->name_type = nt_alias;
+            break;
         }
     }
 

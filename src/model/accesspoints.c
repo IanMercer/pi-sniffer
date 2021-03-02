@@ -177,8 +177,11 @@ struct AccessPoint* get_or_create_access_point(struct OverallState* state, const
     *created = FALSE;
     for (struct AccessPoint* current = state->access_points; current != NULL; current = current->next)
     {
-        if (strcmp(current->client_id, client_id) == 0 ||
-            strcmp(current->short_client_id, client_id)) return current;
+        if ((strcmp(current->client_id, client_id) == 0) ||
+            (strcmp(current->short_client_id, client_id) == 0))
+            {
+                return current;
+            }
     }
 
     *created = TRUE;

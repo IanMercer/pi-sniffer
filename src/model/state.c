@@ -47,6 +47,8 @@ void initialize_state(struct OverallState* state)
     // Log until told to not log
     state->log_closest = true;
 
+    // Must do this before creating local device to ensure it gets a local name if mapped
+    read_configuration_files(state);
 
     // no devices yet
     state->n = 0;
@@ -156,9 +158,7 @@ void initialize_state(struct OverallState* state)
         if (strcmp(verbosity, "details")) state->verbosity = Details;
     }
 
-    read_configuration_files(state);
-
-    g_debug("Completed read of configuration file");
+    g_info("Completed configuration");
 }
 
 void display_state(struct OverallState* state)

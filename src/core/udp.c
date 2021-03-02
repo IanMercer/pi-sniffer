@@ -95,20 +95,24 @@ void *listen_loop(void *param)
     while (!g_cancellable_is_cancelled(cancellable))
     {
         char buffer[2048];
+        buffer[0] = '\0';
         int bytes_read = g_socket_receive_from(broadcast_socket, NULL, buffer, sizeof(buffer), cancellable, &error);
-        if (bytes_read < 50)
+        if (bytes_read < 50 || bytes_read == sizeof(buffer))
         {
             //g_print("Received bytes on listen thread %i < %i\n", bytes_read, 10);
             continue; // not enough to be a device message
         }
+
+        // Add null terminator just in case it's missing
+        buffer[bytes_read] = '\0';
 
         // Record time received to compare against time sent to check clock-sync
         time_t now;
         time(&now);
 
         struct Device d = {0}; //  universal zero initializer
-        d.mac64 = 0;
         strncpy(d.mac, "notset", 7);  // access point only messages have no device mac address
+        d.mac64 = 0;
         
         // ESP32 sensor don't have RTC, we need to do all the work for them
         time(&d.latest_any);

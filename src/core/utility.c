@@ -75,7 +75,7 @@ char* trim(char *str)
     }
 
     len = strlen(str);
-    endp = str + len;
+    endp = str + len - 1;
 
     /* Move the front and back pointers to address the first non-whitespace
      * characters from each end.
@@ -84,8 +84,10 @@ char* trim(char *str)
     {
         ++frontp;
     }
-    while (*(--endp) == ' ' && endp != frontp)
+
+    while (*endp == ' ' && endp > frontp)
     {
+        endp--;
     }
 
     if (endp <= frontp)
@@ -732,6 +734,9 @@ bool read_all_lines (const char * dirname, const char* filename, void (*call_bac
 			break;
 
         line_count++;
+
+        // no text on line
+        if (length < 1) continue;
 
         // Skip comment lines
         if (string_starts_with(line, "#")) { g_free(line); continue; }
