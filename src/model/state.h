@@ -101,6 +101,9 @@ struct OverallState
    // linked list of beacons
    struct Beacon* beacons;
 
+   // linked list of name mappings for access points (ESP32 MAC to useful name)
+   struct AccessMapping* access_mappings;
+
    // beacon hash on room changes only for sending
    uint32_t beacon_hash;
 

@@ -687,3 +687,67 @@ uint32_t hash_string(const char* input, int maxlen)
     return r;
 }
 
+
+/*
+* Read all lines in a JSONL file, ignore comments, call back for each line
+*/
+bool read_all_lines (const char * dirname, const char* filename, void (*call_back) (const char* line, void* state),
+    void* state)
+{
+	g_return_val_if_fail (filename != NULL, FALSE);
+
+    if (filename[0] == '/') filename++;
+
+    bool delimited = (dirname[strlen(dirname)-1] == G_DIR_SEPARATOR);
+    
+    char fullpath[128];
+    g_snprintf(fullpath, sizeof(fullpath), "%s%s%s", dirname, delimited ? "" : G_DIR_SEPARATOR_S, filename);
+
+    g_debug("Read all lines %s", fullpath);
+
+    GFile *file = g_file_new_for_path (fullpath);
+
+	g_return_val_if_fail (G_IS_FILE (file), FALSE);
+
+    GError **error = NULL;
+	GError *error_local = NULL;
+
+	GFileInputStream* is = g_file_read (file, NULL, &error_local);
+	if (is == NULL) {
+		g_propagate_error (error, error_local);
+        g_warning("Could not open file %s: %s", fullpath, error_local->message);
+		return FALSE;
+	}
+
+	GDataInputStream * input = g_data_input_stream_new (G_INPUT_STREAM (is));
+
+	/* read file line by line */
+    int line_count = 0;
+
+	while (TRUE) {
+		gchar *line;
+        gsize length;
+		line = g_data_input_stream_read_line (input, &length, NULL, NULL);
+		if (line == NULL)
+			break;
+
+        line_count++;
+
+        // Skip comment lines
+        if (string_starts_with(line, "#")) { g_free(line); continue; }
+
+        trim(line);
+        if (strlen(line) > 0)
+        {
+            //g_debug("%s", line);
+            call_back(line, state);
+        }
+        g_free(line);
+	}
+
+    // close stream
+    g_input_stream_close(G_INPUT_STREAM(is), NULL, &error_local);
+    g_object_unref(is);
+    g_object_unref(file);
+	return TRUE;
+}

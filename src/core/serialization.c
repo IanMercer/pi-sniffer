@@ -107,11 +107,11 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
 
         // Use beacon array to also map sensor names to better names
         // As ESP32 sensors will not have nice names
-        for (struct Beacon* beacon = state->beacons; beacon != NULL; beacon = beacon->next)
+        for (struct AccessMapping* mapping = state->access_mappings; mapping != NULL; mapping = mapping->next)
         {
-            if (g_ascii_strcasecmp(beacon->name, apname) == 0 || (maybeMac != 0 && beacon->mac64 == maybeMac))
+            if (g_ascii_strcasecmp(mapping->name, apname) == 0 || (maybeMac != 0 && mapping->mac64 == maybeMac))
             {
-                apname = beacon->alias;
+                apname = mapping->alias;
                 break;
             }
         }

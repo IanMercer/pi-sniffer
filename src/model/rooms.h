@@ -50,7 +50,7 @@ struct patch
 int top_k_by_patch_score(struct patch* result[], int k, struct patch* patch_list);
 
 // Initialize the configuration on startup
-void read_configuration_file(const char* path, struct AccessPoint** accesspoint_list, struct Beacon** beacon_list);
+void read_configuration_files(struct OverallState* state);
 
 /*
    get or create a patch and update any existing group also

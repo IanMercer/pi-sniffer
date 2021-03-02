@@ -31,6 +31,7 @@ void initialize_state(struct OverallState* state)
     state->groups = NULL;        // linked list
     state->patch_hash = 0;       // hash to detect changes
     state->beacons = NULL;       // linked list
+    state->access_mappings = NULL; // linked list
     state->beacon_hash = 0;      // initial unseen hash
     state->closestHead = NULL;   // chain of closest heads
     state->json = NULL;          // DBUS JSON message
@@ -154,7 +155,7 @@ void initialize_state(struct OverallState* state)
         if (strcmp(verbosity, "details")) state->verbosity = Details;
     }
 
-    read_configuration_file(state->configuration_file_path, &state->access_points, &state->beacons);
+    read_configuration_files(state);
 
     g_debug("Completed read of configuration file");
 }

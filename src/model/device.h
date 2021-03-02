@@ -175,6 +175,17 @@ struct Beacon
 };
 
 /*
+   A named beacon to track and report on
+*/
+struct AccessMapping
+{
+   char* name;
+   int64_t mac64;
+   char* alias;
+   struct AccessMapping* next;
+};
+
+/*
    A third 'join' table joins devices and access points together
    We keep only recent observations
      - can throw out any observation which is further away in both time and distance

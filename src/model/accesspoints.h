@@ -20,6 +20,4 @@ void print_min_distance_matrix(struct OverallState* state);
 
 int get_index(struct AccessPoint* head, int id);
 
-struct AccessPoint *update_accessPoints(struct AccessPoint** access_point_list, struct AccessPoint access_point);
-
 #endif

@@ -151,31 +151,6 @@ void print_min_distance_matrix(struct OverallState* state)
 
 
 /*
-    Identity map access point and update values
-*/
-struct AccessPoint *update_accessPoints(struct AccessPoint** access_point_list, struct AccessPoint access_point)
-{
-    struct AccessPoint* ap = add_access_point(access_point_list, access_point.client_id,
-                            access_point.description, access_point.platform,
-                            access_point.rssi_one_meter, access_point.rssi_factor, access_point.people_distance);
-    strncpy(ap->description, access_point.description, META_LENGTH);
-    strncpy(ap->platform, access_point.platform, META_LENGTH);
-    // TODO: Only if later
-    time(&access_point.last_seen);
-
-    // Make sure we aren't dropping too many messages
-    if (ap->sequence !=0 && 
-        (access_point.sequence - ap->sequence) > 1 &&
-        (access_point.sequence - ap->sequence) < 1E6)
-    {
-        g_warning("Missed %li messages from %s", (long)((access_point.sequence - ap->sequence) - 1), ap->client_id);
-    }
-    ap->sequence = access_point.sequence;
-
-    return ap;
-}
-
-/*
     Get access point by id
 */
 struct AccessPoint *get_access_point(struct AccessPoint* access_point_list, int id)

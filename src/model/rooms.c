@@ -127,147 +127,174 @@ struct patch* get_or_create_patch(const char* patch_name, const char* room_name,
     return found;
 }
 
+#define CONFIG_DIR "/etc/sniffer/"
 
-/*
-    Initalize the patches database (linked lists)
-*/
-void read_configuration_file(const char* path, struct AccessPoint** accesspoint_list, struct Beacon** beacon_list)
+
+void handle_access_translation_jsonl(const char * line, void* params)
 {
-    (void)accesspoint_list; // no longer used
-    // Read from file ...
+    struct OverallState* state = (struct OverallState*) params;
 
-    FILE *fp;
-
-    fp = fopen(path, "r");
-
-    if (fp == NULL)
-    {
-        g_warning("Did not find configuration file '%s'", path);
-        // If no file, calculate from access points
-        g_warning("Please create a configuration file '/etc/sniffer/config.json'");
-        g_warning("You can change the location using systemctl edit if necessary.");
-        g_warning("This file contains information about all the other sensors in the system and any named beacons");
-        return;
-    }
-
-    fseek (fp, 0, SEEK_END);
-    long length = ftell (fp);
-
-    if (length < 1){
-        g_error("The '%s' file must contain entries for each patch, sensor and beacon", path);
-        exit(EXIT_FAILURE);
-    }
-
-    fseek (fp, 0, SEEK_SET);
-    char* buffer = g_malloc (length+1);
-
-    long count = fread (buffer, 1, length, fp);
-    g_assert(count == length);
-    buffer[count] = '\0';
-
-    cJSON *json = cJSON_Parse(buffer);
-    if (json == NULL)
+    cJSON *acccess_translation = cJSON_Parse(line);
+    if (acccess_translation == NULL)
     {
         const char *error_ptr = cJSON_GetErrorPtr();
         if (error_ptr != NULL)
         {
-            g_error("Error reading '%s' before: %s", path, error_ptr);
+            g_error("Error reading '%s' before: %s", line, error_ptr);
         }
-        exit(EXIT_FAILURE);
+        return;
     }
 
+    cJSON* name = cJSON_GetObjectItemCaseSensitive(acccess_translation, "name");
+    cJSON* mac = cJSON_GetObjectItemCaseSensitive(acccess_translation, "mac");
+    cJSON* alias = cJSON_GetObjectItemCaseSensitive(acccess_translation, "alias");
+    if (cJSON_IsString(name) && name->valuestring != NULL && 
+        cJSON_IsString(mac) && mac->valuestring != NULL &&
+        cJSON_IsString(alias) && alias->valuestring != NULL)
+    {
+        struct AccessMapping* apt = malloc(sizeof(struct AccessMapping));
+        apt->name = strdup(name->valuestring);
+        apt->mac64 = mac_string_to_int_64(mac->valuestring);
+        apt->alias = strdup(alias->valuestring);
 
-    // -------------- access points ---------------
+        // Insertion sort into beacon list
+        struct AccessMapping* previous = NULL;
 
-    // cJSON* accesspoints = cJSON_GetObjectItemCaseSensitive(json, "sensors");
-    // if (!cJSON_IsArray(accesspoints)){
-    //     g_warning("Could not parse sensors[] from configuration file");
-    //     // non-fatal
-    // }
-    // else
-    // {
-    //     cJSON* accesspoint = NULL;
-    //     cJSON_ArrayForEach(accesspoint, accesspoints)
-    //     {
-    //         cJSON* name = cJSON_GetObjectItemCaseSensitive(accesspoint, "name");
-    //         if (cJSON_IsString(name) && (name->valuestring != NULL))
-    //         {
-    //             g_debug("Added sensor %s", name->valuestring);
-    //             add_access_point(accesspoint_list, name->valuestring, "not seen yet", "not seen yet", 64, 2.8, 7.5);
-    //         }
-    //         else
-    //         {
-    //             g_warning("Missing name field on sensor object");
-    //         }
-    //     }
-    // }
+        for (struct AccessMapping* b = state->access_mappings; b != NULL; b=b->next)
+        {
+            if (strcmp(b->alias, apt->alias) == 0)
+            {
+                // No duplicate access mappings, just ignore them == idempotent for adds anyway
+                return;
+            }
 
-    // ------------------- beacons --------------------
+            if (strcmp(b->alias, apt->alias) > 0)
+            {
+                // Insert here after previous
+                break;
+            }
+            previous = b;
+        }
 
-    cJSON* beacons = cJSON_GetObjectItemCaseSensitive(json, "beacons");
-    if (!cJSON_IsArray(beacons)){
-        g_warning("Could not parse beacons[] from configuration file");
-        // non-fatal
+        if (previous == NULL)
+        {
+            // Chain onto start of list
+            apt->next = state->access_mappings;
+            state->beacons = apt;
+        }
+        else
+        {
+            // Insert it in order
+            apt->next = previous->next;
+            previous->next = apt;
+        }
+
+        g_debug("Added access mapping `%s` = '%s' to list", apt->name, apt->alias);
     }
     else
     {
-        cJSON* beacon = NULL;
-        cJSON_ArrayForEach(beacon, beacons)
-        {
-            cJSON* name = cJSON_GetObjectItemCaseSensitive(beacon, "name");
-            cJSON* mac = cJSON_GetObjectItemCaseSensitive(beacon, "mac");
-            cJSON* alias = cJSON_GetObjectItemCaseSensitive(beacon, "alias");
-            if (cJSON_IsString(name) && name->valuestring != NULL && 
-                cJSON_IsString(mac) && mac->valuestring != NULL &&
-                cJSON_IsString(alias) && alias->valuestring != NULL)
-            {
-                struct Beacon* beacon = malloc(sizeof(struct Beacon));
-                beacon->name = strdup(name->valuestring);
-                beacon->mac64 = mac_string_to_int_64(mac->valuestring);
-                beacon->alias = strdup(alias->valuestring);
-                beacon->last_seen = 0;
-                beacon->patch = NULL;
-
-                // Insertion sort into beacon list
-                struct Beacon* previous = NULL;
-
-                for (struct Beacon* b = *beacon_list; b != NULL; b=b->next)
-                {
-                    if (strcmp(b->alias, beacon->alias) > 0)
-                    {
-                        // Insert here after previous
-                        break;
-                    }
-                    previous = b;
-                }
-
-                if (previous == NULL)
-                {
-                    // Chain onto start of list
-                    beacon->next = *beacon_list;
-                    *beacon_list = beacon;
-                }
-                else
-                {
-                    // Insert it in order
-                    beacon->next = previous->next;
-                    previous->next = beacon;
-                }
-
-                g_debug("Added beacon `%s` = '%s' to list", beacon->name, beacon->alias);
-            }
-            else
-            {
-                g_warning("Missing name field on beacon object in configuration file");
-            }
-        }
+        g_warning("Missing name field on access mapping '%s'", line);
     }
 
-    cJSON_Delete(json);
-    g_free(buffer);
-    fclose(fp);
+    cJSON_Delete(acccess_translation);
 }
 
+void handle_beacon_jsonl(const char * line, void* params)
+{
+    struct OverallState* state = (struct OverallState*) params;
+
+    cJSON *beacon = cJSON_Parse(line);
+    if (beacon == NULL)
+    {
+        const char *error_ptr = cJSON_GetErrorPtr();
+        if (error_ptr != NULL)
+        {
+            g_error("Error reading '%s' before: %s", line, error_ptr);
+        }
+        return;
+    }
+
+    cJSON* name = cJSON_GetObjectItemCaseSensitive(beacon, "name");
+    cJSON* mac = cJSON_GetObjectItemCaseSensitive(beacon, "mac");
+    cJSON* alias = cJSON_GetObjectItemCaseSensitive(beacon, "alias");
+    if (cJSON_IsString(name) && name->valuestring != NULL && 
+        cJSON_IsString(mac) && mac->valuestring != NULL &&
+        cJSON_IsString(alias) && alias->valuestring != NULL)
+    {
+        struct Beacon* beacon = malloc(sizeof(struct Beacon));
+        beacon->name = strdup(name->valuestring);
+        beacon->mac64 = mac_string_to_int_64(mac->valuestring);
+        beacon->alias = strdup(alias->valuestring);
+        beacon->last_seen = 0;
+        beacon->patch = NULL;
+
+        // Insertion sort into beacon list
+        struct Beacon* previous = NULL;
+
+        for (struct Beacon* b = state->beacons; b != NULL; b=b->next)
+        {
+            if (strcmp(b->alias, beacon->alias) == 0)
+            {
+                // No duplicate beacons, just ignore them == idempotent for adds anyway
+                return;
+            }
+
+            if (strcmp(b->alias, beacon->alias) > 0)
+            {
+                // Insert here after previous
+                break;
+            }
+            previous = b;
+        }
+
+        if (previous == NULL)
+        {
+            // Chain onto start of list
+            beacon->next = state->beacons;
+            state->beacons = beacon;
+        }
+        else
+        {
+            // Insert it in order
+            beacon->next = previous->next;
+            previous->next = beacon;
+        }
+
+        g_debug("Added beacon `%s` = '%s' to list", beacon->name, beacon->alias);
+    }
+    else
+    {
+        g_warning("Missing name field on beacon object '%s'", line);
+    }
+
+    cJSON_Delete(beacon);
+}
+
+
+/*
+    Initalize the patches database (linked lists)
+*/
+void read_accesspoint_name_translations(struct OverallState* state)
+{
+    struct Beacon** access_mappings = &state->access_mappings;
+    read_all_lines(CONFIG_DIR, "access.jsonl", &handle_access_translation_jsonl, (void*)state);
+}
+
+/*
+    Initalize the patches database (linked lists)
+*/
+void read_configuration_files(struct OverallState* state)
+{
+    bool ok = read_all_lines(CONFIG_DIR, "config.json", &handle_beacon_jsonl, (void*)state);
+    g_debug("%i", ok);
+
+    // New file name
+    ok = read_all_lines(CONFIG_DIR, "beacons.jsonl", &handle_beacon_jsonl, (void*)state);
+    g_debug("%i", ok);
+
+    ok = read_all_lines(CONFIG_DIR, "access_mappings.json", &handle_access_translation_jsonl, (void*)state);
+    g_debug("%i", ok);
+}
 
 /*
     Get top k patches sorted by total, return count found

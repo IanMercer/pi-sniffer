@@ -236,4 +236,9 @@ int hex_char_to_value(char let);
 */
 bool is_mac(char* mac);
 
+/*
+* Read all lines in a JSONL file, ignore comments, call back for each line
+*/
+bool read_all_lines (const char * dirname, const char* filename, void (*call_back) (const char* line, void* state), void* state);
+
 #endif
