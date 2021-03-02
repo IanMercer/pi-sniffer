@@ -180,7 +180,7 @@ void handle_access_translation_jsonl(const char * line, void* params)
         {
             // Chain onto start of list
             apt->next = state->access_mappings;
-            state->beacons = apt;
+            state->access_mappings = apt;
         }
         else
         {
@@ -223,7 +223,7 @@ void handle_beacon_jsonl(const char * line, void* params)
     {
         struct Beacon* beacon = malloc(sizeof(struct Beacon));
         beacon->name = strdup(name->valuestring);
-        beacon->mac64 = mac_string_to_int_64(mac->valuestring);
+        beacon->mac64 = is_mac(mac->valuestring) ? mac_string_to_int_64(mac->valuestring) : 0;
         beacon->alias = strdup(alias->valuestring);
         beacon->last_seen = 0;
         beacon->patch = NULL;
@@ -276,7 +276,6 @@ void handle_beacon_jsonl(const char * line, void* params)
 */
 void read_accesspoint_name_translations(struct OverallState* state)
 {
-    struct Beacon** access_mappings = &state->access_mappings;
     read_all_lines(CONFIG_DIR, "access.jsonl", &handle_access_translation_jsonl, (void*)state);
 }
 
@@ -286,14 +285,13 @@ void read_accesspoint_name_translations(struct OverallState* state)
 void read_configuration_files(struct OverallState* state)
 {
     bool ok = read_all_lines(CONFIG_DIR, "config.json", &handle_beacon_jsonl, (void*)state);
-    g_debug("%i", ok);
 
     // New file name
     ok = read_all_lines(CONFIG_DIR, "beacons.jsonl", &handle_beacon_jsonl, (void*)state);
-    g_debug("%i", ok);
+    if (!ok) g_warning_once("Did not read beacons.jsonl");
 
-    ok = read_all_lines(CONFIG_DIR, "access_mappings.json", &handle_access_translation_jsonl, (void*)state);
-    g_debug("%i", ok);
+    ok = read_all_lines(CONFIG_DIR, "access.jsonl", &handle_access_translation_jsonl, (void*)state);
+    if (!ok) g_warning_once("Did not read access.jsonl");
 }
 
 /*
