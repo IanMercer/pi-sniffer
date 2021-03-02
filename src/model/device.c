@@ -42,7 +42,7 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
     local->is_training_beacon = local->is_training_beacon || remote->is_training_beacon;
 
     // Remote name wins if it's a "stronger type"
-    set_name(local, remote->name, remote->name_type);
+    set_name(local, remote->name, remote->name_type, "udp");
     // TODO: All the NAME rules should be applied here too (e.g. privacy)
 
     //optional_set(local->name, remote->name, NAME_LENGTH);
@@ -105,7 +105,7 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
 /*
    Set name and name type if an improvement
 */
-void set_name(struct Device* d, const char*value, enum name_type name_type)
+void set_name(struct Device* d, const char*value, enum name_type name_type, char* reason)
 {
     if (value)
     {
@@ -113,11 +113,11 @@ void set_name(struct Device* d, const char*value, enum name_type name_type)
         {
             if (d->name_type == nt_initial)
             {
-                g_info("  %s Set name to '%s' (%i)", d->mac, value, name_type);
+                g_info("  %s Set name to '%s' (%i) %s", d->mac, value, name_type, reason);
             }
             else
             {
-                g_info("  %s Name '%s' to '%s' (%i->%i)", d->mac, d->name, value, d->name_type, name_type);
+                g_info("  %s Name '%s' to '%s' (%i->%i) %s", d->mac, d->name, value, d->name_type, name_type, reason);
             }
                 
             d->name_type = name_type;

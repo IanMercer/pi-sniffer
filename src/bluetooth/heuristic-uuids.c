@@ -156,7 +156,7 @@ void handle_uuids(struct Device *device, char *uuidArray[2048], int actualLength
             soft_set_category(&device->category, CATEGORY_BEACON);
         }
         else if (ble_uuid == 0x0000feedul) {
-            set_name(device, "Tile", nt_known);       // better than device, they all have same name
+            set_name(device, "Tile", nt_known, "uuid");       // better than device, they all have same name
             append_text(gatts, gatts_length, "Tile, ");
             soft_set_category(&device->category, CATEGORY_BEACON);
         }
@@ -475,7 +475,7 @@ void handle_uuids(struct Device *device, char *uuidArray[2048], int actualLength
         else if (ble_uuid == 0x0000fd6ful) 
         {
             append_text(gatts, gatts_length, "CovidTrace, ");
-            set_name(device, "Covid Trace", nt_generic);
+            set_name(device, "Covid Trace", nt_generic, "uuid");
             soft_set_category(&device->category, CATEGORY_COVID);
         }
         else if (ble_uuid == 0x0000fe79ul) 

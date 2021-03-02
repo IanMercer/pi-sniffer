@@ -26,68 +26,68 @@ void handle_manufacturer(struct Device *device, uint16_t manufacturer, unsigned 
 
 		case 0x00fe:
 		{
-			set_name(device, "DeWalt", nt_manufacturer);
+			set_name(device, "DeWalt", nt_manufacturer, "manuf");
 			break;
 		}
 
 		case 0x022b:
-			set_name(device, "Tesla", nt_manufacturer);
+			set_name(device, "Tesla", nt_manufacturer, "manuf");
     	    device->category = CATEGORY_CAR;
 			break;
         //    ManufacturerData: {uint16 555: <[byte 0x04, 0x18, 0x77, 0x9d, 0x16, 0xee, 0x04, 0x6c, 0xf9, 0x49, 0x01, 0xf3, 0
 
 		case 0x0000:
-			set_name(device, "Invalid 0x0 Manuf", nt_manufacturer);
+			set_name(device, "Invalid 0x0 Manuf", nt_manufacturer, "manuf");
 			break;
 		
 		case 0x0087:
-			set_name(device, "Garmin", nt_manufacturer);
+			set_name(device, "Garmin", nt_manufacturer, "manuf");
 			if (device->category == CATEGORY_UNKNOWN)
 	        	device->category = CATEGORY_WEARABLE; // could be fitness tracker if not a watch
 			break;
 
 		case 0x0141:
-			set_name(device, "Fedex", nt_manufacturer);
+			set_name(device, "Fedex", nt_manufacturer, "manuf");
 			device->category = CATEGORY_CAR;   // Fedex delivery? 
 			break;
 
 		case 0x0201:
-			set_name(device, "AR Timing", nt_manufacturer);
+			set_name(device, "AR Timing", nt_manufacturer, "manuf");
 			device->category = CATEGORY_CAR;   // ???
 			break;
 
 		case 0x05A7:
-			set_name(device, "Sonos", nt_manufacturer);
+			set_name(device, "Sonos", nt_manufacturer, "manuf");
 			device->category = CATEGORY_FIXED;
 			break;
 
 		case 0xb4c1:
-			set_name(device, "Dycoo", nt_manufacturer); // not on official Bluetooth website??
+			set_name(device, "Dycoo", nt_manufacturer, "manuf"); // not on official Bluetooth website??
 			break;
 
 		case 0x0101:
-			set_name(device, "Fugoo", nt_manufacturer);
+			set_name(device, "Fugoo", nt_manufacturer, "manuf");
         	device->category = CATEGORY_HEADPHONES;
 			break;
 		
 		case 0x0310:
-			set_name(device, "SGL Italia", nt_manufacturer);
+			set_name(device, "SGL Italia", nt_manufacturer, "manuf");
 			device->category = CATEGORY_HEADPHONES;
 			break;
 
 		case 0x04d8:
-			set_name(device, "Fujifilm", nt_manufacturer);
+			set_name(device, "Fujifilm", nt_manufacturer, "manuf");
 			device->category = CATEGORY_CAMERA;
 			break;
 
 		case 0x3042:
 		 // 12354 = someone didn't register
-			set_name(device, "Manuf 0x3042", nt_manufacturer);
+			set_name(device, "Manuf 0x3042", nt_manufacturer, "manuf");
 			device->category = CATEGORY_HEADPHONES;
 			break;
 
 		case 0x0075:
-			set_name(device, "Samsung 0x75", nt_manufacturer);
+			set_name(device, "Samsung 0x75", nt_manufacturer, "manuf");
 			// don't set category, wait for connect
 			//soft_set_category(&existing->category, CATEGORY_PHONE); // assume phone until TV comes along (and stays)
 
@@ -105,83 +105,83 @@ void handle_manufacturer(struct Device *device, uint16_t manufacturer, unsigned 
 			break;
 
 		case 0x9479:
-			set_name(device, "Unlisted(0x9479)", nt_manufacturer);
+			set_name(device, "Unlisted(0x9479)", nt_manufacturer, "manuf");
 			break;
 		
 		case 0xff19:
-			set_name(device, "Samsung 0xff19", nt_manufacturer);
+			set_name(device, "Samsung 0xff19", nt_manufacturer, "manuf");
 			break;
 
 		case 0xc688:
-			set_name(device, "Logitech", nt_manufacturer);
+			set_name(device, "Logitech", nt_manufacturer, "manuf");
 			device->category = CATEGORY_ACCESSORY;
 			break;
 
 		case 0x0059:
-			set_name(device, "Nordic Semi", nt_manufacturer);
+			set_name(device, "Nordic Semi", nt_manufacturer, "manuf");
 			device->category = CATEGORY_FIXED;
 			break;
 
 		case 0x0501:
-			set_name(device, "Polaris ND", nt_manufacturer);
+			set_name(device, "Polaris ND", nt_manufacturer, "manuf");
 			device->category = CATEGORY_FIXED;
 			break;
 
 		case 0x0649:
-			set_name(device, "Ryeex", nt_manufacturer);
+			set_name(device, "Ryeex", nt_manufacturer, "manuf");
 			// Makes fitness bands
 			device->category = CATEGORY_WEARABLE;
 			break;
 
 		case 0x014f:
-			set_name(device, "B&W Group Ltd.", nt_manufacturer);
+			set_name(device, "B&W Group Ltd.", nt_manufacturer, "manuf");
 			device->category = CATEGORY_FIXED;
 			break;
 
 		case 0x00c4:
-			set_name(device, "LG Electronics", nt_manufacturer);
+			set_name(device, "LG Electronics", nt_manufacturer, "manuf");
 			device->category = CATEGORY_TV;  // maybe, they did make phones for a while
 			break;
 
     case  0x03ee:
-		set_name(device, "CUBE Technologies", nt_manufacturer);
+		set_name(device, "CUBE Technologies", nt_manufacturer, "manuf");
         device->category = CATEGORY_FIXED;
 		break;
     case  0x0085:
-		set_name(device, "BlueRadios ODM", nt_manufacturer);
+		set_name(device, "BlueRadios ODM", nt_manufacturer, "manuf");
 		break;
     case  0x0434:
-		set_name(device, "Hatch Bay Inc", nt_manufacturer);
+		set_name(device, "Hatch Bay Inc", nt_manufacturer, "manuf");
         device->category = CATEGORY_FIXED;
 		break;
     case  0x0157:
-		set_name(device, "Anhui Huami", nt_manufacturer);
+		set_name(device, "Anhui Huami", nt_manufacturer, "manuf");
         device->category = CATEGORY_FIXED;
 		break;
     case  0x015e:
         // Locks
-		set_name(device, "Unikey Technologies", nt_manufacturer);
+		set_name(device, "Unikey Technologies", nt_manufacturer, "manuf");
         device->category = CATEGORY_SECURITY;
 		break;
     case  0x01a5:
-		set_name(device, "Icon Health and Fitness", nt_manufacturer);
+		set_name(device, "Icon Health and Fitness", nt_manufacturer, "manuf");
         device->category = CATEGORY_FITNESS;
 		break;
     case  0x02ab:
-		set_name(device, "BBPOS Limited", nt_manufacturer);
+		set_name(device, "BBPOS Limited", nt_manufacturer, "manuf");
         device->category = CATEGORY_FIXED;
 		break;
     case  0x0401:
-		set_name(device, "Relations Inc", nt_manufacturer);
+		set_name(device, "Relations Inc", nt_manufacturer, "manuf");
         device->category = CATEGORY_FIXED;
 		break;
     case  0x00d2:
-		set_name(device, "AbTemp", nt_manufacturer);
+		set_name(device, "AbTemp", nt_manufacturer, "manuf");
         device->category = CATEGORY_BEACON;
 		break;
     case  0xb1bc:
         // This code appears to be some special mesh message
-		set_name(device, "Mesh message", nt_manufacturer);
+		set_name(device, "Mesh message", nt_manufacturer, "manuf");
 		break;
     default:
 		{
@@ -194,11 +194,11 @@ void handle_manufacturer(struct Device *device, uint16_t manufacturer, unsigned 
 					char postfixed[NAME_LENGTH];
 					// Use last six in name to distinguish them, e.g. Milwaukee beacons
 					snprintf(postfixed, sizeof(postfixed), "_%s %s", manuf, (device->mac+9));  // Skip 9 characters XX:XX:XX:
-					set_name(device, postfixed, nt_manufacturer);
+					set_name(device, postfixed, nt_manufacturer, "manuf");
 				}
 				else
 				{
-					set_name(device, manuf, nt_manufacturer);
+					set_name(device, manuf, nt_manufacturer, "manuf");
 				}
 			}
 			else 
@@ -206,7 +206,7 @@ void handle_manufacturer(struct Device *device, uint16_t manufacturer, unsigned 
 				char manuf[32];
 				snprintf(manuf, sizeof(manuf), "Manuf 0x%04x", manufacturer);
 				g_info("  Did not recognize %s", manuf);
-				set_name(device, manuf, nt_manufacturer);
+				set_name(device, manuf, nt_manufacturer, "manuf");
 			}
 			break;
 		}

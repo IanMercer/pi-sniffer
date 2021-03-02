@@ -87,9 +87,9 @@ void apply_known_beacons(struct Device* device)
     for (struct Beacon* b = state.beacons; b != NULL; b = b->next)
     {
         // Apply only ones without a hash
-        if ((strcmp(b->name, device->name) == 0) || (b->mac64 == device->mac64))
+        if ((strcmp(b->name, device->name) == 0) || ((b->mac64 != 0) && (b->mac64 == device->mac64)))
         {
-            set_name(device, b->alias, nt_alias);
+            set_name(device, b->alias, nt_alias, "beacon");
         }
     }
 }
@@ -281,7 +281,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 if (state.network_up) send_to_mqtt_single(address, "name", name);
 #endif
                 send_distance = TRUE;
-                set_name(existing, name, nt_known);
+                set_name(existing, name, nt_known, "bt");
 
                 apply_known_beacons(existing);        // must apply beacons first to prevent hashing names
                 apply_name_heuristics (existing, name);

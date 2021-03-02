@@ -133,7 +133,7 @@ struct Device
 /*
    Set name and name type if an improvement
 */
-void set_name(struct Device* d, const char*value, enum name_type name_type);
+void set_name(struct Device* d, const char*value, enum name_type name_type, char* reason);
 
 
 /*

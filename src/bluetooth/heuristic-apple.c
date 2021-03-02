@@ -9,7 +9,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     uint8_t apple_device_type = allocdata[00];
     if (apple_device_type == 0x01)
     {
-        set_name(existing, "Apple", nt_manufacturer);
+        set_name(existing, "Apple", nt_manufacturer, "apple");
         // An iMac causes this
         // Mostly iPhone?
         // iWatch too?
@@ -18,7 +18,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x02)
     {
-        set_name(existing, "Beacon", nt_manufacturer);  // this is less-specific than an already known manufacturer
+        set_name(existing, "Beacon", nt_manufacturer, "beaon");  // this is less-specific than an already known manufacturer
         if (existing->category != CATEGORY_BEACON)
         {
             g_info("  %s '%s' Beacon", existing->mac, existing->name);
@@ -35,18 +35,18 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     else if (apple_device_type == 0x13)     // New Apple device type - what is it? M1 laptop?
     {
         // 100% sure this is a laptop not a phone
-        set_name(existing, "Apple Type 0x13", nt_manufacturer);
+        set_name(existing, "Apple Type 0x13", nt_manufacturer, "apple");
         g_info("  %s '%s' Apple 0x13", existing->mac, existing->name);
         soft_set_category(&existing->category, CATEGORY_COMPUTER);
     }
     else if (apple_device_type == 0x03)     // On user action
     {
-        set_name(existing, "AirPrint", nt_manufacturer);
+        set_name(existing, "AirPrint", nt_manufacturer, "apple");
         g_info("  %s '%s' Airprint", existing->mac, existing->name);
     }
     else if (apple_device_type == 0x05)     // On user action
     {
-        set_name(existing, "AirDrop", nt_manufacturer);
+        set_name(existing, "AirDrop", nt_manufacturer, "apple");
         g_info("  %s '%s' Airdrop", existing->mac, existing->name);
         soft_set_category(&existing->category, CATEGORY_PHONE);
     }
@@ -54,7 +54,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     {
         if (existing->name_type < nt_device)  // Homekit status is sent constantly, reduce logging
         {
-            set_name(existing, "Homekit", nt_device);
+            set_name(existing, "Homekit", nt_device, "apple");
             g_info("  %s '%s' Homekit", existing->mac, existing->name);
             // 1 byte adv internal length
             // 1 byte status flags
@@ -65,7 +65,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x07)     // Proximity Pairing - Constantly (rare)
     {
-        set_name(existing, "AirPods", nt_device);
+        set_name(existing, "AirPods", nt_device, "apple");
         g_info("  %s '%s' Proximity Pairing", existing->mac, existing->name);
         existing->category = CATEGORY_HEADPHONES;
         // 1 byte length
@@ -77,7 +77,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x08)     // On user action (rare)
     {
-        set_name(existing, "Siri", nt_manufacturer);
+        set_name(existing, "Siri", nt_manufacturer, "apple");
         g_info("  %s '%s' Siri", existing->mac, existing->name);
         soft_set_category(&existing->category, CATEGORY_PHONE);     // Could be anything, assume phone
         // 1 byte length
@@ -89,7 +89,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x09)     // On user action (some)
     {
-        set_name(existing, "AirPlay", nt_manufacturer);
+        set_name(existing, "AirPlay", nt_manufacturer, "apple");
         g_info("  %s '%s' Airplay", existing->mac, existing->name);
         existing->category = CATEGORY_FIXED;  // probably an Apple TV?
         // 1 byte length
@@ -99,20 +99,20 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x0a)     // ?? (rare)
     {
-        set_name(existing, "Apple 0x0a", nt_manufacturer);
+        set_name(existing, "Apple 0x0a", nt_manufacturer, "apple");
         g_info("  %s '%s' Apple 0x0a", existing->mac, existing->name);
     }
     else if (apple_device_type == 0x0b)     // On physical action
     {
         // Confirmed seen from iWatch
         // Sent when watch has lost pairing to phone?
-        set_name(existing, "iWatch", nt_device);
+        set_name(existing, "iWatch", nt_device, "apple");
         g_info("  %s '%s' Magic Switch", existing->mac, existing->name);
         soft_set_category(&existing->category, CATEGORY_WATCH);
     }
     else if (apple_device_type == 0x0c)     // Handoff - phones, iPads and Macbook all do this
     {
-        set_name(existing, "Apple Handoff", nt_manufacturer);
+        set_name(existing, "Apple Handoff", nt_manufacturer, "apple");
         g_info("  %s '%s' Handoff", existing->mac, existing->name);
         soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? or Macbook but assume phone
         // 1 byte length
@@ -123,13 +123,13 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     }
     else if (apple_device_type == 0x0d)     // Instant hotspot - On user action
     {
-        set_name(existing, "Apple WifiSet", nt_device);
+        set_name(existing, "Apple WifiSet", nt_device, "apple");
         g_info("  %s '%s' WifiSet", existing->mac, existing->name);
         soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? but assume phone
     }
     else if (apple_device_type == 0x0e)     // Instant hotspot - Reaction to target presence
     {
-        set_name(existing, "Apple Hotspot", nt_device);
+        set_name(existing, "Apple Hotspot", nt_device, "apple");
         g_info("  %s '%s' Hotspot", existing->mac, existing->name);
         // Nope, this could be Macbook, iPad or iPhone
         soft_set_category(&existing->category, CATEGORY_PHONE);  // might be an iPad? but assume phone
@@ -138,7 +138,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
     {
         char tempName[NAME_LENGTH];
         g_snprintf(tempName, sizeof(tempName), "Apple Near af=%.2x at=%.2x", allocdata[2], allocdata[3]);
-        set_name(existing, tempName, nt_manufacturer);
+        set_name(existing, tempName, nt_manufacturer, "apple");
         // Could be MacBook, iPad or iPhone
         g_info("  %s '%s' Nearby Action 0x0f", existing->mac, existing->name);
    
@@ -186,7 +186,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
             //soft_set_category(&existing->category, CATEGORY_COMPUTER);
             char tempName[NAME_LENGTH];
             g_snprintf(tempName, sizeof(tempName), "Apple di=%.1x%.2x", device_bit, information_byte);
-            set_name(existing, tempName, nt_manufacturer);
+            set_name(existing, tempName, nt_manufacturer, "apple");
         }
         // 11c is mostly a phone
         else if (device_bit == 0x1 && information_byte == 0x1c && activity_bits == 0x11)
@@ -194,7 +194,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
             soft_set_category(&existing->category, CATEGORY_PHONE);
             char tempName[NAME_LENGTH];
             g_snprintf(tempName, sizeof(tempName), "iPhone di=%.1x%.2x", device_bit, information_byte);
-            set_name(existing, tempName, nt_manufacturer);
+            set_name(existing, tempName, nt_manufacturer, "apple");
         }
         else if (device_bit == 0x0 &&information_byte == 0x1d)
         {
@@ -202,14 +202,14 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
             soft_set_category(&existing->category, CATEGORY_PHONE);
             char tempName[NAME_LENGTH];
             g_snprintf(tempName, sizeof(tempName), "Apple di=%.1x%.2x", device_bit, information_byte);
-            set_name(existing, tempName, nt_manufacturer);
+            set_name(existing, tempName, nt_manufacturer, "apple");
         }
         else if (device_bit == 0x1 && information_byte == 0x1d)
         {
             soft_set_category(&existing->category, CATEGORY_TABLET);
             char tempName[NAME_LENGTH];
             g_snprintf(tempName, sizeof(tempName), "iPad di=%.1x%.2x", device_bit, information_byte);
-            set_name(existing, tempName, nt_manufacturer);
+            set_name(existing, tempName, nt_manufacturer, "apple");
         }
         else if (device_bit == 0x01 && information_byte == 0x18 && activity_bits == 0x01)
         {
@@ -218,21 +218,21 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
             soft_set_category(&existing->category, CATEGORY_WATCH);
             char tempName[NAME_LENGTH];
             g_snprintf(tempName, sizeof(tempName), "Apple Watch di=%.1x%.2x", device_bit, information_byte);
-            set_name(existing, tempName, nt_manufacturer);
+            set_name(existing, tempName, nt_manufacturer, "apple");
         }
         else if (information_byte == 0x98)
         {
             soft_set_category(&existing->category, CATEGORY_WATCH);
             char tempName[NAME_LENGTH];
             g_snprintf(tempName, sizeof(tempName), "Apple Watch di=%.1x%.2x", device_bit, information_byte);
-            set_name(existing, tempName, nt_manufacturer);
+            set_name(existing, tempName, nt_manufacturer, "apple");
         }
         else 
         {
             soft_set_category(&existing->category, CATEGORY_PHONE);
             char tempName[NAME_LENGTH];
             g_snprintf(tempName, sizeof(tempName), "iPhone di=%.1x%.2x", device_bit, information_byte);
-            set_name(existing, tempName, nt_manufacturer);
+            set_name(existing, tempName, nt_manufacturer, "apple");
         }
     }
     else
