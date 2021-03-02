@@ -228,20 +228,22 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
     // Update the name on the head IF BETTER
     if (name_type > head->name_type)
     {
-        strncpy(head->name, name, NAME_LENGTH);
+        g_debug("Updating head name from %s to %s (%i->%i)", head->name, name, head->name_type, name_type);
+        g_utf8_strncpy(head->name, name, NAME_LENGTH);
         head->name_type = name_type;
     }
 
     // Use apply_known_beacons method instead?
+
     for (struct Beacon* b = state->beacons; b != NULL; b = b->next)
     {
-        if (strcmp(b->name, name) == 0 || b->mac64 == device_64)
+        if ((strcmp(b->name, name) == 0 && strcmp(b->alias, name) != 0) || b->mac64 == device_64)
         {
+            g_debug("Alias head name from %s to %s (%i->%i)", head->name, b->alias, head->name_type, nt_alias);
             g_utf8_strncpy(head->name, b->alias, NAME_LENGTH);
             head->name_type = nt_alias;
         }
     }
-
 
     // Now scan along
 
