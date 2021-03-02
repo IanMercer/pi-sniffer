@@ -284,7 +284,7 @@ void read_accesspoint_name_translations(struct OverallState* state)
 */
 void read_configuration_files(struct OverallState* state)
 {
-    bool ok = read_all_lines(CONFIG_DIR, "config.json", &handle_beacon_jsonl, (void*)state);
+    bool ok = false; //read_all_lines(CONFIG_DIR, "config.json", &handle_beacon_jsonl, (void*)state);
 
     // New file name
     ok = read_all_lines(CONFIG_DIR, "beacons.jsonl", &handle_beacon_jsonl, (void*)state);

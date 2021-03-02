@@ -75,6 +75,7 @@ void initialize_state(struct OverallState* state)
     // These two can just be pointers to the constant strings or the supplied metadata
     if (s_client_description != NULL)
         description = s_client_description;
+
     if (s_client_platform != NULL)
         platform = s_client_platform;
 
@@ -97,7 +98,7 @@ void initialize_state(struct OverallState* state)
     if (rssi_factor < 1.0) g_warning("Unlikely setting for RSSI_FACTOR=%.2f", rssi_factor);
     if (rssi_factor > 5.0) g_warning("Unlikely setting for RSSI_FACTOR=%.2f", rssi_factor);
 
-    state->local = add_access_point(&state->access_points, client_id, description, platform,
+    state->local = add_access_point(state, client_id, description, platform,
                                    rssi_one_meter, rssi_factor, people_distance);
 
     // Reboot nightly 
