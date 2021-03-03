@@ -37,12 +37,12 @@ char* category_from_int(uint8_t i)
 /*
    merge
 */
-void merge(struct Device* local, struct Device* remote, char* access_name, bool safe)
+void merge(struct Device* local, struct Device* remote, char* access_name, bool safe, struct AccessPoint* ap)
 {
     local->is_training_beacon = local->is_training_beacon || remote->is_training_beacon;
 
     // Remote name wins if it's a "stronger type"
-    set_name(local, remote->name, remote->name_type, "udp");
+    set_name(local, remote->name, remote->name_type, ap->short_client_id);
     // TODO: All the NAME rules should be applied here too (e.g. privacy)
 
     //optional_set(local->name, remote->name, NAME_LENGTH);

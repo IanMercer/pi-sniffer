@@ -201,7 +201,7 @@ int category_to_int(char *category);
 
 char *category_from_int(uint8_t i);
 
-void merge(struct Device *local, struct Device *remote, char *access_name, bool safe);
+void merge(struct Device *local, struct Device *remote, char *access_name, bool safe, struct AccessPoint* ap);
 
 /*
    How much data is sent over MQTT

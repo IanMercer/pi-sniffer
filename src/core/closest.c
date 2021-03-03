@@ -233,21 +233,21 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         head->name_type = name_type;
     }
 
+    // This should have been handled when device was recieved
     // Use apply_known_beacons method instead?
-
-    if (head->name_type < nt_alias)
-    {
-        for (struct Beacon* b = state->beacons; b != NULL; b = b->next)
-        {
-            if ((strcmp(b->name, name) == 0 || b->mac64 == device_64))
-            {
-                g_debug("Alias head name from %s to %s (%i->%i)", head->name, b->alias, head->name_type, nt_alias);
-                g_utf8_strncpy(head->name, b->alias, NAME_LENGTH);
-                head->name_type = nt_alias;
-                break;
-            }
-        }
-    }
+    // if (head->name_type < nt_alias)
+    // {
+    //     for (struct Beacon* b = state->beacons; b != NULL; b = b->next)
+    //     {
+    //         if ((strcmp(b->name, name) == 0 || b->mac64 == device_64))
+    //         {
+    //             g_debug("Alias head name from %s to %s (%i->%i)", head->name, b->alias, head->name_type, nt_alias);
+    //             g_utf8_strncpy(head->name, b->alias, NAME_LENGTH);
+    //             head->name_type = nt_alias;
+    //             break;
+    //         }
+    //     }
+    // }
 
     // Now scan along
 

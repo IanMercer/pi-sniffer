@@ -136,6 +136,18 @@ void *listen_loop(void *param)
                 continue;
             }
 
+            // First stomp on any bad names coming in over UDP
+            for (struct Beacon* b = state->beacons; b != NULL; b = b->next)
+            {
+                if ((strcmp(b->name, d.name) == 0 || b->mac64 == d.mac64))
+                {
+                    g_debug("Alias device from %s to %s (%i->%i)", d.name, b->alias, d.name_type, nt_alias);
+                    g_utf8_strncpy(d.name, b->alias, NAME_LENGTH);
+                    d.name_type = nt_alias;
+                    break;
+                }
+            }
+
             pthread_mutex_lock(&state->lock);
 
             // Find matching local devices and merge in any data it doesn't have
@@ -146,7 +158,7 @@ void *listen_loop(void *param)
                 {
                     int delta_time = difftime(now, d.latest_local);
 
-                    merge(&state->devices[i], &d, ap->client_id, delta_time == 0);
+                    merge(&state->devices[i], &d, ap->client_id, delta_time == 0, ap);
 
                     // This is a current observation, time should match
 
