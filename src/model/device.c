@@ -53,13 +53,13 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
     {
         if (local->category == CATEGORY_UNKNOWN)
         {
-            g_info("  %s Set category to '%s', message from %s, was unknown", local->mac, category_from_int(remote->category), access_name);
+            g_info("  %s Set category to '%s' was unknown (%s)", local->mac, category_from_int(remote->category), access_name);
             local->category = remote->category;
         }
         else if (local->category == CATEGORY_PHONE && (remote->category == CATEGORY_TABLET || remote->category == CATEGORY_WATCH))
         {
             // TABLET/WATCH overrides PHONE because we assume phone when someone unlocks or uses an Apple device
-            g_info("  %s Override category from '%s' to '%s', message from %s", local->mac, category_from_int(local->category), category_from_int(remote->category), access_name);
+            g_info("  %s Override category from '%s' to '%s' (%s)", local->mac, category_from_int(local->category), category_from_int(remote->category), access_name);
             local->category = remote->category;
         }
         else if (local->category != remote->category) 
@@ -68,19 +68,19 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
             {
                 // Apple device, originally thought to be phone but is actually a TV
                 local->category = CATEGORY_TV;
-                g_debug("  %s Changed category from '%s' to '%s', message from %s", local->mac, category_from_int(local->category), category_from_int(remote->category), access_name);
+                g_debug("  %s Changed category from '%s' to '%s' (%s)", local->mac, category_from_int(local->category), category_from_int(remote->category), access_name);
             }
             else if (local->category == CATEGORY_PHONE && remote->category == CATEGORY_COMPUTER)
             {
                 // Apple device, originally thought to be phone but is actually a macbook
                 local->category = CATEGORY_COMPUTER;
-                g_debug("  %s Changed category from '%s' to '%s', message from %s", local->mac, category_from_int(local->category), category_from_int(remote->category), access_name);
+                g_debug("  %s Changed category from '%s' to '%s' (%s)", local->mac, category_from_int(local->category), category_from_int(remote->category), access_name);
             }
             else
             {
                 // messages wearable->phone should be ignored
                 // watch->wearable should be ignored
-                g_debug("  %s MAYBE change category from '%s' to '%s', message from %s", local->mac, category_from_int(local->category), category_from_int(remote->category), access_name);
+                g_debug("  %s MAYBE change category from '%s' to '%s' (%s)", local->mac, category_from_int(local->category), category_from_int(remote->category), access_name);
                 // TODO: Check any here
             }
         }
