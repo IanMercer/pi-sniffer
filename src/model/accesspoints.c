@@ -128,7 +128,7 @@ void print_min_distance_matrix(struct OverallState* state)
     for (struct AccessPoint* ap = state->access_points; ap != NULL; ap = ap->next)
     {
         append_text(header, sizeof(header), "%7.7s|", ap->short_client_id);
-        append_text(header2, sizeof(header2), "--------");
+        append_text(header2, sizeof(header2), "-------");
     }
 
     g_debug("%s", header2);
@@ -140,15 +140,15 @@ void print_min_distance_matrix(struct OverallState* state)
         char line[120];
         line[0] = '\0';
 
-        append_text(line, sizeof(line), "%8.8s|", ap->short_client_id);
+        append_text(line, sizeof(line), "%7.7s|", ap->short_client_id);
 
         for (struct AccessPoint* bp = state->access_points; bp != NULL; bp = bp->next)
         {
             double d = min_dist[ap->id][bp->id];
             if (d < 9 * EFFECTIVE_INFINITE)
-                append_text(line, sizeof(line), "    %4.1f", d);
+                append_text(line, sizeof(line), "   %4.1f", d);
             else
-                append_text(line, sizeof(line), "       -");
+                append_text(line, sizeof(line), "      -");
         }
         g_debug("%s", line);
     }
