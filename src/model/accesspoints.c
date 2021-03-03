@@ -13,6 +13,9 @@
 #include <sys/types.h>
 #include <time.h>
 
+/*
+* Used to create the local acces point only
+*/
 struct AccessPoint *add_access_point(struct OverallState* state, char *client_id,
                                      const char *description, const char *platform,
                                      int rssi_one_meter, float rssi_factor, float people_distance)
@@ -86,7 +89,7 @@ void print_min_distance_matrix(struct OverallState* state)
         {
             if (a->access_point->id == b->access_point->id) continue;  // same ap
 
-            int delta = abs(difftime(a->latest, b->latest));
+            int delta = abs((int)difftime(a->latest, b->latest));
             if (delta > 6) continue;                       // must have occurred close in time (despite clock skew)
 
             int aid = a->access_point->id;
@@ -202,7 +205,8 @@ struct AccessPoint* get_or_create_access_point(struct OverallState* state, const
     {
         if (g_ascii_strcasecmp(ap->client_id, am->name) == 0)
         {
-            ap->short_client_id = strdup(am->name);
+            ap->short_client_id = strdup(am->alias);
+            break;
         }
     }
 
