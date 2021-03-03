@@ -712,17 +712,6 @@ bool print_counts_by_closest(struct OverallState* state)
                 best_three, 3,
                 ahead->is_training_beacon, debug);
 
-            for (int bi = 0; bi < k_found; bi++)
-            {
-                if (logging || (detailedLogging && bi == 0))
-                {
-                    g_debug("%15s sc: %.3f p=%.3f x %.3f -> %.3f",
-                        best_three[bi].patch->name, best_three[bi].distance, 
-                        best_three[bi].probability, time_score,
-                        best_three[bi].probability * time_score);
-                    // TODO: How to get persistent patch addresses closest->patch = best_three[bi].patch;
-                }
-            }
 
             // MOVING ROOM?
 
@@ -766,6 +755,15 @@ bool print_counts_by_closest(struct OverallState* state)
 
             if (logging || moving) 
             {
+                // Log the details explaining why it moved
+                for (int bi = 0; bi < k_found; bi++)
+                {
+                    g_debug("%15s sc: %.3f p=%.3f x %.3f -> %.3f",
+                        best_three[bi].patch->name, best_three[bi].distance, 
+                        best_three[bi].probability, time_score,
+                        best_three[bi].probability * time_score);
+                }
+
                 // JSON - in a suitable format for copying into a recording
                 char *json = NULL;
                 cJSON *jobject = cJSON_CreateObject();
@@ -798,81 +796,45 @@ bool print_counts_by_closest(struct OverallState* state)
                     g_info("Superseded (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, time_score);
                 }
             }
-            else if (ahead->category == CATEGORY_TABLET)
+            else
             {
-                for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
+                for (int bi = 0; bi < k_found; bi++)
                 {
-                    rcurrent->tablet_total += rcurrent->knn_score * time_score;        // probability x incidence
-                    // if (logging && rcurrent->knn_score > 0)
-                    // {
-                    //     g_info("Tablet in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
-                    // }
+                    struct patch* patch = best_three[bi].patch;
+                    double probability = best_three[bi].probability;
+                    switch (ahead->category)
+                    {
+                        case CATEGORY_TABLET:
+                            patch->tablet_total += probability * time_score;
+                            break;
+                        case CATEGORY_PHONE:
+                            total_count += probability * time_score;
+                            patch->phone_total += probability * time_score;
+                            break;
+                        case CATEGORY_COMPUTER:
+                            patch->computer_total += probability * time_score;
+                            break;
+                        case CATEGORY_WATCH:
+                            patch->watch_total += probability * time_score;
+                            break;
+                        case CATEGORY_WEARABLE:
+                            patch->wearable_total += probability * time_score;
+                            break;
+                        case CATEGORY_COVID:
+                            patch->covid_total += probability * time_score;
+                            break;
+                        case CATEGORY_BEACON:
+                            patch->beacon_total += probability * time_score;
+                            break;
+                        default:
+                            patch->other_total += probability * time_score;
+                            break;
+                        
+                    }
                 }
             }
-            else if (ahead->category == CATEGORY_COMPUTER)
-            {
-                for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
-                {
-                    rcurrent->computer_total += rcurrent->knn_score * time_score;        // probability x incidence
-                }
-            }
-            else if (ahead->category == CATEGORY_WATCH)
-            {
-                for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
-                {
-                    //if (rcurrent->knn_score > 0)
-                    //    g_debug("Watch in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
-                    rcurrent->watch_total += rcurrent->knn_score * time_score;        // probability x incidence
-                }
-            }
-            else if (ahead->category == CATEGORY_WEARABLE || ahead->category == CATEGORY_FITNESS)
-            {
-                for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
-                {
-                    //g_debug("Wearable in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
-                    rcurrent->wearable_total += rcurrent->knn_score * time_score;        // probability x incidence
-                }
-            }
-            else if (ahead->category == CATEGORY_COVID)
-            {
-                for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
-                {
-                    //g_debug("Covid in %s +%.2f x %.2f", rcurrent->name, rcurrent->knn_score, score);
-                    rcurrent->covid_total += rcurrent->knn_score * time_score;        // probability x incidence
-                }
-            }
-            else if (ahead->category == CATEGORY_BEACON)
-            {
-                for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
-                {
-                    rcurrent->beacon_total += rcurrent->knn_score * time_score;        // probability x incidence
-                }
-            }
-            else if (ahead->category == CATEGORY_PHONE)
-            {
-                //g_info("Cluster (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, score);
-                total_count += time_score;
-                for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
-                {
-                    rcurrent->phone_total += rcurrent->knn_score * time_score;        // probability x incidence
-                }
-            }
-            else //if (test->distance < 7.5)
-            {
-                for (struct patch* rcurrent = patch_list; rcurrent != NULL; rcurrent = rcurrent->next)
-                {
-                    rcurrent->other_total += rcurrent->knn_score * time_score;
-                }
-            }
-            // else 
-            // {
-            //     // Log too-far away macs ?
-            //     g_info("%s Far %s (earliest=%4is, chosen=%4is latest=%4is) count=%i dist=%.1f score=%.2f", mac, category, -earliest, -delta_time, -age, count, test->distance, score);
-            //     g_info("  %s", json);
-            // }
 
-
-            // If not changed room, still want to update last seen state for beacons
+            // If not changed room, still want to update last seen state for beacons (so this can't go further up)
 
             for (struct Beacon* b = beacon_list; b != NULL; b=b->next)
             {
