@@ -1219,9 +1219,9 @@ void dump_device(struct OverallState* state, struct Device *d)
     //if (delta_time > MAX_TIME_AGO_LOGGING_MINUTES * 60) return;
 
     char *addressType = d->address_type == PUBLIC_ADDRESS_TYPE ? "*" : d->address_type == RANDOM_ADDRESS_TYPE ? " " : "-";
-    char *connectState = d->try_connect_state == TRY_CONNECT_COMPLETE ? "c" :
-                         d->try_connect_state == TRY_CONNECT_INTERVAL_S ? "i" :
-                         d->try_connect_state == TRY_CONNECT_ZERO ? "z" : "-";
+    char *connectState = d->try_connect_state == TRY_CONNECT_COMPLETE ? " " :
+                         d->try_connect_state == TRY_CONNECT_ZERO ? "z" : "i"
+                         ;
     char *connectCount = d->try_connect_state == TRY_CONNECT_COMPLETE ? " " :
                          d->try_connect_attempts == 0 ? "0" :
                          d->try_connect_attempts == 1 ? "1" :
@@ -2005,9 +2005,9 @@ int main(int argc, char **argv)
     // Every 5s look see if any records have expired and should be removed
     g_timeout_add_seconds(5, clear_cache, loop);
 
-    // Every 59s dump all devices
+    // Every 5 min dump all devices
     // Also clear starting flag
-    g_timeout_add_seconds(59, dump_all_devices_tick, loop);
+    g_timeout_add_seconds(5 * 60, dump_all_devices_tick, loop);
 
     // Every 30s report counts
     g_timeout_add_seconds(20, report_counts, loop);
