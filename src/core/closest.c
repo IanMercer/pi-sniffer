@@ -585,8 +585,8 @@ bool print_counts_by_closest(struct OverallState* state)
         if (
             //difftime(test->latest, last_run) > 0
             ahead->category == CATEGORY_PHONE 
-            || ahead->category == CATEGORY_COMPUTER
-            || ahead->category == CATEGORY_BEACON
+            //|| ahead->category == CATEGORY_COMPUTER
+            //|| ahead->category == CATEGORY_BEACON
             // || 
             //ahead->category == CATEGORY_PENCIL
             )
@@ -672,20 +672,20 @@ bool print_counts_by_closest(struct OverallState* state)
                 // only interested in where it has been recently, but if average_gap is stupidly small bump it to 25s
                 (time_diff < 10 * adjusted_average_gap);
 
-            //Verbose logging
-            if (logging && ahead->supersededby == 0)
-            {
-                struct AccessPoint *ap2 = other->access_point;
-                g_debug("%7.7s %18s @ %5.1fm [%5li-%5li] (%3i)%s", 
-                ap2->alternate_name,
-                ap2->short_client_id,
-                other->distance, 
-                now - other->earliest,
-                now - other->latest,
-                other->count, worth_including ? "" : " (ignore)");
-            }
-
             if (!worth_including) continue;
+
+            //Verbose logging
+            // if (logging && ahead->supersededby == 0)
+            // {
+            //     struct AccessPoint *ap2 = other->access_point;
+            //     g_debug("%7.7s %18s @ %5.1fm [%5li-%5li] (%3i)%s", 
+            //     ap2->alternate_name,
+            //     ap2->short_client_id,
+            //     other->distance, 
+            //     now - other->earliest,
+            //     now - other->latest,
+            //     other->count, worth_including ? "" : " (ignore)");
+            // }
 
             // add this one to the ones to calculate location on
 

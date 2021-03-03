@@ -1219,6 +1219,14 @@ void dump_device(struct OverallState* state, struct Device *d)
     //if (delta_time > MAX_TIME_AGO_LOGGING_MINUTES * 60) return;
 
     char *addressType = d->address_type == PUBLIC_ADDRESS_TYPE ? "*" : d->address_type == RANDOM_ADDRESS_TYPE ? " " : "-";
+    char *connectState = d->try_connect_state == TRY_CONNECT_COMPLETE ? "c" :
+                         d->try_connect_state == TRY_CONNECT_ZERO ? "z" : "-";
+    char *connectCount = d->try_connect_attempts == 0 ? "0" :
+                         d->try_connect_attempts == 1 ? "1" :
+                         d->try_connect_attempts == 2 ? "2" :
+                         d->try_connect_attempts == 2 ? "3" :
+                         d->try_connect_attempts == 2 ? "4" : "X";
+
     char *category = category_from_int(d->category);
 
     float closest_dist = NAN;
@@ -1234,7 +1242,9 @@ void dump_device(struct OverallState* state, struct Device *d)
         }
     }
 
-    g_info("%4i %s%s %4i %5.1fm  %6li-%6li %20s %8.8s %5.1fm %2i %s", d->id % 10000, d->mac, addressType, d->count, d->distance, (d->earliest - state->started), (d->latest_local - state->started), d->name, closest_ap, closest_dist, d->txpower, category);
+    g_info("%4i %s%s%s%s %4i %5.1fm  %6li-%6li %20s %8.8s %5.1fm %2i %s", d->id % 10000, d->mac, addressType,
+        connectState, connectCount, 
+        d->count, d->distance, (d->earliest - state->started), (d->latest_local - state->started), d->name, closest_ap, closest_dist, d->txpower, category);
 }
 
 
@@ -1483,7 +1493,7 @@ int print_access_points_tick(void *parameters)
 void print_log_table()
 {
     g_info("-----------------------------------------------------------------------------------------------------------");
-    g_info("Id   Address           Count   Dist    First  Last                 Name         Closest Tx Category");
+    g_info("Id   Address             Count   Dist    First  Last                 Name         Closest Tx Category");
     g_info("-----------------------------------------------------------------------------------------------------------");
 
     for (int i = 0; i < state.n; i++)
@@ -1992,7 +2002,7 @@ int main(int argc, char **argv)
 
     // Every 59s dump all devices
     // Also clear starting flag
-    g_timeout_add_seconds(59, dump_all_devices_tick, loop);
+    g_timeout_add_seconds(10, dump_all_devices_tick, loop);
 
     // Every 30s report counts
     g_timeout_add_seconds(20, report_counts, loop);
