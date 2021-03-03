@@ -377,37 +377,37 @@ int calculate_location(struct OverallState* state,
         return k_found;
     }
 
-    // Try again including unconfirmed recordings (beacon subdirectory)
-    k_found = k_nearest(state->recordings, accessdistances, accesstimes, average_gap, access_points, best_three, best_three_len, FALSE, debug);
+    // // Try again including unconfirmed recordings (beacon subdirectory)
+    // k_found = k_nearest(state->recordings, accessdistances, accesstimes, average_gap, access_points, best_three, best_three_len, FALSE, debug);
 
-    if (k_found == 0 || best_three[0].distance > 1.0)
-    {
-        // No nearest in the beacons directory either
+    // if (k_found == 0 || best_three[0].distance > 1.0)
+    // {
+    //     // No nearest in the beacons directory either
 
-        // if it's training beacon add it directly to recordings ... otherwise add it to the beacons directory
+    //     // if it's training beacon add it directly to recordings ... otherwise add it to the beacons directory
 
-        if (is_training_beacon)
-        {
-            g_info("Adding a possible recording '%s' - TRAINING BEACON", device_name);
-        }
-        else if (k_found > 0)
-        {
-            g_info("Adding a possible recording '%s' is in %s %.2f", device_name, best_three[0].patch->name, best_three[0].distance);
-        }
-        else
-        {
-            g_info("Adding a possible recording '%s' - Nothing near", device_name);
-        }
+    //     if (is_training_beacon)
+    //     {
+    //         g_info("Adding a possible recording '%s' - TRAINING BEACON", device_name);
+    //     }
+    //     else if (k_found > 0)
+    //     {
+    //         g_info("Adding a possible recording '%s' is in %s %.2f", device_name, best_three[0].patch->name, best_three[0].distance);
+    //     }
+    //     else
+    //     {
+    //         g_info("Adding a possible recording '%s' - Nothing near", device_name);
+    //     }
 
-        record("beacons", device_name, accessdistances, access_points);
+    //     record("beacons", device_name, accessdistances, access_points);
 
-        //if (k_found > 2 && best_three[0].distance > 2.0)
-        //{
-            for (int i = 0; i < k_found; i++)
-            {
-                g_debug("   KFound %i : %s %.1f", i, best_three[i].patch->name, best_three[i].distance);
-            }
-    }
+    //     //if (k_found > 2 && best_three[0].distance > 2.0)
+    //     //{
+    //         for (int i = 0; i < k_found; i++)
+    //         {
+    //             g_debug("   KFound %i : %s %.1f", i, best_three[i].patch->name, best_three[i].distance);
+    //         }
+    // }
 
     return 0;
 }
