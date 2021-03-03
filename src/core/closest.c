@@ -724,31 +724,72 @@ bool print_counts_by_closest(struct OverallState* state)
                 }
             }
 
-            // JSON - in a suitable format for copying into a recording
-            char *json = NULL;
-            cJSON *jobject = cJSON_CreateObject();
+            // MOVING ROOM?
 
-            cJSON *jdistances = cJSON_AddObjectToObject(jobject, "distances");
- 
-            for (struct AccessPoint* current = access_points_list; current != NULL; current = current->next)
+            struct patch* best_patch = best_three[0].patch;
+            bool moving = false;
+
+            if (best_patch != NULL && 
+                (ahead->recent_rooms == NULL || strcmp(ahead->recent_rooms->name, best_patch->room) != 0))
             {
-                // Include only those that are within sensible time interval
-                if (access_distances[current->id] < EFFECTIVE_INFINITE)
+                struct RecentRoom* recent = malloc(sizeof(struct RecentRoom));
+                g_utf8_strncpy(recent->name, best_patch->room, NAME_LENGTH);
+                recent->next = ahead->recent_rooms;
+                ahead->recent_rooms = recent;
+
+                g_debug("Moving %s to %s", ahead->name, best_patch->room);
+                moving = true;
+                // prune
+
+                int keep = 10;
+
+                struct RecentRoom* last_room = ahead->recent_rooms;
+                while ((last_room != NULL) && (keep-- > 0))
                 {
-                    cJSON_AddRounded(jdistances, current->short_client_id, access_distances[current->id]);
+                    last_room = last_room->next;
+                }
+
+                // unlink after here
+                if (last_room != NULL)
+                {
+                    // dispose of tail
+                    struct RecentRoom* rr = NULL;
+                    while ((rr = last_room->next) != NULL)
+                    {
+                        g_debug("Pruning %s", rr->name);
+                        last_room->next = rr->next;
+                        rr->next = NULL;
+                        g_free(rr);
+                    }
                 }
             }
 
-            //cJSON_AddRounded(jobject, "quality", best.distance);
-
-            json = cJSON_PrintUnformatted(jobject);
-            cJSON_Delete(jobject);
-            // Summary of access distances
-            if (logging) 
+            if (logging || moving) 
             {
-              g_debug("%s", json);
+                // JSON - in a suitable format for copying into a recording
+                char *json = NULL;
+                cJSON *jobject = cJSON_CreateObject();
+
+                cJSON *jdistances = cJSON_AddObjectToObject(jobject, "distances");
+    
+                for (struct AccessPoint* current = access_points_list; current != NULL; current = current->next)
+                {
+                    // Include only those that are within sensible time interval
+                    if (access_distances[current->id] < EFFECTIVE_INFINITE)
+                    {
+                        cJSON_AddRounded(jdistances, current->short_client_id, access_distances[current->id]);
+                    }
+                }
+
+                json = cJSON_PrintUnformatted(jobject);
+                cJSON_Delete(jobject);
+                // Summary of access distances
+                g_debug("%s", json);
+                free(json);
             }
-            free(json);
+
+
+            // Update statistics
 
             if (ahead->supersededby != 0)
             {
@@ -830,44 +871,6 @@ bool print_counts_by_closest(struct OverallState* state)
             //     g_info("  %s", json);
             // }
 
-
-            // TODO: MAINTAIN A HISTORY OF LOCATIONS ON EACH DEVICE
-
-            struct patch* best_patch = best_three[0].patch;
-
-            if (best_patch != NULL && 
-                (ahead->recent_rooms == NULL || strcmp(ahead->recent_rooms->name, best_patch->room) != 0))
-            {
-                struct RecentRoom* recent = malloc(sizeof(struct RecentRoom));
-                g_utf8_strncpy(recent->name, best_patch->room, NAME_LENGTH);
-                recent->next = ahead->recent_rooms;
-                ahead->recent_rooms = recent;
-
-                g_debug("Moving %s to %s", ahead->name, best_patch->room);
-                // prune
-
-                int keep = 10;
-
-                struct RecentRoom* last_room = ahead->recent_rooms;
-                while ((last_room != NULL) && (keep-- > 0))
-                {
-                    last_room = last_room->next;
-                }
-
-                // unlink after here
-                if (last_room != NULL)
-                {
-                    // dispose of tail
-                    struct RecentRoom* rr = NULL;
-                    while ((rr = last_room->next) != NULL)
-                    {
-                        g_debug("Pruning %s", rr->name);
-                        last_room->next = rr->next;
-                        rr->next = NULL;
-                        g_free(rr);
-                    }
-                }
-            }
 
             // If not changed room, still want to update last seen state for beacons
 
