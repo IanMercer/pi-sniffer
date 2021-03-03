@@ -318,9 +318,10 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 existing->address_type = newAddressType;
                 if (newAddressType == PUBLIC_ADDRESS_TYPE)
                 {
-                    g_trace("  %s Address type: '%s'\n", address, addressType);
+                    g_trace("  %s Address type: '%s'", address, addressType);
                     // Not interested in random as most devices are random
                     apply_mac_address_heuristics(existing);
+                    apply_known_beacons(existing);
                 }
 #ifdef MQTT
                 if (state.network_up) send_to_mqtt_single(address, "type", addressType);
