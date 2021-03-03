@@ -116,17 +116,6 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
             }
         }
 
-        // Map fromj->valuestring to a friendly name if we have one
-        // TODO: Lookups here
-        if (string_contains_insensitive(apname, "30:AE:A4:F5:6F:24"))
-        {
-            apname = "ESP32";
-        }
-        else if (string_contains_insensitive(apname, "24:6F:28:AF:FB:CC"))
-        {
-            apname = "TTGO";
-        }
-
         bool created = FALSE;
         ap = get_or_create_access_point(state, apname, &created);
 

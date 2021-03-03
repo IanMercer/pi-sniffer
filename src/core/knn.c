@@ -139,12 +139,18 @@ bool json_to_recording(char* buffer, struct OverallState* state, struct patch** 
             // For backward compatibility allow either long name or short name in file
             cJSON* dist_long = cJSON_GetObjectItem(distances, ap->client_id);
             cJSON* dist_short = cJSON_GetObjectItem(distances, ap->short_client_id);
+            cJSON* dist_alternate = cJSON_GetObjectItem(distances, ap->alternate_name);
             if (cJSON_IsNumber(dist_long))
             {
                 ralloc->access_point_distances[ap->id] = dist_long->valuedouble;
                 count++;
             }
             else if (cJSON_IsNumber(dist_short))
+            {
+                ralloc->access_point_distances[ap->id] = dist_short->valuedouble;
+                count++;
+            }
+            else if (cJSON_IsNumber(dist_alternate))
             {
                 ralloc->access_point_distances[ap->id] = dist_short->valuedouble;
                 count++;

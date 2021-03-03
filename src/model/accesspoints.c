@@ -192,6 +192,7 @@ struct AccessPoint* get_or_create_access_point(struct OverallState* state, const
     // Otherwise add a new one
     struct AccessPoint* ap = g_malloc(sizeof(struct AccessPoint));
     ap->client_id = strdup(client_id);
+    ap->alternate_name = "";
     strncpy(ap->description, "Not known yet", META_LENGTH);
     strncpy(ap->platform, "Not known yet", META_LENGTH);
 
@@ -206,6 +207,7 @@ struct AccessPoint* get_or_create_access_point(struct OverallState* state, const
         if (g_ascii_strcasecmp(ap->client_id, am->name) == 0)
         {
             ap->short_client_id = strdup(am->alias);
+            ap->alternate_name = strdup(am->alternate);
             break;
         }
     }

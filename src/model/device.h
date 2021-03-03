@@ -144,6 +144,7 @@ struct AccessPoint
    int id;                        // sequential ID
    char* client_id;               // linux allows more, may be truncated
    char* short_client_id;         // points to client_id except for prefix crowd- or m- or known alias
+   char* alternate_name;          // alternate name, e.g. room name
    char description[META_LENGTH]; // optional description for dashboard
    char platform[META_LENGTH];    // optional platform (e.g. Pi3, Pi4, ...) for dashboard
 
@@ -182,6 +183,7 @@ struct AccessMapping
    char* name;
    int64_t mac64;
    char* alias;
+   char* alternate;
    struct AccessMapping* next;
 };
 
