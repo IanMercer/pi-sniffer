@@ -676,7 +676,7 @@ bool print_counts_by_closest(struct OverallState* state)
             if (logging && ahead->supersededby == 0)
             {
                 struct AccessPoint *ap2 = other->access_point;
-                g_debug(" %5s %18s @ %5.1fm [%5li-%5li] (%3i)%s", 
+                g_debug(" %6.6s %18s @ %5.1fm [%5li-%5li] (%3i)%s", 
                 ap2->alternate_name,
                 ap2->short_client_id,
                 other->distance, 
