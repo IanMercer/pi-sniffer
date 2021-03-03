@@ -82,16 +82,23 @@ GDBusConnection *conn;
 /*
   Use a known beacon name for a device if present
 */
-void apply_known_beacons(struct Device* device)
+void apply_known_beacons(struct OverallState* state, struct Device* device)
 {
-    for (struct Beacon* b = state.beacons; b != NULL; b = b->next)
+    int c = 0;
+    int f = 0;
+    for (struct Beacon* b = state->beacons; b != NULL; b = b->next)
     {
+        c++;
         // Apply only ones without a hash
-        if ((strcmp(b->name, device->name) == 0) || ((b->mac64 != 0) && (b->mac64 == device->mac64)))
+        if ((g_ascii_strcasecmp(b->name, device->name) == 0) || 
+            ((b->mac64 != 0) && (b->mac64 == device->mac64)))
         {
+            f++;
             set_name(device, b->alias, nt_alias, "beacon");
+            break;
         }
     }
+    g_debug("Apply known beacons %s on %i values %i match", device->name, c, f);
 }
 
 /*
@@ -232,7 +239,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         kalman_initialize(&existing->kalman_interval);
 
         g_info("Added device %i. %s", existing->id, address);
-        apply_known_beacons(existing);
+        apply_known_beacons(&state, existing);
     }
     else
     {
@@ -283,7 +290,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 send_distance = TRUE;
                 set_name(existing, name, nt_known, "bt");
 
-                apply_known_beacons(existing);        // must apply beacons first to prevent hashing names
+                apply_known_beacons(&state, existing);        // must apply beacons first to prevent hashing names
                 apply_name_heuristics (existing, name);
             }
 
@@ -320,8 +327,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 {
                     g_trace("  %s Address type: '%s'", address, addressType);
                     // Not interested in random as most devices are random
+                    apply_known_beacons(&state, existing);
                     apply_mac_address_heuristics(existing);
-                    apply_known_beacons(existing);
                 }
 #ifdef MQTT
                 if (state.network_up) send_to_mqtt_single(address, "type", addressType);
