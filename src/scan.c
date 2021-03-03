@@ -1220,8 +1220,10 @@ void dump_device(struct OverallState* state, struct Device *d)
 
     char *addressType = d->address_type == PUBLIC_ADDRESS_TYPE ? "*" : d->address_type == RANDOM_ADDRESS_TYPE ? " " : "-";
     char *connectState = d->try_connect_state == TRY_CONNECT_COMPLETE ? "c" :
+                         d->try_connect_state == TRY_CONNECT_INTERVAL_S ? "i" :
                          d->try_connect_state == TRY_CONNECT_ZERO ? "z" : "-";
-    char *connectCount = d->try_connect_attempts == 0 ? "0" :
+    char *connectCount = d->try_connect_state == TRY_CONNECT_COMPLETE ? " " :
+                         d->try_connect_attempts == 0 ? "0" :
                          d->try_connect_attempts == 1 ? "1" :
                          d->try_connect_attempts == 2 ? "2" :
                          d->try_connect_attempts == 2 ? "3" :
@@ -1592,7 +1594,10 @@ gboolean try_connect(struct Device *a)
 {
     // If we already have a category and a non-temporary name
     if (a->category != CATEGORY_UNKNOWN && a->name_type >= nt_known)
+    {
+        a->try_connect_state = TRY_CONNECT_COMPLETE;
         return FALSE; // already has a category and a name
+    }
 
     // Don't attempt connection until a device is close enough, or has been seen enough
     // otherwise likely to fail for a transient device at 12.0+m
@@ -2002,7 +2007,7 @@ int main(int argc, char **argv)
 
     // Every 59s dump all devices
     // Also clear starting flag
-    g_timeout_add_seconds(10, dump_all_devices_tick, loop);
+    g_timeout_add_seconds(59, dump_all_devices_tick, loop);
 
     // Every 30s report counts
     g_timeout_add_seconds(20, report_counts, loop);
