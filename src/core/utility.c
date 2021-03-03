@@ -293,14 +293,13 @@ int hex_char_to_value(char let)
 */
 bool is_mac(char* mac)
 {
-    int len = strlen(mac);  // Should be 5 + 6*2 = 17
+    int len = strlen(mac);  // Should be 6 * 3 - 1  = 17
     if (len != 17) return false;
-    for (int i = 0; i < len; i++)
+    for (int i = 0; i < 6; i++)
     {
-        char ch = mac[i];
-        if ((i%3 == 0) && hex_char_to_value(ch) < 0) return false;
-        if ((i%3 == 1) && hex_char_to_value(ch) < 0) return false;
-        if ((i%3 == 2) && (ch != ':' || ch != '-')) return false;
+        if (hex_char_to_value(mac[i*3]) < 0) return false;
+        if (hex_char_to_value(mac[i*3+1]) < 0) return false;
+        // ignore separators
     }
     return true;
 }
