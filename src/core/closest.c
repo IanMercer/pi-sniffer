@@ -585,8 +585,8 @@ bool print_counts_by_closest(struct OverallState* state)
         if (
             //difftime(test->latest, last_run) > 0
             ahead->category == CATEGORY_PHONE 
-            //|| ahead->category == CATEGORY_COMPUTER
-            //|| ahead->category == CATEGORY_BEACON
+            || ahead->category == CATEGORY_COMPUTER
+            || ahead->category == CATEGORY_BEACON
             // || 
             //ahead->category == CATEGORY_PENCIL
             )
