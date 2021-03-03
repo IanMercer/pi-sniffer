@@ -290,6 +290,13 @@ float get_probability (struct recording* recording,
                 double p_reliable = 1.0 - atan(-2.0)/PI - atan(recording_distance/5.0 - 2.0) / PI;
                 p_reliable = fmin(1.0, fmax(0.2, p_reliable));  // just to be safe
 
+                // hack
+                if (error < 1)
+                {
+                    p_in_range = 1.0;
+                    p_reliable = 1.0;
+                }
+
                 // Now that only relevant timed values are passed, no need to dilate based on time
 
                 // The more likely you are to be here, the more signficant it is if the distance is a miss
