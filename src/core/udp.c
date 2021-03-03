@@ -178,7 +178,9 @@ void *listen_loop(void *param)
             // Update the closest data structure
 
             //g_debug("UDP: %s %s count=%i ap=%s %s %.1fm", d.mac, d.name, d.count, actual->client_id, dummy.client_id, d.distance);
-            add_closest(state, d.mac64, ap, d.earliest, d.latest_local, d.distance, d.category, d.count, d.name, 
+            add_closest(state, d.mac64, ap, d.earliest, d.latest_local, d.distance, d.category,
+                d.known_interval,
+                d.count, d.name, 
                 d.name_type, d.address_type,
                 d.is_training_beacon);
 
@@ -243,7 +245,9 @@ void update_closest(struct OverallState *state, struct Device *device)
     //g_debug("update_closest(%s, %i, %s)", state->local->client_id, state->local->id, device->mac);
     // Add local observations into the same structure
     int64_t id_64 = mac_string_to_int_64(device->mac);
-    add_closest(state, id_64, state->local, device->earliest, device->latest_local, device->distance, device->category, 
+    add_closest(state, id_64, state->local, device->earliest, device->latest_local, device->distance, 
+        device->category, 
+        device->known_interval, 
         device->count, 
         device->name, 
         device->name_type, device->address_type,

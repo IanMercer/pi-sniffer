@@ -150,7 +150,9 @@ void prune(struct OverallState* state, time_t latest)
 */
 void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoint* access_point, 
     time_t earliest, time_t latest, float distance, 
-    int8_t category, int count, char* name, 
+    int8_t category, 
+    int known_interval,
+    int count, char* name, 
     enum name_type name_type, int8_t addressType,
     bool is_training_beacon)
 {
@@ -206,6 +208,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         state->closestHead = head;
         // Initialize it
         head->category = category;
+        head->known_interval = known_interval;
         head->addressType = addressType;
         head->mac64 = device_64;
         head->is_training_beacon = is_training_beacon;
@@ -224,6 +227,9 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
 
     // Don't decrease because ESP32 reports 1 instead of 2
     if (addressType > head->addressType) head->addressType = addressType;
+
+    // Upgrade from zero if known
+    if (known_interval > head->known_interval) head->known_interval = known_interval;
 
     // Update the name on the head IF BETTER
     if (name_type > head->name_type)
@@ -530,23 +536,33 @@ bool print_counts_by_closest(struct OverallState* state)
 
         int sum_readings = 0;
         int sum_duration = 0;
+        // How long does this device typically go between transmits
+        double average_gap = 60;
 
-        for (struct ClosestTo* other = ahead->closest; other != NULL; other = other->next)
+        if (ahead -> known_interval > 0 && ahead->known_interval < 2000)
         {
-            sum_duration += difftime(other->latest, other->earliest);
-            sum_readings += other->count;
+            average_gap = ahead->known_interval;
+        }
+        else
+        {
+            for (struct ClosestTo* other = ahead->closest; other != NULL; other = other->next)
+            {
+                int dt = difftime(other->latest, other->earliest); 
+                int dc = other->count;
+
+                // Correct very small values
+                if (dt / dc < 30) {dt = 30 * dc;}
+                // Sometimes get a large value for seen ... long gap ... seen again
+                if (dt / dc > 300) {dt = 300*dc;}
+
+                sum_duration += dt;
+                sum_readings += dc;
+            }
+            average_gap = sum_duration / sum_readings;
         }
 
-        // How long does this device typically go between transmits
-        double average_gap = sum_duration / sum_readings;
-        // Sometimes get a large value for seen ... long gap ... seen again
-        double adjusted_average_gap = fmin(5*60.0, fmax(30.0, average_gap));
-
-        // beacons need to last longer
-        if (ahead->category == CATEGORY_BEACON && adjusted_average_gap < 45) adjusted_average_gap = 45.0;
-
-        // Unreliable iBeacons are *really* unreliable
-        if (adjusted_average_gap > 90) adjusted_average_gap = 2 * adjusted_average_gap;
+        // Milwaukee beacons need to last longer
+        if (ahead->category == CATEGORY_BEACON && average_gap < 45) average_gap = 45.0;
 
         struct ClosestTo* latest_observation = ahead->closest;
 
@@ -644,7 +660,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 // must use at least one no matter how old
                 count_same_mac < 2 ||
                 // only interested in where it has been recently, but if average_gap is stupidly small bump it to 25s
-                (time_diff < 10 * adjusted_average_gap);
+                (time_diff < 10 * average_gap);
 
             if (!worth_including) continue;
 
@@ -671,8 +687,8 @@ bool print_counts_by_closest(struct OverallState* state)
         //struct AccessPoint *ap = test->access_point;
 
         // Same calculation in knn.c
-        double p_gone_away = delta_time < 4*adjusted_average_gap ? 0.0 
-            : atan(10*delta_time/adjusted_average_gap)/3.14159*2;
+        double p_gone_away = delta_time < 4 * average_gap ? 0.0 
+            : atan(10*delta_time/average_gap)/3.14159*2;
         double time_score = 1.0 - p_gone_away;
 
         if (time_score > 0)

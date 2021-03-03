@@ -11,12 +11,15 @@
 
 // These must be in same order as enum values
 char* categories[] = { "unknown", "phone", "wearable", "tablet", "headphones", "computer", 
-    "tv", "fixed", "beacon", "car", "audio", "lighting", "sprinklers", "sales", "appliance", "security", "fitness", "printer",
-    "speakers", "camera", "watch", "covid", "health", "tooth", "fitness", "pencil", "accessory" };
+    "tv", "fixed", "beacon", "car", "audio", "lighting", "sprinklers", "sales", 
+    "appliance", "security", "fitness", "printer",
+    "speakers", "camera", "watch", 
+    "covid", "health", "tooth", "pencil", "accessory" };
 
 int category_values[] = { CATEGORY_UNKNOWN, CATEGORY_PHONE, CATEGORY_WEARABLE, CATEGORY_TABLET, CATEGORY_HEADPHONES, CATEGORY_COMPUTER, 
     CATEGORY_TV, CATEGORY_FIXED, CATEGORY_BEACON, CATEGORY_CAR, CATEGORY_AUDIO_CARD, CATEGORY_LIGHTING, CATEGORY_SPRINKLERS, CATEGORY_POS, 
-    CATEGORY_APPLIANCE, CATEGORY_SECURITY, CATEGORY_FITNESS, CATEGORY_PRINTER, CATEGORY_SPEAKERS, CATEGORY_CAMERA, CATEGORY_WATCH, 
+    CATEGORY_APPLIANCE, CATEGORY_SECURITY, CATEGORY_FITNESS, CATEGORY_PRINTER, 
+    CATEGORY_SPEAKERS, CATEGORY_CAMERA, CATEGORY_WATCH, 
     CATEGORY_COVID, CATEGORY_HEALTH, CATEGORY_TOOTHBRUSH, CATEGORY_PENCIL, CATEGORY_ACCESSORY };
 
 int category_to_int(char* category)
@@ -88,6 +91,9 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
 
     soft_set_u16(&local->appearance, remote->appearance);  // not used ?
     if (remote->try_connect_state >= TRY_CONNECT_COMPLETE) local->try_connect_state = TRY_CONNECT_COMPLETE;  // already connected once
+
+    if (remote->known_interval > local->known_interval) local->known_interval = remote->known_interval;
+
     // TODO: Other fields that we can transfer over
 
     if (safe)  // i.e. difference between our clock and theirs was zero

@@ -154,11 +154,13 @@ void handle_uuids(struct Device *device, char *uuidArray[2048], int actualLength
         else if (ble_uuid == 0x0000feecul) {
             append_text(gatts, gatts_length, "Tile, ");
             soft_set_category(&device->category, CATEGORY_BEACON);
+            device->known_interval = 133;
         }
         else if (ble_uuid == 0x0000feedul) {
             set_name(device, "Tile", nt_known, "uuid");       // better than device, they all have same name
             append_text(gatts, gatts_length, "Tile, ");
             soft_set_category(&device->category, CATEGORY_BEACON);
+            device->known_interval = 133;
         }
         else if (ble_uuid == 0x0000feaful) {
             append_text(gatts, gatts_length, "Nest, ");
@@ -175,10 +177,12 @@ void handle_uuids(struct Device *device, char *uuidArray[2048], int actualLength
         else if (ble_uuid == 0x18ea0000ul) {
             append_text(gatts, gatts_length, "DeWalt, ");
             soft_set_category(&device->category, CATEGORY_BEACON);
+            device->known_interval = 82;
         }
         else if (ble_uuid == 0xc374034ful) {
             append_text(gatts, gatts_length, "DeWalt, ");
             soft_set_category(&device->category, CATEGORY_BEACON);
+            device->known_interval = 82;
         }
         else if (ble_uuid == 0x0000fff0ul) append_text(gatts, gatts_length, "ISSC Transparent Service, ");
         else if (ble_uuid == 0x0000fff1ul) append_text(gatts, gatts_length, "ISSC Transparent RX, ");
@@ -466,6 +470,7 @@ void handle_uuids(struct Device *device, char *uuidArray[2048], int actualLength
         else if (ble_uuid == 0xa3e68a83ul) {
             append_text(gatts, gatts_length, "Milwaukee, ");
             soft_set_category(&device->category, CATEGORY_BEACON);
+            device->known_interval = 80; // 65-99s in practice
         }
         else if (ble_uuid == 0xc7f94713ul) append_text(gatts, gatts_length, "CDP, ");
         else if (ble_uuid == 0xd0611e78ul) 

@@ -56,6 +56,9 @@ struct ClosestHead
     // category of the device
     int8_t category;
 
+    // known beacon frequency for known devices (DeWalt, Milwaukee, ...)
+    int known_interval;
+
     // Name
     char name[NAME_LENGTH];
 

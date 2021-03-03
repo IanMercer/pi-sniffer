@@ -179,6 +179,10 @@ void handle_manufacturer(struct Device *device, uint16_t manufacturer, unsigned 
 		set_name(device, "AbTemp", nt_manufacturer, "manuf");
         device->category = CATEGORY_BEACON;
 		break;
+	case 0x460:
+        device->category = CATEGORY_TOOTHBRUSH;  // Toothbrush
+		device->known_interval = 240;
+		set_name(device, "Kolibree", nt_manufacturer, "manuf");
     case  0xb1bc:
         // This code appears to be some special mesh message
 		set_name(device, "Mesh message", nt_manufacturer, "manuf");
@@ -1415,9 +1419,6 @@ const char *company_id_to_string(int company_id, int8_t* category)
 	case 0x05a7:
         *category = CATEGORY_FIXED;
 		return "Sonos";
-	case 0x460:
-        *category = CATEGORY_TOOTHBRUSH;  // Toothbrush
-		return "Kolibree";
     case 0x0601:
         *category = CATEGORY_CAR;  // TPMS
 		return "Shrader Electronics";

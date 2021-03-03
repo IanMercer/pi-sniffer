@@ -137,6 +137,7 @@ void apply_mac_address_heuristics (struct Device* device)
 
         set_name(device, beaconName, nt_manufacturer, "mac");
         device->category = CATEGORY_BEACON;
+        device->known_interval = 90; // varies 65-99
     }
 
     // TODO: Android device names

@@ -13,7 +13,7 @@
 // Add a closest observation
 void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoint* access_point, time_t earliest,
     time_t time, float distance, 
-    int8_t category, int count, char* name,
+    int8_t category, int known_interval, int count, char* name,
     enum name_type name_type, int8_t addressType,
     bool is_training_beacon);
 

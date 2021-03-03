@@ -76,6 +76,7 @@ void apply_name_heuristics (struct Device* device, const char* name)
     else if (string_starts_with(name, "DEWALT-TAG"))
     {
         device->category = CATEGORY_BEACON;
+        device->known_interval = 82;
     }
     // Watches
     else if (string_starts_with(name, "iWatch"))
@@ -104,7 +105,10 @@ void apply_name_heuristics (struct Device* device, const char* name)
     else if (string_starts_with(name, "Versa"))
         device->category = CATEGORY_FITNESS; // FITBIT
     else if (string_starts_with(name, "Charge "))  //  Charge 2, 3, 4
+    {
         device->category = CATEGORY_FITNESS; // FITBIT
+        device->known_interval = 1000;
+    }
     else if (string_starts_with(name, "Inspire HR"))
         device->category = CATEGORY_FITNESS; // FITBIT
     else if (string_starts_with(name, "Mi Smart Band"))

@@ -123,6 +123,7 @@ struct Device
    time_t latest_local;           // Latest time seen by this sensor, used to calculate overlap
    time_t latest_any;             // Latest time seen by ANY sensor, used to keep alive
    int count;                     // Count how many times seen
+   int known_interval;            // Recognized device has known frequency of advertising
    int8_t try_connect_state;      // Zero = never tried, 1..N-1 = Try in progress, N = Done
    int8_t try_connect_attempts;   // How many attempts have been made to connect
    // TODO: Collect data, SVM or trilateration TBD
@@ -256,5 +257,6 @@ enum Verbosity
 #define CJ_NAME_TYPE "nt"
 #define CJ_ADDRESS_TYPE "at"
 #define CJ_TRAINING "train"
+#define CJ_KNOWN_INTERVAL "int"
 
 #endif

@@ -79,6 +79,10 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     cJSON_AddNumberToObject(j, CJ_TRY_CONNECT_STATE, device->try_connect_state);
     cJSON_AddNumberToObject(j, CJ_NAME_TYPE, device->name_type);
     cJSON_AddNumberToObject(j, CJ_ADDRESS_TYPE, device->address_type);
+    if (device->known_interval > 0)
+    {
+        cJSON_AddNumberToObject(j, CJ_KNOWN_INTERVAL, device->known_interval);
+    }
     if (device->is_training_beacon)
     {
         cJSON_AddNumberToObject(j, CJ_TRAINING, 1);
@@ -220,6 +224,12 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
     if (cJSON_IsNumber(countj))
     {
         device->count = countj->valueint;
+    }
+
+    cJSON *intervalj = cJSON_GetObjectItemCaseSensitive(djson, CJ_KNOWN_INTERVAL);
+    if (cJSON_IsNumber(intervalj))
+    {
+        device->known_interval = intervalj->valueint;
     }
 
     cJSON *earliest = cJSON_GetObjectItemCaseSensitive(djson, CJ_EARLIEST);
