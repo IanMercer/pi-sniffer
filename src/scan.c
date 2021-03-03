@@ -84,21 +84,19 @@ GDBusConnection *conn;
 */
 void apply_known_beacons(struct OverallState* state, struct Device* device)
 {
-    int c = 0;
-    int f = 0;
-    for (struct Beacon* b = state->beacons; b != NULL; b = b->next)
+    if (device->name_type < nt_alias)
     {
-        c++;
-        // Apply only ones without a hash
-        if ((g_ascii_strcasecmp(b->name, device->name) == 0) || 
-            ((b->mac64 != 0) && (b->mac64 == device->mac64)))
+        for (struct Beacon* b = state->beacons; b != NULL; b = b->next)
         {
-            f++;
-            set_name(device, b->alias, nt_alias, "beacon");
-            break;
+            // Apply only ones without a hash
+            if ((g_ascii_strcasecmp(b->name, device->name) == 0) || 
+                ((b->mac64 != 0) && (b->mac64 == device->mac64)))
+            {
+                set_name(device, b->alias, nt_alias, "beacon");
+                break;
+            }
         }
     }
-    g_debug("Apply known beacons %s on %i values %i match", device->name, c, f);
 }
 
 /*
