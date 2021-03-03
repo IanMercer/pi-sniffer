@@ -158,7 +158,7 @@ void handle_access_translation_jsonl(const char * line, void* params)
         apt->name = strdup(name->valuestring);
         apt->mac64 = is_mac(mac->valuestring) ? mac_string_to_int_64(mac->valuestring) : 0;
         apt->alias = strdup(alias->valuestring);
-        apt->alternate = cJSON_IsString(alternate) ? alternate->valuestring : "";
+        apt->alternate = cJSON_IsString(alternate) ? strdup(alternate->valuestring) : "";
  
         // Insertion sort into beacon list
         struct AccessMapping* previous = NULL;
