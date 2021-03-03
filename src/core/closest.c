@@ -233,22 +233,6 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
         head->name_type = name_type;
     }
 
-    // This should have been handled when device was recieved
-    // Use apply_known_beacons method instead?
-    // if (head->name_type < nt_alias)
-    // {
-    //     for (struct Beacon* b = state->beacons; b != NULL; b = b->next)
-    //     {
-    //         if ((strcmp(b->name, name) == 0 || b->mac64 == device_64))
-    //         {
-    //             g_debug("Alias head name from %s to %s (%i->%i)", head->name, b->alias, head->name_type, nt_alias);
-    //             g_utf8_strncpy(head->name, b->alias, NAME_LENGTH);
-    //             head->name_type = nt_alias;
-    //             break;
-    //         }
-    //     }
-    // }
-
     // Now scan along
 
     // Remove same access point if present
@@ -299,15 +283,7 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
     closest->latest = latest;
 
     // closest is now 'top left' - the first in a chain on the first head
-
-    // if (closest->count == count && closest->distance == distance)
-    // {
-    //     // unchanged
-    //     //g_warning("Update is identical, skipping %s %s", access_point->client_id, mac);
-    //     return;
-    // }
 }
-
 
 /*
    Calculates room scores using access point distances
@@ -328,9 +304,6 @@ int calculate_location(struct OverallState* state,
     }
 
     struct AccessPoint* access_points = state->access_points;
-
-    char* device_name = head->name;
-    //const char* category = category_from_int(closest->category);
 
     // try confirmed
     int k_found = k_nearest(state->recordings, accessdistances, accesstimes, average_gap, access_points, best_three, best_three_len, TRUE, debug);
@@ -596,8 +569,9 @@ bool print_counts_by_closest(struct OverallState* state)
                 logging = true;
             }
         }
-   
-        bool detailedLogging = false;
+
+        // Using beacons to calibrate so need to see logs
+        bool detailedLogging = ahead->category == CATEGORY_BEACON;
 
         int age = difftime(now, latest_observation->latest);
         // If this hasn't been seen in > 300s (5min), skip it
@@ -675,17 +649,17 @@ bool print_counts_by_closest(struct OverallState* state)
             if (!worth_including) continue;
 
             //Verbose logging
-            // if (logging && ahead->supersededby == 0)
-            // {
-            //     struct AccessPoint *ap2 = other->access_point;
-            //     g_debug("%7.7s %18s @ %5.1fm [%5li-%5li] (%3i)%s", 
-            //     ap2->alternate_name,
-            //     ap2->short_client_id,
-            //     other->distance, 
-            //     now - other->earliest,
-            //     now - other->latest,
-            //     other->count, worth_including ? "" : " (ignore)");
-            // }
+            if (detailedLogging)
+            {
+                struct AccessPoint *ap2 = other->access_point;
+                g_debug("%7.7s %18s @ %5.1fm [%5li-%5li] (%3i)%s", 
+                ap2->alternate_name,
+                ap2->short_client_id,
+                other->distance, 
+                now - other->earliest,
+                now - other->latest,
+                other->count, worth_including ? "" : " (ignore)");
+            }
 
             // add this one to the ones to calculate location on
 
