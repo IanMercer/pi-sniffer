@@ -192,7 +192,7 @@ void handle_access_translation_jsonl(const char * line, void* params)
             previous->next = apt;
         }
 
-        g_debug("Added access mapping `%s` = '%s' to list", apt->name, apt->alias);
+        g_debug("Added access mapping `%s` = '%s' (%s) to list", apt->name, apt->alias, apt->alternate);
     }
     else
     {
