@@ -413,27 +413,36 @@ int k_nearest(struct recording* recordings,
     // that comes later ...
 
     // Find the most common in the top_k weighted by distance
+
+    int unique_patch_count = 0;
+
     for (int i = 0; i < k; i++)
     {
         if (result[i].used) continue;
 
-        float prob = result[i].probability_is * (1.0 - result[i].probability_isnt);
-        double cumulative_probability = prob;
+        top_result[unique_patch_count] = result[i];
+        unique_patch_count++;
+
+        // float prob = result[i].probability_is * (1.0 - result[i].probability_isnt);
+        // double cumulative_probability = prob;
 
         // min_prob and max_prob are only used in debugging
-        double min_prob = prob;
-        double max_prob = prob;
-        int tc = 1;
+        // double min_prob = prob;
+        // double max_prob = prob;
+        // int tc = 1;
 
-        if (debug) { g_debug("%s   %.3f -> %.3f", result[i].patch->name, prob, cumulative_probability);}
+        // if (debug) { g_debug("%s   %.3f -> %.3f", result[i].patch->name, prob, cumulative_probability);}
 
         for (int j = i+1; j < k; j++)
         {
             // Same patch, we merge the two scores
             if (strcmp(result[i].patch->name, result[j].patch->name) == 0)
             {
-                tc++;
+                //tc++;
                 result[j].used = TRUE;
+
+                //result[j].probability_combined = 0.0;
+                //result[j].normalized_probability = 0.0;
 
                 // Removed, we now just use the top point K=1 and no need to merge others
                 // otherwise would need to look at p(is) and p(isnt) somehow
@@ -452,39 +461,39 @@ int k_nearest(struct recording* recordings,
             }
         }
 
-        if (debug) g_debug("Patch '%s' has probability %.3f over %i (%.3f-%.3f)", result[i].patch->name,
-           cumulative_probability, tc, min_prob, max_prob);
+        // if (debug) g_debug("Patch '%s' has probability %.3f over %i (%.3f-%.3f)", result[i].patch->name,
+        //    cumulative_probability, tc, min_prob, max_prob);
 
-        struct top_k current_value = result[i];  // copy struct
+        //struct top_k current_value = result[i];  // copy struct
         //current_value.probability = cumulative_probability;
 
         // Might not need this now ... as list is already sorted
 
-        // Find insertion point, highest score at top 
-        for (int m = 0; m < top_count; m++)   // top_count is maybe 3 but other array is larger
-        {
-            if (m == k_result)
-            {
-                // Off the end, but still < k, so add the item here
-                k_result++;
-                top_result[m] = current_value;
-                break;
-            }
-            else if (top_result[m].probability_combined < current_value.probability_combined)
-            {
-                // Insert at this position, pick up current and move it down
-                struct top_k temp = top_result[m];
-                top_result[m] = current_value;
-                current_value = temp;
-            }
-            else
-            {
-                // keep going
-            }
-        }
+        // // Find insertion point, highest score at top 
+        // for (int m = 0; m < top_count; m++)   // top_count is maybe 3 but other array is larger
+        // {
+        //     if (m == k_result)
+        //     {
+        //         // Off the end, but still < k, so add the item here
+        //         k_result++;
+        //         top_result[m] = current_value;
+        //         break;
+        //     }
+        //     else if (top_result[m].probability_combined < current_value.probability_combined)
+        //     {
+        //         // Insert at this position, pick up current and move it down
+        //         struct top_k temp = top_result[m];
+        //         top_result[m] = current_value;
+        //         current_value = temp;
+        //     }
+        //     else
+        //     {
+        //         // keep going
+        //     }
+        // }
     }
 
-    return k_result;       // just the top result for now
+    return unique_patch_count;       // just the top result for now
 }
 
 

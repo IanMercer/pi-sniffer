@@ -295,7 +295,6 @@ void add_closest(struct OverallState* state, int64_t device_64, struct AccessPoi
    Calculates room scores using access point distances
 */
 int calculate_location(struct OverallState* state, 
-    struct ClosestHead* head,
     float accessdistances[N_ACCESS_POINTS],
     float accesstimes[N_ACCESS_POINTS], 
     double average_gap,
@@ -696,7 +695,7 @@ bool print_counts_by_closest(struct OverallState* state)
             bool debug = ahead->category == CATEGORY_PHONE;
 
             struct top_k best_three[3];
-            int k_found = calculate_location(state, ahead, 
+            int k_found = calculate_location(state, 
                 access_distances, access_times,
                 average_gap,
                 best_three, 3,
@@ -806,6 +805,7 @@ bool print_counts_by_closest(struct OverallState* state)
                         case CATEGORY_PHONE:
                             total_count += probability * time_score;
                             patch->phone_total += probability * time_score;
+                            g_debug("Increase phone total by %.2f to %.2f", probability * time_score, total_count);
                             break;
                         case CATEGORY_COMPUTER:
                             patch->computer_total += probability * time_score;
