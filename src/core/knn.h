@@ -38,7 +38,14 @@ void free_list(struct recording** head);
 
 struct top_k
 {
-    float distance;
+    // Output from the scoring
+    float probability_is;
+
+    // Output from the scoring
+    float probability_isnt;
+
+    // p(is) * 1 - p(isnt)
+    float probability_combined;
     /**
      * Pointer to a patch
      */
@@ -47,7 +54,7 @@ struct top_k
     /*
     * Probability
     */
-    float probability;
+    float normalized_probability;
 };
 
 int k_nearest(struct recording* recordings, 

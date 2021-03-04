@@ -187,10 +187,12 @@ double or(double a, double b)
 
 // KNN CLASSIFIER
 
-float get_probability (struct recording* recording,
+void get_probability (struct recording* recording,
     float accessdistances[N_ACCESS_POINTS],
     float accesstimes[N_ACCESS_POINTS],
-    double average_gap, 
+    double average_gap,
+    float* out_probability_is,  // output
+    float* out_probability_isnt, // output
     struct AccessPoint* access_points, bool debug)
 {
     if (average_gap < 25) average_gap = 25;   // unlikely value
@@ -326,8 +328,10 @@ float get_probability (struct recording* recording,
         //double confidence = atan(matches)/3.14159*2;
         // don't need confidence for negative inference
 
+        *out_probability_is = probability_is;
+        *out_probability_isnt = probability_isnt;
         //return probability * confidence;
-        return (1.0 - probability_isnt) * probability_is;
+        //return (1.0 - probability_isnt) * probability_is;
     }
 }
 
@@ -338,8 +342,6 @@ float get_probability (struct recording* recording,
 
   parameters
     top_k_list
-
-  NB You must free() the returned string
 
 */
 int k_nearest(struct recording* recordings,
@@ -362,12 +364,18 @@ int k_nearest(struct recording* recordings,
 
         debug = debug && string_starts_with(recording->patch->name, "East");
 
+        float probability_is = 0.0;
+        float probability_isnt = 1.0;
+
         // Insert recording into the list if it's a better match
-        float distance = get_probability(recording, accessdistances, accesstimes, average_gap, access_points, debug);
+        get_probability(recording, accessdistances, accesstimes, average_gap,
+            &probability_is, &probability_isnt, access_points, debug);
 
         struct top_k current;
         current.patch = recording->patch;
-        current.distance = distance;
+        current.probability_is = probability_is;
+        current.probability_isnt = probability_isnt;
+        current.probability_combined = probability_is * (1.0 - probability_isnt);
         current.used = FALSE;
         //current.patch = recording;
 
@@ -383,7 +391,7 @@ int k_nearest(struct recording* recordings,
                 result[i] = current;
                 break;
             }
-            else if (result[i].distance < current.distance)
+            else if (result[i].probability_combined < current.probability_combined)
             {
                 // Insert at this position, pick up current and move it down
                 struct top_k temp = result[i];
@@ -398,53 +406,64 @@ int k_nearest(struct recording* recordings,
     }
 
     if (k == 0) {
-        top_result->distance = 100000;
+        top_result->probability_is = 0;
+        top_result->probability_isnt = 1;
         top_result->patch = NULL;
         return 0;
     };
 
     //if (debug) g_debug("Test count %i", test_count);
 
-    // It must be somewhere so need to normalize the probabilities found to add to 1?
+    // It must be somewhere so need to normalize the probabilities found to add to 1
+    // that comes later ...
 
     // Find the most common in the top_k weighted by distance
     for (int i = 0; i < k; i++)
     {
         if (result[i].used) continue;
 
-        double cumulative_probability = result[i].distance;
-        double min_prob = result[i].distance;
-        double max_prob = result[i].distance;
+        float prob = result[i].probability_is * (1.0 - result[i].probability_isnt);
+        double cumulative_probability = prob;
+
+        // min_prob and max_prob are only used in debugging
+        double min_prob = prob;
+        double max_prob = prob;
         int tc = 1;
 
-        if (debug) { g_debug("%s   %.3f -> %.3f", result[i].patch->name, result[i].distance, cumulative_probability);}
+        if (debug) { g_debug("%s   %.3f -> %.3f", result[i].patch->name, prob, cumulative_probability);}
 
         for (int j = i+1; j < k; j++)
         {
+            // Same patch, we merge the two scores
             if (strcmp(result[i].patch->name, result[j].patch->name) == 0)
             {
                 tc++;
                 result[j].used = TRUE;
 
-                if (tc < 4)  // only allow top three readings to influence score
-                {
-                    // p(A or B) = p(A) + p(B) - p(A & B)
-                    cumulative_probability = cumulative_probability + result[j].distance
-                        - cumulative_probability * result[j].distance;
+                // Removed, we now just use the top point K=1 and no need to merge others
+                // otherwise would need to look at p(is) and p(isnt) somehow
 
-                    min_prob = fmin(min_prob, result[j].distance);
-                    max_prob = fmax(max_prob, result[j].distance);
+                // if (tc < 4)  // only allow top three readings to influence score
+                // {
+                //     // p(A or B) = p(A) + p(B) - p(A & B)
+                //     float prob2 = result[j].probability_is * (1.0 - result[j].probability_isnt);
+                //     cumulative_probability = or(cumulative_probability, prob2);
 
-                    if (debug) { g_debug("%s + %.3f -> %.3f", result[j].patch->name, result[j].distance, cumulative_probability);}
-                }
+                //     min_prob = fmin(min_prob, prob2);
+                //     max_prob = fmax(max_prob, prob2);
+
+                //     if (debug) { g_debug("%s + %.3f -> %.3f", result[j].patch->name, prob2, cumulative_probability);}
+                // }
             }
         }
 
         if (debug) g_debug("Patch '%s' has probability %.3f over %i (%.3f-%.3f)", result[i].patch->name,
            cumulative_probability, tc, min_prob, max_prob);
 
-        struct top_k current_value = result[i];  // copy name
-        current_value.distance = cumulative_probability;
+        struct top_k current_value = result[i];  // copy struct
+        //current_value.probability = cumulative_probability;
+
+        // Might not need this now ... as list is already sorted
 
         // Find insertion point, highest score at top 
         for (int m = 0; m < top_count; m++)   // top_count is maybe 3 but other array is larger
@@ -456,7 +475,7 @@ int k_nearest(struct recording* recordings,
                 top_result[m] = current_value;
                 break;
             }
-            else if (top_result[m].distance < current_value.distance)
+            else if (top_result[m].probability_combined < current_value.probability_combined)
             {
                 // Insert at this position, pick up current and move it down
                 struct top_k temp = top_result[m];

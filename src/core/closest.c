@@ -336,10 +336,10 @@ int calculate_location(struct OverallState* state,
             // 0.180 0.179 => 0.001 * 100 = 0.1 
             double pallocation =  allocation * ((bi < k_found-1 ?
                 // split 50:50 plus a scale factor favoring the one with the higher score
-                fmin(1.0, 0.5 + scale_factor * (best_three[bi].distance - best_three[bi+1].distance)) : 
+                fmin(1.0, 0.5 + scale_factor * (best_three[bi].probability_combined - best_three[bi+1].probability_combined)) : 
                 1.0));
                 // e.g. 0.426, 0.346, 0.289 => 0.080, 0.057 => * 5 => .4, .275 => 0.9 and ...
-            best_three[bi].probability = pallocation;
+            best_three[bi].normalized_probability = pallocation;
             allocation = allocation - pallocation;
 
             if (pallocation > 0.0001)
@@ -660,7 +660,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 // must use at least one no matter how old
                 count_same_mac < 2 ||
                 // only interested in where it has been recently, but if average_gap is stupidly small bump it to 25s
-                (time_diff < 10 * average_gap);
+                (time_diff < 5 * average_gap);
 
             if (!worth_including) continue;
 
@@ -748,10 +748,14 @@ bool print_counts_by_closest(struct OverallState* state)
                 // Log the details explaining why it moved
                 for (int bi = 0; bi < k_found; bi++)
                 {
-                    g_debug("%15s sc: %.3f p=%.3f x %.3f -> %.3f",
-                        best_three[bi].patch->name, best_three[bi].distance, 
-                        best_three[bi].probability, time_score,
-                        best_three[bi].probability * time_score);
+                    g_debug("%15s sc: %.3f is=%.3f isnt=%.3f p=%.3f x %.3f -> %.3f",
+                        best_three[bi].patch->name, 
+                        best_three[bi].probability_is,
+                        best_three[bi].probability_isnt,
+                        best_three[bi].probability_combined,
+                         
+                        best_three[bi].normalized_probability, time_score,
+                        best_three[bi].normalized_probability * time_score);
                 }
 
                 // JSON - in a suitable format for copying into a recording
@@ -791,7 +795,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 for (int bi = 0; bi < k_found; bi++)
                 {
                     struct patch* patch = best_three[bi].patch;
-                    double probability = best_three[bi].probability;
+                    double probability = best_three[bi].normalized_probability;
                     switch (ahead->category)
                     {
                         case CATEGORY_TABLET:
