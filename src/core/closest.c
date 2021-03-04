@@ -614,6 +614,15 @@ bool print_counts_by_closest(struct OverallState* state)
         // Using beacons to calibrate so need to see logs
         bool detailedLogging = ahead->category == CATEGORY_PHONE;
 
+        if (ahead->supersededby != 0)
+        {
+            if (logging)
+            {
+                g_info("'%s' Superseded (age=%4is)", ahead->name, delta_time);
+            }
+            logging = false;
+        }
+
         // if (
         //     //difftime(test->latest, last_run) > 0
         //     ahead->category == CATEGORY_PHONE 
@@ -629,13 +638,6 @@ bool print_counts_by_closest(struct OverallState* state)
         //     }
         // }
 
-
-        int age = difftime(now, latest_observation->latest);
-        // If this hasn't been seen in > 300s (5min), skip it
-        // and therefore all later instances of it (except beacons, keep them in the list longer)
-        // if (age > 400 && test->category != CATEGORY_BEACON) continue;
-        // else if (age > 600) continue;
-
         count_in_age_range++;
         int count = 0;
         bool heading_printed = false;
@@ -646,8 +648,6 @@ bool print_counts_by_closest(struct OverallState* state)
         //     heading_printed = true;
         //     debug_print_heading(ahead, now, average_gap);
         // }
-
-        int earliest = difftime(now, latest_observation->earliest);
 
         int count_same_mac = 0;
 
@@ -810,14 +810,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
             // Update statistics
 
-            if (ahead->supersededby != 0)
-            {
-                if (logging)
-                {
-                    g_info("Superseded (earliest=%4is, chosen=%4is latest=%4is) count=%i score=%.2f", -earliest, -delta_time, -age, count, time_score);
-                }
-            }
-            else
+            if (ahead->supersededby == 0)
             {
                 for (int bi = 0; bi < k_found; bi++)
                 {
@@ -857,24 +850,23 @@ bool print_counts_by_closest(struct OverallState* state)
                         }
                     }
                 }
-            }
 
-            // If not changed room, still want to update last seen state for beacons (so this can't go further up)
+                // If not changed room, still want to update last seen state for beacons (so this can't go further up)
 
-            for (struct Beacon* b = beacon_list; b != NULL; b=b->next)
-            {
-                if (strcmp(b->alias, ahead->name) == 0 || strcmp(b->name, ahead->name) == 0 || b->mac64 == ahead->mac64)
+                for (struct Beacon* b = beacon_list; b != NULL; b=b->next)
                 {
-                    if (b->patch != best_patch)
+                    if (strcmp(b->alias, ahead->name) == 0 || strcmp(b->name, ahead->name) == 0 || b->mac64 == ahead->mac64)
                     {
-                        // g_debug("Moving beacon '%s' to %s", b->alias, best_patch->room);
-                        b->patch = best_patch;
+                        if (b->patch != best_patch)
+                        {
+                            // g_debug("Moving beacon '%s' to %s", b->alias, best_patch->room);
+                            b->patch = best_patch;
+                        }
+                        b->last_seen = latest_observation->latest;
+                        break;
                     }
-                    b->last_seen = latest_observation->latest;
-                    break;
                 }
             }
-
         }
         else
         {
