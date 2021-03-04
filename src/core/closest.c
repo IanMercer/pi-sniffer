@@ -621,6 +621,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 g_info("'%s' Superseded (age=%4is)", ahead->name, delta_time);
             }
             logging = false;
+            detailedLogging = false;
         }
 
         // if (
@@ -760,7 +761,7 @@ bool print_counts_by_closest(struct OverallState* state)
 
             if (logging || moving) 
             {
-                if (logging && !heading_printed)
+                if (!heading_printed)
                 {
                     heading_printed = true;
                     debug_print_heading(ahead, now, average_gap);
