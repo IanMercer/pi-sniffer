@@ -796,36 +796,39 @@ bool print_counts_by_closest(struct OverallState* state)
                 for (int bi = 0; bi < k_found; bi++)
                 {
                     struct patch* patch = best_three[bi].patch;
-                    double probability = best_three[bi].normalized_probability;
-                    switch (ahead->category)
+                    double probability = best_three[bi].normalized_probability * time_score;
+                    if (probability > 0)
                     {
-                        case CATEGORY_TABLET:
-                            patch->tablet_total += probability * time_score;
-                            break;
-                        case CATEGORY_PHONE:
-                            total_count += probability * time_score;
-                            patch->phone_total += probability * time_score;
-                            g_debug("Increase phone total by %.2f to %.2f", probability * time_score, total_count);
-                            break;
-                        case CATEGORY_COMPUTER:
-                            patch->computer_total += probability * time_score;
-                            break;
-                        case CATEGORY_WATCH:
-                            patch->watch_total += probability * time_score;
-                            break;
-                        case CATEGORY_WEARABLE:
-                            patch->wearable_total += probability * time_score;
-                            break;
-                        case CATEGORY_COVID:
-                            patch->covid_total += probability * time_score;
-                            break;
-                        case CATEGORY_BEACON:
-                            patch->beacon_total += probability * time_score;
-                            break;
-                        default:
-                            patch->other_total += probability * time_score;
-                            break;
-                        
+                        switch (ahead->category)
+                        {
+                            case CATEGORY_TABLET:
+                                patch->tablet_total += probability;
+                                break;
+                            case CATEGORY_PHONE:
+                                total_count += probability;
+                                patch->phone_total += probability;
+                                g_debug("Increase phone total by %.2f to %.2f", probability, total_count);
+                                break;
+                            case CATEGORY_COMPUTER:
+                                patch->computer_total += probability;
+                                break;
+                            case CATEGORY_WATCH:
+                                patch->watch_total += probability;
+                                break;
+                            case CATEGORY_WEARABLE:
+                                patch->wearable_total += probability;
+                                break;
+                            case CATEGORY_COVID:
+                                patch->covid_total += probability;
+                                break;
+                            case CATEGORY_BEACON:
+                                patch->beacon_total += probability;
+                                break;
+                            default:
+                                patch->other_total += probability;
+                                break;
+                            
+                        }
                     }
                 }
             }

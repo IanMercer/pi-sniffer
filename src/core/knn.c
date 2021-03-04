@@ -414,15 +414,15 @@ int k_nearest(struct recording* recordings,
 
     // Find the most common in the top_k weighted by distance
 
-    int unique_patch_count = 0;
-
     for (int i = 0; i < k; i++)
     {
         if (result[i].used) continue;
 
-        top_result[unique_patch_count] = result[i];
-        unique_patch_count++;
+        top_result[k_result] = result[i];
+        k_result++;
 
+        // Return up to three
+        if (k_result >= top_count) break;
         // float prob = result[i].probability_is * (1.0 - result[i].probability_isnt);
         // double cumulative_probability = prob;
 
@@ -493,7 +493,7 @@ int k_nearest(struct recording* recordings,
         // }
     }
 
-    return unique_patch_count;       // just the top result for now
+    return k_result;       // just the top result for now
 }
 
 
