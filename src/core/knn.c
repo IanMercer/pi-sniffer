@@ -404,6 +404,7 @@ int k_nearest(struct recording* recordings,
     if (k == 0) {
         top_result->probability_is = 0;
         top_result->probability_isnt = 1;
+        top_result->probability_combined = 0;
         top_result->patch = NULL;
         return 0;
     };

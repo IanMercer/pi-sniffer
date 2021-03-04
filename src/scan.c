@@ -354,9 +354,14 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             time(&now);
 
             // track gap between RSSI received events
-            //double delta_time_received = difftime(now, existing->last_rssi);
+            double delta_time_received = difftime(now, existing->last_rssi);
             time(&existing->last_rssi);
 
+            // If the gap is large we maybe lost this device and now it's back, so we can't assume continuity
+            if (delta_time_received > 400)
+            {
+                existing->filtered_rssi.current_estimate = existing->filtered_rssi.last_estimate = rssi;
+            }
             //existing.unfiltered = rssi;
 
             //float averaged_rssi = 
@@ -378,6 +383,12 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             double exponent = ((state.local->rssi_one_meter  - (double)rssi) / (10.0 * state.local->rssi_factor));
 
             double distance = pow(10.0, exponent) * rangefactor;
+
+            // If the gap is large we maybe lost this device and now it's back, so we can't assume continuity
+            if (delta_time_received > 400)
+            {
+                existing->filtered_distance.current_estimate = existing->filtered_distance.last_estimate = distance;
+            }
 
             float averaged = kalman_update(&existing->filtered_distance, distance);
 

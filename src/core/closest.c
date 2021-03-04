@@ -390,6 +390,48 @@ int calculate_location(struct OverallState* state,
 }
 
 
+void debug_print_heading(struct ClosestHead* ahead, time_t now, float average_gap)
+{
+    struct ClosestTo* latest_observation = ahead->closest;
+
+    char mac[18];
+    mac_64_to_string(mac, sizeof(mac), ahead->mac64);
+
+    char* category = category_from_int(ahead->category);
+
+    char prob_s[32];
+    prob_s[0] = '\0';
+    if (ahead->supersededby != 0)
+    {
+        char sup_mac[18];
+        sup_mac[0]='\0';
+        mac_64_to_string(sup_mac, 18, ahead->supersededby);
+        snprintf(prob_s, sizeof(prob_s), "p(%.3f) x %s", ahead->superseded_probability, sup_mac);
+    }
+
+    time_t earliest = ahead->closest->earliest;
+    for (struct ClosestTo* other = ahead->closest; other != NULL; other = other->next)
+    {
+        if (other->earliest < earliest) earliest = other->earliest;
+    }
+
+    const char* room_name = (ahead->recent_rooms == NULL) ? "" : ahead->recent_rooms->name;
+
+    g_debug(" ");
+    g_debug("%s%s %10s [%5li-%5li] (%4i)     %23s %s  (%.1fs) %s", 
+            mac,
+            ahead->addressType == PUBLIC_ADDRESS_TYPE ? "*" : " ",
+            category, 
+            now - earliest,
+            now - latest_observation->latest,
+            latest_observation->count,
+            ahead->name,
+            prob_s,
+            average_gap,
+            room_name
+            );
+}
+
 // ? static time_t last_run;
 
 /*
@@ -595,46 +637,15 @@ bool print_counts_by_closest(struct OverallState* state)
         // else if (age > 600) continue;
 
         count_in_age_range++;
-
-        char mac[18];
-        mac_64_to_string(mac, sizeof(mac), ahead->mac64);
         int count = 0;
+        bool heading_printed = false;
 
-        char* category = category_from_int(ahead->category);
-
-        if (logging)
-        {
-            char prob_s[32];
-            prob_s[0] = '\0';
-            if (ahead->supersededby != 0)
-            {
-                char sup_mac[18];
-                sup_mac[0]='\0';
-                mac_64_to_string(sup_mac, 18, ahead->supersededby);
-                snprintf(prob_s, sizeof(prob_s), "p(%.3f) x %s", ahead->superseded_probability, sup_mac);
-            }
-
-            time_t earliest = latest_observation->earliest;
-            for (struct ClosestTo* other = ahead->closest; other != NULL; other = other->next)
-            {
-                if (other->earliest < earliest) earliest = other->earliest;
-            }
-
-            const char* room_name = (ahead->recent_rooms == NULL) ? "" : ahead->recent_rooms->name;
-
-            g_debug("%s%s %10s [%5li-%5li] (%4i)     %23s %s  (%.1fs) %s", 
-                    mac,
-                    ahead->addressType == PUBLIC_ADDRESS_TYPE ? "*" : " ",
-                    category, 
-                    now - earliest,
-                    now - latest_observation->latest,
-                    latest_observation->count,
-                    ahead->name,
-                    prob_s,
-                    average_gap,
-                    room_name
-                    );
-        }
+        // Only print headings when printing a move
+        // if (logging && !heading_printed)
+        // {
+        //     heading_printed = true;
+        //     debug_print_heading(ahead, now, average_gap);
+        // }
 
         int earliest = difftime(now, latest_observation->earliest);
 
@@ -666,6 +677,12 @@ bool print_counts_by_closest(struct OverallState* state)
             //Verbose logging
             if (detailedLogging)
             {
+                if (logging && !heading_printed)
+                {
+                    heading_printed = true;
+                    debug_print_heading(ahead, now, average_gap);
+                }
+
                 struct AccessPoint *ap2 = other->access_point;
                 g_debug("%7.7s %18s @ %5.1fm [%5li-%5li] (%3i)%s", 
                 ap2->alternate_name,
@@ -715,7 +732,6 @@ bool print_counts_by_closest(struct OverallState* state)
                 recent->next = ahead->recent_rooms;
                 ahead->recent_rooms = recent;
 
-                g_debug("Moving %s to %s", ahead->name, best_patch->room);
                 moving = true;
                 // prune
 
@@ -744,6 +760,17 @@ bool print_counts_by_closest(struct OverallState* state)
 
             if (logging || moving) 
             {
+                if (logging && !heading_printed)
+                {
+                    heading_printed = true;
+                    debug_print_heading(ahead, now, average_gap);
+                }
+
+                if (moving)
+                {
+                    g_debug("Moving %s to %s", ahead->name, best_patch->room);
+                }
+
                 // Log the details explaining why it moved
                 for (int bi = 0; bi < k_found; bi++)
                 {
@@ -779,9 +806,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 // Summary of access distances
                 g_debug("%s", json);
                 free(json);
-                g_debug("");
             }
-
 
             // Update statistics
 
@@ -842,7 +867,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 {
                     if (b->patch != best_patch)
                     {
-                        g_debug("Moving beacon '%s' to %s", b->alias, best_patch->room);
+                        // g_debug("Moving beacon '%s' to %s", b->alias, best_patch->room);
                         b->patch = best_patch;
                     }
                     b->last_seen = latest_observation->latest;
