@@ -325,7 +325,6 @@ int calculate_location(struct OverallState* state,
     }
     else 
     {
-        // Allocate probabilities to patches instead of 1.0 and 0.0 only
         double allocation = 1.0;
         for (int bi = 0; bi < k_found; bi++)
         {
@@ -780,6 +779,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 // Summary of access distances
                 g_debug("%s", json);
                 free(json);
+                g_debug("");
             }
 
 
@@ -808,7 +808,7 @@ bool print_counts_by_closest(struct OverallState* state)
                             case CATEGORY_PHONE:
                                 total_count += probability;
                                 patch->phone_total += probability;
-                                g_debug("%s Increase phone total on %s by %.2f to %.2f", mac, patch->name, probability, total_count);
+                                // g_debug("%s Increase phone total on %s by %.2f to %.2f", mac, patch->name, probability, total_count);
                                 break;
                             case CATEGORY_COMPUTER:
                                 patch->computer_total += probability;

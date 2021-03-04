@@ -195,6 +195,9 @@ void get_probability (struct recording* recording,
     float* out_probability_isnt, // output
     struct AccessPoint* access_points, bool debug)
 {
+    double probability_is = 0.0;
+    double probability_isnt = 0.0;
+
     if (average_gap < 25) average_gap = 25;   // unlikely value
     if (average_gap > 360) average_gap = 360; // also unlikely
 
@@ -212,13 +215,11 @@ void get_probability (struct recording* recording,
         // 1m = 1
         // 2m = 0.4
         // 10m = 0.01
-        return fmin(1.0, 2.0 / (sum_delta_squared + 1.0));
+        probability_is = fmin(1.0, 2.0 / (sum_delta_squared + 1.0));
+        probability_isnt = 0.0;
     } 
     else 
     {
-        double probability_is = 0.0;
-        double probability_isnt = 0.0;
-
         // Rebase all times to since the latest observation
         // We want to know where the device WAS even if it has since left
         double min_delta = 30.0;
