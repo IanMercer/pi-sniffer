@@ -748,13 +748,15 @@ bool print_counts_by_closest(struct OverallState* state)
                 // Log the details explaining why it moved
                 for (int bi = 0; bi < k_found; bi++)
                 {
-                    g_debug("%15s sc: %.3f is=%.3f isnt=%.3f p=%.3f x %.3f -> %.3f",
+                    g_debug("%15s +%.3f - %.3f = %.3f, p=%.3f x %.3f -> %.3f",
                         best_three[bi].patch->name, 
+
                         best_three[bi].probability_is,
                         best_three[bi].probability_isnt,
                         best_three[bi].probability_combined,
                          
-                        best_three[bi].normalized_probability, time_score,
+                        best_three[bi].normalized_probability, 
+                        time_score,
                         best_three[bi].normalized_probability * time_score);
                 }
 
