@@ -568,25 +568,26 @@ bool print_counts_by_closest(struct OverallState* state)
         int delta_time = difftime(now, latest_observation->latest);
 
         // First n phones get logged
-        bool logging = false;
-
-        if (
-            //difftime(test->latest, last_run) > 0
-            ahead->category == CATEGORY_PHONE 
-            || ahead->category == CATEGORY_COMPUTER
-            || ahead->category == CATEGORY_BEACON
-            // || 
-            //ahead->category == CATEGORY_PENCIL
-            )
-        {
-            if (log_n-- > 0)
-            {
-                logging = true;
-            }
-        }
+        bool logging = ahead->category == CATEGORY_PHONE;
 
         // Using beacons to calibrate so need to see logs
-        bool detailedLogging = ahead->category == CATEGORY_BEACON;
+        bool detailedLogging = ahead->category == CATEGORY_PHONE;
+
+        // if (
+        //     //difftime(test->latest, last_run) > 0
+        //     ahead->category == CATEGORY_PHONE 
+        //     || ahead->category == CATEGORY_COMPUTER
+        //     || ahead->category == CATEGORY_BEACON
+        //     // || 
+        //     //ahead->category == CATEGORY_PENCIL
+        //     )
+        // {
+        //     if (log_n-- > 0)
+        //     {
+        //         logging = true;
+        //     }
+        // }
+
 
         int age = difftime(now, latest_observation->latest);
         // If this hasn't been seen in > 300s (5min), skip it
@@ -807,7 +808,7 @@ bool print_counts_by_closest(struct OverallState* state)
                             case CATEGORY_PHONE:
                                 total_count += probability;
                                 patch->phone_total += probability;
-                                g_debug("Increase phone total by %.2f to %.2f", probability, total_count);
+                                g_debug("%s Increase phone total on %s by %.2f to %.2f", mac, patch->name, probability, total_count);
                                 break;
                             case CATEGORY_COMPUTER:
                                 patch->computer_total += probability;
