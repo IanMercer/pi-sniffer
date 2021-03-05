@@ -618,7 +618,8 @@ bool print_counts_by_closest(struct OverallState* state)
         {
             if (logging)
             {
-                g_info("'%s' Superseded (age=%4is)", ahead->name, delta_time);
+                g_info("'%s' Superseded (age=%4is) @ %s", ahead->name, delta_time,
+                    (ahead->patch != NULL ? ahead->patch->name : "unknown"));
             }
             logging = false;
             detailedLogging = false;
@@ -685,7 +686,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 }
 
                 struct AccessPoint *ap2 = other->access_point;
-                g_debug("%7.7s %18s @ %5.1fm [%5li-%5li] (%3i)%s", 
+                g_info("%7.7s %18s @ %5.1fm [%5li-%5li] (%3i)%s", 
                 ap2->alternate_name,
                 ap2->short_client_id,
                 other->distance, 

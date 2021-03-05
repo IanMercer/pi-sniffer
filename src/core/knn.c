@@ -290,18 +290,20 @@ void get_probability (struct recording* recording,
             else
             {
                 matches++;
-                double error = fabs(measured_distance - recording_distance);
                 
-                // S-shaped curve, stays near 1.0 up to 2m delta, drops rapidly after
-                // y =1 + atan(-2)/pi - atan(x - 2)/pi from -1 to 10
-                double p_in_range = 1.0 + atan(-2.0) / PI - atan(error - 2.0) / PI;
+                double error = fabs(measured_distance - recording_distance);
+
+                // Use a sigmoid function: the logistic curve
+                // = 2 - 2 / (1 + EXP(-ABS(C$42-$B43)*$C$31))
+
+                double p_in_range = 2 - 2 / (1 + exp(-error/5));
 
                 // reduce far values as they tell us less - dilution of precision
                 // At 30m reduce probability by half
                 // S -shaped curve emphasizing distances under 5m
                 // y =1 + atan(-2)/pi - atan((x-10)/5)/pi from 0 to 30
-                double p_reliable = 1.0 - atan(-2.0)/PI - atan(recording_distance/5.0 - 2.0) / PI;
-                p_reliable = fmin(1.0, fmax(0.2, p_reliable));  // just to be safe
+                // double p_reliable = 1.0 - atan(-2.0)/PI - atan(recording_distance/5.0 - 2.0) / PI;
+                // p_reliable = fmin(1.0, fmax(0.2, p_reliable));  // just to be safe
 
                 // Now that only relevant timed values are passed, no need to dilate based on time
 
@@ -315,9 +317,9 @@ void get_probability (struct recording* recording,
                 // It it's not close, increase probability that it isn't
                 // Temper both probabilities by how much dilution of precision we have in the measurement
 
-                // 0.5 factor - one observation isn't enough, this needs to build over several
-                probability_is = or(probability_is, 0.5 * p_in_range * p_reliable);
-                probability_isnt = or(probability_isnt, (1.0 - p_in_range) * p_reliable);
+                // 0.2 factor - one observation isn't enough, this needs to build over several
+                probability_is = or(probability_is, 0.2 * p_in_range);
+                probability_isnt = or(probability_isnt, (1.0 - p_in_range));
             }
         }
 
