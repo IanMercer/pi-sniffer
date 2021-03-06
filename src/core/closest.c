@@ -609,7 +609,7 @@ bool print_counts_by_closest(struct OverallState* state)
         int delta_time = difftime(now, latest_observation->latest);
 
         // First n phones get logged
-        bool logging = ahead->category == CATEGORY_PHONE;
+        bool logging = ahead->category == CATEGORY_PHONE || ahead->category == CATEGORY_BEACON;
 
         // Using beacons to calibrate so need to see logs
         bool detailedLogging = ahead->category == CATEGORY_PHONE;
@@ -618,6 +618,7 @@ bool print_counts_by_closest(struct OverallState* state)
         {
             if (logging)
             {
+                g_debug(" ");
                 g_info("'%s' Superseded (age=%4is) @ %s", ahead->name, delta_time,
                     (ahead->patch != NULL ? ahead->patch->name : "unknown"));
             }

@@ -103,6 +103,9 @@ void pack_closest_columns(struct OverallState* state)
         // Examine lower triangle, only looking at ones that were last seen prior to this one's last seen time
         for (struct ClosestHead* b = a->next; b != NULL; b=b->next)
         {
+            
+// TODO: Crash here - concurrency issue, need a lock around CLOSEST
+
             g_assert(a->mac64 != b->mac64);
             if (b->supersededby != 0) continue;  // already claimed
 
