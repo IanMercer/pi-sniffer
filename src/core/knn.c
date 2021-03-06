@@ -279,13 +279,12 @@ void get_probability (struct recording* recording,
             {
                 // We expected an observation but did not find one, the larger the distance the
                 // more likely we didn't see it just because the signal is weak
-                // y = 0.8 * (1 + atan(-3)/pi - atan(x/2-3)/pi) from 0 to 30
-                float p_might_miss_it = 1.0 + atan(-3)/PI - atan(recording_distance/2-3)/PI;
+                float p_might_miss_it = 0.8 / (1 + exp(-recording_distance/5));
 
                 if (debug) g_debug("%s was expected not found, expected at %.2f x 0.4", ap->short_client_id, recording_distance);
                 // could not see an AP at all, but should have been able to, could just be a missing observation
 
-                probability_isnt = or(probability_isnt, 0.25 * p_might_miss_it);
+                probability_isnt = or(probability_isnt, (1 - p_might_miss_it));
             }
             else
             {
