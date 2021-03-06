@@ -318,7 +318,7 @@ void get_probability (struct recording* recording,
 
                 // 0.2 factor - one observation isn't enough, this needs to build over several
                 probability_is = or(probability_is, 0.2 * p_in_range);
-                probability_isnt = or(probability_isnt, (1.0 - p_in_range));
+                probability_isnt = or(probability_isnt, 0.2 * (1.0 - p_in_range));
             }
         }
 

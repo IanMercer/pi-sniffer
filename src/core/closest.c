@@ -418,7 +418,7 @@ void debug_print_heading(struct ClosestHead* ahead, time_t now, float average_ga
     const char* room_name = (ahead->recent_rooms == NULL) ? "" : ahead->recent_rooms->name;
 
     g_debug(" ");
-    g_debug("%s%s %10s [%5li-%5li] (%4i)     %23s %s  (%.1fs) %s", 
+    g_info("%s%s %10s [%5li-%5li] (%4i)     %23s %s  (%.1fs) %s", 
             mac,
             ahead->addressType == PUBLIC_ADDRESS_TYPE ? "*" : " ",
             category, 
@@ -687,7 +687,7 @@ bool print_counts_by_closest(struct OverallState* state)
                 }
 
                 struct AccessPoint *ap2 = other->access_point;
-                g_info("%7.7s %18s @ %5.1fm [%5li-%5li] (%3i)%s", 
+                g_debug("%7.7s %18s @ %5.1fm [%5li-%5li] (%3i)%s", 
                 ap2->alternate_name,
                 ap2->short_client_id,
                 other->distance, 
