@@ -795,12 +795,14 @@ bool print_counts_by_closest(struct OverallState* state)
 
                 cJSON *jdistances = cJSON_AddObjectToObject(jobject, "distances");
     
-                for (struct AccessPoint* current = access_points_list; current != NULL; current = current->next)
+                for (struct ClosestTo* other = ahead->closest; other != NULL; other = other->next)
                 {
-                    // Include only those that are within sensible time interval
-                    if (access_distances[current->id] < EFFECTIVE_INFINITE)
+                    struct AccessPoint* ap = other->access_point;
+                    int access_id = ap->id;
+                    // Includes only those that are within sensible time interval (worth_including above)
+                    if (access_distances[access_id] < EFFECTIVE_INFINITE)
                     {
-                        cJSON_AddRounded(jdistances, current->short_client_id, access_distances[current->id]);
+                        cJSON_AddRounded(jdistances, ap->short_client_id, access_distances[access_id]);
                     }
                 }
 
