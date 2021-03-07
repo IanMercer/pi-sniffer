@@ -159,6 +159,14 @@ struct AccessPoint
 
    struct AccessPoint* next;     // Linked list
    int64_t sequence;             // Message sequence number so we can spot missing messages
+
+   float internal_temperature;   // internal temperature
+   float temperature;            // observed room temperature
+   float humidity;               // observed room humidity
+   float pressure;               // observed room pressure
+   float carbon_dioxide;         // observed CO2
+   float brightness;             // observed brightness
+   float voc;                    // observed voc
 };
 
 
@@ -229,6 +237,13 @@ enum Verbosity
 #define CJ_RSSI_FACTOR "rf"
 #define CJ_PEOPLE_DISTANCE "pd"
 #define CJ_SEQ "seq"
+
+#define CJ_TEMPERATURE "temp"
+#define CJ_HUMIDITY "hum"
+#define CJ_PRESSURE "press"
+#define CJ_BRIGHTNESS "bright"
+#define CJ_CARBON_DIOXIDE "co2"
+#define CJ_VOC "voc"
 
 // Device details
 #define CJ_MAC "mac"

@@ -156,6 +156,40 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
         ap->people_distance = (float)people_distance->valuedouble;
     }
 
+    // ----------------
+
+    cJSON *j_temperature = cJSON_GetObjectItemCaseSensitive(djson, CJ_TEMPERATURE);
+    if (ap != NULL && cJSON_IsNumber(j_temperature))
+    {
+        ap->temperature = (float)j_temperature->valuedouble;
+    }
+
+    cJSON *j_humidity = cJSON_GetObjectItemCaseSensitive(djson, CJ_HUMIDITY);
+    if (ap != NULL && cJSON_IsNumber(j_humidity))
+    {
+        ap->humidity = (float)j_humidity->valuedouble;
+    }
+
+    cJSON *j_pressure = cJSON_GetObjectItemCaseSensitive(djson, CJ_PRESSURE);
+    if (ap != NULL && cJSON_IsNumber(j_pressure))
+    {
+        ap->pressure = (float)j_pressure->valuedouble;
+    }
+
+    cJSON *j_co2 = cJSON_GetObjectItemCaseSensitive(djson, CJ_CARBON_DIOXIDE);
+    if (ap != NULL && cJSON_IsNumber(j_co2))
+    {
+        ap->carbon_dioxide = (float)j_co2->valuedouble;
+    }
+
+    cJSON *j_voc = cJSON_GetObjectItemCaseSensitive(djson, CJ_VOC);
+    if (ap != NULL && cJSON_IsNumber(j_voc))
+    {
+        ap->voc = (float)j_voc->valuedouble;
+    }
+
+    // ----------------
+
     cJSON *sequence = cJSON_GetObjectItemCaseSensitive(djson, CJ_SEQ);
     if (ap != NULL && cJSON_IsNumber(sequence))
     {

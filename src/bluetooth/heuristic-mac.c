@@ -105,7 +105,11 @@ void apply_mac_address_heuristics (struct Device* device)
     }
     else if (string_starts_with(device->mac, "04:EE:03"))
     {
-        set_name(device, "Texas Instruments", nt_manufacturer, "mac");  // Chipset
+        set_name(device, "TI Chipset 1", nt_manufacturer, "mac");  // Chipset
+    }
+    else if (string_starts_with(device->mac, "A4:DA:32"))
+    {
+        set_name(device, "TI Chipset 2", nt_manufacturer, "mac");  // Chipset
     }
     else if (string_starts_with(device->mac, "E4:34:93"))
     {

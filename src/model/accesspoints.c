@@ -48,15 +48,19 @@ void print_access_points(struct AccessPoint* access_points_list)
 {
     time_t now;
     time(&now);
-    g_info("ACCESS POINTS                         Platform       Parameters Last Seen");
+    g_info("ACCESS POINTS                         Platform       Parameters Temp Humidity Pressure Voc Last Seen");
     for (struct AccessPoint* ap = access_points_list; ap != NULL; ap = ap->next)
     {
         int delta_time = difftime(now, ap->last_seen);
-        g_info("%20s %16s %16s (%3i, %.1f) %is",
+        g_info("%20s %16s %16s (%3i, %.1f) %.1f %.1f %.1f %is",
         ap->client_id, 
         ap->short_client_id,
         ap->platform,
         ap->rssi_one_meter, ap->rssi_factor,
+        ap->temperature,
+        ap->humidity,
+        ap->pressure,
+        ap->voc,
         delta_time);
     }
 }
