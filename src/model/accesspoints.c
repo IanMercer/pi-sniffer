@@ -39,6 +39,13 @@ struct AccessPoint *add_access_point(struct OverallState* state, char *client_id
     ap->rssi_factor = rssi_factor;
     ap->people_distance = people_distance;
     ap->sequence = 0;
+    ap->brightness = 0;
+    ap->carbon_dioxide = 0;
+    ap ->humidity = 0;
+    ap->internal_temperature = 0;
+    ap->pressure = 0;
+    ap->temperature = 0;
+    ap->voc = 0;
     time(&ap->last_seen);
 
     return ap;
@@ -199,10 +206,12 @@ struct AccessPoint* get_or_create_access_point(struct OverallState* state, const
     ap->alternate_name = "";
     ap->brightness = 0.0;
     ap->carbon_dioxide = 0.0;
-    ap->humidity;
+    ap->humidity = 0.0;
     ap->internal_temperature = 0.0;
     ap->pressure = 0.0;
     ap->voc = 0.0;
+    ap->temperature = 0;
+
 
     strncpy(ap->description, "Not known yet", META_LENGTH);
     strncpy(ap->platform, "Not known yet", META_LENGTH);
