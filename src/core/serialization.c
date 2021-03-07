@@ -179,7 +179,7 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
     cJSON *j_co2 = cJSON_GetObjectItemCaseSensitive(djson, CJ_CARBON_DIOXIDE);
     if (ap != NULL && cJSON_IsNumber(j_co2))
     {
-        ap->carbon_dioxide = (float)j_co2->valuedouble;
+        ap->carbon_dioxide = (float)j_co2->valueint;
     }
 
     cJSON *j_voc = cJSON_GetObjectItemCaseSensitive(djson, CJ_VOC);
@@ -209,9 +209,10 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
 
     // DEVICE
 
-    // ESP32 doesn't send name
+    // ESP32 doesn't send name or count or category
     device->name[0] = '\0';
     device->name_type = nt_initial;
+    device->count = 0;
 
     cJSON *mac = cJSON_GetObjectItemCaseSensitive(djson, CJ_MAC);
     if (cJSON_IsString(mac) && (mac->valuestring != NULL))
