@@ -599,10 +599,10 @@ bool print_counts_by_closest(struct OverallState* state)
                 sum_readings += dc;
             }
             average_gap = sum_duration / sum_readings;
-        }
 
-        // Milwaukee beacons need to last longer
-        if (ahead->category == CATEGORY_BEACON && average_gap < 45) average_gap = 45.0;
+            // Milwaukee beacons need to last longer
+            if (ahead->category == CATEGORY_BEACON && average_gap < 45) average_gap = 45.0;
+        }
 
         struct ClosestTo* latest_observation = ahead->closest;
 
@@ -613,6 +613,14 @@ bool print_counts_by_closest(struct OverallState* state)
 
         // Using beacons to calibrate so need to see logs
         bool detailedLogging = ahead->category == CATEGORY_PHONE;
+
+        if (delta_time > 5 * average_gap) 
+        {
+            logging = false;
+        }
+
+        // Could also suppress logging for anything that hasn't updated since last time
+        //     //difftime(test->latest, last_run) > 0
 
         if (ahead->supersededby != 0)
         {
@@ -706,11 +714,10 @@ bool print_counts_by_closest(struct OverallState* state)
         //struct AccessPoint *ap = test->access_point;
 
         // Same calculation in knn.c
-        double p_gone_away = delta_time < 4 * average_gap ? 0.0 
-            : atan(10*delta_time/average_gap)/3.14159*2;
+        double p_gone_away = delta_time < 4 * average_gap ? 0.0 : atan(10*delta_time/average_gap)/3.14159*2;
         double time_score = 1.0 - p_gone_away;
 
-        if (time_score > 0)
+        if (time_score > 0.01)
         {
             bool debug = ahead->category == CATEGORY_PHONE;
 
