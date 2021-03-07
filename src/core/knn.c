@@ -268,8 +268,7 @@ void get_probability (struct recording* recording,
 
                 // We got an observation but the recording doesn't include it, the larger the distance the
                 // more likely the recording might not include it. Recording must include all close observations.
-                // y = -atan(-2)/PI + atan(x-2)/PI from 0 to 10
-                float p_recording_wouldnt_have_this = 1.0 + atan(-2)/PI - atan(recording_distance-2)/PI;
+                float p_recording_wouldnt_have_this = 1.0 / (1 + exp(-recording_distance/5));
 
                 float combined_probability_of_a_miss = p_recording_wouldnt_have_this * (1 - p_gone_away);
 

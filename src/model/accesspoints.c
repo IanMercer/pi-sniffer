@@ -52,7 +52,7 @@ void print_access_points(struct AccessPoint* access_points_list)
     for (struct AccessPoint* ap = access_points_list; ap != NULL; ap = ap->next)
     {
         int delta_time = difftime(now, ap->last_seen);
-        g_info("%20s %16s %16s (%3i, %.1f) %.1f %.1f %.1f %is",
+        g_info("%20s %16s %16s (%3i, %.1f) %4.1f°C %4.1f%% %4.1f KPa %4.1f %is",
         ap->client_id, 
         ap->short_client_id,
         ap->platform,
@@ -197,6 +197,13 @@ struct AccessPoint* get_or_create_access_point(struct OverallState* state, const
     struct AccessPoint* ap = g_malloc(sizeof(struct AccessPoint));
     ap->client_id = strdup(client_id);
     ap->alternate_name = "";
+    ap->brightness = 0.0;
+    ap->carbon_dioxide = 0.0;
+    ap->humidity;
+    ap->internal_temperature = 0.0;
+    ap->pressure = 0.0;
+    ap->voc = 0.0;
+
     strncpy(ap->description, "Not known yet", META_LENGTH);
     strncpy(ap->platform, "Not known yet", META_LENGTH);
 
