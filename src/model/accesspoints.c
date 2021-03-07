@@ -55,18 +55,20 @@ void print_access_points(struct AccessPoint* access_points_list)
 {
     time_t now;
     time(&now);
-    g_info("ACCESS POINTS                         Platform       Parameters Temp Humidity Pressure Voc Last Seen");
+    g_info("ACCESS POINTS                         Platform       Parameters Int Temp Humidity Pressure CO2 Voc Last Seen");
     for (struct AccessPoint* ap = access_points_list; ap != NULL; ap = ap->next)
     {
         int delta_time = difftime(now, ap->last_seen);
-        g_info("%20s %16s %16s (%3i, %.1f) %4.1f°C %4.1f%% %4.1f KPa %4.1f %is",
+        g_info("%20s %16s %16s (%3i, %.1f) %4.1f°C %4.1f°C %4.1f%% %4.1f KPa %4.1f %4.1f %is",
         ap->client_id, 
         ap->short_client_id,
         ap->platform,
         ap->rssi_one_meter, ap->rssi_factor,
+        ap->internal_temperature,
         ap->temperature,
         ap->humidity,
         ap->pressure,
+        ap->carbon_dioxide,
         ap->voc,
         delta_time);
     }
