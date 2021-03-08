@@ -136,19 +136,19 @@ void *listen_loop(void *param)
                 continue;
             }
 
-            // // First stomp on any bad names coming in over UDP
-            // if (d.name_type < nt_known)
-            // {
-            //     for (struct Beacon* b = state->beacons; b != NULL; b = b->next)
-            //     {
-            //         if ((strcmp(b->name, d.name) == 0 || b->mac64 == d.mac64))
-            //         {
-            //             g_utf8_strncpy(d.name, b->alias, NAME_LENGTH);
-            //             d.name_type = nt_alias;
-            //             break;
-            //         }
-            //     }
-            // }
+            // First stomp on any bad names coming in over UDP, e.g. ESP32 devices that don't know better
+            if (d.name_type < nt_known)
+            {
+                for (struct Beacon* b = state->beacons; b != NULL; b = b->next)
+                {
+                    if ((strcmp(b->name, d.name) == 0 || b->mac64 == d.mac64))
+                    {
+                        g_utf8_strncpy(d.name, b->alias, NAME_LENGTH);
+                        d.name_type = nt_alias;
+                        break;
+                    }
+                }
+            }
 
             pthread_mutex_lock(&state->lock);
 

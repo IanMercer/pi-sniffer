@@ -686,9 +686,9 @@ bool print_counts_by_closest(struct OverallState* state)
             if (!worth_including) continue;
 
             //Verbose logging
-            if (detailedLogging)
+            if (logging && detailedLogging)
             {
-                if (logging && !heading_printed)
+                if (!heading_printed)
                 {
                     heading_printed = true;
                     debug_print_heading(ahead, now, average_gap);
