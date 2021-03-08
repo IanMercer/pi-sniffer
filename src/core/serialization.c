@@ -102,6 +102,12 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
     // ACCESS POINT
     struct AccessPoint* ap = NULL;
 
+    if (djson == NULL)
+    {
+        g_warning("Failed to parse %s", json);
+        return NULL;
+    }
+
     cJSON *fromj = cJSON_GetObjectItemCaseSensitive(djson, CJ_FROM);
     if (cJSON_IsString(fromj) && (fromj->valuestring != NULL))
     {
@@ -123,7 +129,18 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
         bool created = FALSE;
         ap = get_or_create_access_point(state, apname, &created);
 
+        if (ap == NULL)
+        {
+            g_warning("Why is ap null for %s", apname);
+            return NULL;
+        }
+
         time(&ap->last_seen);
+    }
+    else
+    {
+        g_warning("Did not find from field in json");
+        return NULL;
     }
 
     cJSON *descriptionj = cJSON_GetObjectItemCaseSensitive(djson, CJ_DESCRIPTION);
@@ -179,7 +196,7 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
     cJSON *j_co2 = cJSON_GetObjectItemCaseSensitive(djson, CJ_CARBON_DIOXIDE);
     if (ap != NULL && cJSON_IsNumber(j_co2))
     {
-        ap->carbon_dioxide = (float)j_co2->valueint;
+        ap->carbon_dioxide = j_co2->valueint;
     }
 
     cJSON *j_voc = cJSON_GetObjectItemCaseSensitive(djson, CJ_VOC);

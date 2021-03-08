@@ -164,7 +164,7 @@ struct AccessPoint
    float temperature;            // observed room temperature
    float humidity;               // observed room humidity
    float pressure;               // observed room pressure
-   float carbon_dioxide;         // observed CO2
+   int carbon_dioxide;           // observed CO2
    float brightness;             // observed brightness
    float voc;                    // observed voc
 };
