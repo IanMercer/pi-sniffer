@@ -283,6 +283,7 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
     cJSON *tryConnectj = cJSON_GetObjectItemCaseSensitive(djson, CJ_TRY_CONNECT_STATE);
     if (cJSON_IsNumber(tryConnectj))
     {
+        // This will only be accepted if it's complete (see merge method)
         device->try_connect_state = tryConnectj->valueint;
     }
 
