@@ -776,9 +776,9 @@ bool print_counts_by_closest(struct OverallState* state)
                     debug_print_heading(ahead, now, average_gap);
                 }
 
-                if (moving)
+                if (moving && ahead->recent_rooms->next != NULL)
                 {
-                    g_debug("Moving %s to %s from %s", ahead->name, best_patch->room, ahead->recent_rooms->next->name);
+                    g_debug("Moved %s to %s from %s", ahead->name, best_patch->room, ahead->recent_rooms->next->name);
                 }
 
                 // Log the details explaining why it moved

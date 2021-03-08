@@ -230,6 +230,8 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
     device->name[0] = '\0';
     device->name_type = nt_initial;
     device->count = 0;
+    device->try_connect_attempts = 0;
+    device->try_connect_state = TRY_CONNECT_ZERO;
 
     cJSON *mac = cJSON_GetObjectItemCaseSensitive(djson, CJ_MAC);
     if (cJSON_IsString(mac) && (mac->valuestring != NULL))
@@ -276,6 +278,12 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
     if (cJSON_IsNumber(countj))
     {
         device->count = countj->valueint;
+    }
+
+    cJSON *tryConnectj = cJSON_GetObjectItemCaseSensitive(djson, CJ_TRY_CONNECT_STATE);
+    if (cJSON_IsNumber(tryConnectj))
+    {
+        device->try_connect_state = tryConnectj->valueint;
     }
 
     cJSON *intervalj = cJSON_GetObjectItemCaseSensitive(djson, CJ_KNOWN_INTERVAL);
