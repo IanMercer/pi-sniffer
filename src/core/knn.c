@@ -268,7 +268,7 @@ void get_probability (struct recording* recording,
 
                 // We got an observation but the recording doesn't include it, the larger the distance the
                 // more likely the recording might not include it. Recording must include all close observations.
-                float p_missed_due_to_distance = 2.0 - 2.0 / (1 + exp(-recording_distance/5));
+                float p_missed_due_to_distance = 2.0 - 2.0 / (1 + exp(-measured_distance/5));
 
                 probability_isnt = or(probability_isnt, p_missed_due_to_distance);
             }
