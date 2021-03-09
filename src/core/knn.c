@@ -202,8 +202,8 @@ void get_probability (struct recording* recording,
     float* out_probability_isnt, // output
     struct AccessPoint* access_points, bool debug)
 {
-    double probability_is = 1.0;
-    double probability_isnt = 0.0;
+    double probability_pos = 0.0;  // OR for each positive observation
+    double probability_neg = 1.0;  // AND for each negative observation
 
     if (average_gap < 25) average_gap = 25;   // unlikely value
     if (average_gap > 360) average_gap = 360; // also unlikely
@@ -222,8 +222,8 @@ void get_probability (struct recording* recording,
         // 1m = 1
         // 2m = 0.4
         // 10m = 0.01
-        probability_is = fmin(1.0, 2.0 / (sum_delta_squared + 1.0));
-        probability_isnt = 0.0;
+        probability_pos = fmin(1.0, 2.0 / (sum_delta_squared + 1.0));
+        probability_neg = 1.0;
     } 
     else 
     {
@@ -257,8 +257,7 @@ void get_probability (struct recording* recording,
 
                 // very slight increase in probability that this is a match (since many are missing values)
                 // this should not be worse than the p() below of a missing measured distance
-                //probability_is = or(probability_is, 0.01);
-                probability_is = and(probability_is, 0.99);  // slight reduction in likelihood
+                probability_pos = or(probability_pos, 0.01);
             }
             else if (recording_distance >= EFFECTIVE_INFINITE_TEST)
             {
@@ -278,7 +277,7 @@ void get_probability (struct recording* recording,
                 // more likely the recording might not include it. Recording must include all close observations.
                 float p_missed_due_to_distance = 2.0 - 2.0 / (1 + exp(-measured_distance/5));
 
-                probability_is = and(probability_is, 1 - p_missed_due_to_distance);
+                probability_neg = and(probability_neg, 1 - p_missed_due_to_distance);
                 //probability_isnt = or(probability_isnt, p_missed_due_to_distance);
             }
             else if (measured_distance >= EFFECTIVE_INFINITE_TEST)
@@ -290,7 +289,7 @@ void get_probability (struct recording* recording,
                 if (debug) g_debug("%s was expected not found, expected at %.2f x 0.4", ap->short_client_id, recording_distance);
                 // could not see an AP at all, but should have been able to, could just be a missing observation
 
-                probability_is = and(probability_is, (1.0 - p_should_have_seen));
+                probability_neg = and(probability_neg, (1.0 - p_should_have_seen));
                 //probability_isnt = or(probability_isnt, p_should_have_seen);
             }
             else
@@ -302,7 +301,7 @@ void get_probability (struct recording* recording,
                 // Use a sigmoid function: the logistic curve
                 // = 2 - 2 / (1 + EXP(-ABS(C$42-$B43)*$C$31))
 
-                double p_in_range = 2 - 2 / (1 + exp(-error));
+                double p_close_match = 2 - 2 / (1 + exp(-error));
 
                 float min = fmax(1.0, fmin(measured_distance, recording_distance));
 
@@ -335,7 +334,8 @@ void get_probability (struct recording* recording,
 
                 // 0.2 factor - one observation isn't enough, this needs to build over several
                 //probability_is = and(probability_is, p_in_range);
-                probability_isnt = or(probability_isnt, info * (1.0 - p_in_range));
+                probability_pos = or(probability_pos, p_close_match);
+                probability_neg = and(probability_neg, info * (1.0 - p_close_match));
             }
         }
 
@@ -343,8 +343,8 @@ void get_probability (struct recording* recording,
         //double confidence = atan(matches)/3.14159*2;
         // don't need confidence for negative inference
 
-        *out_probability_is = probability_is;
-        *out_probability_isnt = probability_isnt;
+        *out_probability_is = probability_pos;
+        *out_probability_isnt = 1.0 - probability_neg;
         //return probability * confidence;
         //return (1.0 - probability_isnt) * probability_is;
     }
@@ -379,18 +379,18 @@ int k_nearest(struct recording* recordings,
 
         debug = debug && string_starts_with(recording->patch->name, "East");
 
-        float probability_is = 0.0;
-        float probability_isnt = 1.0;
+        float probability_pos = 0.0;
+        float probability_neg = 1.0;
 
         // Insert recording into the list if it's a better match
         get_probability(recording, accessdistances, accesstimes, average_gap,
-            &probability_is, &probability_isnt, access_points, debug);
+            &probability_pos, &probability_neg, access_points, debug);
 
         struct top_k current;
         current.patch = recording->patch;
-        current.probability_is = probability_is;
-        current.probability_isnt = probability_isnt;
-        current.probability_combined = probability_is * (1.0 - probability_isnt);
+        current.probability_is = probability_pos;
+        current.probability_isnt = probability_neg;
+        current.probability_combined = probability_pos * (1.0 - probability_neg);
         current.used = FALSE;
         //current.patch = recording;
 
