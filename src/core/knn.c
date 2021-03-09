@@ -334,7 +334,7 @@ void get_probability (struct recording* recording,
                 // Temper both probabilities by how much dilution of precision we have in the measurement
 
                 // 0.2 factor - one observation isn't enough, this needs to build over several
-                probability_is = and(probability_is, p_in_range);
+                //probability_is = and(probability_is, p_in_range);
                 probability_isnt = or(probability_isnt, info * (1.0 - p_in_range));
             }
         }
