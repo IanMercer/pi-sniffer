@@ -292,7 +292,7 @@ void get_probability (struct recording* recording,
                 // Use a sigmoid function: the logistic curve
                 // = 2 - 2 / (1 + EXP(-ABS(C$42-$B43)*$C$31))
 
-                double p_in_range = 2 - 2 / (1 + exp(-error/10));
+                double p_in_range = 2 - 2 / (1 + exp(-error));
 
                 // reduce far values as they tell us less - dilution of precision
                 // At 30m reduce probability by half
