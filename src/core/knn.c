@@ -189,7 +189,7 @@ double or(double a, double b)
 */
 double and(double a, double b)
 {
-    return a + b - a * b;
+    return a * b;
 }
 
 // KNN CLASSIFIER
