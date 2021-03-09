@@ -294,6 +294,16 @@ void get_probability (struct recording* recording,
 
                 double p_in_range = 2 - 2 / (1 + exp(-error));
 
+                float min = fmax(1.0, fmin(measured_distance, recording_distance));
+
+                double info = 1.0 / min;
+                // 0.5m = 1.0
+                // 1.0m = 1.0
+                // 2.0m = 0.5
+                // 4.0m = 0.25
+                // 10 m = 0.10
+                // 20 m = 0.05
+
                 // reduce far values as they tell us less - dilution of precision
                 // At 30m reduce probability by half
                 // S -shaped curve emphasizing distances under 5m
@@ -315,7 +325,7 @@ void get_probability (struct recording* recording,
 
                 // 0.2 factor - one observation isn't enough, this needs to build over several
                 probability_is = or(probability_is, 0.2 * p_in_range);
-                probability_isnt = or(probability_isnt, 0.2 * (1.0 - p_in_range));
+                probability_isnt = or(probability_isnt, info * (1.0 - p_in_range));
             }
         }
 
