@@ -184,6 +184,13 @@ double or(double a, double b)
     return a + b - a * b;
 }
 
+/*
+*   And two probabilities
+*/
+double and(double a, double b)
+{
+    return a + b - a * b;
+}
 
 // KNN CLASSIFIER
 
@@ -195,7 +202,7 @@ void get_probability (struct recording* recording,
     float* out_probability_isnt, // output
     struct AccessPoint* access_points, bool debug)
 {
-    double probability_is = 0.0;
+    double probability_is = 1.0;
     double probability_isnt = 0.0;
 
     if (average_gap < 25) average_gap = 25;   // unlikely value
@@ -251,6 +258,7 @@ void get_probability (struct recording* recording,
                 // very slight increase in probability that this is a match (since many are missing values)
                 // this should not be worse than the p() below of a missing measured distance
                 //probability_is = or(probability_is, 0.01);
+                probability_is = and(probability_is, 0.95);  // slight reduction in likelihood
             }
             else if (recording_distance >= EFFECTIVE_INFINITE_TEST)
             {
@@ -270,6 +278,7 @@ void get_probability (struct recording* recording,
                 // more likely the recording might not include it. Recording must include all close observations.
                 float p_missed_due_to_distance = 2.0 - 2.0 / (1 + exp(-measured_distance/5));
 
+                //probability_is = and(probability_is, p_missed_due_to_distance);
                 probability_isnt = or(probability_isnt, p_missed_due_to_distance);
             }
             else if (measured_distance >= EFFECTIVE_INFINITE_TEST)
@@ -281,7 +290,8 @@ void get_probability (struct recording* recording,
                 if (debug) g_debug("%s was expected not found, expected at %.2f x 0.4", ap->short_client_id, recording_distance);
                 // could not see an AP at all, but should have been able to, could just be a missing observation
 
-                probability_isnt = or(probability_isnt, p_should_have_seen);
+                probability_is = and(probability_is, (1.0 - p_should_have_seen));
+                //probability_isnt = or(probability_isnt, p_should_have_seen);
             }
             else
             {
@@ -324,7 +334,7 @@ void get_probability (struct recording* recording,
                 // Temper both probabilities by how much dilution of precision we have in the measurement
 
                 // 0.2 factor - one observation isn't enough, this needs to build over several
-                probability_is = or(probability_is, 0.5 * p_in_range);
+                //probability_is = and(probability_is, p_in_range);
                 probability_isnt = or(probability_isnt, info * (1.0 - p_in_range));
             }
         }
