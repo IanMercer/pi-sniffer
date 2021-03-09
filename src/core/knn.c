@@ -334,8 +334,8 @@ void get_probability (struct recording* recording,
 
                 // 0.2 factor - one observation isn't enough, this needs to build over several
                 //probability_is = and(probability_is, p_in_range);
-                probability_pos = or(probability_pos, p_close_match);
-                probability_neg = and(probability_neg, (1.0 - info * p_close_match));
+                probability_pos = or(probability_pos, info * p_close_match);
+                //probability_neg = and(probability_neg, (1.0 - 0.2 * info * p_close_match));
             }
         }
 
