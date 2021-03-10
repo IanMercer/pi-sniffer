@@ -46,6 +46,7 @@ struct AccessPoint *add_access_point(struct OverallState* state, char *client_id
     ap->pressure = 0;
     ap->temperature = 0;
     ap->voc = 0;
+    ap->wifi_signal = 0;
     time(&ap->last_seen);
 
     return ap;
@@ -55,7 +56,7 @@ void print_access_points(struct AccessPoint* access_points_list)
 {
     time_t now;
     time(&now);
-    g_info("ACCESS POINTS                 Platform Parameter Int Temp Humd Press CO2  Voc  Last Seen");
+    g_info("ACCESS POINTS                 Platform Parameter Int Temp Humd Press CO2  Voc WiFi  Last Seen");
     for (struct AccessPoint* ap = access_points_list; ap != NULL; ap = ap->next)
     {
         char name[25];
@@ -65,7 +66,7 @@ void print_access_points(struct AccessPoint* access_points_list)
             g_snprintf(name, sizeof(name), "%s (%s)", ap->client_id, ap->short_client_id);
 
         int delta_time = difftime(now, ap->last_seen);
-        g_info("%25.25s %12.12s (%3i, %.1f) %4.1f°C %4.1f°C %4.1f%% %4.1f KPa %4i %4.1f %is",
+        g_info("%25.25s %12.12s (%3i, %.1f) %4.1f°C %4.1f°C %4.1f%% %4.1f KPa %4i %4.1f %4.1f %is",
         name,
         ap->platform,
         ap->rssi_one_meter, ap->rssi_factor,
@@ -75,6 +76,7 @@ void print_access_points(struct AccessPoint* access_points_list)
         ap->pressure,
         ap->carbon_dioxide,
         ap->voc,
+        ap->wifi_signal,
         delta_time);
     }
 }
@@ -217,6 +219,7 @@ struct AccessPoint* get_or_create_access_point(struct OverallState* state, const
     ap->internal_temperature = 0.0;
     ap->pressure = 0.0;
     ap->voc = 0.0;
+    ap->wifi_signal = 0;
     ap->temperature = 0;
 
 

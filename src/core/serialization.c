@@ -205,6 +205,12 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
         ap->voc = (float)j_voc->valuedouble;
     }
 
+    cJSON *j_wifi = cJSON_GetObjectItemCaseSensitive(djson, CJ_WIFI);
+    if (ap != NULL && cJSON_IsNumber(j_wifi))
+    {
+        ap->wifi_signal = (float)j_wifi->valuedouble;
+    }
+
     // ----------------
 
     cJSON *sequence = cJSON_GetObjectItemCaseSensitive(djson, CJ_SEQ);

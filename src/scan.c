@@ -223,14 +223,13 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         existing->is_training_beacon = false;
         existing->known_interval = 0;
 
-        // RSSI values are stored with kalman filtering
-        kalman_initialize(&existing->filtered_distance);
-        existing->distance = 0;
         time(&existing->last_sent);
         time(&existing->last_rssi);
 
+        // RSSI values are stored with kalman filtering
         kalman_initialize(&existing->filtered_rssi);
         existing->raw_rssi = 0;
+        existing->distance = 0;
 
         existing->last_sent = existing->last_sent - 1000; //1s back so first RSSI goes through
         existing->last_rssi = existing->last_rssi - 1000;
@@ -356,41 +355,28 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             // track gap between RSSI received events
             double delta_time_received = difftime(now, existing->last_rssi);
             time(&existing->last_rssi);
-
-            // If the gap is large we maybe lost this device and now it's back, so we can't assume continuity
-            if (delta_time_received > 400)
-            {
-                existing->filtered_rssi.current_estimate = existing->filtered_rssi.last_estimate = rssi;
-            }
-            //existing.unfiltered = rssi;
-
-            //float averaged_rssi = 
-            kalman_update(&existing->filtered_rssi, rssi);
             existing->raw_rssi = rssi;  // unfiltered
 
-            // Smoothed delta time, interval between RSSI events
-            //float current_time_estimate = (&existing->kalman_interval)->current_estimate;
+            // If the gap is large we maybe lost this device and now it's back, so we can't assume continuity
+            if (delta_time_received > 1000)
+            {
+                kalman_initialize(&existing->filtered_rssi);
+            }
 
-            //bool tooLate = (current_time_estimate != -999) && (delta_time_received > 2.0 * current_time_estimate);
+            kalman_update(&existing->filtered_rssi, rssi);
 
-            //float average_delta_time = kalman_update(&existing->kalman_interval, (float)delta_time_sent);
+            double smoothed_rssi = existing->filtered_rssi.current_estimate;
 
             // TODO: Different devices have different signal strengths
             // iPad, Apple TV, Samsung TV, ... seems to be particulary strong. Need to calibrate this and have
             // a per-device. PowerLevel is supposed to do this but it's not reliably sent.
             double rangefactor = 1.0;
 
-            double exponent = ((state.local->rssi_one_meter  - (double)rssi) / (10.0 * state.local->rssi_factor));
+            double exponent = ((state.local->rssi_one_meter  - smoothed_rssi) / (10.0 * state.local->rssi_factor));
 
             double distance = pow(10.0, exponent) * rangefactor;
 
-            // If the gap is large we maybe lost this device and now it's back, so we can't assume continuity
-            if (delta_time_received > 400)
-            {
-                existing->filtered_distance.current_estimate = existing->filtered_distance.last_estimate = distance;
-            }
-
-            float averaged = kalman_update(&existing->filtered_distance, distance);
+            existing->distance = distance;
 
             // 10s with distance change of 1m triggers send
             // 1s with distance change of 10m triggers send
@@ -402,9 +388,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             //if (score > 10.0 || delta_time_sent > 10)
             {
                 //g_print("  %s Will send rssi=%i dist=%.1fm, delta v=%.1fm t=%.0fs score=%.0f\n", address, rssi, averaged, delta_v, delta_time_sent, score);
-                existing->distance = averaged;
                 send_distance = TRUE;
-                g_trace("  %s RSSI %i d=%.1fm", address, rssi, averaged);
+                g_trace("  %s RSSI %i filtered=%.1f d=%.1fm", address, rssi, existing->filtered_rssi.current_estimate, distance);
             }
             //else
             //{

@@ -113,11 +113,10 @@ struct Device
    int uuid_hash;                 // Hash value of all UUIDs - may ditinguish devices
    int txpower;                   // TX Power
    time_t last_rssi;              // last time an RSSI was received. If gap > 0.5 hour, ignore initial point (dead letter post)
-   struct Kalman filtered_distance;
    struct Kalman filtered_rssi;   // RSSI Kalman filter
    int raw_rssi;                  // RSSI last measurement
    time_t last_sent;
-   float distance;
+   float distance;                // Filtered by Kalman filter on RSSI
    struct Kalman kalman_interval; // Tracks time between RSSI events in order to detect large gaps
    time_t earliest;               // Earliest time seen, used to calculate overlap
    time_t latest_local;           // Latest time seen by this sensor, used to calculate overlap
@@ -167,6 +166,7 @@ struct AccessPoint
    int carbon_dioxide;           // observed CO2
    float brightness;             // observed brightness
    float voc;                    // observed voc
+   float wifi_signal;            // ESP32 WiFi observed signal
 };
 
 
@@ -244,6 +244,7 @@ enum Verbosity
 #define CJ_BRIGHTNESS "bright"
 #define CJ_CARBON_DIOXIDE "co2"
 #define CJ_VOC "voc"
+#define CJ_WIFI "wifi"
 
 // Device details
 #define CJ_MAC "mac"

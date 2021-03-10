@@ -47,6 +47,10 @@ void handle_class(struct Device *existing, uint32_t deviceclass)
     {
         soft_set_category(&existing->category, CATEGORY_PHONE);
     }
+    else if (deviceclass == 0x5a020c)
+    {
+        // ANDROID BT device ?
+    }
     else if (deviceclass == 0x60680)
     {
         // TBD Zebra beacon? checkout scanner?
