@@ -228,8 +228,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
         // RSSI values are stored with kalman filtering
         kalman_initialize(&existing->filtered_rssi);
-        existing->raw_rssi = 0;
-        existing->distance = 0;
+        existing->raw_rssi = -90;
+        existing->distance = 10;
 
         existing->last_sent = existing->last_sent - 1000; //1s back so first RSSI goes through
         existing->last_rssi = existing->last_rssi - 1000;
@@ -375,6 +375,8 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
             double exponent = ((state.local->rssi_one_meter  - smoothed_rssi) / (10.0 * state.local->rssi_factor));
 
             double distance = pow(10.0, exponent) * rangefactor;
+
+            if (distance > 100.0) distance = 100.0;  // eliminate the ridiculous
 
             existing->distance = distance;
 
