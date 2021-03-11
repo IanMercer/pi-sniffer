@@ -376,7 +376,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
 
             double distance = pow(10.0, exponent) * rangefactor;
 
-            if (distance > 100.0) distance = 100.0;  // eliminate the ridiculous
+            if (distance > 99.0) distance = 99.0;  // eliminate the ridiculous
 
             existing->distance = distance;
 
