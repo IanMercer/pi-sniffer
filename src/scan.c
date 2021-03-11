@@ -363,9 +363,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 kalman_initialize(&existing->filtered_rssi);
             }
 
-            kalman_update(&existing->filtered_rssi, rssi);
-
-            double smoothed_rssi = existing->filtered_rssi.current_estimate;
+            double smoothed_rssi = kalman_update(&existing->filtered_rssi, rssi);
 
             // TODO: Different devices have different signal strengths
             // iPad, Apple TV, Samsung TV, ... seems to be particulary strong. Need to calibrate this and have
