@@ -175,6 +175,12 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
 
     // ----------------
 
+    cJSON *j_internal_temperature = cJSON_GetObjectItemCaseSensitive(djson, CJ_INTERNAL_TEMPERATURE);
+    if (ap != NULL && cJSON_IsNumber(j_internal_temperature))
+    {
+        ap->internal_temperature = (float)j_internal_temperature->valuedouble;
+    }
+
     cJSON *j_temperature = cJSON_GetObjectItemCaseSensitive(djson, CJ_TEMPERATURE);
     if (ap != NULL && cJSON_IsNumber(j_temperature))
     {

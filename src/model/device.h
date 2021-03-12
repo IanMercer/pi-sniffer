@@ -239,6 +239,7 @@ enum Verbosity
 #define CJ_SEQ "seq"
 
 #define CJ_TEMPERATURE "temp"
+#define CJ_INTERNAL_TEMPERATURE "int"
 #define CJ_HUMIDITY "hum"
 #define CJ_PRESSURE "press"
 #define CJ_BRIGHTNESS "bright"
