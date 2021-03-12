@@ -574,7 +574,7 @@ bool read_observations_file (const char * dirname, const char* filename, struct 
             if (!ok)
             {
                 // TODO: Log just once per missing access point
-                //g_warning("Could not use '%s' in %s (%i)", line, filename, line_count);
+                g_warning("Could not use '%s' in %s (%i)", line, filename, line_count);
             }
         }
         g_free(line);
