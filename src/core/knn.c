@@ -303,19 +303,16 @@ void get_probability (struct recording* recording,
 
                 double p_close_match = 2 - 2 / (1 + exp(-error));
 
-                float min = fmax(1.0, fmin(measured_distance, recording_distance));
+                //float ave_dist = fmax(1.0, (measured_distance + recording_distance)/2);
+                float min_dist = fmax(1.0, fmin(measured_distance, recording_distance)/2);
 
-                double info = 1.0 / min;
+                double info = 1.0 / min_dist;
                 // 0.5m = 1.0
                 // 1.0m = 1.0
                 // 2.0m = 0.5
                 // 4.0m = 0.25
                 // 10 m = 0.10
                 // 20 m = 0.05
-
-                // Approximately double the probability for distances that were expected to be small
-                // No change for large distances
-                p_close_match = or(p_close_match, p_close_match * info);
 
                 // reduce far values as they tell us less - dilution of precision
                 // At 30m reduce probability by half
@@ -324,20 +321,6 @@ void get_probability (struct recording* recording,
                 // double p_reliable = 1.0 - atan(-2.0)/PI - atan(recording_distance/5.0 - 2.0) / PI;
                 // p_reliable = fmin(1.0, fmax(0.2, p_reliable));  // just to be safe
 
-                // Now that only relevant timed values are passed, no need to dilate based on time
-
-                // The more likely you are to be here, the more signficant it is if the distance is a miss
-                // Either you have left this place or you are in range for this reading to be useful
-                //double prob = or(p_in_range, p_gone_away/2);
-                //probability = probability * prob;
-                //if (debug) g_debug("%s was expected and found %.2fm delta, x %.3f", ap->client_id, error, prob);
-
-                // If it's close, increase probability that it's a match
-                // It it's not close, increase probability that it isn't
-                // Temper both probabilities by how much dilution of precision we have in the measurement
-
-                // 0.2 factor - one observation isn't enough, this needs to build over several
-                //probability_is = and(probability_is, p_in_range);
                 probability_pos = or(probability_pos, info * p_close_match);
                 //probability_neg = and(probability_neg, (1.0 - 0.2 * info * p_close_match));
             }
