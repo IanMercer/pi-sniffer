@@ -755,3 +755,23 @@ bool read_all_lines (const char * dirname, const char* filename, void (*call_bac
     g_object_unref(file);
 	return TRUE;
 }
+
+// Returns the temperature of the main chip (or zero if it failed)
+double get_internal_temp()
+{
+  const int BUFFER_SIZE = 100;
+  char data[BUFFER_SIZE];
+  FILE *finput;
+  double temp = 0;
+  finput = fopen("/sys/class/thermal/thermal_zone0/temp","r");
+  if (finput != NULL) {
+    memset(data,0,BUFFER_SIZE);
+    //size_t bytes_read = 
+    fread(data,BUFFER_SIZE,1,finput);
+    temp = atoi(data);
+    temp /= 1000;
+    fclose(finput);
+  }
+  return temp;
+}
+

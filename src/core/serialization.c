@@ -179,12 +179,16 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
     if (ap != NULL && cJSON_IsNumber(j_internal_temperature))
     {
         ap->internal_temperature = (float)j_internal_temperature->valuedouble;
+        if (ap->internal_temperature > 99) ap->internal_temperature = 99.0; // 99c
+        if (ap->internal_temperature < 0) ap->internal_temperature = 0.0;
     }
 
     cJSON *j_temperature = cJSON_GetObjectItemCaseSensitive(djson, CJ_TEMPERATURE);
     if (ap != NULL && cJSON_IsNumber(j_temperature))
     {
         ap->temperature = (float)j_temperature->valuedouble;
+        if (ap->temperature > 99) ap->temperature = 99.0;
+        if (ap->temperature < -40) ap->temperature = -40.0;
     }
 
     cJSON *j_humidity = cJSON_GetObjectItemCaseSensitive(djson, CJ_HUMIDITY);
