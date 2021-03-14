@@ -313,6 +313,10 @@ void get_probability (struct recording* recording,
                 // 10 m = 0.10
                 // 20 m = 0.05
 
+                // Approximately double the probability for distances that were expected to be small
+                // No change for large distances
+                p_close_match = or(p_close_match, p_close_match * info);
+
                 // reduce far values as they tell us less - dilution of precision
                 // At 30m reduce probability by half
                 // S -shaped curve emphasizing distances under 5m
