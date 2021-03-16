@@ -227,6 +227,14 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
             g_snprintf(tempName, sizeof(tempName), "iPhone di=%.1x%.2x.%.2x", device_bit, information_byte, activity_bits);
             set_name(existing, tempName, nt_manufacturer, "apple");
         }
+        else if (device_bit == 0x0 && information_byte == 0x1f)
+        {
+            // Seems to always be a phone
+            soft_set_category(&existing->category, CATEGORY_PHONE);
+            char tempName[NAME_LENGTH];
+            g_snprintf(tempName, sizeof(tempName), "iPhone di=%.1x%.2x.%.2x", device_bit, information_byte, activity_bits);
+            set_name(existing, tempName, nt_manufacturer, "apple");
+        }
         else if (device_bit == 0x01 && information_byte == 0x18 && activity_bits == 0x01)
         {
             // activity = 08 watch
