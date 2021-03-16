@@ -247,7 +247,7 @@ void handle_apple(struct Device *existing, unsigned char *allocdata)
         {
             soft_set_category(&existing->category, CATEGORY_PHONE);
             char tempName[NAME_LENGTH];
-            g_snprintf(tempName, sizeof(tempName), "Apple di=%.1x%.2x", device_bit, information_byte);
+            g_snprintf(tempName, sizeof(tempName), "Apple di=%.1x%.2x.%2x", device_bit, information_byte, activity_bits);
             set_name(existing, tempName, nt_manufacturer, "apple");
         }
     }
