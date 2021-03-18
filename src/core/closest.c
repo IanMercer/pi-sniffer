@@ -1016,6 +1016,26 @@ bool print_counts_by_closest(struct OverallState* state)
     }
     else { g_debug("No assets to track");}
 
+    // Add all access points to json
+    cJSON *jaccess = cJSON_AddArrayToObject(jobject, "assets");
+
+    for (struct AccessPoint* ap = state->access_points; ap != NULL; ap=ap->next)
+    {
+            cJSON* item = cJSON_CreateObject();
+            cJSON_AddStringToObject(item, "id", ap->short_client_id);
+            cJSON_AddNumberToObject(item, "t", ap->last_seen);
+            if (!isnan(ap->temperature)) cJSON_AddRounded(item, CJ_TEMPERATURE, ap->temperature);
+            if (!isnan(ap->internal_temperature)) cJSON_AddRounded(item, CJ_INTERNAL_TEMPERATURE, ap->internal_temperature);
+            if (!isnan(ap->humidity)) cJSON_AddRounded(item, CJ_HUMIDITY, ap->humidity);
+            if (!isnan(ap->brightness)) cJSON_AddRounded(item, CJ_BRIGHTNESS, ap->brightness);
+            if (!isnan(ap->voc)) cJSON_AddRounded(item, CJ_VOC, ap->voc);
+            if (ap->carbon_dioxide > 0) cJSON_AddRounded(item, CJ_CARBON_DIOXIDE, ap->carbon_dioxide);
+            if (!isnan(ap->pressure)) cJSON_AddRounded(item, CJ_PRESSURE, ap->pressure);
+            if (!isnan(ap->wifi_signal)) cJSON_AddRounded(item, CJ_WIFI, ap->wifi_signal);
+
+            cJSON_AddItemToArray(jaccess, item);
+    }
+
     // debug
     char* json_groups = cJSON_PrintUnformatted(jzones);
 

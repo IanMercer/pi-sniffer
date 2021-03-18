@@ -470,7 +470,7 @@ void handle_uuids(struct Device *device, char *uuidArray[2048], int actualLength
         else if (ble_uuid == 0xa3e68a83ul) {
             append_text(gatts, gatts_length, "Milwaukee, ");
             soft_set_category(&device->category, CATEGORY_BEACON);
-            device->known_interval = 80; // 65-99s in practice
+            device->known_interval = 240; // 65-99s in practice, but unreliable so much longer
         }
         else if (ble_uuid == 0xc7f94713ul) append_text(gatts, gatts_length, "CDP, ");
         else if (ble_uuid == 0xd0611e78ul) 

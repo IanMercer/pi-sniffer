@@ -239,15 +239,18 @@ void get_probability (struct recording* recording,
 
         for (struct AccessPoint* ap = access_points; ap != NULL; ap=ap->next)
         {
+            if (strcmp(ap->client_id, "ignore") == 0) continue;
+            if (strcmp(ap->short_client_id, "ignore") == 0) continue;
+
             float recording_distance = recording->access_point_distances[ap->id];
             float measured_distance = accessdistances[ap->id];
-            float deltatime = accesstimes[ap->id] - min_delta;
+            //float deltatime = accesstimes[ap->id] - min_delta;
 
             // 500s later could have moved a long way
             // first 30s are 0 as that's typical a gap in transmissions
             // now using the average interval instead, a tag with 214s gaps for example has much longer
             // y = -atan(-5)/pi + atan(x-5)/pi from 0 to 10
-            float p_gone_away = -atan(-5) / PI + atan(deltatime/average_gap - 5) / PI;
+            //float p_gone_away = -atan(-5) / PI + atan(deltatime/average_gap - 5) / PI;
 
             if (recording_distance >= EFFECTIVE_INFINITE_TEST && measured_distance >= EFFECTIVE_INFINITE_TEST)
             {

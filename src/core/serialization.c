@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <math.h>
 
 #include "serialization.h"
 
@@ -28,6 +29,13 @@ char* access_point_to_json (struct AccessPoint* a)
     cJSON_AddRounded(j, CJ_RSSI_ONE_METER, a->rssi_one_meter);
     cJSON_AddRounded(j, CJ_RSSI_FACTOR, a->rssi_factor);
     cJSON_AddRounded(j, CJ_PEOPLE_DISTANCE, a->people_distance);
+
+    if (!isnan(a->temperature)) cJSON_AddRounded(j, CJ_TEMPERATURE, a->temperature);
+    if (!isnan(a->internal_temperature)) cJSON_AddRounded(j, CJ_INTERNAL_TEMPERATURE, a->internal_temperature);
+    if (!isnan(a->humidity)) cJSON_AddRounded(j, CJ_HUMIDITY, a->humidity);
+    if (!isnan(a->brightness)) cJSON_AddRounded(j, CJ_BRIGHTNESS, a->brightness);
+    if (a->carbon_dioxide != 0) cJSON_AddRounded(j, CJ_CARBON_DIOXIDE, a->carbon_dioxide);
+    if (!isnan(a->wifi_signal)) cJSON_AddRounded(j, CJ_WIFI, a->wifi_signal);
 
     string = cJSON_PrintUnformatted(j);
     cJSON_Delete(j);
