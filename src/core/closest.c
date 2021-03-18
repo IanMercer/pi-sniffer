@@ -1017,7 +1017,7 @@ bool print_counts_by_closest(struct OverallState* state)
     else { g_debug("No assets to track");}
 
     // Add all access points to json
-    cJSON *jaccess = cJSON_AddArrayToObject(jobject, "assets");
+    cJSON *jaccess = cJSON_AddArrayToObject(jobject, "access");
 
     for (struct AccessPoint* ap = state->access_points; ap != NULL; ap=ap->next)
     {
