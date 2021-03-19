@@ -29,6 +29,7 @@ char* access_point_to_json (struct AccessPoint* a)
     cJSON_AddRounded(j, CJ_RSSI_ONE_METER, a->rssi_one_meter);
     cJSON_AddRounded(j, CJ_RSSI_FACTOR, a->rssi_factor);
     cJSON_AddRounded(j, CJ_PEOPLE_DISTANCE, a->people_distance);
+    cJSON_AddNumberToObject(j, CJ_AP_CLASS, a->ap_class);
 
     if (!isnan(a->temperature)) cJSON_AddRounded(j, CJ_TEMPERATURE, a->temperature);
     if (!isnan(a->internal_temperature)) cJSON_AddRounded(j, CJ_INTERNAL_TEMPERATURE, a->internal_temperature);
@@ -179,6 +180,12 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
     if (ap != NULL && cJSON_IsNumber(people_distance))
     {
         ap->people_distance = (float)people_distance->valuedouble;
+    }
+
+    cJSON *ap_class_j = cJSON_GetObjectItemCaseSensitive(djson, CJ_AP_CLASS);
+    if (ap != NULL && cJSON_IsNumber(ap_class_j))
+    {
+        ap->ap_class = (enum ap_class)ap_class_j->valueint;
     }
 
     // ----------------

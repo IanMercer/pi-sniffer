@@ -35,6 +35,7 @@ struct AccessPoint *add_access_point(struct OverallState* state, char *client_id
         g_utf8_strncpy(ap->platform, platform, META_LENGTH);
         //strncpy(ap->client_id, client_id, META_LENGTH);
     }
+    ap->ap_class = ap_class_raspberry_pi;
     ap->rssi_one_meter = rssi_one_meter;
     ap->rssi_factor = rssi_factor;
     ap->people_distance = people_distance;
@@ -195,7 +196,9 @@ static int access_point_id_generator = 0;
 /*
     Get or add an access point (THIS IS THE ONLY PLACE WE ADD AN AP)
 */
-struct AccessPoint* get_or_create_access_point(struct OverallState* state, const char* client_id, bool* created)
+struct AccessPoint* get_or_create_access_point(struct OverallState* state, 
+    const char* client_id, 
+    bool* created)
 {
     *created = FALSE;
     for (struct AccessPoint* current = state->access_points; current != NULL; current = current->next)
@@ -213,6 +216,7 @@ struct AccessPoint* get_or_create_access_point(struct OverallState* state, const
     struct AccessPoint* ap = g_malloc(sizeof(struct AccessPoint));
     ap->client_id = strdup(client_id);
     ap->alternate_name = "";
+    ap->ap_class = ap_class_esp32;   // assumed until told otherwise
     ap->brightness = 0.0;
     ap->carbon_dioxide = 0;
     ap->humidity = 0.0;

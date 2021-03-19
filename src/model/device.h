@@ -87,6 +87,12 @@ enum name_type {
     nt_alias = 500           // defined for system, e.g. tag names
 };
 
+enum ap_class {
+  ap_class_esp32 = 0,
+  ap_class_raspberry_pi = 2,
+  ap_class_ubuntu = 3
+};
+
 /*
    Structure for tracking BLE devices in range
 */
@@ -147,6 +153,7 @@ struct AccessPoint
    char* alternate_name;          // alternate name, e.g. room name
    char description[META_LENGTH]; // optional description for dashboard
    char platform[META_LENGTH];    // optional platform (e.g. Pi3, Pi4, ...) for dashboard
+   enum ap_class ap_class;        // access point class (ESP32, RPi, ...)
 
    // Put a device 1m away and measure the average RSSI
    int rssi_one_meter; // RSSI at one meter for test device (-64 dbm typical)
@@ -246,6 +253,8 @@ enum Verbosity
 #define CJ_CARBON_DIOXIDE "co2"
 #define CJ_VOC "voc"
 #define CJ_WIFI "wifi"
+// Device class - Unknown (ESP32) = 0, Raspberry Pi = 1, Ubuntu Linux = 2, ...
+#define CJ_AP_CLASS "ap_class"
 
 // Device details
 #define CJ_MAC "mac"
