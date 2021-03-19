@@ -70,7 +70,7 @@ void print_access_points(struct AccessPoint* access_points_list)
         g_info("%25.25s %2.2s %12.12s (%3i, %.1f) %4.1f°C %4.1f°C %4.1f%% %4.1f KPa %4i %4.1f %5.1f %is",
         name,
         ap->ap_class == ap_class_gateway_node ? "GW" : 
-            ap_class_smart_node ? "SM" : 
+            ap->ap_class == ap_class_smart_node ? "SM" : 
             ap->ap_class == ap_class_dumb_node ? "DU" 
             : "--",
         ap->platform,
