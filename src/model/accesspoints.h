@@ -9,7 +9,7 @@
 
 struct AccessPoint* get_or_create_access_point(struct OverallState* state, const char* client_id, bool* created);
 
-struct AccessPoint* add_access_point(struct OverallState* state, char* client_id, const char* description, const char* platform, 
+struct AccessPoint* create_local_access_point(struct OverallState* state, char* client_id, const char* description, const char* platform, 
     int rssi_one_meter, float rssi_factor, float people_distance);
 
 struct AccessPoint *get_access_point(struct AccessPoint* access_point_list, int id);

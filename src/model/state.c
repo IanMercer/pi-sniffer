@@ -100,7 +100,7 @@ void initialize_state(struct OverallState* state)
     if (rssi_factor < 1.0) g_warning("Unlikely setting for RSSI_FACTOR=%.2f", rssi_factor);
     if (rssi_factor > 5.0) g_warning("Unlikely setting for RSSI_FACTOR=%.2f", rssi_factor);
 
-    state->local = add_access_point(state, client_id, description, platform,
+    state->local = create_local_access_point(state, client_id, description, platform,
                                    rssi_one_meter, rssi_factor, people_distance);
 
     // Reboot nightly 

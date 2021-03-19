@@ -16,7 +16,7 @@
 /*
 * Used to create the local acces point only
 */
-struct AccessPoint *add_access_point(struct OverallState* state, char *client_id,
+struct AccessPoint *create_local_access_point(struct OverallState* state, char *client_id,
                                      const char *description, const char *platform,
                                      int rssi_one_meter, float rssi_factor, float people_distance)
 {
@@ -69,7 +69,7 @@ void print_access_points(struct AccessPoint* access_points_list)
         int delta_time = difftime(now, ap->last_seen);
         g_info("%25.25s %2.2s %12.12s (%3i, %.1f) %4.1f°C %4.1f°C %4.1f%% %4.1f KPa %4i %4.1f %5.1f %is",
         name,
-        ap->ap_class == ap_class_gateway_node ? "GW" : "--",
+        ap->ap_class == ap_class_gateway_node ? "GW" : ap->ap_class == ap_class_sensor_node ? "SE" : "--",
         ap->platform,
         ap->rssi_one_meter, ap->rssi_factor,
         ap->internal_temperature,
@@ -217,7 +217,7 @@ struct AccessPoint* get_or_create_access_point(struct OverallState* state,
     struct AccessPoint* ap = g_malloc(sizeof(struct AccessPoint));
     ap->client_id = strdup(client_id);
     ap->alternate_name = "";
-    ap->ap_class = ap_class_sensor_node;   // assumed until told otherwise
+    ap->ap_class = ap_class_unknown;   // until told otherwise
     ap->brightness = 0.0;
     ap->carbon_dioxide = 0;
     ap->humidity = 0.0;

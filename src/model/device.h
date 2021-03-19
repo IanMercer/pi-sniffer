@@ -88,8 +88,9 @@ enum name_type {
 };
 
 enum ap_class {
-  ap_class_sensor_node = 0,
-  ap_class_gateway_node = 1
+  ap_class_unknown = 1,
+  ap_class_sensor_node = 1,
+  ap_class_gateway_node = 2
 };
 
 /*
