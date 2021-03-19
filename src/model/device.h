@@ -88,9 +88,8 @@ enum name_type {
 };
 
 enum ap_class {
-  ap_class_esp32 = 0,
-  ap_class_raspberry_pi = 2,
-  ap_class_ubuntu = 3
+  ap_class_sensor_node = 0,
+  ap_class_gateway_node = 1
 };
 
 /*
