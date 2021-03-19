@@ -109,6 +109,11 @@ void initialize_state(struct OverallState* state)
     // Is MAIN, DBUS_SENDER device
     get_int_env("DBUS_SENDER", &state->isMain, FALSE);
 
+    if (state->isMain)
+    {
+        state->local->ap_class = ap_class_gateway_node;
+    }
+
     // UDP Settings
     get_int_env("UDP_MESH_PORT", &state->udp_mesh_port, 0);
     get_int_env("UDP_SIGN_PORT", &state->udp_sign_port, 0);

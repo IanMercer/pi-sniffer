@@ -1024,7 +1024,10 @@ bool print_counts_by_closest(struct OverallState* state)
             cJSON* item = cJSON_CreateObject();
             cJSON_AddStringToObject(item, "id", ap->short_client_id);
             cJSON_AddNumberToObject(item, "t", ap->last_seen);
-            cJSON_AddNumberToObject(item, CJ_AP_CLASS, ap->ap_class);
+            if (ap->ap_class != ap_class_unknown)
+            {
+                cJSON_AddNumberToObject(item, CJ_AP_CLASS, ap->ap_class);
+            }
             if (!isnan(ap->temperature)) cJSON_AddRounded(item, CJ_TEMPERATURE, ap->temperature);
             if (!isnan(ap->internal_temperature)) cJSON_AddRounded(item, CJ_INTERNAL_TEMPERATURE, ap->internal_temperature);
             if (!isnan(ap->humidity)) cJSON_AddRounded(item, CJ_HUMIDITY, ap->humidity);

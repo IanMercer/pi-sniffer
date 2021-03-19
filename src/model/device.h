@@ -88,9 +88,13 @@ enum name_type {
 };
 
 enum ap_class {
-  ap_class_unknown = 1,
-  ap_class_sensor_node = 1,
-  ap_class_gateway_node = 2
+  ap_class_unknown = 0,
+  // An ESP32 class device
+  ap_class_dumb_node = 1,
+  // A node that can be upgraded remotely
+  ap_class_smart_node = 2,
+  // A node that communicates with the website (DBUSSENDER is set in config)
+  ap_class_gateway_node = 3
 };
 
 /*
