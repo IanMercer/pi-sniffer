@@ -38,7 +38,7 @@ char* access_point_to_json (struct AccessPoint* a)
     if (!isnan(a->humidity)) cJSON_AddRounded(j, CJ_HUMIDITY, a->humidity);
     if (!isnan(a->brightness)) cJSON_AddRounded(j, CJ_BRIGHTNESS, a->brightness);
     if (a->carbon_dioxide != 0) cJSON_AddRounded(j, CJ_CARBON_DIOXIDE, a->carbon_dioxide);
-    if (!isnan(a->wifi_signal)) cJSON_AddRounded(j, CJ_WIFI, a->wifi_signal);
+    if (a->wifi_signal != 0) cJSON_AddRounded(j, CJ_WIFI, a->wifi_signal);
 
     string = cJSON_PrintUnformatted(j);
     cJSON_Delete(j);
@@ -235,7 +235,7 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
     cJSON *j_wifi = cJSON_GetObjectItemCaseSensitive(djson, CJ_WIFI);
     if (ap != NULL && cJSON_IsNumber(j_wifi))
     {
-        ap->wifi_signal = (float)j_wifi->valuedouble;
+        ap->wifi_signal = j_wifi->valueint;
     }
 
     // ----------------

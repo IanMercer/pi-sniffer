@@ -177,7 +177,7 @@ struct AccessPoint
    int carbon_dioxide;           // observed CO2
    float brightness;             // observed brightness
    float voc;                    // observed voc
-   float wifi_signal;            // ESP32 WiFi observed signal
+   int wifi_signal;              // ESP32 WiFi observed signal
 };
 
 

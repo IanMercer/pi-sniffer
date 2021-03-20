@@ -67,7 +67,7 @@ void print_access_points(struct AccessPoint* access_points_list)
             g_snprintf(name, sizeof(name), "%s (%s)", ap->client_id, ap->short_client_id);
 
         int delta_time = difftime(now, ap->last_seen);
-        g_info("%25.25s %2.2s %12.12s (%3i, %.1f) %4.1f°C %4.1f°C %4.1f%% %4.1f KPa %4i %4.1f %5.1f %is",
+        g_info("%25.25s %2.2s %12.12s (%3i, %.1f) %4.1f°C %4.1f°C %4.1f%% %4.1f KPa %4i %4.1f %i %is",
         name,
         ap->ap_class == ap_class_gateway_node ? "GW" : 
             ap->ap_class == ap_class_smart_node ? "SM" : 

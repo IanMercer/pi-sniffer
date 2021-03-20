@@ -1035,7 +1035,7 @@ bool print_counts_by_closest(struct OverallState* state)
             if (!isnan(ap->voc)) cJSON_AddRounded(item, CJ_VOC, ap->voc);
             if (ap->carbon_dioxide > 0) cJSON_AddRounded(item, CJ_CARBON_DIOXIDE, ap->carbon_dioxide);
             if (!isnan(ap->pressure)) cJSON_AddRounded(item, CJ_PRESSURE, ap->pressure);
-            if (!isnan(ap->wifi_signal)) cJSON_AddRounded(item, CJ_WIFI, ap->wifi_signal);
+            if (ap->wifi_signal != 0) cJSON_AddNumberToObject(item, CJ_WIFI, ap->wifi_signal);
 
             cJSON_AddItemToArray(jaccess, item);
     }
