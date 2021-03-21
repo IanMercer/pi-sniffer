@@ -1022,20 +1022,25 @@ bool print_counts_by_closest(struct OverallState* state)
     for (struct AccessPoint* ap = state->access_points; ap != NULL; ap=ap->next)
     {
         cJSON* item = cJSON_CreateObject();
-        cJSON_AddStringToObject(item, "id", ap->short_client_id);
+        cJSON_AddStringToObject(item, "id", ap->client_id);
+        cJSON_AddStringToObject(item, "sid", ap->short_client_id);
         cJSON_AddNumberToObject(item, "t", ap->last_seen);
         if (ap->ap_class != ap_class_unknown)
         {
             cJSON_AddNumberToObject(item, CJ_AP_CLASS, ap->ap_class);
         }
-        if (!isnan(ap->temperature) && ap->temperature!=0) cJSON_AddRounded(item, CJ_TEMPERATURE, ap->temperature);
-        if (!isnan(ap->internal_temperature) && ap->internal_temperature!=0) cJSON_AddRounded(item, CJ_INTERNAL_TEMPERATURE, ap->internal_temperature);
-        if (!isnan(ap->humidity) && ap->humidity!=0) cJSON_AddRounded(item, CJ_HUMIDITY, ap->humidity);
-        if (!isnan(ap->brightness) && ap->brightness!=0) cJSON_AddRounded(item, CJ_BRIGHTNESS, ap->brightness);
-        if (!isnan(ap->voc) && ap->voc!=0) cJSON_AddRounded(item, CJ_VOC, ap->voc);
-        if (ap->carbon_dioxide!=0) cJSON_AddRounded(item, CJ_CARBON_DIOXIDE, ap->carbon_dioxide);
-        if (!isnan(ap->pressure) && ap->pressure!=0) cJSON_AddRounded(item, CJ_PRESSURE, ap->pressure);
-        if (ap->wifi_signal != 0) cJSON_AddNumberToObject(item, CJ_WIFI, ap->wifi_signal);
+
+        for (struct Sensor* sensor = ap->sensors; sensor != NULL; sensor = sensor->next)
+        {
+            if (isnan(sensor->value_float))
+            {
+                cJSON_AddNumberToObject(item, sensor->id, sensor->value_int);
+            }
+            else
+            {
+                cJSON_AddRounded(item, sensor->id, sensor->value_float);
+            }
+        }
 
         cJSON_AddItemToArray(jaccess, item);
     }

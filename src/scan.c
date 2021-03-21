@@ -1476,7 +1476,7 @@ int print_access_points_tick(void *parameters)
     }
 
     // Update internal temperature and other useful statistics (TODO)
-    state.local->internal_temperature = get_internal_temp();
+    add_or_update_internal_temp(state.local, get_internal_temp());
 
     // And send access point to everyone over UDP - so that even if no activity everyone gets a list of active access points
     send_access_point_udp(&state);

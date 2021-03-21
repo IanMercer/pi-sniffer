@@ -33,12 +33,19 @@ char* access_point_to_json (struct AccessPoint* a)
     {
         cJSON_AddNumberToObject(j, CJ_AP_CLASS, a->ap_class);
     }
-    if (!isnan(a->temperature)) cJSON_AddRounded(j, CJ_TEMPERATURE, a->temperature);
-    if (!isnan(a->internal_temperature)) cJSON_AddRounded(j, CJ_INTERNAL_TEMPERATURE, a->internal_temperature);
-    if (!isnan(a->humidity)) cJSON_AddRounded(j, CJ_HUMIDITY, a->humidity);
-    if (!isnan(a->brightness)) cJSON_AddRounded(j, CJ_BRIGHTNESS, a->brightness);
-    if (a->carbon_dioxide != 0) cJSON_AddRounded(j, CJ_CARBON_DIOXIDE, a->carbon_dioxide);
-    if (a->wifi_signal != 0) cJSON_AddRounded(j, CJ_WIFI, a->wifi_signal);
+
+    // TODO: Make this agnostic, just pass values json in to out
+    for (struct Sensor* sensor = a->sensors; sensor != NULL; sensor = sensor->next)
+    {
+        if (isnan(sensor->value_float))
+        {
+            cJSON_AddNumberToObject(j, sensor->id, sensor->value_int);
+        }
+        else
+        {
+            cJSON_AddRounded2(j, sensor->id, sensor->value_float);
+        }
+    }
 
     string = cJSON_PrintUnformatted(j);
     cJSON_Delete(j);
@@ -195,47 +202,49 @@ struct AccessPoint* device_from_json(const char* json, struct OverallState* stat
     cJSON *j_internal_temperature = cJSON_GetObjectItemCaseSensitive(djson, CJ_INTERNAL_TEMPERATURE);
     if (ap != NULL && cJSON_IsNumber(j_internal_temperature))
     {
-        ap->internal_temperature = (float)j_internal_temperature->valuedouble;
-        if (ap->internal_temperature > 99) ap->internal_temperature = 99.0; // 99c
-        if (ap->internal_temperature < 0) ap->internal_temperature = 0.0;
+        float value = (float)j_internal_temperature->valuedouble;
+        if (value > 99) value = 99;
+        if (value < 0) value = 0;
+        add_or_update_internal_temp(ap, value);
     }
 
     cJSON *j_temperature = cJSON_GetObjectItemCaseSensitive(djson, CJ_TEMPERATURE);
     if (ap != NULL && cJSON_IsNumber(j_temperature))
     {
-        ap->temperature = (float)j_temperature->valuedouble;
-        if (ap->temperature > 99) ap->temperature = 99.0;
-        if (ap->temperature < -40) ap->temperature = -40.0;
+        float value = (float)j_temperature->valuedouble;
+        if (value > 99) value = 99.0;
+        if (value < -40) value = -40.0;
+        add_or_update_temperature(ap, value);
     }
 
     cJSON *j_humidity = cJSON_GetObjectItemCaseSensitive(djson, CJ_HUMIDITY);
     if (ap != NULL && cJSON_IsNumber(j_humidity))
     {
-        ap->humidity = (float)j_humidity->valuedouble;
+        add_or_update_humidity(ap, (float)j_humidity->valuedouble);
     }
 
     cJSON *j_pressure = cJSON_GetObjectItemCaseSensitive(djson, CJ_PRESSURE);
     if (ap != NULL && cJSON_IsNumber(j_pressure))
     {
-        ap->pressure = (float)j_pressure->valuedouble;
+        add_or_update_pressure(ap, (float)j_pressure->valuedouble);
     }
 
     cJSON *j_co2 = cJSON_GetObjectItemCaseSensitive(djson, CJ_CARBON_DIOXIDE);
     if (ap != NULL && cJSON_IsNumber(j_co2))
     {
-        ap->carbon_dioxide = j_co2->valueint;
+        add_or_update_co2(ap, j_co2->valueint);
     }
 
     cJSON *j_voc = cJSON_GetObjectItemCaseSensitive(djson, CJ_VOC);
     if (ap != NULL && cJSON_IsNumber(j_voc))
     {
-        ap->voc = (float)j_voc->valuedouble;
+        add_or_update_voc(ap, (float)j_voc->valuedouble);
     }
 
     cJSON *j_wifi = cJSON_GetObjectItemCaseSensitive(djson, CJ_WIFI);
     if (ap != NULL && cJSON_IsNumber(j_wifi))
     {
-        ap->wifi_signal = j_wifi->valueint;
+        add_or_update_wifi(ap, j_wifi->valueint);
     }
 
     // ----------------

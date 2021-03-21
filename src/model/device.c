@@ -134,3 +134,4 @@ void set_name(struct Device* d, const char*value, enum name_type name_type, char
         g_warning("value was null for set_name");
     }
 }
+

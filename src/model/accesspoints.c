@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <time.h>
+#include <math.h>
 
 /*
 * Used to create the local access point only
@@ -40,14 +41,7 @@ struct AccessPoint *create_local_access_point(struct OverallState* state, char *
     ap->rssi_factor = rssi_factor;
     ap->people_distance = people_distance;
     ap->sequence = 0;
-    ap->brightness = 0;
-    ap->carbon_dioxide = 0;
-    ap ->humidity = 0;
-    ap->internal_temperature = 0;
-    ap->pressure = 0;
-    ap->temperature = 0;
-    ap->voc = 0;
-    ap->wifi_signal = 0;
+    ap->sensors = NULL;
     time(&ap->last_seen);
 
     return ap;
@@ -57,7 +51,12 @@ void print_access_points(struct AccessPoint* access_points_list)
 {
     time_t now;
     time(&now);
-    g_info("ACCESS POINTS                 Platform Parameter     Int   Temp  Humd    Press  CO2  Voc  WiFi Last Seen");
+
+    char title[80];
+    g_snprintf(title, sizeof(title), "%6.6s %6.6s %5.5s %7.7s %4.4s %4.4s %4.4s",
+            CJ_INTERNAL_TEMPERATURE, CJ_TEMPERATURE, CJ_HUMIDITY, CJ_PRESSURE, CJ_CARBON_DIOXIDE, CJ_VOC, CJ_WIFI);
+ 
+    g_info("ACCESS POINTS                 Platform Parameter     %s Last Seen", title);
     for (struct AccessPoint* ap = access_points_list; ap != NULL; ap = ap->next)
     {
         char name[25];
@@ -67,7 +66,13 @@ void print_access_points(struct AccessPoint* access_points_list)
             g_snprintf(name, sizeof(name), "%s (%s)", ap->client_id, ap->short_client_id);
 
         int delta_time = difftime(now, ap->last_seen);
-        g_info("%25.25s %2.2s %12.12s (%3i, %.1f) %4.1f°C %4.1f°C %4.1f%% %4.1f KPa %4i %4.1f %i %is",
+
+        char buffer[80];
+        buffer[0]='\0';
+        get_sensor_string(ap, buffer, sizeof(buffer), 7, CJ_INTERNAL_TEMPERATURE, CJ_TEMPERATURE, CJ_HUMIDITY,
+            CJ_PRESSURE, CJ_CARBON_DIOXIDE, CJ_VOC, CJ_WIFI);
+
+        g_info("%25.25s %2.2s %12.12s (%3i, %.1f) %s %is",
         name,
         ap->ap_class == ap_class_gateway_node ? "GW" : 
             ap->ap_class == ap_class_smart_node ? "SM" : 
@@ -75,13 +80,7 @@ void print_access_points(struct AccessPoint* access_points_list)
             : "--",
         ap->platform,
         ap->rssi_one_meter, ap->rssi_factor,
-        ap->internal_temperature,
-        ap->temperature,
-        ap->humidity,
-        ap->pressure,
-        ap->carbon_dioxide,
-        ap->voc,
-        ap->wifi_signal,
+        buffer,
         delta_time);
     }
 }
@@ -221,15 +220,7 @@ struct AccessPoint* get_or_create_access_point(struct OverallState* state,
     ap->client_id = strdup(client_id);
     ap->alternate_name = "";
     ap->ap_class = ap_class_unknown;   // until told otherwise
-    ap->brightness = 0.0;
-    ap->carbon_dioxide = 0;
-    ap->humidity = 0.0;
-    ap->internal_temperature = 0.0;
-    ap->pressure = 0.0;
-    ap->voc = 0.0;
-    ap->wifi_signal = 0;
-    ap->temperature = 0;
-
+    ap->sensors = NULL;
 
     strncpy(ap->description, "Not known yet", META_LENGTH);
     strncpy(ap->platform, "Not known yet", META_LENGTH);
@@ -294,4 +285,150 @@ int get_index(struct AccessPoint* head, int id)
         count++;
     }
     return -1;
+}
+
+/**
+ * Get or add a sensor by name belonging to a node
+ */
+struct Sensor* get_or_add_sensor(struct AccessPoint* ap, const char* id)
+{
+    // char* client_id = ap->client_id; // Will be MAC address for ESP32s
+    for (struct Sensor* sensor = ap->sensors; sensor != NULL; sensor=sensor->next)
+    {
+        if (g_ascii_strcasecmp(sensor->id, id) == 0)
+        {
+            time(&sensor->latest);
+            return sensor;
+        }
+    }
+    struct Sensor* sensor = malloc(sizeof(struct Sensor));
+    sensor->next = NULL;
+    sensor->id = id;
+    sensor->value_float = NAN;
+    sensor->value_int = 0;
+    time(&sensor->latest);
+
+    // add to front of chain
+    sensor->next = ap->sensors;
+    ap->sensors = sensor;
+
+    return sensor;
+}
+
+/**
+ * add or update a sensor float
+ */
+void add_or_update_sensor_float (struct AccessPoint* ap, const char* id, float value)
+{
+    if (isnan(value)) return;
+    if (value == 0.0) return; // for now, disallow 0.0
+    struct Sensor* sensor = get_or_add_sensor(ap, id);
+    sensor->value_float = value;
+}
+
+/**
+ * add or update a sensor int
+ */
+void add_or_update_sensor_int (struct AccessPoint* ap, const char* id, int value)
+{
+    if (value == 0) return; // for now, disallow 0
+    struct Sensor* sensor = get_or_add_sensor(ap, id);
+    sensor->value_int = value;
+}
+
+void add_or_update_internal_temp (struct AccessPoint* ap, float value)
+{
+    add_or_update_sensor_float(ap, CJ_INTERNAL_TEMPERATURE, value);
+}
+
+void add_or_update_temperature (struct AccessPoint* ap, float value)
+{
+    add_or_update_sensor_float(ap, CJ_TEMPERATURE, value);
+}
+
+void add_or_update_humidity (struct AccessPoint* ap, float value)
+{
+    add_or_update_sensor_float(ap, CJ_HUMIDITY, value);
+}
+
+void add_or_update_pressure (struct AccessPoint* ap, float value)
+{
+    add_or_update_sensor_float(ap, CJ_PRESSURE, value);
+}
+
+void add_or_update_co2 (struct AccessPoint* ap, float value)
+{
+    add_or_update_sensor_int(ap, CJ_CARBON_DIOXIDE, value);
+}
+
+void add_or_update_brightness (struct AccessPoint* ap, float value)
+{
+    add_or_update_sensor_float(ap, CJ_BRIGHTNESS, value);
+}
+
+void add_or_update_voc (struct AccessPoint* ap, float value)
+{
+    add_or_update_sensor_int(ap, CJ_VOC, value);
+}
+
+void add_or_update_wifi (struct AccessPoint* ap, int value)
+{
+    add_or_update_sensor_int(ap, CJ_BRIGHTNESS, value);
+}
+
+void add_or_update_disk_space (struct AccessPoint* ap, int value)
+{
+    add_or_update_sensor_int(ap, CJ_FREE_MEGABYTES, value);
+}
+
+void get_sensor_string(struct AccessPoint* ap, char* buffer, int buffer_len, int num_args, ...)
+{
+   va_list valist;
+
+   /* initialize valist for num number of arguments */
+   va_start(valist, num_args);
+
+   /* access all the arguments assigned to valist */
+   for (int i = 0; i < num_args; i++) {
+        const char* id = va_arg(valist, const char*);
+        struct Sensor* found = NULL;
+        for (struct Sensor* sensor = ap->sensors; sensor != NULL; sensor=sensor->next)
+        {
+            if (g_ascii_strcasecmp(id, sensor->id) == 0)
+            {
+                found = sensor;
+                break;
+            }
+        }
+        if (found == NULL)
+        {
+            append_text(buffer, buffer_len, "%s", "     ");
+        } else
+        {
+            // TODO: Units of measure: %4.1f°C %4.1f°C %4.1f%% %4.1f KPa %4i %4.1f %i
+            if (isnan(found->value_float))
+                append_text(buffer, buffer_len, " %4i", found->value_int);
+            else
+                append_text(buffer, buffer_len, " %4.1f", found->value_float);
+        }
+
+        if ((strcmp(id, CJ_TEMPERATURE) == 0) || strcmp(id, CJ_INTERNAL_TEMPERATURE) == 0)
+        {
+            if (found == NULL) append_text(buffer, buffer_len, "%s", "  ");
+            else append_text(buffer, buffer_len, "%s", "°C");
+        }
+        else if ((strcmp(id, CJ_HUMIDITY) == 0))
+        {
+            if (found == NULL) append_text(buffer, buffer_len, "%s", " ");
+            else append_text(buffer, buffer_len, "%c", '%');
+        }
+        else if ((strcmp(id, CJ_PRESSURE) == 0))
+        {
+            if (found == NULL) append_text(buffer, buffer_len, "%s", "   ");
+            else append_text(buffer, buffer_len, "%s", "KPa");
+        }
+   }
+	
+   /* clean memory reserved for valist */
+   va_end(valist);
 }

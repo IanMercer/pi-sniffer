@@ -147,7 +147,8 @@ void set_name(struct Device* d, const char*value, enum name_type name_type, char
 
 
 /*
-   AccessPoint is another instance of the app sending information to us, aka Sensor
+   AccessPoint is another instance of the app sending information to us
+   a Node or Gateway
 */
 struct AccessPoint
 {
@@ -170,14 +171,20 @@ struct AccessPoint
    struct AccessPoint* next;     // Linked list
    int64_t sequence;             // Message sequence number so we can spot missing messages
 
-   float internal_temperature;   // internal temperature
-   float temperature;            // observed room temperature
-   float humidity;               // observed room humidity
-   float pressure;               // observed room pressure
-   int carbon_dioxide;           // observed CO2
-   float brightness;             // observed brightness
-   float voc;                    // observed voc
-   int wifi_signal;              // ESP32 WiFi observed signal
+   struct Sensor* sensors;       // chain of sensors attached to a Node or Gateway
+};
+
+
+/**
+ * Sensor attached to a node or gateway
+ */
+struct Sensor
+{
+   const char* id;
+   float value_float;
+   int value_int;    // when value_float is NaN
+   time_t latest;
+   struct Sensor* next;
 };
 
 
@@ -255,8 +262,9 @@ enum Verbosity
 #define CJ_PRESSURE "press"
 #define CJ_BRIGHTNESS "bright"
 #define CJ_CARBON_DIOXIDE "co2"
-#define CJ_VOC "voc"
+#define CJ_VOC "gas"
 #define CJ_WIFI "wifi"
+#define CJ_FREE_MEGABYTES "freemb"
 // Device class - Unknown (ESP32) = 0, Raspberry Pi = 1, Ubuntu Linux = 2, ...
 #define CJ_AP_CLASS "ap_class"
 
