@@ -263,7 +263,7 @@ void get_probability (struct recording* recording,
 
                 // very slight increase in probability that this is a match (since many are missing values)
                 // this should not be worse than the p() below of a missing measured distance
-                probability_pos = or(probability_pos, 0.01);
+                probability_pos = or(probability_pos, 0.05);
             }
             else if (recording_distance >= EFFECTIVE_INFINITE_TEST)
             {
