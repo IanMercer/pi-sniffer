@@ -14,7 +14,7 @@
 #include <time.h>
 
 /*
-* Used to create the local acces point only
+* Used to create the local access point only
 */
 struct AccessPoint *create_local_access_point(struct OverallState* state, char *client_id,
                                      const char *description, const char *platform,

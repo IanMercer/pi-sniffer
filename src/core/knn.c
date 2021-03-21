@@ -37,6 +37,9 @@ char* recording_to_json (float access_point_distances[N_ACCESS_POINTS], struct A
     cJSON *distances = cJSON_AddObjectToObject(j, "distances");
     for (struct AccessPoint* ap = access_points; ap != NULL; ap = ap->next)
     {
+        if (strcmp(ap->client_id, "ignore") == 0) continue;
+        if (strcmp(ap->short_client_id, "ignore") == 0) continue;
+
         double distance = access_point_distances[ap->id];
         if (distance > 0 && distance < EFFECTIVE_INFINITE)
         {
