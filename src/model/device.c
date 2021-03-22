@@ -113,7 +113,7 @@ void merge(struct Device* local, struct Device* remote, char* access_name, bool 
 */
 void set_name(struct Device* d, const char*value, enum name_type name_type, char* reason)
 {
-    if (value)
+    if (value && strlen(value))
     {
         if (d->name_type < name_type)
         {
@@ -129,9 +129,6 @@ void set_name(struct Device* d, const char*value, enum name_type name_type, char
             d->name_type = name_type;
             g_strlcpy(d->name, value, NAME_LENGTH);
         }
-    }
-    else {
-        g_warning("value was null for set_name");
     }
 }
 
