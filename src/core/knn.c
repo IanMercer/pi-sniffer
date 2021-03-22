@@ -307,7 +307,10 @@ void get_probability (struct recording* recording,
                 // Use a sigmoid function: the logistic curve
                 // = 2 - 2 / (1 + EXP(-ABS(C$42-$B43)*$C$31))
 
-                double p_close_match = 2 - 2 / (1 + exp(-error));
+                // Plot: y = 1 - 1 / (1 + e^((4-x)*1))  from 0 to 6
+                // Sigmoid curve: above 0.8 from 0 to 2, down to 0.2 by 5m
+
+                double p_close_match = 1 - 1 / (1 + exp((4-error)*1));
 
                 //float ave_dist = fmax(1.0, (measured_distance + recording_distance)/2);
                 float min_dist = fmax(1.0, fmin(measured_distance, recording_distance)/2);
