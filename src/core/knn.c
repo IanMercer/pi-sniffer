@@ -307,8 +307,8 @@ void get_probability (struct recording* recording,
                 // Use a sigmoid function: the logistic curve
                 // = 2 - 2 / (1 + EXP(-ABS(C$42-$B43)*$C$31))
 
-                // Plot: y = 1 - 1 / (1 + e^((4-x)*1))  from 0 to 6
-                // Sigmoid curve: above 0.8 from 0 to 2, down to 0.2 by 5m
+                // Plot: y = 1 - 2 / (1 + e^((5-x)*1))  from 0 to 20
+                // Sigmoid curve: above 0.8 from 0 to 2, hits zero at 5m and then goes negative
 
                 double p_close_match = 1 - 1 / (1 + exp((4-error)*1));
 
@@ -323,15 +323,10 @@ void get_probability (struct recording* recording,
                 // 10 m = 0.10
                 // 20 m = 0.05
 
-                // reduce far values as they tell us less - dilution of precision
-                // At 30m reduce probability by half
-                // S -shaped curve emphasizing distances under 5m
-                // y =1 + atan(-2)/pi - atan((x-10)/5)/pi from 0 to 30
-                // double p_reliable = 1.0 - atan(-2.0)/PI - atan(recording_distance/5.0 - 2.0) / PI;
-                // p_reliable = fmin(1.0, fmax(0.2, p_reliable));  // just to be safe
-
-                probability_pos = or(probability_pos, info * p_close_match);
-                //probability_neg = and(probability_neg, (1.0 - 0.2 * info * p_close_match));
+                if (p_close_match > 0)
+                    probability_pos = or(probability_pos, info * p_close_match);
+                else
+                    probability_neg = and(probability_neg, 1 - (info * -p_close_match));
             }
         }
 
