@@ -721,17 +721,17 @@ bool print_counts_by_closest(struct OverallState* state)
         {
             bool debug = ahead->category == CATEGORY_PHONE;
 
-            struct top_k best_three[3];
+            struct top_k best_few[7];
             int k_found = calculate_location(state, 
                 access_distances, access_times,
                 average_gap,
-                best_three, 3,
+                best_few, 7,
                 ahead->is_training_beacon, debug);
 
 
             // MOVING ROOM?
 
-            struct patch* best_patch = best_three[0].patch;
+            struct patch* best_patch = best_few[0].patch;
             bool moving = false;
 
             if (best_patch != NULL && 
@@ -785,15 +785,15 @@ bool print_counts_by_closest(struct OverallState* state)
                 for (int bi = 0; bi < k_found; bi++)
                 {
                     g_debug("%15s +%.3f - %.3f = %.3f, p=%.3f x %.3f -> %.3f",
-                        best_three[bi].patch->name, 
+                        best_few[bi].patch->name, 
 
-                        best_three[bi].probability_is,
-                        best_three[bi].probability_isnt,
-                        best_three[bi].probability_combined,
+                        best_few[bi].probability_is,
+                        best_few[bi].probability_isnt,
+                        best_few[bi].probability_combined,
                          
-                        best_three[bi].normalized_probability, 
+                        best_few[bi].normalized_probability, 
                         time_score,
-                        best_three[bi].normalized_probability * time_score);
+                        best_few[bi].normalized_probability * time_score);
                 }
 
                 // JSON - in a suitable format for copying into a recording
@@ -826,8 +826,8 @@ bool print_counts_by_closest(struct OverallState* state)
             {
                 for (int bi = 0; bi < k_found; bi++)
                 {
-                    struct patch* patch = best_three[bi].patch;
-                    double probability = best_three[bi].normalized_probability * time_score;
+                    struct patch* patch = best_few[bi].patch;
+                    double probability = best_few[bi].normalized_probability * time_score;
                     if (probability > 0)
                     {
                         switch (ahead->category)
