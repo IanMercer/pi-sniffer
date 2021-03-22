@@ -126,6 +126,11 @@ void apply_mac_address_heuristics (struct Device* device)
         set_name(device, "Vencer", nt_manufacturer, "mac");  // Co. Ltd. - BT Headsets but also plant monitors
         soft_set_8(&device->category, CATEGORY_HEADPHONES);
     }
+    else if (string_starts_with(device->mac, "E8:68:E7"))
+    {
+        set_name(device, "Espressif", nt_manufacturer, "mac");
+        soft_set_8(&device->category, CATEGORY_COMPUTER);
+    }
     else if (string_starts_with(device->mac, "4C:87:5D"))
     {
         set_name(device, "Bose", nt_manufacturer, "mac");
