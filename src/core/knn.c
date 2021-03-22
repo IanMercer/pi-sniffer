@@ -290,7 +290,15 @@ void get_probability (struct recording* recording,
             {
                 // We expected an observation but did not find one, the larger the distance the
                 // more likely we didn't see it just because the signal is weak
-                float p_might_have_missed = 2.0 / (1 + exp(-recording_distance/7)) - 1.0;
+
+                // Use a sigmoid function: the logistic curve
+
+                // Plot: y = 1 / (1 + e^((5-x)*1)) from 0 to 20
+                // Sigmoid curve: below 1m, no chance we missed it
+                // at 5m, 0.5 chance we missed it
+                // by 10m, 100% chance we missed it
+
+                float p_might_have_missed = 1.0 / (1 + exp(5-recording_distance)/2);
 
                 if (debug) g_debug("%s was expected not found, expected at %.2f x 0.4", ap->short_client_id, recording_distance);
                 // could not see an AP at all, but should have been able to, could just be a missing observation
@@ -305,7 +313,6 @@ void get_probability (struct recording* recording,
                 double error = fabs(measured_distance - recording_distance);
 
                 // Use a sigmoid function: the logistic curve
-                // = 2 - 2 / (1 + EXP(-ABS(C$42-$B43)*$C$31))
 
                 // Plot: y = 1 - 2 / (1 + e^((5-x)*1))  from 0 to 20
                 // Sigmoid curve: above 0.8 from 0 to 2, hits zero at 5m and then goes negative
