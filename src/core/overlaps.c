@@ -105,6 +105,7 @@ void pack_closest_columns(struct OverallState* state)
         {
             
 // TODO: Crash here - concurrency issue, need a lock around CLOSEST
+// TODO: Happened again!
 
             g_assert(a->mac64 != b->mac64);
             if (b->supersededby != 0) continue;  // already claimed

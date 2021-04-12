@@ -197,6 +197,100 @@ double and(double a, double b)
 
 // KNN CLASSIFIER
 
+// Ratio get-probability
+
+
+void ratio_get_probability (struct recording* recording,
+    float accessdistances[N_ACCESS_POINTS],
+    float accesstimes[N_ACCESS_POINTS],
+    double average_gap,
+    float* out_probability_is,  // output
+    float* out_probability_isnt, // output
+    struct AccessPoint* access_points, bool debug)
+{
+    double probability_pos = 0.0;  // OR for each positive observation
+    double probability_neg = 1.0;  // AND for each negative observation
+
+    if (average_gap < 25) average_gap = 25;   // unlikely value
+    if (average_gap > 360) average_gap = 360; // also unlikely
+
+    if (access_points->next == NULL) 
+    {
+        float sum_delta_squared = 0.0;
+        // single access point - one over distance squared for probability
+        // and no need to take time into account
+        struct AccessPoint* ap = access_points;
+        float recording_distance = recording->access_point_distances[ap->id];
+        float measured_distance = accessdistances[ap->id];
+        float delta = (recording_distance - measured_distance);
+        sum_delta_squared += delta*delta;
+        // 0.5m = 1
+        // 1m = 1
+        // 2m = 0.4
+        // 10m = 0.01
+        probability_pos = fmin(1.0, 2.0 / (sum_delta_squared + 1.0));
+        probability_neg = 1.0;
+    } 
+    else 
+    {
+        // Rebase all times to since the latest observation
+        // We want to know where the device WAS even if it has since left
+        double min_delta = 30.0;
+        for (struct AccessPoint* ap = access_points; ap != NULL; ap=ap->next)
+        {
+            if (accesstimes[ap->id] < min_delta) min_delta = accesstimes[ap->id];
+        }
+
+        int matches = 0;
+        for (struct AccessPoint* ap1 = access_points; ap1 != NULL; ap1=ap1->next)
+        {
+            if (strcmp(ap1->client_id, "ignore") == 0) continue;
+            if (strcmp(ap1->short_client_id, "ignore") == 0) continue;
+
+            float r1 = recording->access_point_distances[ap1->id];
+            float m1 = accessdistances[ap1->id];
+
+            for (struct AccessPoint* ap2 = access_points; ap2 != NULL; ap2=ap2->next)
+            {
+                if (strcmp(ap2->client_id, "ignore") == 0) continue;
+                if (strcmp(ap2->short_client_id, "ignore") == 0) continue;
+
+                float r2 = recording->access_point_distances[ap2->id];
+                float m2 = accessdistances[ap2->id];
+                //float deltatime = accesstimes[ap->id] - min_delta;
+
+                // Have twp APs and two recording distances and measured distances
+                // Compare the ratios
+
+                // FOUR OPTIONS
+                // r1, r2, m1, m2 - present or not
+
+                float ratio_r = r2 / r2;
+                float ratio_m = m1 / m2;
+
+                // plot abs(1 - 2/(1 + e^((1-x)*5))) from 0 to 2
+                double p_close_match = fabs(1 - 2 / (1 + exp((ratio_m / ratio_r)*2)));
+
+                probability_neg = and(probability_neg, 1 - p_close_match);               
+
+            }
+        }
+
+        // We need to see actual matches to be confidence, the more matches the closer to 1.0
+        //double confidence = atan(matches)/3.14159*2;
+        // don't need confidence for negative inference
+
+        *out_probability_is = 1.0; //probability_pos;
+        *out_probability_isnt = 1.0 - probability_neg;
+        //return probability * confidence;
+        //return (1.0 - probability_isnt) * probability_is;
+    }
+}
+
+
+
+
+
 void get_probability (struct recording* recording,
     float accessdistances[N_ACCESS_POINTS],
     float accesstimes[N_ACCESS_POINTS],
@@ -298,10 +392,12 @@ void get_probability (struct recording* recording,
                 // at 5m, 0.5 chance we missed it
                 // by 10m, 100% chance we missed it
 
-                float p_might_have_missed = 1.0 / (1 + exp(5-recording_distance)/2);
+                float p_might_have_missed = 1.0 / (1 + exp(5-recording_distance)/3);
 
                 if (debug) g_debug("%s was expected not found, expected at %.2f x 0.4", ap->short_client_id, recording_distance);
                 // could not see an AP at all, but should have been able to, could just be a missing observation
+
+                // 0.9966 for 10m expected
 
                 probability_neg = and(probability_neg, p_might_have_missed);
                 //probability_isnt = or(probability_isnt, p_should_have_seen);

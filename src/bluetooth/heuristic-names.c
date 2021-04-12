@@ -340,6 +340,12 @@ void apply_name_heuristics (struct Device* device, const char* name)
     else if (string_starts_with(name, "TR8500"))
         device->category = CATEGORY_PRINTER;
 
+    // Peleton bike tablet screen
+    else if (string_starts_with(name, "PLTN-TC1VS"))
+    {
+        device->category = CATEGORY_FITNESS;
+    }
+
     // Accessories
     else if (string_starts_with(name, "Apple Pencil"))
     {
