@@ -102,6 +102,9 @@ Environment="UDP_SCALE_FACTOR=0.5"
 # or by removing this line entirely
 Environment="G_MESSAGES_DEBUG=all"
 
+# In order to use Influx DB or webhook the DBUS needs to be enabled.
+Environment="DBUS_SENDER=1"
+
 # You can connect directly to Influx DB
 Environment="INFLUX_SERVER=<influx_server_domain_and_path>"
 Environment="INFLUX_PORT=80"
@@ -181,15 +184,45 @@ Environment="WEBHOOK_PASSWORD="
 
 # InfluxDB and Grafana
 
-The software can also send detailed statistics to InfluxDB and Grafana.
+The software can also send detailed statistics to InfluxDB and Grafana. InfluxDB is a time series database. The database makes it easy to document and analyze time series events. Grafana is a tool for dashboard creation using drag and drop data visualization techniques. Grafana has a direct plugin for InfluxDB requireing little configuration to visualize the device data. 
+
+## Install InfluxDB and Grafana
+
+To install a local influx DB instance on the raspberry pi running raspbian:
 
 ````
+wget -qO- https://repos.influxdata.com/influxdb.key | sudo apt-key add -
+echo "deb https://repos.influxdata.com/debian $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/influxdb.list
+sudo apt update
+sudo apt install influxdb
+````
+With influxDB installed you can now enable the service to start at boot and start the service:
+````
+sudo systemctl unmask influxdb
+sudo systemctl enable influxdb
+sudo systemctl start influxdb
+````
+Now with influxDB running we will have to create a database where we can log our data to. This can be done by going into the influxDB console by running `influx` in the shell. Then executing the create database query `CREATE DATABASE <database>` and exitign with `exit` afterwards.
+
+Your influxDB is now setup and ready to use. Check out the influxDB documentation for further setup such as authentication. 
+
+In order to install Grafana check out the following comprehensive [guide](https://grafana.com/tutorials/install-grafana-on-raspberry-pi/). 
+
+## Setting up Pi-Sniffer for influxDB and Grafana
+
+First in order to use any features connected over the DBUS we have to set the environment variable `DBUS_SENDER=1`. After that we can add all the influxDB variables. The default install port ist `8086` with the servername pointing to `localhost` and your newly created database. If you have not set up any authentication you can leave the username and password empty.
+````
+Environment="DBUS_SENDER=1"
 Environment="INFLUX_SERVER=<domain>"
 Environment="INFLUX_PORT=80"
 Environment="INFLUX_DATABASE=<database>"
 Environment="INFLUX_USERNAME=<username>"
 Environment="INFLUX_PASSWORD=<password>"
 ````
+
+Pi-sniffer does not immidiatly send statistics to influxDB. Therefore you have to wait a couple of minutes for the data to show up in the DB. 
+
+You can also add a visualization to your Grafana dashboard by using the query `SELECT * from <HOST_NAME>` which will automatically create a time series diagram for each device type.
 
 # UDP Send
 
