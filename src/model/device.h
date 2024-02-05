@@ -113,6 +113,7 @@ struct Device
    int8_t address_type; // 0, 1, 2
    int8_t category;    // Reasoned guess at what kind of device it is
    bool paired;
+   bool bonded;
    bool connected;
    bool trusted;
    uint32_t deviceclass; // https://www.bluetooth.com/specifications/assigned-numbers/Baseband/
@@ -275,6 +276,7 @@ enum Verbosity
 #define CJ_ADDRESS_TYPE "at"
 #define CJ_CATEGORY "cat"
 #define CJ_PAIRED "paired"
+#define CJ_BONDED "bonded"
 #define CJ_CONNECTED "connected"
 #define CJ_TRUSTED "trusted"
 #define CJ_DEVICE_CLASS "dc"

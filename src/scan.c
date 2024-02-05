@@ -209,6 +209,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         existing->connected = FALSE;
         existing->trusted = FALSE;
         existing->paired = FALSE;
+        existing->bonded = FALSE;
         existing->deviceclass = 0;
         existing->manufacturer_data_hash = 0;
         existing->service_data_hash = 0;
@@ -419,6 +420,21 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 }
 #endif
                 existing->paired = paired;
+            }
+        }
+
+        else if (strcmp(property_name, "Bonded") == 0)
+        {
+            bool bonded = g_variant_get_boolean(prop_val);
+            if (existing->bonded != bonded)
+            {
+                g_debug("  %s Bonded has changed        ", address);
+#ifdef MQTT
+                if (state.verbosity >= Details) {
+                    if (state.network_up) send_to_mqtt_single_value(address, "bonded", bonded ? 1 : 0);
+                }
+#endif
+                existing->bonded = bonded;
             }
         }
         else if (strcmp(property_name, "Connected") == 0)
@@ -861,6 +877,7 @@ static void bluez_device_appeared(GDBusConnection *sig,
                              'AddressType': <'random'>,
                              'Alias': <'42-1E-F8-62-6D-F9'>,
                              'Paired': <false>,
+                             'Bonded': <false>,
                              'Trusted': <false>,
                              'Blocked': <false>,
                              'LegacyPairing': <false>,
