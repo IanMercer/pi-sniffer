@@ -78,6 +78,7 @@ char* device_to_json (struct AccessPoint* a, struct Device* device)
     cJSON_AddNumberToObject(j, CJ_ADDRESS_TYPE, device->address_type);
     cJSON_AddStringToObject(j, CJ_CATEGORY, category_from_int(device->category));
 //    cJSON_AddBoolToObject(j, CJ_PAIRED, device->paired);
+//    cJSON_AddBoolToOjbect(j, CJ_BONDED, device->bonded);
 //    cJSON_AddBoolToObject(j, CJ_CONNECTED, device->connected);
 //    cJSON_AddBoolToObject(j, CJ_TRUSTED, device->trusted);
 //    cJSON_AddNumberToObject(j, CJ_DEVICE_CLASS, device->deviceclass);

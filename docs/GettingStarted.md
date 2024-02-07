@@ -46,15 +46,18 @@ nano /etc/signswift/config.json
 nano pi-sniffer.service
 ````
 
+* recommend setting environment variable G_MESSAGES_DEBUG=all for initial run to see verbose logging including discovered devices
+
+`export G_MESSAGES_DEBUG=all`
 
 * build and deploy the code:
 
-`./build/sh`
+`./build.sh`
 
 Watch the logs for a while and you should see it start to discover devices. Every minute it will dump a table to the logs showing all the devices present.
 To report any issues, please include as much of the log as possible, e.g. to grab the last hour of logs and place it in a file:
 
-`sudo journaltctl - u pi-sniffer.service -S -1h > log.txt`
+`sudo journalctl -u pi-sniffer.service -S -1h > log.txt`
 
 To transfer files back and forth from PC to Raspberry Pi try using `WinSCP` which is a free download for Windows.
 
