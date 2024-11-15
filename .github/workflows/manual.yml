@@ -27,6 +27,29 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-    # Runs a single command using the runners shell
-    - name: Send greeting
-      run: echo "Hello ${{ inputs.name }}"
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '7.0.x'  # Specify the version of .NET your service uses
+
+      - name: Build Windows Service
+        run: dotnet publish -c Release -o ./publish
+
+      - name: Stop Existing Service
+        run: |
+          sc.exe stop YourServiceName || echo "Service not running"
+        shell: cmd
+
+      - name: Deploy New Version
+        run: |
+          xcopy /E /Y /I publish\* "C:\Path\To\Your\Service\Directory"  # Update this to the directory of your service
+        shell: cmd
+
+      - name: Start or Install Service
+        run: |
+          sc.exe query YourServiceName || sc.exe create YourServiceName binPath= "C:\Path\To\Your\Service\Directory\YourServiceExecutable.exe" DisplayName= "Your Service Display Name" start= auto
+          sc.exe start YourServiceName
+        shell: cmd
