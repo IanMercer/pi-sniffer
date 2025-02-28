@@ -580,7 +580,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
         {
             char *icon = g_variant_dup_string(prop_val, NULL);
 
-            if (&existing->category == CATEGORY_UNKNOWN)
+            if (existing->category == CATEGORY_UNKNOWN)
             {
                 // Should track icon and test against that instead
                 g_debug("  %s Icon: '%s'\n", address, icon);
