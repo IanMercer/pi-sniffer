@@ -143,51 +143,67 @@ void handle_manufacturer(struct Device *device, uint16_t manufacturer, unsigned 
 			device->category = CATEGORY_TV;  // maybe, they did make phones for a while
 			break;
 
-    case  0x03ee:
-		set_name(device, "CUBE Technologies", nt_manufacturer, "manuf");
-        device->category = CATEGORY_FIXED;
-		break;
-    case  0x0085:
-		set_name(device, "BlueRadios ODM", nt_manufacturer, "manuf");
-		break;
-    case  0x0434:
-		set_name(device, "Hatch Bay Inc", nt_manufacturer, "manuf");
-        device->category = CATEGORY_FIXED;
-		break;
-    case  0x0157:
-		set_name(device, "Anhui Huami", nt_manufacturer, "manuf");
-        device->category = CATEGORY_FIXED;
-		break;
-    case  0x015e:
-        // Locks
-		set_name(device, "Unikey Technologies", nt_manufacturer, "manuf");
-        device->category = CATEGORY_SECURITY;
-		break;
-    case  0x01a5:
-		set_name(device, "Icon Health and Fitness", nt_manufacturer, "manuf");
-        device->category = CATEGORY_FITNESS;
-		break;
-    case  0x02ab:
-		set_name(device, "BBPOS Limited", nt_manufacturer, "manuf");
-        device->category = CATEGORY_FIXED;
-		break;
-    case  0x0401:
-		set_name(device, "Relations Inc", nt_manufacturer, "manuf");
-        device->category = CATEGORY_FIXED;
-		break;
-    case  0x00d2:
-		set_name(device, "AbTemp", nt_manufacturer, "manuf");
-        device->category = CATEGORY_BEACON;
-		break;
-	case 0x460:
-        device->category = CATEGORY_TOOTHBRUSH;  // Toothbrush
-		device->known_interval = 240;
-		set_name(device, "Kolibree", nt_manufacturer, "manuf");
-    case  0xb1bc:
-        // This code appears to be some special mesh message
-		set_name(device, "Mesh message", nt_manufacturer, "manuf");
-		break;
-    default:
+		case 0x0ba9:
+			set_name(device, "Espressif Inc", nt_manufacturer, "manuf");
+			device->category = CATEGORY_FIXED;
+			break;
+
+		case  0x03ee:
+			set_name(device, "CUBE Technologies", nt_manufacturer, "manuf");
+			device->category = CATEGORY_FIXED;
+			break;
+
+		case  0x0085:
+			set_name(device, "BlueRadios ODM", nt_manufacturer, "manuf");
+			break;
+
+		case  0x0434:
+			set_name(device, "Hatch Bay Inc", nt_manufacturer, "manuf");
+			device->category = CATEGORY_FIXED;
+			break;
+			
+		case  0x0157:
+			set_name(device, "Anhui Huami", nt_manufacturer, "manuf");
+			device->category = CATEGORY_FIXED;
+			break;
+
+		case  0x015e:
+			// Locks
+			set_name(device, "Unikey Technologies", nt_manufacturer, "manuf");
+			device->category = CATEGORY_SECURITY;
+			break;
+
+		case  0x01a5:
+			set_name(device, "Icon Health and Fitness", nt_manufacturer, "manuf");
+			device->category = CATEGORY_FITNESS;
+			break;
+
+		case  0x02ab:
+			set_name(device, "BBPOS Limited", nt_manufacturer, "manuf");
+			device->category = CATEGORY_FIXED;
+			break;
+
+		case  0x0401:
+			set_name(device, "Relations Inc", nt_manufacturer, "manuf");
+			device->category = CATEGORY_FIXED;
+			break;
+
+		case  0x00d2:
+			set_name(device, "AbTemp", nt_manufacturer, "manuf");
+			device->category = CATEGORY_BEACON;
+			break;
+
+		case 0x460:
+			device->category = CATEGORY_TOOTHBRUSH;  // Toothbrush
+			device->known_interval = 240;
+			set_name(device, "Kolibree", nt_manufacturer, "manuf");
+		
+		case  0xb1bc:
+			// This code appears to be some special mesh message
+			set_name(device, "Mesh message", nt_manufacturer, "manuf");
+			break;
+
+		default:
 		{
             // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
 			const char* manuf = company_id_to_string(manufacturer, &device->category);
