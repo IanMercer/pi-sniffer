@@ -161,7 +161,7 @@ void handle_manufacturer(struct Device *device, uint16_t manufacturer, unsigned 
 			set_name(device, "Hatch Bay Inc", nt_manufacturer, "manuf");
 			device->category = CATEGORY_FIXED;
 			break;
-			
+
 		case  0x0157:
 			set_name(device, "Anhui Huami", nt_manufacturer, "manuf");
 			device->category = CATEGORY_FIXED;
@@ -197,6 +197,7 @@ void handle_manufacturer(struct Device *device, uint16_t manufacturer, unsigned 
 			device->category = CATEGORY_TOOTHBRUSH;  // Toothbrush
 			device->known_interval = 240;
 			set_name(device, "Kolibree", nt_manufacturer, "manuf");
+			break;
 		
 		case  0xb1bc:
 			// This code appears to be some special mesh message
