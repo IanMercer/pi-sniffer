@@ -2087,10 +2087,16 @@ void int_handler(int dummy)
     g_dbus_connection_signal_unsubscribe(conn, settings_prop_changed);
     g_dbus_connection_signal_unsubscribe(conn, iface_added);
     g_dbus_connection_signal_unsubscribe(conn, iface_removed);
-    g_dbus_connection_close_sync(conn, NULL, NULL);
 
     g_signal_handlers_disconnect_by_data(conn, &state);
-    // Handled automatically ... g_object_unref(conn);
+
+    g_dbus_connection_close_sync(conn, NULL, NULL);
+    g_object_unref(conn);
+    conn = NULL;
+
+    // Ensure all GLib worker threads exit cleanly
+    g_thread_pool_free(NULL, FALSE, TRUE);
+    g_thread_unref(g_thread_self());
 
 #ifdef MQTT
     exit_mqtt();
