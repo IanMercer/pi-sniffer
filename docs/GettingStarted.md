@@ -19,6 +19,16 @@ following the instructions [here](RaspberrySetup.md).
 
 `sudo apt-get install libjson-glib-dev`
 
+
+* make sure bluetooth is enabled and BLUEZ is installed
+  
+`sudo apt install tlp`
+
+`bluetooth on`
+
+`sudo apt-get install bluez`
+
+
 * optionally install and build MQTT
 
 See [MQTT.md](MQTT.md). You do not need to do this if you are not using MQTT.
