@@ -204,6 +204,11 @@ void handle_manufacturer(struct Device *device, uint16_t manufacturer, unsigned 
 			set_name(device, "Mesh message", nt_manufacturer, "manuf");
 			break;
 
+		case  0x2502:
+			// This code appears to be from a Nespresso Vertuo machine
+			set_name(device, "Nespresso", nt_manufacturer, "manuf");
+			break;
+	
 		default:
 		{
             // https://www.bluetooth.com/specifications/assigned-numbers/16-bit-uuids-for-members/
