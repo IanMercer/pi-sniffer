@@ -445,9 +445,11 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 if (connected_device)
                     g_debug("  %s Connected      ", address);
                 else
+                {
                     g_debug("  %s Disconnected   ", address);
                     // And do not count this as an updated time
                     update_latest = FALSE;
+                }
 
 #ifdef MQTT
                 if (state.verbosity >= Details) {
