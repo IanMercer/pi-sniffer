@@ -18,6 +18,7 @@ RestartSec=20
 MemoryAccounting=true
 MemoryHigh=8096K
 MemoryMax=12192K
+# Environment=G_MESSAGES_DEBUG=all
 
 [Install]
 WantedBy=multi-user.target
