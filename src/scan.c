@@ -293,6 +293,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 apply_name_heuristics (existing, name);
             }
 
+            g_free(name);  // Free allocated memory
         }
         else if (strcmp(property_name, "Alias") == 0)
         {
@@ -311,6 +312,7 @@ static void report_device_internal(GVariant *properties, char *known_address, bo
                 {
                     // g_print("  Alias unchanged '%s'=='%s'\n", alias, existing->alias);
                 }
+                g_free(alias);  // Free allocated memory
             }
         }
         else if (strcmp(property_name, "AddressType") == 0)

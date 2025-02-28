@@ -717,6 +717,7 @@ bool read_all_lines (const char * dirname, const char* filename, void (*call_bac
 	if (is == NULL) {
 		g_propagate_error (error, error_local);
         g_warning("Could not open file %s: %s", fullpath, error_local->message);
+        g_clear_error(&error_local);  // Free the error before returning
 		return FALSE;
 	}
 
@@ -751,6 +752,12 @@ bool read_all_lines (const char * dirname, const char* filename, void (*call_bac
 
     // close stream
     g_input_stream_close(G_INPUT_STREAM(is), NULL, &error_local);
+
+    if (error_local) {
+        g_warning("Error closing stream: %s", error_local->message);
+        g_clear_error(&error_local);
+    }
+
     g_object_unref(is);
     g_object_unref(file);
 	return TRUE;
