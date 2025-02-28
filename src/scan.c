@@ -2088,7 +2088,9 @@ void int_handler(int dummy)
     g_dbus_connection_signal_unsubscribe(conn, iface_added);
     g_dbus_connection_signal_unsubscribe(conn, iface_removed);
     g_dbus_connection_close_sync(conn, NULL, NULL);
-    g_object_unref(conn);
+
+    g_signal_handlers_disconnect_by_data(conn, &state);
+    // Handled automatically ... g_object_unref(conn);
 
 #ifdef MQTT
     exit_mqtt();
