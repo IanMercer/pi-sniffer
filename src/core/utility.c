@@ -719,7 +719,14 @@ bool read_all_lines (const char * dirname, const char* filename, void (*call_bac
 	GFileInputStream* is = g_file_read (file, NULL, &error_local);
 	if (is == NULL) {
 		g_propagate_error (error, error_local);
-        g_warning("Could not open file %s: %s", fullpath, error_local->message);
+        if (error_local->message == NULL) 
+        {
+            g_warning("Could not open file %s", fullpath);
+        }
+        else 
+        {
+            g_warning("Could not open file %s: %s", fullpath, error_local->message);
+        }
         g_clear_error(&error_local);  // Free the error before returning
         g_object_unref(file);
         return FALSE;
