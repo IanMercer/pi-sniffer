@@ -708,7 +708,10 @@ bool read_all_lines (const char * dirname, const char* filename, void (*call_bac
 
     GFile *file = g_file_new_for_path (fullpath);
 
-	g_return_val_if_fail (G_IS_FILE (file), FALSE);
+    if (!G_IS_FILE(file)) {
+        g_object_unref(file);
+        return FALSE;
+    }
 
     GError **error = NULL;
 	GError *error_local = NULL;
@@ -718,7 +721,8 @@ bool read_all_lines (const char * dirname, const char* filename, void (*call_bac
 		g_propagate_error (error, error_local);
         g_warning("Could not open file %s: %s", fullpath, error_local->message);
         g_clear_error(&error_local);  // Free the error before returning
-		return FALSE;
+        g_object_unref(file);
+        return FALSE;
 	}
 
 	GDataInputStream * input = g_data_input_stream_new (G_INPUT_STREAM (is));
