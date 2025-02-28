@@ -736,7 +736,11 @@ bool read_all_lines (const char * dirname, const char* filename, void (*call_bac
         line_count++;
 
         // no text on line
-        if (length < 1) continue;
+        if (length < 1) 
+        {
+            g_free(line); 
+            continue;
+        }
 
         // Skip comment lines
         if (string_starts_with(line, "#")) { g_free(line); continue; }
@@ -757,7 +761,7 @@ bool read_all_lines (const char * dirname, const char* filename, void (*call_bac
         g_warning("Error closing stream: %s", error_local->message);
         g_clear_error(&error_local);
     }
-
+    g_object_unref(input);
     g_object_unref(is);
     g_object_unref(file);
 	return TRUE;
