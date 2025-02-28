@@ -696,6 +696,7 @@ bool read_all_lines (const char * dirname, const char* filename, void (*call_bac
     void* state)
 {
 	g_return_val_if_fail (filename != NULL, FALSE);
+	g_return_val_if_fail (dirname != NULL, FALSE);
 
     if (filename[0] == '/') filename++;
 
@@ -722,6 +723,10 @@ bool read_all_lines (const char * dirname, const char* filename, void (*call_bac
         if (error_local->message == NULL) 
         {
             g_warning("Could not open file %s", fullpath);
+        }
+        else if (fullpath == NULL)
+        {
+            g_warning("Fullpath was null %s", error_local->message);
         }
         else 
         {
