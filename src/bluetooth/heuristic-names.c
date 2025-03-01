@@ -192,6 +192,10 @@ void apply_name_heuristics (struct Device* device, const char* name)
 
     else if (string_starts_with(name, "EssenzaTwo"))
         device->category = CATEGORY_APPLIANCE;    // Nespresso coffee machine, not a Lamborghini supercar
+    else if (string_starts_with(name, "Venus"))
+        device->category = CATEGORY_APPLIANCE;    // Nespresso machine
+    else if (string_starts_with(name, "ShellyPlug"))
+        device->category = CATEGORY_APPLIANCE;    // Shelly devices
     else if (string_starts_with(name, "BEDJET"))
         device->category = CATEGORY_APPLIANCE;    // Bed temperature controller!
     else if (string_starts_with(name, "[Refrigerator] Samsung"))

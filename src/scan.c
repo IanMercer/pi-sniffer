@@ -2037,8 +2037,12 @@ int main(int argc, char **argv)
     // Every 10min make sure Bluetooth is in scan mode
     g_timeout_add_seconds(603, ensure_bluetooth_tick, loop);
 
+    // It used to be the case that attempting to pair with a device would divulge additinal information about that device
+    // But now iPhones display a pairing dialog when you attempt pairing this has become annoying so it is disabled
+    // Uncomment this line if you want to try it but be prepared to pop-up pairing request messages on iPhones
+
     // Every 2s see if any unnamed device is ready to be connected
-    g_timeout_add_seconds(TRY_CONNECT_INTERVAL_S, try_connect_tick, loop);
+    // g_timeout_add_seconds(TRY_CONNECT_INTERVAL_S, try_connect_tick, loop);
 
     // Flash the led N times for N people present
     g_timeout_add(300, flash_led, loop);
