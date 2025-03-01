@@ -148,9 +148,19 @@ void handle_uuids(struct Device *device, char *uuidArray[2048], int actualLength
             append_text(gatts, gatts_length, "Nikon, ");
             soft_set_category(&device->category, CATEGORY_CAMERA);
         }
-        else if (ble_uuid == 0x0000ffa0ul) append_text(gatts, gatts_length, "Accelerometer, ");
-        else if (ble_uuid == 0x0000ffe0ul) append_text(gatts, gatts_length, "Temperature, ");
-
+        else if (ble_uuid == 0x0000fcd2) {
+            append_text(gatts, gatts_length, "Shelly, ");
+            soft_set_category(&device->category, CATEGORY_AIR_SENSOR);
+        }
+        else if (ble_uuid == 0x0000ffa0ul) 
+        {
+            append_text(gatts, gatts_length, "Accelerometer, ");
+        }
+        else if (ble_uuid == 0x0000ffe0ul)
+        {
+            append_text(gatts, gatts_length, "Temperature, ");
+            soft_set_category(&device->category, CATEGORY_AIR_SENSOR);
+        }
         else if (ble_uuid == 0x0000feecul) {
             append_text(gatts, gatts_length, "Tile, ");
             soft_set_category(&device->category, CATEGORY_BEACON);

@@ -63,6 +63,7 @@ typedef uint64_t u_int64_t;
 // Pencil or wacom tablet
 #define CATEGORY_PENCIL 24
 #define CATEGORY_ACCESSORY 25
+#define CATEGORY_AIR_SENSOR 26
 
 // Max allowed length of names and aliases (plus 1 for null)
 #define NAME_LENGTH 21
