@@ -231,7 +231,7 @@ void handle_manufacturer(struct Device *device, uint16_t manufacturer, unsigned 
 			{
 				char manuf[32];
 				snprintf(manuf, sizeof(manuf), "Manuf 0x%04x", manufacturer);
-				g_info("  Did not recognize %s", manuf);
+				g_info("  %s Did not recognize %s", device->mac, manuf);
 				set_name(device, manuf, nt_manufacturer, "manuf");
 			}
 			break;
