@@ -25,6 +25,10 @@ void apply_mac_address_heuristics (struct Device* device)
         set_name(device, "Apple __", nt_manufacturer, "mac");
         // Probably an AppleTV since they have fixed mac addresses
     }
+    else if (string_starts_with(device->mac, "D0:03:4B"))
+    {
+        set_name(device, "Apple __", nt_manufacturer, "mac");
+    }
     else if (string_starts_with(device->mac, "0C:8C:DC"))
     {
         // various IoT
