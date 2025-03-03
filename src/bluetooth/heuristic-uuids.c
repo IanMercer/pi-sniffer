@@ -493,6 +493,16 @@ void handle_uuids(struct Device *device, char *uuidArray[2048], int actualLength
             set_name(device, "Covid Trace", nt_generic, "uuid");
             soft_set_category(&device->category, CATEGORY_COVID);
         }
+        else if (ble_uuid == 0x06aa1910ul)
+        {
+            // What is this specific service?
+            append_text(gatts, gatts_length, "Nespresso, ");
+        }
+        else if (ble_uuid == 0xe0fc1000)
+        {
+            // What is this specific service?
+            append_text(gatts, gatts_length, "Raspberry PI, ");
+        }
         else if (ble_uuid == 0x0000fe79ul) 
         {
             append_text(gatts, gatts_length, "Zebra, ");
